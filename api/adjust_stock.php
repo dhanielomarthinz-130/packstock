@@ -342,6 +342,14 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
             VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?)
         ");
+        $stmtInsertInbound = $pdo->prepare("
+            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
+            VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, NOW(), NOW(), 0)
+        ");
+        $stmtInsertOutbound = $pdo->prepare("
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, NOW(), NOW(), 0)
+        ");
 
         $appliedCount = 0;
 
@@ -371,6 +379,26 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notes,
                 $userId
             ]);
+
+            $itemRefNo = $refNo . '-' . ($appliedCount + 1);
+            $userName = Auth::name() ?? 'SYSTEM';
+            if ($qtyAdjust > 0) {
+                $stmtInsertInbound->execute([
+                    $itemRefNo,
+                    $matId,
+                    $qtyAdjust,
+                    $notes,
+                    $userName
+                ]);
+            } else {
+                $stmtInsertOutbound->execute([
+                    $itemRefNo,
+                    $matId,
+                    abs($qtyAdjust),
+                    $userName,
+                    $notes
+                ]);
+            }
 
             $appliedCount++;
         }
@@ -437,6 +465,33 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?)
         ");
         $stmtMut->execute([$materialId, $delta, $stockBefore, $stockAfter, $refNo, $fullNotes, $userId]);
+
+        $userName = Auth::name() ?? 'SYSTEM';
+        if ($adjustType === 'PLUS') {
+            $stmtInsertInbound = $pdo->prepare("
+                INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
+                VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, NOW(), NOW(), 0)
+            ");
+            $stmtInsertInbound->execute([
+                $refNo,
+                $materialId,
+                $adjustQty,
+                $fullNotes,
+                $userName
+            ]);
+        } else {
+            $stmtInsertOutbound = $pdo->prepare("
+                INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
+                VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, NOW(), NOW(), 0)
+            ");
+            $stmtInsertOutbound->execute([
+                $refNo,
+                $materialId,
+                $adjustQty,
+                $userName,
+                $fullNotes
+            ]);
+        }
 
         $pdo->commit();
 
