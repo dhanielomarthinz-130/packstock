@@ -3008,6 +3008,7 @@ async function applyMyPermissions() {
       inventory: 'nav-inventory',
       dynamic_count: 'nav-dynamic_count',
       opname: 'nav-opname',
+      counting_detail: 'nav-counting_detail',
       adjust: 'nav-adjust',
       inbound: 'nav-inbound',
       outbound: 'nav-outbound',
@@ -3022,11 +3023,23 @@ async function applyMyPermissions() {
     Object.keys(menuNavMap).forEach(key => {
       const el = document.getElementById(menuNavMap[key]);
       if (el) {
-        if (p[key] === false || ((key === 'permissions' || key === 'maintenance') && !res.is_super_admin)) {
+        const permKey = key === 'counting_detail' ? 'opname' : key;
+        if (p[permKey] === false || ((permKey === 'permissions' || permKey === 'maintenance') && !res.is_super_admin)) {
           el.classList.add('hidden');
         } else {
           el.classList.remove('hidden');
         }
+      }
+    });
+
+    // Hide empty sections automatically
+    document.querySelectorAll('.sidebar-section').forEach(section => {
+      const buttons = section.querySelectorAll('.sidebar-nav-btn');
+      const visibleButtons = Array.from(buttons).filter(btn => !btn.classList.contains('hidden'));
+      if (visibleButtons.length === 0) {
+        section.classList.add('hidden');
+      } else {
+        section.classList.remove('hidden');
       }
     });
   }
