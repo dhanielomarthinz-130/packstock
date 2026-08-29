@@ -1139,38 +1139,6 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- ================= 3. TAB: BARANG MASUK (INBOUND) ================= -->
       <div id="tab-inbound" class="hidden space-y-4">
-        <!-- Inbound KPI Cards (Duration & Takt Time Metrics) -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200">
-              <span class="material-symbols-outlined text-[22px]">move_to_inbox</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Barang Masuk</p>
-              <h4 id="inboundTotalQtyMetric" class="text-lg font-extrabold text-slate-900">0</h4>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
-              <span class="material-symbols-outlined text-[22px]">timer</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Durasi Inbound</p>
-              <h4 id="inboundAvgDurationMetric" class="text-lg font-extrabold text-blue-700">-</h4>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200">
-              <span class="material-symbols-outlined text-[22px]">speed</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Takt Time Inbound</p>
-              <h4 id="inboundAvgTaktTimeMetric" class="text-lg font-extrabold text-purple-700">-</h4>
-            </div>
-          </div>
-        </div>
 
         <!-- Inbound Control Bar -->
         <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
@@ -1232,38 +1200,6 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- ================= 4. TAB: BARANG KELUAR (OUTBOUND) ================= -->
       <div id="tab-outbound" class="hidden space-y-4">
-        <!-- Outbound KPI Cards (Duration & Takt Time Metrics) -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
-              <span class="material-symbols-outlined text-[22px]">outbox</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Barang Keluar</p>
-              <h4 id="outboundTotalQtyMetric" class="text-lg font-extrabold text-slate-900">0</h4>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center border border-blue-200">
-              <span class="material-symbols-outlined text-[22px]">timer</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Durasi Outbound</p>
-              <h4 id="outboundAvgDurationMetric" class="text-lg font-extrabold text-blue-700">-</h4>
-            </div>
-          </div>
-
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200">
-              <span class="material-symbols-outlined text-[22px]">speed</span>
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rata-Rata Takt Time Outbound</p>
-              <h4 id="outboundAvgTaktTimeMetric" class="text-lg font-extrabold text-purple-700">-</h4>
-            </div>
-          </div>
-        </div>
 
         <!-- Outbound Control Bar -->
         <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
