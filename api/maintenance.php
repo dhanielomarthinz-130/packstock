@@ -7,6 +7,7 @@ require_once __DIR__ . '/../includes/auth.php';
 Auth::requireSuperAdmin();
 $pdo = Database::getConnection();
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'stats');
+$isSqlite = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite');
 
 /**
  * Helper: Verify Super Admin Password for Security Confirmation
@@ -19,6 +20,35 @@ function verifySuperAdminPassword(PDO $pdo, string $password): bool {
     $u = $stmt->fetch();
     if (!$u) return false;
     return password_verify($password, $u['password']);
+}
+
+/**
+ * Helper: Set Foreign Key Checks based on Database Driver
+ */
+function setForeignKeyChecks(PDO $pdo, bool $enable, bool $isSqlite) {
+    if ($isSqlite) {
+        $val = $enable ? 'ON' : 'OFF';
+        $pdo->exec("PRAGMA foreign_keys = {$val};");
+    } else {
+        $val = $enable ? 1 : 0;
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = {$val};");
+    }
+}
+
+/**
+ * Helper: Truncate or Delete Table data depending on Database Driver
+ */
+function clearTable(PDO $pdo, string $tableName, bool $isSqlite) {
+    try {
+        if ($isSqlite) {
+            $pdo->exec("DELETE FROM `{$tableName}`");
+            $pdo->exec("DELETE FROM sqlite_sequence WHERE name='{$tableName}'");
+        } else {
+            $pdo->exec("TRUNCATE TABLE `{$tableName}`");
+        }
+    } catch (Throwable $e) {
+        // Quietly ignore if table does not exist
+    }
 }
 
 // 1. GET DATABASE STATISTICS (ROW COUNTS & TABLE SIZES)
@@ -81,64 +111,65 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        setForeignKeyChecks($pdo, false, $isSqlite);
         $clearedInfo = '';
 
         switch ($tableKey) {
             case 'materials':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM materials")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE materials;");
+                clearTable($pdo, 'materials', $isSqlite);
                 $clearedInfo = "Master Stok Material ({$count} item)";
                 break;
 
             case 'inbound':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM inbound_transactions")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE inbound_transactions;");
+                clearTable($pdo, 'inbound_transactions', $isSqlite);
                 $clearedInfo = "Riwayat Barang Masuk ({$count} transaksi)";
                 break;
 
             case 'outbound':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM outbound_transactions")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE outbound_transactions;");
+                clearTable($pdo, 'outbound_transactions', $isSqlite);
                 $clearedInfo = "Riwayat Barang Keluar Manual ({$count} transaksi)";
                 break;
 
             case 'tasks':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE tasks;");
+                clearTable($pdo, 'tasks', $isSqlite);
                 $clearedInfo = "Penugasan Task Operator ({$count} task)";
                 break;
 
             case 'opname':
                 $countSes = (int)$pdo->query("SELECT COUNT(*) FROM stock_opnames")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
-                $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
-                $pdo->exec("TRUNCATE TABLE stock_opname_items;");
-                $pdo->exec("TRUNCATE TABLE stock_opnames;");
-                $clearedInfo = "Seluruh Sesi Stock Opname & Dynamic Counting ({$countSes} sesi)";
+                clearTable($pdo, 'stock_opname_item_stages', $isSqlite);
+                clearTable($pdo, 'stock_opname_audits', $isSqlite);
+                clearTable($pdo, 'stock_opname_counts', $isSqlite);
+                clearTable($pdo, 'stock_opname_items', $isSqlite);
+                clearTable($pdo, 'stock_opnames', $isSqlite);
+                $clearedInfo = "Seluruh Sesi Stock Opname & Dynamic Counting ({$countSes} Sesi)";
                 break;
 
             case 'mutations':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM stock_mutations")->fetchColumn();
-                $pdo->exec("TRUNCATE TABLE stock_mutations;");
+                clearTable($pdo, 'stock_mutations', $isSqlite);
                 $clearedInfo = "Buku Log Mutasi Stok ({$count} entri)";
                 break;
 
             default:
-                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+                setForeignKeyChecks($pdo, true, $isSqlite);
                 http_response_code(400);
                 echo json_encode(['success' => false, 'message' => 'Tabel database tidak dikenali.']);
                 exit;
         }
 
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
 
         echo json_encode([
             'success' => true,
             'message' => "Tabel berhasil dikosongkan: {$clearedInfo} telah dibersihkan secara permanen."
         ]);
     } catch (Throwable $e) {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Gagal mengosongkan tabel: ' . $e->getMessage()]);
     }
@@ -158,29 +189,30 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
     }
 
     try {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        setForeignKeyChecks($pdo, false, $isSqlite);
         
-        $pdo->exec("TRUNCATE TABLE inbound_transactions;");
-        $pdo->exec("TRUNCATE TABLE outbound_transactions;");
-        $pdo->exec("TRUNCATE TABLE tasks;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_items;");
-        $pdo->exec("TRUNCATE TABLE stock_opnames;");
-        $pdo->exec("TRUNCATE TABLE stock_mutations;");
+        clearTable($pdo, 'inbound_transactions', $isSqlite);
+        clearTable($pdo, 'outbound_transactions', $isSqlite);
+        clearTable($pdo, 'tasks', $isSqlite);
+        clearTable($pdo, 'stock_opname_item_stages', $isSqlite);
+        clearTable($pdo, 'stock_opname_audits', $isSqlite);
+        clearTable($pdo, 'stock_opname_counts', $isSqlite);
+        clearTable($pdo, 'stock_opname_items', $isSqlite);
+        clearTable($pdo, 'stock_opnames', $isSqlite);
+        clearTable($pdo, 'stock_mutations', $isSqlite);
 
         if ($resetStockZero) {
             $pdo->exec("UPDATE materials SET current_stock = 0;");
         }
 
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
 
         echo json_encode([
             'success' => true,
             'message' => 'Seluruh riwayat transaksi (Inbound, Outbound, Task, Opname, Mutasi) telah berhasil dikosongkan. Master Material dan User tetap aman.'
         ]);
     } catch (Throwable $e) {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Gagal membersihkan transaksi: ' . $e->getMessage()]);
     }
@@ -199,26 +231,27 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        setForeignKeyChecks($pdo, false, $isSqlite);
         
-        $pdo->exec("TRUNCATE TABLE materials;");
-        $pdo->exec("TRUNCATE TABLE inbound_transactions;");
-        $pdo->exec("TRUNCATE TABLE outbound_transactions;");
-        $pdo->exec("TRUNCATE TABLE tasks;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
-        $pdo->exec("TRUNCATE TABLE stock_opname_items;");
-        $pdo->exec("TRUNCATE TABLE stock_opnames;");
-        $pdo->exec("TRUNCATE TABLE stock_mutations;");
+        clearTable($pdo, 'materials', $isSqlite);
+        clearTable($pdo, 'inbound_transactions', $isSqlite);
+        clearTable($pdo, 'outbound_transactions', $isSqlite);
+        clearTable($pdo, 'tasks', $isSqlite);
+        clearTable($pdo, 'stock_opname_item_stages', $isSqlite);
+        clearTable($pdo, 'stock_opname_audits', $isSqlite);
+        clearTable($pdo, 'stock_opname_counts', $isSqlite);
+        clearTable($pdo, 'stock_opname_items', $isSqlite);
+        clearTable($pdo, 'stock_opnames', $isSqlite);
+        clearTable($pdo, 'stock_mutations', $isSqlite);
 
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
 
         echo json_encode([
             'success' => true,
             'message' => 'Reset Database Penuh (Factory Reset) Berhasil! Seluruh data stok dan transaksi telah dikosongkan. Database siap untuk diisi data baru.'
         ]);
     } catch (Throwable $e) {
-        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Gagal melakukan factory reset: ' . $e->getMessage()]);
     }

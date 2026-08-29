@@ -270,10 +270,20 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Header mapping
+    // Find the header row dynamically in the top 10 rows
+    $headerRowIdx = 0;
+    for ($r = 0; $r < min(10, count($rows)); $r++) {
+        $lineLower = strtolower(implode(' ', array_map('strval', $rows[$r])));
+        if (strpos($lineLower, 'item no') !== false || strpos($lineLower, 'item_no') !== false || strpos($lineLower, 'kode item') !== false || strpos($lineLower, 'item description') !== false || strpos($lineLower, 'deskripsi') !== false) {
+            $headerRowIdx = $r;
+            break;
+        }
+    }
+
+    // Clean headers mapping
     $headers = array_map(function($h) {
-        return strtolower(trim(preg_replace('/[\x00-\x1F\x80-\xFF\.]/', '', $h)));
-    }, $rows[0]);
+        return strtolower(trim(preg_replace('/[\x00-\x1F\x80-\xFF\.]/', '', (string)$h)));
+    }, $rows[$headerRowIdx]);
 
     $itemNoIdx = -1;
     $descIdx   = -1;
@@ -301,7 +311,7 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($itemNoIdx === -1) $itemNoIdx = 0;
     if ($descIdx === -1) $descIdx = 1;
     if ($stockIdx === -1) $stockIdx = 2;
-    $startRow = 1;
+    $startRow = $headerRowIdx + 1;
 
     // Existing materials check
     $existing = [];
@@ -321,16 +331,20 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $itemNo = strtoupper(trim($r[$itemNoIdx] ?? ''));
         $desc   = trim($r[$descIdx] ?? '');
-        $stockRaw = trim($r[$stockIdx] ?? '0');
-        
-        // Clean stock value (e.g. "18,246" or "18.246" or " 18246 ")
-        $stockClean = preg_replace('/[^0-9]/', '', $stockRaw);
-        $endingStock = ($stockClean !== '') ? (int)$stockClean : 0;
 
+        // Skip header/footer metadata
+        $itemNoUpper = strtoupper($itemNo);
+        $descUpper = strtoupper($desc);
+        if (strpos($itemNoUpper, 'DIEKSPOR') !== false || strpos($descUpper, 'DIEKSPOR') !== false) continue;
+        if (strpos($itemNoUpper, 'PACKSTOCK') !== false || strpos($descUpper, 'PACKSTOCK') !== false) continue;
+        if ($itemNoUpper === 'ITEM NO' || $itemNoUpper === 'KODE ITEM' || $itemNoUpper === 'NO') continue;
         if (empty($itemNo) && empty($desc)) continue;
         if (empty($itemNo)) $itemNo = 'PKG-' . str_pad($i, 4, '0', STR_PAD_LEFT);
 
         $meta = inferPackagingMetadata($itemNo, $desc);
+        $stockRaw = trim($r[$stockIdx] ?? '0');
+        $stockClean = preg_replace('/[^0-9]/', '', $stockRaw);
+        $endingStock = ($stockClean !== '') ? (int)$stockClean : 0;
         $category = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim($r[$catIdx]) : $meta['category'];
         $unit     = ($unitIdx !== -1 && !empty($r[$unitIdx])) ? trim($r[$unitIdx]) : $meta['unit'];
         $rack     = ($rackIdx !== -1 && !empty($r[$rackIdx])) ? trim($r[$rackIdx]) : $meta['rack'];
