@@ -4,25 +4,32 @@
 class Database {
     private static ?PDO $pdo = null;
 
+    private static function isLiveEnvironment(): bool {
+        $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+        return !empty($host) && !in_array($host, ['localhost', '127.0.0.1', '::1']) && !str_contains($host, 'localhost');
+    }
+
     public static function getConnection(): PDO {
         if (self::$pdo !== null) {
             return self::$pdo;
         }
 
-        // Load custom environment config if present (for InfinityFree / Live Hosting)
+        // Load custom environment config if present (overrides defaults)
         $envFile = __DIR__ . '/env.php';
         $env = file_exists($envFile) ? (include $envFile) : [];
 
-        $mysqlHost = $env['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? '127.0.0.1');
+        $isLive = self::isLiveEnvironment();
+
+        $mysqlHost = $env['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? ($isLive ? 'sql202.infinityfree.com' : '127.0.0.1'));
         $mysqlPort = $env['DB_PORT'] ?? ($_SERVER['DB_PORT'] ?? '3306');
-        $mysqlUser = $env['DB_USER'] ?? ($_SERVER['DB_USER'] ?? 'root');
-        $mysqlPass = $env['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? '');
-        $dbName    = $env['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? 'packstock_db');
+        $mysqlUser = $env['DB_USER'] ?? ($_SERVER['DB_USER'] ?? ($isLive ? 'if0_38464190' : 'root'));
+        $mysqlPass = $env['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? ($isLive ? 'Dhaniel0' : ''));
+        $dbName    = $env['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? ($isLive ? 'if0_38464190_packstock' : 'packstock_db'));
 
         // Try connecting to MySQL
         try {
             // If local XAMPP (root with empty password or localhost), try creating DB if not exists
-            if ($mysqlUser === 'root' && ($mysqlHost === '127.0.0.1' || $mysqlHost === 'localhost')) {
+            if (!$isLive && $mysqlUser === 'root') {
                 try {
                     $initPdo = new PDO("mysql:host={$mysqlHost};port={$mysqlPort};charset=utf8mb4", $mysqlUser, $mysqlPass, [
                         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
