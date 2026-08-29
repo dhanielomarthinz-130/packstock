@@ -5037,122 +5037,126 @@ async function handleDirectExcelUpload(input) {
       const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
       if (jsonRows && jsonRows.length > 1) {
-        // Find header row - scan up to 10 rows for headers
+        // ====== STEP 1: Find header row ======
         let headerRowIdx = -1;
         for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
-          const rowStr = jsonRows[r].map(c => String(c || '')).join(' ').toLowerCase();
-          // Header row must contain BOTH an item identifier AND an adjust/qty column keyword
+          const rowStr = jsonRows[r].map(c => String(c ?? '')).join(' ').toLowerCase();
           const hasItemCol = rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('kode material') || rowStr.includes('sku');
           const hasAdjustCol = rowStr.includes('adjust') || rowStr.includes('selisih') || rowStr.includes('qty') || rowStr.includes('stok');
-          if (hasItemCol && hasAdjustCol) {
-            headerRowIdx = r;
-            break;
-          }
+          if (hasItemCol && hasAdjustCol) { headerRowIdx = r; break; }
         }
-        // Fallback: just look for item identifier
         if (headerRowIdx === -1) {
           for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
-            const rowStr = jsonRows[r].map(c => String(c || '')).join(' ').toLowerCase();
-            if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) {
-              headerRowIdx = r;
-              break;
-            }
+            const rowStr = jsonRows[r].map(c => String(c ?? '')).join(' ').toLowerCase();
+            if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) { headerRowIdx = r; break; }
           }
         }
         if (headerRowIdx === -1) headerRowIdx = 0;
 
-        const cleanHeaders = jsonRows[headerRowIdx].map(h => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
-        
-        let itemNoIdx = -1;
-        let adjustIdx = -1;
-        let notesIdx = -1;
-
+        // ====== STEP 2: Map column indices ======
+        const cleanHeaders = jsonRows[headerRowIdx].map(h => String(h ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+        let itemNoIdx = -1, adjustIdx = -1, notesIdx = -1;
         cleanHeaders.forEach((h, idx) => {
           if (['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'material'].includes(h)) itemNoIdx = idx;
           else if (['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik'].some(k => h.includes(k))) adjustIdx = idx;
           else if (['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note'].some(k => h.includes(k))) notesIdx = idx;
         });
-
         if (itemNoIdx === -1) itemNoIdx = 0;
         if (adjustIdx === -1) {
           for (let c = 1; c < cleanHeaders.length; c++) {
-            if (cleanHeaders[c].includes('adjust') || cleanHeaders[c].includes('selisih') || cleanHeaders[c].includes('diff')) {
-              adjustIdx = c;
-              break;
-            }
+            if (cleanHeaders[c].includes('adjust') || cleanHeaders[c].includes('selisih') || cleanHeaders[c].includes('diff')) { adjustIdx = c; break; }
           }
           if (adjustIdx === -1) adjustIdx = cleanHeaders.length >= 3 ? 2 : 1;
         }
 
-        console.log('[ADJUST IMPORT] directAdjustData count:', directAdjustData.length);
-        console.log('[ADJUST IMPORT] headerRowIdx:', headerRowIdx);
-        console.log('[ADJUST IMPORT] raw header row:', jsonRows[headerRowIdx]);
+        console.log('[ADJUST IMPORT] headerRowIdx:', headerRowIdx, 'itemNoIdx:', itemNoIdx, 'adjustIdx:', adjustIdx);
         console.log('[ADJUST IMPORT] cleanHeaders:', cleanHeaders);
-        console.log('[ADJUST IMPORT] itemNoIdx:', itemNoIdx, 'adjustIdx:', adjustIdx, 'notesIdx:', notesIdx);
-        if (jsonRows.length > headerRowIdx + 1) {
-          console.log('[ADJUST IMPORT] first data row:', jsonRows[headerRowIdx + 1]);
-        }
-        if (directAdjustData.length > 0) {
-          console.log('[ADJUST IMPORT] sample directAdjustData[0]:', JSON.stringify(directAdjustData[0]));
-        }
+        console.log('[ADJUST IMPORT] total jsonRows:', jsonRows.length);
+        console.log('[ADJUST IMPORT] directAdjustData count:', directAdjustData.length);
 
+        // ====== STEP 3: Dump ALL data rows to console for diagnostics ======
+        const debugRows = [];
+        for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
+          const row = jsonRows[i];
+          if (!row) continue;
+          const code = row[itemNoIdx];
+          const adj = row[adjustIdx];
+          debugRows.push({ rowIdx: i, colCount: row.length, code, codeType: typeof code, adj, adjType: typeof adj, rawRow: row.slice(0, 8) });
+        }
+        console.log('[ADJUST IMPORT] ALL data rows parsed by SheetJS:', JSON.stringify(debugRows));
+
+        // ====== STEP 4: Process all data rows ======
         let appliedCount = 0;
+        let matchedTotal = 0;
         let skippedNoMatch = 0;
+        const debugMissing = [];
+
         for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
           const row = jsonRows[i];
           if (!row || row.length === 0) continue;
 
-          let rawCode = String(row[itemNoIdx] || '').trim();
-          if (!rawCode || rawCode === '0') continue;
-          // Handle numeric codes that SheetJS may read as numbers (strip decimals)
-          if (typeof row[itemNoIdx] === 'number') {
-            rawCode = String(Math.round(row[itemNoIdx]));
+          // Extract raw code - handle numbers, strings, mixed
+          let rawCodeVal = row[itemNoIdx];
+          if (rawCodeVal === null || rawCodeVal === undefined || rawCodeVal === '') continue;
+          let rawCode;
+          if (typeof rawCodeVal === 'number') {
+            rawCode = String(Math.round(rawCodeVal));
+          } else {
+            rawCode = String(rawCodeVal).trim();
+          }
+          // Skip empty, '0', or non-code-like values (e.g. just whitespace)
+          if (!rawCode || rawCode === '0' || rawCode.length < 2) continue;
+
+          // Extract adjust value - handle all formats
+          let rawAdjustVal = row[adjustIdx];
+          let adjustQty = 0;
+          if (typeof rawAdjustVal === 'number') {
+            adjustQty = rawAdjustVal;
+          } else if (rawAdjustVal !== null && rawAdjustVal !== undefined && rawAdjustVal !== '') {
+            let rawAdjust = String(rawAdjustVal).trim();
+            let sign = 1;
+            if (rawAdjust.includes('-') || (rawAdjust.startsWith('(') && rawAdjust.endsWith(')'))) { sign = -1; }
+            const cleanDigits = rawAdjust.replace(/[^0-9\.]/g, '');
+            adjustQty = cleanDigits ? sign * parseFloat(cleanDigits) : 0;
           }
 
-          let rawAdjust = String(row[adjustIdx] ?? '').trim();
-          let sign = 1;
-          if (rawAdjust.includes('-') || (rawAdjust.startsWith('(') && rawAdjust.endsWith(')'))) {
-            sign = -1;
-          }
-          const cleanDigits = rawAdjust.replace(/[^0-9\.]/g, '');
-          const adjustQty = cleanDigits ? sign * parseFloat(cleanDigits) : 0;
-          const notes = (notesIdx !== -1 && row[notesIdx]) ? String(row[notesIdx]).trim() : 'Upload Excel Adjust';
+          // Extract notes
+          const notesVal = (notesIdx !== -1 && row[notesIdx]) ? String(row[notesIdx]).trim() : 'Upload Excel Adjust';
 
-          // Try exact match first, then try matching as number (for leading-zero codes)
-          let target = directAdjustData.find(d => String(d.code).toLowerCase() === rawCode.toLowerCase());
+          // Match against directAdjustData
+          let target = directAdjustData.find(d => String(d.code) === rawCode);
+          if (!target) target = directAdjustData.find(d => String(d.code).toLowerCase() === rawCode.toLowerCase());
           if (!target && !isNaN(rawCode)) {
-            // Try matching numeric value (e.g., 4000010001 vs "4000010001")
             target = directAdjustData.find(d => String(parseInt(d.code)) === String(parseInt(rawCode)));
           }
 
           if (target) {
             target.qty_adjust = adjustQty;
-            if (notes) target.notes = notes;
+            target.notes = notesVal;
+            matchedTotal++;
             if (adjustQty !== 0) appliedCount++;
           } else {
             skippedNoMatch++;
-            if (skippedNoMatch <= 3) {
-              console.log(`[ADJUST IMPORT] NO MATCH for code "${rawCode}" (row ${i})`);
-            }
+            debugMissing.push(rawCode);
           }
         }
 
-        console.log(`[ADJUST IMPORT] Result: ${appliedCount} matched, ${skippedNoMatch} no-match`);
-
-        // If 0 matched, show debug info to user
-        if (appliedCount === 0 && skippedNoMatch > 0) {
-          const sampleExcel = jsonRows.length > headerRowIdx + 1 ? String(jsonRows[headerRowIdx + 1][itemNoIdx] || '(kosong)') : '(tidak ada data)';
-          const sampleDb = directAdjustData.length > 0 ? directAdjustData[0].code : '(kosong)';
-          console.warn(`[ADJUST IMPORT] MISMATCH DEBUG: Excel code sample="${sampleExcel}", DB code sample="${sampleDb}"`);
-          App.toast(`Data Excel terbaca (${skippedNoMatch} baris) tapi tidak ada kode item yang cocok dengan master stok. Contoh kode Excel: "${sampleExcel}", Contoh kode master: "${sampleDb}". Pastikan kolom Item No di Excel sesuai.`, 'warning', 'Kode Item Tidak Cocok');
-        }
+        console.log(`[ADJUST IMPORT] RESULT: ${matchedTotal} total matched, ${appliedCount} non-zero adjust, ${skippedNoMatch} no-match`);
+        if (debugMissing.length > 0) console.log('[ADJUST IMPORT] Missing codes:', debugMissing);
 
         input.value = '';
         const filterSelect = document.getElementById('directAdjustFilterSelect');
         if (filterSelect && appliedCount > 0) filterSelect.value = 'ADJUSTED_ONLY';
         renderDirectAdjustTable();
+
         if (appliedCount > 0) {
-          App.toast(`${appliedCount} SKU berhasil dimuat dari file Excel ke tabel penyesuaian. Silakan periksa angka penyesuaian lalu klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
+          App.toast(`${appliedCount} SKU dengan penyesuaian berhasil dimuat dari Excel (total ${matchedTotal} SKU dicocokkan). Silakan periksa lalu klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
+        } else if (matchedTotal > 0) {
+          App.toast(`${matchedTotal} SKU dicocokkan tapi semua nilai Qty Adjust adalah 0. Pastikan kolom "Qty Adjust (+/-)" di Excel sudah terisi.`, 'warning', 'Tidak Ada Penyesuaian');
+        } else {
+          const sampleExcel = debugRows.length > 0 ? String(debugRows[0].code ?? '(kosong)') : '(tidak ada data)';
+          const sampleDb = directAdjustData.length > 0 ? directAdjustData[0].code : '(kosong)';
+          App.toast(`Data Excel terbaca (${debugRows.length} baris) tapi kode item tidak cocok. Contoh Excel: "${sampleExcel}", Contoh master: "${sampleDb}".`, 'warning', 'Kode Item Tidak Cocok');
         }
         return;
       }
