@@ -69,7 +69,7 @@ class Database {
                 `username` VARCHAR(50) NOT NULL UNIQUE,
                 `password` VARCHAR(255) NOT NULL,
                 `name` VARCHAR(100) NOT NULL,
-                `role` ENUM('superadmin', 'admin', 'operator') NOT NULL DEFAULT 'operator',
+                `role` ENUM('superadmin', 'admin', 'operator', 'teknisi') NOT NULL DEFAULT 'operator',
                 `shift` VARCHAR(50) DEFAULT 'Shift A (Pagi)',
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -77,7 +77,7 @@ class Database {
 
         // Ensure role column enum includes 'superadmin' if table existed prior
         try {
-            $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('superadmin', 'admin', 'operator') NOT NULL DEFAULT 'operator'");
+            $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('superadmin', 'admin', 'operator', 'teknisi') NOT NULL DEFAULT 'operator'");
         } catch (Throwable $e) {
             // Ignored if SQLite or already modified
         }
@@ -400,19 +400,19 @@ class Database {
     }
 
     private static function seedDefaultData(PDO $pdo): void {
-        // Ensure Super Admin Daniel exists with role 'superadmin'
+        // Ensure Daniel exists with role 'teknisi'
         $stmtDaniel = $pdo->prepare("SELECT id, role FROM users WHERE username = 'Daniel'");
         $stmtDaniel->execute();
         $danielUser = $stmtDaniel->fetch();
         if (!$danielUser) {
             $passDaniel = password_hash('Password01', PASSWORD_BCRYPT);
             $stmtInsert = $pdo->prepare("INSERT INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
-            $stmtInsert->execute(['Daniel', $passDaniel, 'Daniel', 'superadmin', 'Super Admin']);
+            $stmtInsert->execute(['Daniel', $passDaniel, 'Daniel', 'teknisi', 'Teknisi Utama']);
             $danielId = (int)$pdo->lastInsertId();
         } else {
             $danielId = (int)$danielUser['id'];
-            if ($danielUser['role'] !== 'superadmin') {
-                $pdo->exec("UPDATE users SET role = 'superadmin' WHERE username = 'Daniel'");
+            if ($danielUser['role'] !== 'teknisi') {
+                $pdo->exec("UPDATE users SET role = 'teknisi' WHERE username = 'Daniel'");
             }
         }
 
@@ -427,23 +427,23 @@ class Database {
             $insertIgnore = ($driver === 'sqlite') ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
 
             $stmtUser = $pdo->prepare("{$insertIgnore} INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
-            $stmtUser->execute(['admin', $passAdmin, 'Administrator Gudang', 'admin', 'Head Office']);
+            $stmtUser->execute(['admin', $passAdmin, 'Administrator Gudang', 'teknisi', 'Teknisi Gudang']);
             $stmtUser->execute(['operator1', $passOp1, 'Budi Santoso', 'operator', 'Shift 1 (Pagi 07:00 - 15:00)']);
             $stmtUser->execute(['operator2', $passOp2, 'Agus Pratama', 'operator', 'Shift 2 (Siang 15:00 - 23:00)']);
         }
 
         // Seed default menu permissions
         $defaultMenus = [
-            'dashboard'   => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'inventory'   => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'opname'      => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'inbound'     => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'outbound'    => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'tasks'       => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'mutations'   => ['superadmin' => 1, 'admin' => 0, 'operator' => 0],
-            'users'       => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'permissions' => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'field_access'=> ['superadmin' => 1, 'admin' => 0, 'operator' => 1], // Superadmin has field access, Admin does not by default
+            'dashboard'   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'inventory'   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'opname'      => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'inbound'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'outbound'    => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'tasks'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'mutations'   => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0],
+            'users'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'permissions' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'field_access'=> ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1],
         ];
 
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

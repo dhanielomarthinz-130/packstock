@@ -71,7 +71,7 @@ $pageTitle = "Pemeliharaan Sistem - PackStock WMS";
         <span class="text-[10px] font-bold uppercase tracking-wider">Akses Khusus</span>
       </div>
       <p class="text-[11px] text-slate-400 leading-relaxed">
-        Hanya pengguna dengan peran <b class="text-white">Super Admin</b> yang dapat melewati halaman pemeliharaan ini untuk mengoperasikan sistem.
+        Hanya pengguna dengan peran <b class="text-white">Teknisi</b> yang dapat melewati halaman pemeliharaan ini untuk mengoperasikan sistem.
       </p>
     </div>
 
@@ -80,12 +80,12 @@ $pageTitle = "Pemeliharaan Sistem - PackStock WMS";
       <?php if (Auth::isSuperAdmin()): ?>
         <a href="admin/" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">dashboard</span>
-          <span>Masuk ke Dashboard Admin</span>
+          <span>Masuk ke Dashboard</span>
         </a>
       <?php else: ?>
         <a href="login" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">lock_open</span>
-          <span>Login Sebagai Super Admin</span>
+          <span>Login Sebagai Teknisi</span>
         </a>
       <?php endif; ?>
     </div>

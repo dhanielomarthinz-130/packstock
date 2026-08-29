@@ -1704,10 +1704,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Role</option>
-              <?php if (Auth::isSuperAdmin()): ?>
-              <option value="superadmin">Super Administrator</option>
-              <?php endif; ?>
-              <option value="admin">Administrator</option>
+              <option value="teknisi">Teknisi</option>
               <option value="operator">Operator Lapangan</option>
             </select>
           </div>
@@ -1830,7 +1827,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
                   <span>Mode Pemeliharaan (Maintenance Mode)</span>
                 </h4>
-                <p class="text-xs text-slate-500 mt-0.5">Kunci akses seluruh situs agar hanya akun dengan role Super Admin yang dapat mengakses sistem.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Kunci akses seluruh situs agar hanya akun dengan role Teknisi yang dapat mengakses sistem.</p>
               </div>
             </div>
             
@@ -1858,7 +1855,7 @@ require_once __DIR__ . '/../includes/header.php';
               <div>
                 <div class="flex items-center gap-2">
                   <h3 class="text-sm sm:text-base font-black tracking-tight text-white">Pembersihan & Maintenance Database</h3>
-                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">Super Admin Only</span>
+                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">Teknisi Only</span>
                 </div>
                 <p class="text-xs text-slate-300 mt-0.5">Kelola, kosongkan, atau reset data tabel transaksi dan master stok dengan proteksi keamanan password.</p>
               </div>
@@ -1873,7 +1870,7 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="p-3 bg-rose-900/30 border border-rose-700/40 rounded-xl text-[11px] text-rose-200 flex items-start gap-2">
             <span class="material-symbols-outlined text-[16px] text-rose-400 shrink-0 mt-0.5">security</span>
             <p class="leading-relaxed">
-              <b class="font-bold text-white">Proteksi Keamanan Tinggi:</b> Setiap tindakan pengosongan data tabel memerlukan verifikasi password login Super Admin aktif (<span class="font-mono font-bold text-rose-300"><?= htmlspecialchars(Auth::username()) ?></span>) untuk mencegah kesalahan klik atau penghapusan yang tidak disengaja.
+              <b class="font-bold text-white">Proteksi Keamanan Tinggi:</b> Setiap tindakan pengosongan data tabel memerlukan verifikasi password login Teknisi aktif (<span class="font-mono font-bold text-rose-300"><?= htmlspecialchars(Auth::username()) ?></span>) untuk mencegah kesalahan klik atau penghapusan yang tidak disengaja.
             </p>
           </div>
         </div>
@@ -2477,10 +2474,7 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="block font-semibold text-slate-700 mb-1">Role / Hak Akses <span class="text-rose-500">*</span></label>
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
           <option value="operator">Operator Lapangan (Panel Mobile)</option>
-          <option value="admin">Administrator (Panel Admin)</option>
-          <?php if (Auth::isSuperAdmin()): ?>
-          <option value="superadmin">Super Administrator (Full Control)</option>
-          <?php endif; ?>
+          <option value="teknisi">Teknisi (Panel Admin)</option>
         </select>
       </div>
 
@@ -2981,7 +2975,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-bold text-slate-800 mb-1">
-          Masukkan Password Super Admin (<span class="font-mono text-rose-600"><?= htmlspecialchars(Auth::username()) ?></span>) <span class="text-rose-500">*</span>:
+          Masukkan Password Teknisi (<span class="font-mono text-rose-600"><?= htmlspecialchars(Auth::username()) ?></span>) <span class="text-rose-500">*</span>:
         </label>
         <input type="password" id="cleanSuperAdminPassword" required placeholder="Ketik password login Anda..." 
           class="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg outline-none focus:border-rose-600 font-bold text-xs">

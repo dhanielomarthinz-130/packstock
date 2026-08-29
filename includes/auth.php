@@ -33,11 +33,11 @@ class Auth {
     }
 
     public static function isSuperAdmin(): bool {
-        return self::role() === 'superadmin' || self::username() === 'Daniel';
+        return self::role() === 'teknisi' || self::role() === 'superadmin' || self::username() === 'Daniel';
     }
 
     public static function isAdmin(): bool {
-        return self::role() === 'admin' || self::role() === 'superadmin' || self::username() === 'Daniel';
+        return self::role() === 'teknisi' || self::role() === 'admin' || self::role() === 'superadmin' || self::username() === 'Daniel';
     }
 
     public static function isOperator(): bool {
@@ -143,7 +143,7 @@ class Auth {
                 'shift' => $user['shift'] ?? 'Shift Standar'
             ];
 
-            $isAdminRole = ($user['role'] === 'admin' || $user['role'] === 'superadmin' || strtolower($user['username']) === 'daniel');
+            $isAdminRole = ($user['role'] === 'teknisi' || $user['role'] === 'admin' || $user['role'] === 'superadmin' || strtolower($user['username']) === 'daniel');
 
             return [
                 'success' => true,

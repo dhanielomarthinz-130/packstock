@@ -2104,16 +2104,14 @@ function renderUsersTable(users) {
   }
 
   tbody.innerHTML = users.map(u => {
-    const isSuperAdmin = u.role === 'superadmin' || u.username.toLowerCase() === 'daniel';
-    const isAdmin = u.role === 'admin';
+    const isSuperAdmin = u.username.toLowerCase() === 'daniel';
+    const isTeknisi = u.role === 'teknisi' || u.role === 'superadmin' || u.role === 'admin';
 
     let roleBadge = '';
-    if (isSuperAdmin) {
-      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-800 border border-purple-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">shield_person</span>Super Admin</span>';
-    } else if (isAdmin) {
-      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">admin_panel_settings</span>Admin</span>';
+    if (isTeknisi) {
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-800 border border-purple-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">engineering</span>Teknisi</span>';
     } else {
-      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">engineering</span>Operator</span>';
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">account_circle</span>Operator</span>';
     }
 
     return `
@@ -3103,7 +3101,7 @@ function loadPermissionMatrix() {
       isSuperAdmin = userObj.is_super_admin;
       titleEl.innerText = `Hak Akses Khusus: ${userObj.name} (@${userObj.username})`;
       subEl.innerText = isSuperAdmin
-        ? 'Super Admin memiliki hak akses 100% penuh permanen ke seluruh menu sistem.'
+        ? 'Teknisi Utama memiliki hak akses 100% penuh permanen ke seluruh menu sistem.'
         : `Role dasar: ${userObj.role.toUpperCase()} ${userObj.has_custom_override ? '(Memiliki Pengaturan Khusus)' : '(Menggunakan Standar Role)'}`;
       
       if (btnReset) {

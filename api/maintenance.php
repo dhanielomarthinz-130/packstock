@@ -70,13 +70,13 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($password)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Password konfirmasi Super Admin wajib diisi.']);
+        echo json_encode(['success' => false, 'message' => 'Password konfirmasi Teknisi wajib diisi.']);
         exit;
     }
 
     if (!verifySuperAdminPassword($pdo, $password)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Teknisi tidak sesuai! Tindakan dibatalkan.']);
         exit;
     }
 
@@ -153,7 +153,7 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
 
     if (!verifySuperAdminPassword($pdo, $password)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Teknisi tidak sesuai! Tindakan dibatalkan.']);
         exit;
     }
 
@@ -194,7 +194,7 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!verifySuperAdminPassword($pdo, $password)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Teknisi tidak sesuai! Tindakan dibatalkan.']);
         exit;
     }
 
@@ -241,7 +241,7 @@ if ($action === 'toggle_maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'success' => true,
             'maintenance' => true,
-            'message' => 'Mode Maintenance BERHASIL diaktifkan! Situs sekarang dikunci untuk non-Super Admin.'
+            'message' => 'Mode Maintenance BERHASIL diaktifkan! Situs sekarang dikunci untuk non-Teknisi.'
         ]);
     } else {
         if (file_exists($flagFile)) {
