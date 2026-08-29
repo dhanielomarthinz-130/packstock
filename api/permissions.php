@@ -90,7 +90,7 @@ $MENUS_CATALOG = [
         'key' => 'field_access',
         'label' => 'Akses Lapangan (Mobile Panel)',
         'icon' => 'smartphone',
-        'description' => 'Tautan langsung ke tampilan mobile operator lapangan (Draft Inbound & Task).'
+        'description' => 'Tautan langsung ke tampilan mobile PIC (Draft Inbound & Task).'
     ]
 ];
 

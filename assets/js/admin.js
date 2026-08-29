@@ -992,7 +992,7 @@ async function loadOperators() {
     allOperators = res.data;
     const select = document.getElementById('taskOperatorSelect');
     if (select) {
-      select.innerHTML = '<option value="">-- Pilih Operator Lapangan --</option>' +
+      select.innerHTML = '<option value="">-- Pilih PIC --</option>' +
         allOperators.map(op => `
           <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift Aktif')})</option>
         `).join('');
@@ -1250,7 +1250,7 @@ async function initBulkTaskTable() {
 
   const headerOp = document.getElementById('bulkHeaderOperator');
   if (headerOp) {
-    headerOp.innerHTML = '<option value="">-- Pilih Operator Lapangan --</option>' +
+    headerOp.innerHTML = '<option value="">-- Pilih PIC --</option>' +
       (allOperators || []).map(op => `<option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift')})</option>`).join('');
     App.syncSearchableSelect(headerOp);
   }
@@ -2762,7 +2762,7 @@ async function openEditTaskModal(taskId) {
   }
 
   if (opSelect) {
-    opSelect.innerHTML = '<option value="">-- Pilih Operator Lapangan --</option>' +
+    opSelect.innerHTML = '<option value="">-- Pilih PIC --</option>' +
       allOperators.map(op => `
         <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift')})</option>
       `).join('');
@@ -3709,7 +3709,7 @@ function openCreateDynamicCountModal() {
 
   const opSelect = document.getElementById('createDynamicOperator');
   if (opSelect) {
-    opSelect.innerHTML = '<option value="">-- Pilih Operator Lapangan --</option>' +
+    opSelect.innerHTML = '<option value="">-- Pilih PIC --</option>' +
       allOperators.map(op => `
         <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift Aktif')})</option>
       `).join('');

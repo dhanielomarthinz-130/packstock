@@ -712,7 +712,7 @@ if ($action === 'create') {
 
     if ($counting_type === 'DYNAMIC_COUNT' && $assigned_to_1 <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Pilih Operator Lapangan untuk penugasan Dynamic Count']);
+        echo json_encode(['success' => false, 'message' => 'Pilih PIC untuk penugasan Dynamic Count']);
         exit;
     }
 

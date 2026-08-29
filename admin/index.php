@@ -174,13 +174,13 @@ require_once __DIR__ . '/../includes/header.php';
       <div id="sidebarFieldAccessContainer" class="pt-1">
         <div class="sidebar-section-title px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Akses Lapangan</div>
         <a href="../operator/" target="_blank" 
-          class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel Operator Lapangan">
+          class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel PIC">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0">
               <span class="material-symbols-outlined text-[16px]">smartphone</span>
             </div>
             <div class="sidebar-field-access-text text-left leading-tight truncate">
-              <p class="text-xs font-bold text-slate-900 group-hover:text-emerald-900 transition-colors truncate">Panel Operator</p>
+              <p class="text-xs font-bold text-slate-900 group-hover:text-emerald-900 transition-colors truncate">Panel PIC</p>
               <p class="text-[10px] text-slate-500 group-hover:text-emerald-700 transition-colors truncate">Mode Mobile Touch</p>
             </div>
           </div>
@@ -1355,8 +1355,8 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-[20px]">assignment</span>
             </div>
             <div>
-              <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Penugasan Operator Lapangan</h2>
-              <p class="text-[11px] text-slate-500 font-medium">Buat & delegasikan tugas pengambilan packaging ke operator lapangan</p>
+              <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Penugasan PIC</h2>
+              <p class="text-[11px] text-slate-500 font-medium">Buat & delegasikan tugas pengambilan packaging ke PIC</p>
             </div>
           </div>
 
@@ -1398,9 +1398,9 @@ require_once __DIR__ . '/../includes/header.php';
               <!-- Batch Defaults Toolbar -->
               <div class="p-4 bg-gradient-to-r from-slate-50 to-emerald-50/20 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs shadow-2xs">
                 <div>
-                  <label class="block font-bold text-slate-700 mb-1.5">Tugaskan ke Operator PIC <span class="text-rose-500">*</span></label>
+                  <label class="block font-bold text-slate-700 mb-1.5">Tugaskan ke PIC <span class="text-rose-500">*</span></label>
                   <select id="bulkHeaderOperator" class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-semibold text-xs text-slate-800 shadow-2xs">
-                    <option value="">-- Pilih Operator Lapangan --</option>
+                    <option value="">-- Pilih PIC --</option>
                   </select>
                 </div>
 
@@ -1705,7 +1705,7 @@ require_once __DIR__ . '/../includes/header.php';
             <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Role</option>
               <option value="teknisi">Teknisi</option>
-              <option value="operator">Operator Lapangan</option>
+              <option value="operator">PIC</option>
             </select>
           </div>
 
@@ -1766,7 +1766,7 @@ require_once __DIR__ . '/../includes/header.php';
             <select id="permRoleSelector" onchange="loadPermissionMatrix()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-600">
               <option value="superadmin">Role: Super Administrator</option>
               <option value="admin">Role: Administrator</option>
-              <option value="operator">Role: Operator Lapangan</option>
+              <option value="operator">Role: PIC</option>
             </select>
 
             <!-- User Selector Dropdown (Hidden in Role Mode) -->
@@ -1929,7 +1929,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">tasks</span>
                   <span id="statMaint_tasks" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Task</span>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Penugasan Task Operator Lapangan</h5>
+                <h5 class="font-bold text-slate-900 text-xs">Penugasan Task PIC</h5>
               </div>
               <button type="button" onclick="openCleanTableModal('tasks', 'Penugasan Task Operator (tasks)', document.getElementById('statMaint_tasks').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
@@ -2462,7 +2462,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Role / Hak Akses <span class="text-rose-500">*</span></label>
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
-          <option value="operator">Operator Lapangan (Panel Mobile)</option>
+          <option value="operator">PIC (Panel Mobile)</option>
           <option value="teknisi">Teknisi (Panel Admin)</option>
         </select>
       </div>
@@ -2693,7 +2693,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div>
           <h3 class="font-extrabold text-slate-900 text-sm">Buat Sesi Dynamic Counting Baru</h3>
-          <p class="text-xs text-slate-500">Pilih SKU produk tertentu untuk dihitung oleh Operator lapangan</p>
+          <p class="text-xs text-slate-500">Pilih SKU produk tertentu untuk dihitung oleh PIC</p>
         </div>
       </div>
       <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="text-slate-400 hover:text-slate-600 p-1">
@@ -2709,9 +2709,9 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke Operator Lapangan <span class="text-rose-500">*</span></label>
+        <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke PIC <span class="text-rose-500">*</span></label>
         <select id="createDynamicOperator" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-600 font-medium text-xs">
-          <option value="">-- Pilih Operator Lapangan --</option>
+          <option value="">-- Pilih PIC --</option>
         </select>
         <p class="text-[10px] text-slate-400 mt-0.5">Operator ini akan menerima task counting khusus SKU yang dipilih.</p>
       </div>
@@ -2834,7 +2834,7 @@ require_once __DIR__ . '/../includes/header.php';
             <span>Tugaskan Recount (Hitung Ulang)</span>
             <span id="recountStageTargetBadge" class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300">2nd Count</span>
           </h3>
-          <p class="text-xs text-slate-500" id="recountOpnameSubtitle">Verifikasi selisih fisik oleh operator lapangan</p>
+          <p class="text-xs text-slate-500" id="recountOpnameSubtitle">Verifikasi selisih fisik oleh PIC</p>
         </div>
       </div>
       <button type="button" onclick="App.closeModal('modalAssignRecount')" class="text-slate-400 hover:text-slate-600 p-1">

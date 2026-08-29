@@ -53,7 +53,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="w-2 h-2 rounded-full bg-emerald-300 shrink-0"></span>
             </div>
             <p class="text-[10px] text-emerald-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
-              <span class="truncate"><?= htmlspecialchars($user['shift'] ?? 'Operator Lapangan') ?></span>
+              <span class="truncate"><?= htmlspecialchars($user['shift'] ?? 'PIC') ?></span>
               <span class="text-emerald-300/70">&bull;</span>
               <span class="text-emerald-200 font-mono text-[9px]">#<?= htmlspecialchars($user['id'] ?? '0') ?></span>
             </p>
@@ -761,7 +761,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/70 text-[11px]">
         <div>
           <span class="text-[9px] uppercase font-bold text-slate-400 block">Shift Kerja</span>
-          <span class="font-bold text-white"><?= htmlspecialchars($user['shift'] ?? 'Operator Lapangan') ?></span>
+          <span class="font-bold text-white"><?= htmlspecialchars($user['shift'] ?? 'PIC') ?></span>
         </div>
         <div class="text-right">
           <span class="text-[9px] uppercase font-bold text-slate-400 block">Status Koneksi</span>
