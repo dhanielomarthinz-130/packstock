@@ -66,6 +66,19 @@ function parseAdjustXlsx($filePath) {
 
             if ($cellType === 's' && isset($sharedStrings[(int)$val])) {
                 $cellValue = $sharedStrings[(int)$val];
+            } elseif ($cellType === 'inlineStr' && isset($cell->is->t)) {
+                $cellValue = (string)$cell->is->t;
+            } elseif ($cellType === 'inlineStr' && isset($cell->is)) {
+                // Rich text inline string
+                $text = '';
+                foreach ($cell->is->children() as $child) {
+                    if ($child->getName() === 't') {
+                        $text .= (string)$child;
+                    } elseif ($child->getName() === 'r' && isset($child->t)) {
+                        $text .= (string)$child->t;
+                    }
+                }
+                $cellValue = $text;
             } else {
                 $cellValue = $val;
             }

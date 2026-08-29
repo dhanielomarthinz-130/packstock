@@ -5037,14 +5037,29 @@ async function handleDirectExcelUpload(input) {
       const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
       if (jsonRows && jsonRows.length > 1) {
-        let headerRowIdx = 0;
-        for (let r = 0; r < Math.min(5, jsonRows.length); r++) {
-          const rowStr = jsonRows[r].join(' ').toLowerCase();
-          if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) {
+        // Find header row - scan up to 10 rows for headers
+        let headerRowIdx = -1;
+        for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
+          const rowStr = jsonRows[r].map(c => String(c || '')).join(' ').toLowerCase();
+          // Header row must contain BOTH an item identifier AND an adjust/qty column keyword
+          const hasItemCol = rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('kode material') || rowStr.includes('sku');
+          const hasAdjustCol = rowStr.includes('adjust') || rowStr.includes('selisih') || rowStr.includes('qty') || rowStr.includes('stok');
+          if (hasItemCol && hasAdjustCol) {
             headerRowIdx = r;
             break;
           }
         }
+        // Fallback: just look for item identifier
+        if (headerRowIdx === -1) {
+          for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
+            const rowStr = jsonRows[r].map(c => String(c || '')).join(' ').toLowerCase();
+            if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) {
+              headerRowIdx = r;
+              break;
+            }
+          }
+        }
+        if (headerRowIdx === -1) headerRowIdx = 0;
 
         const cleanHeaders = jsonRows[headerRowIdx].map(h => String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
         
@@ -5054,7 +5069,7 @@ async function handleDirectExcelUpload(input) {
 
         cleanHeaders.forEach((h, idx) => {
           if (['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'material'].includes(h)) itemNoIdx = idx;
-          else if (['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'qty', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik'].some(k => h.includes(k))) adjustIdx = idx;
+          else if (['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik'].some(k => h.includes(k))) adjustIdx = idx;
           else if (['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note'].some(k => h.includes(k))) notesIdx = idx;
         });
 
@@ -5069,13 +5084,30 @@ async function handleDirectExcelUpload(input) {
           if (adjustIdx === -1) adjustIdx = cleanHeaders.length >= 3 ? 2 : 1;
         }
 
+        console.log('[ADJUST IMPORT] directAdjustData count:', directAdjustData.length);
+        console.log('[ADJUST IMPORT] headerRowIdx:', headerRowIdx);
+        console.log('[ADJUST IMPORT] raw header row:', jsonRows[headerRowIdx]);
+        console.log('[ADJUST IMPORT] cleanHeaders:', cleanHeaders);
+        console.log('[ADJUST IMPORT] itemNoIdx:', itemNoIdx, 'adjustIdx:', adjustIdx, 'notesIdx:', notesIdx);
+        if (jsonRows.length > headerRowIdx + 1) {
+          console.log('[ADJUST IMPORT] first data row:', jsonRows[headerRowIdx + 1]);
+        }
+        if (directAdjustData.length > 0) {
+          console.log('[ADJUST IMPORT] sample directAdjustData[0]:', JSON.stringify(directAdjustData[0]));
+        }
+
         let appliedCount = 0;
+        let skippedNoMatch = 0;
         for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
           const row = jsonRows[i];
           if (!row || row.length === 0) continue;
 
-          const rawCode = String(row[itemNoIdx] || '').trim();
-          if (!rawCode) continue;
+          let rawCode = String(row[itemNoIdx] || '').trim();
+          if (!rawCode || rawCode === '0') continue;
+          // Handle numeric codes that SheetJS may read as numbers (strip decimals)
+          if (typeof row[itemNoIdx] === 'number') {
+            rawCode = String(Math.round(row[itemNoIdx]));
+          }
 
           let rawAdjust = String(row[adjustIdx] ?? '').trim();
           let sign = 1;
@@ -5086,19 +5118,42 @@ async function handleDirectExcelUpload(input) {
           const adjustQty = cleanDigits ? sign * parseFloat(cleanDigits) : 0;
           const notes = (notesIdx !== -1 && row[notesIdx]) ? String(row[notesIdx]).trim() : 'Upload Excel Adjust';
 
-          const target = directAdjustData.find(d => d.code.toLowerCase() === rawCode.toLowerCase());
+          // Try exact match first, then try matching as number (for leading-zero codes)
+          let target = directAdjustData.find(d => String(d.code).toLowerCase() === rawCode.toLowerCase());
+          if (!target && !isNaN(rawCode)) {
+            // Try matching numeric value (e.g., 4000010001 vs "4000010001")
+            target = directAdjustData.find(d => String(parseInt(d.code)) === String(parseInt(rawCode)));
+          }
+
           if (target) {
             target.qty_adjust = adjustQty;
             if (notes) target.notes = notes;
             if (adjustQty !== 0) appliedCount++;
+          } else {
+            skippedNoMatch++;
+            if (skippedNoMatch <= 3) {
+              console.log(`[ADJUST IMPORT] NO MATCH for code "${rawCode}" (row ${i})`);
+            }
           }
+        }
+
+        console.log(`[ADJUST IMPORT] Result: ${appliedCount} matched, ${skippedNoMatch} no-match`);
+
+        // If 0 matched, show debug info to user
+        if (appliedCount === 0 && skippedNoMatch > 0) {
+          const sampleExcel = jsonRows.length > headerRowIdx + 1 ? String(jsonRows[headerRowIdx + 1][itemNoIdx] || '(kosong)') : '(tidak ada data)';
+          const sampleDb = directAdjustData.length > 0 ? directAdjustData[0].code : '(kosong)';
+          console.warn(`[ADJUST IMPORT] MISMATCH DEBUG: Excel code sample="${sampleExcel}", DB code sample="${sampleDb}"`);
+          App.toast(`Data Excel terbaca (${skippedNoMatch} baris) tapi tidak ada kode item yang cocok dengan master stok. Contoh kode Excel: "${sampleExcel}", Contoh kode master: "${sampleDb}". Pastikan kolom Item No di Excel sesuai.`, 'warning', 'Kode Item Tidak Cocok');
         }
 
         input.value = '';
         const filterSelect = document.getElementById('directAdjustFilterSelect');
-        if (filterSelect) filterSelect.value = 'ADJUSTED_ONLY';
+        if (filterSelect && appliedCount > 0) filterSelect.value = 'ADJUSTED_ONLY';
         renderDirectAdjustTable();
-        App.toast(`${appliedCount} SKU berhasil dimuat dari file Excel ke tabel penyesuaian. Silakan periksa angka penyesuaian lalu klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
+        if (appliedCount > 0) {
+          App.toast(`${appliedCount} SKU berhasil dimuat dari file Excel ke tabel penyesuaian. Silakan periksa angka penyesuaian lalu klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
+        }
         return;
       }
     }
