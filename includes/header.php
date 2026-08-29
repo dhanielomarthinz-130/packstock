@@ -1,7 +1,7 @@
 <?php
 // includes/header.php - White & Green Enterprise Theme with Google Material Symbols
 if (!isset($pageTitle)) {
-    $pageTitle = 'PackStock WMS - Packaging Stock Control & Task Assignment';
+    $pageTitle = 'PackStock WMS - Kemas / Consumble Stock Control & Task Assignment';
 }
 $baseUrl = Auth::getBaseUrl();
 ?>

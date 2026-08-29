@@ -56,12 +56,12 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div>
             <h1 class="text-xl font-black tracking-tight text-white leading-none">PackStock</h1>
-            <p class="text-[11px] text-emerald-300/80 font-semibold mt-1">Material Control & Dispatch</p>
+            <p class="text-[11px] text-emerald-300/80 font-semibold mt-1">Kemas / Consumble Control & Dispatch</p>
           </div>
         </div>
 
         <p class="text-xs text-slate-300 leading-relaxed pt-1">
-          Sistem manajemen persediaan packaging terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
+          Sistem manajemen persediaan Kemas / Consumble terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div class="min-w-0">
             <h4 class="font-bold text-xs text-white truncate">Picking Task Dispatch</h4>
-            <p class="text-[10px] text-slate-400 truncate">Serah terima material ke line produksi</p>
+            <p class="text-[10px] text-slate-400 truncate">Serah terima Kemas / Consumble ke line produksi</p>
           </div>
         </div>
 
