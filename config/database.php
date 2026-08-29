@@ -436,7 +436,7 @@ class Database {
             'inbound'     => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
             'outbound'    => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
             'tasks'       => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
-            'mutations'   => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
+            'mutations'   => ['superadmin' => 1, 'admin' => 0, 'operator' => 0],
             'users'       => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
             'permissions' => ['superadmin' => 1, 'admin' => 1, 'operator' => 0],
             'field_access'=> ['superadmin' => 1, 'admin' => 0, 'operator' => 1], // Superadmin has field access, Admin does not by default

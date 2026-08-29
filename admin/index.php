@@ -77,6 +77,7 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Task</span>
           </button>
 
+          <?php if (Auth::isSuperAdmin()): ?>
           <button onclick="switchAdminTab('mutations')" id="nav-mutations" 
             class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
             <div class="flex items-center gap-3">
@@ -85,6 +86,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Audit</span>
           </button>
+          <?php endif; ?>
         </div>
       </div>
 
