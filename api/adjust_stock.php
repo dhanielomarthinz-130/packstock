@@ -178,7 +178,7 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     // Look for header row in top 5 rows (in case file has titles)
     for ($r = 0; $r < min(5, count($rows)); $r++) {
         $lineLower = strtolower(implode(' ', $rows[$r]));
-        if (strpos($lineLower, 'item') !== false || strpos($lineLower, 'kode') !== false || strpos($lineLower, 'adjust') !== false || strpos($lineLower, 'selisih') !== false || strpos($lineLower, 'diff') !== false) {
+        if (strpos($lineLower, 'item no') !== false || strpos($lineLower, 'item_no') !== false || strpos($lineLower, 'kode item') !== false || strpos($lineLower, 'sku') !== false) {
             $headerRowIdx = $r;
             break;
         }

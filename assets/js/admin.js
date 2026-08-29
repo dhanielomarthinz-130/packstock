@@ -5040,7 +5040,7 @@ async function handleDirectExcelUpload(input) {
         let headerRowIdx = 0;
         for (let r = 0; r < Math.min(5, jsonRows.length); r++) {
           const rowStr = jsonRows[r].join(' ').toLowerCase();
-          if (rowStr.includes('item') || rowStr.includes('kode') || rowStr.includes('sku') || rowStr.includes('adjust') || rowStr.includes('selisih') || rowStr.includes('diff')) {
+          if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) {
             headerRowIdx = r;
             break;
           }
