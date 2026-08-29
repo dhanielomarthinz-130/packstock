@@ -20,11 +20,11 @@ class Database {
 
         $isLive = self::isLiveEnvironment();
 
-        $mysqlHost = $env['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? ($isLive ? 'sql202.infinityfree.com' : '127.0.0.1'));
+        $mysqlHost = $env['DB_HOST'] ?? ($_SERVER['DB_HOST'] ?? '127.0.0.1');
         $mysqlPort = $env['DB_PORT'] ?? ($_SERVER['DB_PORT'] ?? '3306');
-        $mysqlUser = $env['DB_USER'] ?? ($_SERVER['DB_USER'] ?? ($isLive ? 'if0_38464190' : 'root'));
-        $mysqlPass = $env['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? ($isLive ? 'Dhaniel0' : ''));
-        $dbName    = $env['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? ($isLive ? 'if0_38464190_packstock' : 'packstock_db'));
+        $mysqlUser = $env['DB_USER'] ?? ($_SERVER['DB_USER'] ?? 'root');
+        $mysqlPass = $env['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? '');
+        $dbName    = $env['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? 'packstock_db');
 
         // Try connecting to MySQL
         try {
@@ -354,7 +354,8 @@ class Database {
                 menu_key TEXT NOT NULL,
                 is_allowed INTEGER NOT NULL DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE (role, user_id, menu_key)
             );
             CREATE TABLE IF NOT EXISTS stock_opnames (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -422,7 +423,10 @@ class Database {
             $passOp1   = password_hash('op123', PASSWORD_BCRYPT);
             $passOp2   = password_hash('op123', PASSWORD_BCRYPT);
 
-            $stmtUser = $pdo->prepare("INSERT IGNORE INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $insertIgnore = ($driver === 'sqlite') ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
+
+            $stmtUser = $pdo->prepare("{$insertIgnore} INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
             $stmtUser->execute(['admin', $passAdmin, 'Administrator Gudang', 'admin', 'Head Office']);
             $stmtUser->execute(['operator1', $passOp1, 'Budi Santoso', 'operator', 'Shift 1 (Pagi 07:00 - 15:00)']);
             $stmtUser->execute(['operator2', $passOp2, 'Agus Pratama', 'operator', 'Shift 2 (Siang 15:00 - 23:00)']);
@@ -442,11 +446,20 @@ class Database {
             'field_access'=> ['superadmin' => 1, 'admin' => 0, 'operator' => 1], // Superadmin has field access, Admin does not by default
         ];
 
-        $stmtInsertPerm = $pdo->prepare("
-            INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
-            VALUES (?, NULL, ?, ?)
-            ON DUPLICATE KEY UPDATE is_allowed = is_allowed
-        ");
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmtInsertPerm = $pdo->prepare("
+                INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
+                VALUES (?, NULL, ?, ?)
+                ON CONFLICT(role, user_id, menu_key) DO UPDATE SET is_allowed = excluded.is_allowed
+            ");
+        } else {
+            $stmtInsertPerm = $pdo->prepare("
+                INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
+                VALUES (?, NULL, ?, ?)
+                ON DUPLICATE KEY UPDATE is_allowed = is_allowed
+            ");
+        }
         foreach ($defaultMenus as $menuKey => $roles) {
             foreach ($roles as $role => $allowed) {
                 try {

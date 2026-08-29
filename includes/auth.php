@@ -115,10 +115,6 @@ class Auth {
             $isMatch = true;
         } elseif (password_verify(ucfirst($trimmedPass), $user['password'])) {
             $isMatch = true;
-        } elseif ($trimmedPass === $user['password'] || strtolower($trimmedPass) === strtolower($user['password'])) {
-            $isMatch = true;
-        } elseif (strtolower($user['username']) === 'daniel' && strtolower($trimmedPass) === 'password01') {
-            $isMatch = true;
         }
 
         if ($isMatch) {
