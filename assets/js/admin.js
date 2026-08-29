@@ -216,7 +216,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     mutations: 'Buku Mutasi & Audit Trail Stok',
     users: 'Manajemen User & Role',
     permissions: 'Otorisasi & Pengaturan Hak Akses Menu',
-    maintenance: 'Pembersihan & Maintenance Database (Super Admin)'
+    maintenance: 'Pembersihan & Maintenance Database (Teknisi)'
   };
   const titleEl = document.getElementById('adminPageTitle');
   if (titleEl) titleEl.innerText = titles[tabName] || 'Dashboard';
@@ -5323,7 +5323,7 @@ async function submitCleanDatabase(e) {
   const btnText = document.getElementById('btnSubmitCleanDbText');
 
   if (!password) {
-    App.toast('Password Super Admin wajib diisi!', 'warning');
+    App.toast('Password Teknisi wajib diisi!', 'warning');
     return;
   }
 

@@ -1827,7 +1827,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
                   <span>Mode Pemeliharaan (Maintenance Mode)</span>
                 </h4>
-                <p class="text-xs text-slate-500 mt-0.5">Kunci akses seluruh situs agar hanya akun dengan role Teknisi yang dapat mengakses sistem.</p>
               </div>
             </div>
             
@@ -1846,7 +1845,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <!-- Maintenance Alert Banner -->
-        <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 p-4 sm:p-5 rounded-2xl border border-rose-800/60 shadow-lg text-white space-y-3">
+        <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 p-4 sm:p-5 rounded-2xl border border-rose-800/60 shadow-lg text-white">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div class="flex items-center gap-3">
               <div class="w-11 h-11 rounded-2xl bg-rose-600/30 border border-rose-500/50 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
@@ -1857,7 +1856,6 @@ require_once __DIR__ . '/../includes/header.php';
                   <h3 class="text-sm sm:text-base font-black tracking-tight text-white">Pembersihan & Maintenance Database</h3>
                   <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">Teknisi Only</span>
                 </div>
-                <p class="text-xs text-slate-300 mt-0.5">Kelola, kosongkan, atau reset data tabel transaksi dan master stok dengan proteksi keamanan password.</p>
               </div>
             </div>
 
@@ -1865,13 +1863,6 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-[18px]">refresh</span>
               <span>Refresh Status DB</span>
             </button>
-          </div>
-
-          <div class="p-3 bg-rose-900/30 border border-rose-700/40 rounded-xl text-[11px] text-rose-200 flex items-start gap-2">
-            <span class="material-symbols-outlined text-[16px] text-rose-400 shrink-0 mt-0.5">security</span>
-            <p class="leading-relaxed">
-              <b class="font-bold text-white">Proteksi Keamanan Tinggi:</b> Setiap tindakan pengosongan data tabel memerlukan verifikasi password login Teknisi aktif (<span class="font-mono font-bold text-rose-300"><?= htmlspecialchars(Auth::username()) ?></span>) untuk mencegah kesalahan klik atau penghapusan yang tidak disengaja.
-            </p>
           </div>
         </div>
 
@@ -1999,7 +1990,6 @@ require_once __DIR__ . '/../includes/header.php';
                   </div>
                   <div>
                     <h5 class="font-black text-slate-900 text-sm">Kosongkan Seluruh Riwayat Transaksi</h5>
-                    <p class="text-[11px] text-amber-900 font-semibold">Master Stok Material & Akun Pengguna Tetap Aman</p>
                   </div>
                 </div>
 
@@ -2023,7 +2013,6 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
                 <div>
                   <h5 class="font-black text-rose-950 text-sm">Reset Database Penuh (Factory Reset)</h5>
-                  <p class="text-[11px] text-rose-800 font-bold">Kosongkan Master Material & Seluruh Transaksi</p>
                 </div>
               </div>
 
