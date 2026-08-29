@@ -1819,6 +1819,35 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ================= 9. TAB: MAINTENANCE & PEMBERSIHAN DATABASE (SUPER ADMIN ONLY) ================= -->
       <?php if (Auth::isSuperAdmin()): ?>
       <div id="tab-maintenance" class="hidden space-y-5">
+        <!-- Section: Maintenance Mode Switcher -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600 shadow-xs shrink-0">
+                <span class="material-symbols-outlined text-[24px]">construction</span>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                  <span>Mode Pemeliharaan (Maintenance Mode)</span>
+                </h4>
+                <p class="text-xs text-slate-500 mt-0.5">Kunci akses seluruh situs agar hanya akun dengan role Super Admin yang dapat mengakses sistem.</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-3 self-end sm:self-auto">
+              <span id="maintenanceBadge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase <?= Auth::isMaintenanceMode() ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-slate-100 text-slate-600 border border-slate-200' ?>">
+                <?= Auth::isMaintenanceMode() ? 'AKTIF (SITUS DIKUNCI)' : 'NON-AKTIF' ?>
+              </span>
+              
+              <button type="button" id="btnToggleMaintenance" onclick="toggleMaintenanceMode(<?= Auth::isMaintenanceMode() ? 'false' : 'true' ?>)" 
+                class="h-[38px] px-4 <?= Auth::isMaintenanceMode() ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white' ?> text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]"><?= Auth::isMaintenanceMode() ? 'lock_open' : 'lock' ?></span>
+                <span><?= Auth::isMaintenanceMode() ? 'Matikan Mode Maintenance' : 'Aktifkan Mode Maintenance' ?></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Maintenance Alert Banner -->
         <div class="bg-gradient-to-r from-rose-950 via-slate-900 to-slate-950 p-4 sm:p-5 rounded-2xl border border-rose-800/60 shadow-lg text-white space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

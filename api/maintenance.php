@@ -225,5 +225,45 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 5. TOGGLE MAINTENANCE MODE
+if ($action === 'toggle_maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $active = !empty($input['active']);
+    $flagFile = __DIR__ . '/../config/maintenance.flag';
+
+    if ($active) {
+        $data = [
+            'active' => true,
+            'activated_at' => date('Y-m-d H:i:s'),
+            'activated_by' => Auth::username()
+        ];
+        file_put_contents($flagFile, json_encode($data));
+        echo json_encode([
+            'success' => true,
+            'maintenance' => true,
+            'message' => 'Mode Maintenance BERHASIL diaktifkan! Situs sekarang dikunci untuk non-Super Admin.'
+        ]);
+    } else {
+        if (file_exists($flagFile)) {
+            unlink($flagFile);
+        }
+        echo json_encode([
+            'success' => true,
+            'maintenance' => false,
+            'message' => 'Mode Maintenance BERHASIL dinonaktifkan! Situs sekarang terbuka untuk semua user.'
+        ]);
+    }
+    exit;
+}
+
+// 6. GET MAINTENANCE STATUS
+if ($action === 'maintenance_status') {
+    echo json_encode([
+        'success' => true,
+        'maintenance' => Auth::isMaintenanceMode()
+    ]);
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Aksi maintenance tidak valid.']);

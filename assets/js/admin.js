@@ -5377,5 +5377,50 @@ async function submitCleanDatabase(e) {
   }
 }
 
+async function toggleMaintenanceMode(active) {
+  const btn = document.getElementById('btnToggleMaintenance');
+  if (!btn) return;
+
+  btn.disabled = true;
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>';
+
+  try {
+    const res = await App.fetchJson('../api/maintenance.php?action=toggle_maintenance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: active })
+    });
+
+    if (res && res.success) {
+      App.toast(res.message, 'success');
+      
+      // Update UI components dynamically
+      const badge = document.getElementById('maintenanceBadge');
+      if (badge) {
+        badge.innerText = active ? 'AKTIF (SITUS DIKUNCI)' : 'NON-AKTIF';
+        badge.className = active 
+          ? 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200'
+          : 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200';
+      }
+
+      btn.className = active 
+        ? 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer'
+        : 'px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer';
+
+      btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">${active ? 'lock_open' : 'lock'}</span><span>${active ? 'Matikan Mode Maintenance' : 'Aktifkan Mode Maintenance'}</span>`;
+      btn.setAttribute('onclick', `toggleMaintenanceMode(${active ? 'false' : 'true'})`);
+    } else {
+      App.toast(res?.message || 'Gagal mengubah status mode maintenance', 'error');
+      btn.innerHTML = origHtml;
+    }
+  } catch (err) {
+    App.toast(err.message || 'Terjadi kesalahan jaringan', 'error');
+    btn.innerHTML = origHtml;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 
 

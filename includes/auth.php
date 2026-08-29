@@ -44,7 +44,24 @@ class Auth {
         return self::role() === 'operator';
     }
 
+    public static function isMaintenanceMode(): bool {
+        $flagFile = __DIR__ . '/../config/maintenance.flag';
+        return file_exists($flagFile);
+    }
+
     public static function requireLogin(): void {
+        // Redirect to maintenance page if active and user is not superadmin
+        if (self::isMaintenanceMode() && !self::isSuperAdmin()) {
+            if (self::isAjax()) {
+                http_response_code(503);
+                echo json_encode(['success' => false, 'message' => 'Sistem sedang dalam pemeliharaan (Maintenance Mode). Hanya Super Admin yang dapat mengakses.']);
+                exit;
+            }
+            $base = self::getBaseUrl();
+            header("Location: {$base}/maintenance");
+            exit;
+        }
+
         if (!self::check()) {
             if (self::isAjax()) {
                 http_response_code(401);
