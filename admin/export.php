@@ -638,8 +638,8 @@ if ($type === 'adjust_template') {
 
     $no = 1;
     foreach ($materials as $idx => $m) {
-        $sampleAdjust = ($idx === 0 ? '+100' : ($idx === 1 ? '-25' : 0));
-        $sampleNote = ($idx === 0 ? 'Contoh: Surplus Fisik (+100 Nambah Stok)' : ($idx === 1 ? 'Contoh: Rusak/Reject (-25 Potong Stok)' : ''));
+        $sampleAdjust = ($idx === 0 ? '+100' : ($idx === 1 ? '-25' : ($idx === 2 ? '+50' : 0)));
+        $sampleNote = ($idx === 0 ? 'Contoh: Surplus Fisik (+100 Nambah Stok)' : ($idx === 1 ? 'Contoh: Rusak/Reject (-25 Potong Stok)' : ($idx === 2 ? 'Contoh: Penerimaan Baru (+50 Nambah Stok)' : '')));
         
         $rows[] = [
             $no++,
