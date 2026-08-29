@@ -2119,87 +2119,107 @@ require_once __DIR__ . '/../includes/header.php';
 <div id="modalExcelImport" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
   <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-emerald-700 text-[24px]">upload_file</span>
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
+          <span class="material-symbols-outlined text-[22px] leading-none">upload_file</span>
+        </div>
         <div>
-          <h3 class="font-bold text-slate-900 text-sm">Upload Database Master Stok (Excel .xlsx / .csv)</h3>
-          <p class="text-[11px] text-slate-500">Kolom template: <b>Item No</b>, <b>Item Description</b>, <b>Satuan</b>, <b>Lokasi Rak</b>, <b>Ending Stock</b> <span class="text-emerald-700 font-bold">(Kategori Otomatis Dideteksi Sistem)</span></p>
+          <h3 class="font-black text-slate-900 text-sm tracking-wide">Upload Database Master Stok</h3>
+          <p class="text-[10px] text-slate-500 mt-0.5">Kolom wajib template: <span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.2 rounded">Item No</span>, <span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.2 rounded">Item Description</span>, <span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.2 rounded">Satuan</span>, <span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.2 rounded">Lokasi Rak</span>, <span class="font-mono text-slate-700 bg-slate-100 px-1 py-0.2 rounded">Ending Stock</span></p>
         </div>
       </div>
-      <button onclick="App.closeModal('modalExcelImport')" class="text-slate-400 hover:text-slate-700">
+      <button onclick="App.closeModal('modalExcelImport')" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto space-y-3 pr-1">
+    <div class="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin">
       <!-- 1. Detected Local File in Folder Alert Banner -->
-      <div id="localExcelFileAlert" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+      <div id="localExcelFileAlert" class="hidden p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 shadow-2xs">
         <div class="flex items-center gap-2.5">
           <span class="material-symbols-outlined text-emerald-700 text-[24px]">task</span>
           <div>
-            <p class="font-bold text-emerald-900 text-xs">File Ditemukan di Folder: <span id="localExcelFileName" class="font-mono">Data Packaaging Material.xlsx</span></p>
-            <p class="text-[11px] text-emerald-700" id="localExcelFileDesc">Tersedia 44 data material packaging siap diimpor ke database.</p>
+            <p class="font-bold text-emerald-900 text-xs">File Ditemukan di Folder: <span id="localExcelFileName" class="font-mono bg-white/70 px-1.5 py-0.5 rounded border border-emerald-300">Data Packaaging Material.xlsx</span></p>
+            <p class="text-[11px] text-emerald-700 mt-0.5" id="localExcelFileDesc">Tersedia data material packaging siap diimpor ke database.</p>
           </div>
         </div>
-        <button type="button" onclick="previewDetectedLocalExcel()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm whitespace-nowrap inline-flex items-center gap-1">
+        <button type="button" onclick="previewDetectedLocalExcel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm whitespace-nowrap inline-flex items-center gap-1 active:scale-95 transition-all">
           <span class="material-symbols-outlined text-[16px]">bolt</span>
           <span>Preview File Ini</span>
         </button>
       </div>
 
       <!-- 2. Dropzone for uploading or browsing -->
-      <div id="importDropzone" class="p-5 border-2 border-dashed border-slate-300 hover:border-emerald-600 rounded-xl text-center bg-slate-50 transition-colors">
-        <span class="material-symbols-outlined text-[36px] text-emerald-600 mb-1">upload_file</span>
-        <p class="text-xs font-bold text-slate-800">Pilih File Excel (.xlsx, .xls) atau CSV (.csv, .txt)</p>
-        <p class="text-[11px] text-slate-500 mt-0.5">Mendukung file Excel packaging dari SAP, ERP, atau template spreadsheet</p>
+      <div id="importDropzone" class="relative group p-8 border-2 border-dashed border-slate-200 hover:border-emerald-500 rounded-2xl text-center bg-slate-50/50 hover:bg-emerald-50/20 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center">
+        <!-- Pulse overlay ring on hover -->
+        <div class="absolute inset-0 rounded-2xl bg-emerald-500/0 group-hover:bg-emerald-500/[0.02] transition-colors duration-300 pointer-events-none"></div>
+        
+        <div class="w-16 h-16 mb-3 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-2xs">
+          <span class="material-symbols-outlined text-[32px] leading-none">cloud_upload</span>
+        </div>
+        
+        <p class="text-xs font-bold text-slate-800 tracking-wide">Pilih atau Seret File Excel</p>
+        <p class="text-[10px] text-slate-400 mt-1 max-w-sm">Mendukung format spreadsheet (.xlsx, .xls, .csv, .txt) dari sistem SAP atau ERP</p>
         
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv, .txt" onchange="handleExcelFileSelect(this)" class="hidden">
         
-        <div class="mt-3 flex items-center justify-center gap-2">
-          <button type="button" onclick="document.getElementById('excelFileInput').click()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1">
+        <div class="mt-4 flex items-center gap-2">
+          <button type="button" onclick="document.getElementById('excelFileInput').click()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 inline-flex items-center gap-1.5 active:scale-95">
             <span class="material-symbols-outlined text-[16px]">folder_open</span>
             <span>Telusuri File Excel</span>
           </button>
-          <a href="export.php?type=inventory_template" target="_blank" class="px-3 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 shadow-2xs">
-            <span class="material-symbols-outlined text-[16px] text-emerald-700">download</span>
-            <span>Download Template Excel (.xlsx)</span>
+          <a href="export.php?type=inventory_template" target="_blank" class="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all duration-300 inline-flex items-center gap-1.5 shadow-2xs hover:shadow-sm active:scale-95">
+            <span class="material-symbols-outlined text-[16px] text-slate-500">download</span>
+            <span>Download Template Excel</span>
           </a>
         </div>
       </div>
 
       <!-- 3. Text Paste Option -->
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-        <label class="block text-xs font-semibold text-slate-700">Atau Paste Data Tabel Excel di sini:</label>
-        <textarea id="excelPasteText" rows="3" placeholder="Paste data tabel langsung dari Excel (Item No [Tab] Item Description [Tab] Ending Stock)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-mono"></textarea>
-        <button type="button" onclick="previewExcelTextPaste()" class="px-3 py-1 bg-slate-800 text-white rounded text-xs font-semibold hover:bg-slate-700">
-          Proses Teks Paste
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 space-y-3 shadow-2xs hover:border-slate-300 transition-colors">
+        <div class="flex items-center gap-2 text-slate-800">
+          <span class="material-symbols-outlined text-[18px] text-slate-500">content_paste</span>
+          <label class="text-xs font-bold tracking-wide">Atau Tempel (Paste) Data Tabel Excel di Sini:</label>
+        </div>
+        <textarea id="excelPasteText" rows="3" placeholder="Contoh format: ItemNo [Tab] Deskripsi [Tab] Stok... (Salin langsung dari baris Excel Anda)" class="w-full p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 outline-none placeholder-slate-400"></textarea>
+        <button type="button" onclick="previewExcelTextPaste()" class="px-4 py-2 bg-slate-950 hover:bg-slate-850 text-white rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-slate-950/10 active:scale-95 inline-flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">done_all</span>
+          <span>Proses Teks Tempel</span>
         </button>
       </div>
 
       <!-- Loading Indicator -->
-      <div id="importPreviewLoading" class="hidden text-center py-4 text-xs font-semibold text-emerald-700">
-        <span class="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-        <p class="mt-1">Membaca dan memproses struktur file Excel...</p>
+      <div id="importPreviewLoading" class="hidden flex-col items-center justify-center py-10 bg-slate-50/50 rounded-2xl border border-slate-100">
+        <div class="relative w-16 h-16 flex items-center justify-center mb-3">
+          <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20"></div>
+          <div class="absolute inset-0 rounded-full border-4 border-transparent border-t-emerald-600 animate-spin"></div>
+          <span class="material-symbols-outlined text-emerald-600 text-[28px] animate-pulse">analytics</span>
+        </div>
+        <p class="text-xs font-bold text-slate-800 tracking-wide animate-pulse">Menganalisis Berkas Excel...</p>
+        <p class="text-[10px] text-slate-400 mt-1">Sistem sedang memverifikasi kolom data dan struktur baris</p>
       </div>
 
       <!-- 4. Preview Table Section -->
-      <div id="importPreviewSection" class="hidden space-y-2">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
-          <h4 class="font-bold text-xs text-slate-800 uppercase tracking-wider">Hasil Preview File:</h4>
+      <div id="importPreviewSection" class="hidden space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <h4 class="font-bold text-[11px] text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-emerald-700">visibility</span>
+            <span>Hasil Pratinjau (Preview) Data:</span>
+          </h4>
           <div id="importSummaryStats"></div>
         </div>
 
-        <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+        <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-xl shadow-2xs">
           <table class="w-full text-left">
             <thead class="thead-emerald text-[10px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950 sticky top-0">
               <tr>
-                <th class="p-2">Item No</th>
-                <th class="p-2">Item Description</th>
-                <th class="p-2">Kategori</th>
-                <th class="p-2 text-center">Satuan (UOM)</th>
-                <th class="p-2 text-center">Ending Stock</th>
-                <th class="p-2">Lokasi Rak</th>
-                <th class="p-2">Status</th>
+                <th class="p-2.5">Item No</th>
+                <th class="p-2.5">Item Description</th>
+                <th class="p-2.5">Kategori</th>
+                <th class="p-2.5 text-center">Satuan (UOM)</th>
+                <th class="p-2.5 text-center">Ending Stock</th>
+                <th class="p-2.5">Lokasi Rak</th>
+                <th class="p-2.5">Status</th>
               </tr>
             </thead>
             <tbody id="importPreviewTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
@@ -2210,10 +2230,10 @@ require_once __DIR__ . '/../includes/header.php';
 
     <!-- Modal Footer -->
     <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-shrink-0">
-      <button type="button" onclick="App.closeModal('modalExcelImport')" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">Tutup</button>
-      <button type="button" id="importSubmitBtn" onclick="commitExcelImport()" class="hidden px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1">
+      <button type="button" onclick="App.closeModal('modalExcelImport')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all duration-300 active:scale-95">Batal</button>
+      <button type="button" id="importSubmitBtn" onclick="commitExcelImport()" class="hidden px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all duration-300 inline-flex items-center gap-1.5 active:scale-95">
         <span class="material-symbols-outlined text-[16px]">upload</span>
-        <span>Simpan ke Master Stok Gudang</span>
+        <span>Simpan ke Master Stok</span>
       </button>
     </div>
   </div>
