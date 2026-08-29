@@ -9,6 +9,7 @@ if (!Auth::isMaintenanceMode()) {
 }
 
 $pageTitle = "Pemeliharaan Sistem - PackStock WMS";
+$baseUrl = Auth::getBaseUrl();
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -78,12 +79,12 @@ $pageTitle = "Pemeliharaan Sistem - PackStock WMS";
     <!-- Footer Actions -->
     <div class="space-y-3 pt-2">
       <?php if (Auth::isSuperAdmin()): ?>
-        <a href="admin/" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
+        <a href="<?= $baseUrl ?>/admin/" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">dashboard</span>
           <span>Masuk ke Dashboard</span>
         </a>
       <?php else: ?>
-        <a href="login" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
+        <a href="<?= $baseUrl ?>/login" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">lock_open</span>
           <span>Login Sebagai Teknisi</span>
         </a>
