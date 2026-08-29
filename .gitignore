@@ -1,0 +1,12 @@
+# Environment and local database files
+config/env.php
+config/*.sqlite
+config/*.sqlite-journal
+*.log
+
+# Scratch / temp testing files
+scratch/
+.system_generated/
+*.tmp
+.DS_Store
+Thumbs.db

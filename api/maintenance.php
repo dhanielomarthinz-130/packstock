@@ -1,0 +1,229 @@
+<?php
+// api/maintenance.php - Super Admin Database Maintenance & Table Cleaner API
+header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../includes/auth.php';
+
+// STRICT SUPER ADMIN ONLY
+Auth::requireSuperAdmin();
+$pdo = Database::getConnection();
+$action = $_GET['action'] ?? ($_POST['action'] ?? 'stats');
+
+/**
+ * Helper: Verify Super Admin Password for Security Confirmation
+ */
+function verifySuperAdminPassword(PDO $pdo, string $password): bool {
+    if (empty($password)) return false;
+    $userId = Auth::id();
+    $stmt = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+    $stmt->execute([$userId]);
+    $u = $stmt->fetch();
+    if (!$u) return false;
+    return password_verify($password, $u['password']);
+}
+
+// 1. GET DATABASE STATISTICS (ROW COUNTS & TABLE SIZES)
+if ($action === 'stats') {
+    try {
+        $stats = [];
+        
+        $tables = [
+            'materials'            => 'Master Stok Packaging',
+            'inbound_transactions' => 'Riwayat Barang Masuk',
+            'outbound_transactions'=> 'Riwayat Barang Keluar',
+            'tasks'                => 'Penugasan Task Operator',
+            'stock_opnames'        => 'Sesi Stock Opname & Dynamic',
+            'stock_opname_items'   => 'Item Opname & Dynamic',
+            'stock_mutations'      => 'Buku Log Mutasi Stok',
+            'users'                => 'Manajemen Pengguna'
+        ];
+
+        foreach ($tables as $t => $label) {
+            try {
+                $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM `{$t}`");
+                $stats[$t] = [
+                    'label' => $label,
+                    'count' => (int)$stmt->fetchColumn()
+                ];
+            } catch (Throwable $e) {
+                $stats[$t] = ['label' => $label, 'count' => 0];
+            }
+        }
+
+        echo json_encode([
+            'success' => true,
+            'stats' => $stats,
+            'current_user' => Auth::name(),
+            'server_time' => date('Y-m-d H:i:s')
+        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal membaca statistik database: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 2. CLEAN INDIVIDUAL TABLE OR GROUP
+if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $tableKey = trim($input['table'] ?? '');
+    $password = trim($input['password'] ?? '');
+
+    if (empty($password)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Password konfirmasi Super Admin wajib diisi.']);
+        exit;
+    }
+
+    if (!verifySuperAdminPassword($pdo, $password)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        exit;
+    }
+
+    try {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $clearedInfo = '';
+
+        switch ($tableKey) {
+            case 'materials':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM materials")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE materials;");
+                $clearedInfo = "Master Stok Material ({$count} item)";
+                break;
+
+            case 'inbound':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM inbound_transactions")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE inbound_transactions;");
+                $clearedInfo = "Riwayat Barang Masuk ({$count} transaksi)";
+                break;
+
+            case 'outbound':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM outbound_transactions")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE outbound_transactions;");
+                $clearedInfo = "Riwayat Barang Keluar Manual ({$count} transaksi)";
+                break;
+
+            case 'tasks':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE tasks;");
+                $clearedInfo = "Penugasan Task Operator ({$count} task)";
+                break;
+
+            case 'opname':
+                $countSes = (int)$pdo->query("SELECT COUNT(*) FROM stock_opnames")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
+                $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
+                $pdo->exec("TRUNCATE TABLE stock_opname_items;");
+                $pdo->exec("TRUNCATE TABLE stock_opnames;");
+                $clearedInfo = "Seluruh Sesi Stock Opname & Dynamic Counting ({$countSes} sesi)";
+                break;
+
+            case 'mutations':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM stock_mutations")->fetchColumn();
+                $pdo->exec("TRUNCATE TABLE stock_mutations;");
+                $clearedInfo = "Buku Log Mutasi Stok ({$count} entri)";
+                break;
+
+            default:
+                $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Tabel database tidak dikenali.']);
+                exit;
+        }
+
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Tabel berhasil dikosongkan: {$clearedInfo} telah dibersihkan secara permanen."
+        ]);
+    } catch (Throwable $e) {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal mengosongkan tabel: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 3. CLEAN ALL TRANSACTION DATA (RETAIN MATERIALS & USERS)
+if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $password = trim($input['password'] ?? '');
+    $resetStockZero = !empty($input['reset_stock_zero']);
+
+    if (!verifySuperAdminPassword($pdo, $password)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        exit;
+    }
+
+    try {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        
+        $pdo->exec("TRUNCATE TABLE inbound_transactions;");
+        $pdo->exec("TRUNCATE TABLE outbound_transactions;");
+        $pdo->exec("TRUNCATE TABLE tasks;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_items;");
+        $pdo->exec("TRUNCATE TABLE stock_opnames;");
+        $pdo->exec("TRUNCATE TABLE stock_mutations;");
+
+        if ($resetStockZero) {
+            $pdo->exec("UPDATE materials SET current_stock = 0;");
+        }
+
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Seluruh riwayat transaksi (Inbound, Outbound, Task, Opname, Mutasi) telah berhasil dikosongkan. Master Material dan User tetap aman.'
+        ]);
+    } catch (Throwable $e) {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal membersihkan transaksi: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 4. FACTORY RESET (CLEAN EVERYTHING EXCEPT SUPER ADMIN / USERS)
+if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $password = trim($input['password'] ?? '');
+
+    if (!verifySuperAdminPassword($pdo, $password)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Super Admin tidak sesuai! Tindakan dibatalkan.']);
+        exit;
+    }
+
+    try {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        
+        $pdo->exec("TRUNCATE TABLE materials;");
+        $pdo->exec("TRUNCATE TABLE inbound_transactions;");
+        $pdo->exec("TRUNCATE TABLE outbound_transactions;");
+        $pdo->exec("TRUNCATE TABLE tasks;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_audits;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_counts;");
+        $pdo->exec("TRUNCATE TABLE stock_opname_items;");
+        $pdo->exec("TRUNCATE TABLE stock_opnames;");
+        $pdo->exec("TRUNCATE TABLE stock_mutations;");
+
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Reset Database Penuh (Factory Reset) Berhasil! Seluruh data stok dan transaksi telah dikosongkan. Database siap untuk diisi data baru.'
+        ]);
+    } catch (Throwable $e) {
+        $pdo->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal melakukan factory reset: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+http_response_code(400);
+echo json_encode(['success' => false, 'message' => 'Aksi maintenance tidak valid.']);

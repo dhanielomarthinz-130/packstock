@@ -1,0 +1,6 @@
+Tambahin Oum Product (Import Excel Di page inventory)
+Stock Opname Assign By User
+Data stock Opname 1st asign untuk Recount di assign ke Operator dan Hasil Recount di Tampilin di Panel Admin (Edit,Delete) Download Excel
+Hasil So Akan Di Download Ke Excel
+    Untuk Di Adjust Pakai Upload Excel Adjust + - Untuk Motong Atau Tambah Stock Master
+    HANASUI,NCO,FYNE,EOMMA

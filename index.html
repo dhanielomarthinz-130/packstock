@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PackStock Pro - Packaging Material Stock Control & Task Assignment</title>
+  <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .mobile-frame { max-width: 440px; margin: 0 auto; min-height: 100vh; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+
+  <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-y-[-150%] opacity-0 flex items-center gap-3 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-2xl">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+    <div>
+      <h5 id="toast-title" class="font-semibold text-sm">Notifikasi</h5>
+      <p id="toast-message" class="text-xs text-slate-300">Pesan</p>
+    </div>
+  </div>
+
+  <!-- LOGIN VIEW -->
+  <div id="view-login" class="flex min-h-screen items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white shadow-lg mb-3">
+          <i class="fa-solid fa-boxes-packing text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900">PackStock Pro</h1>
+        <p class="text-xs text-slate-500 mt-1">Packaging Material Stock Control & Dispatch</p>
+      </div>
+
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Username</label>
+          <input type="text" id="login-username" required placeholder="admin / operator1" class="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Password</label>
+          <input type="password" id="login-password" required placeholder="admin123 / op123" class="w-full px-4 py-2.5 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div id="login-error" class="hidden text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">Username atau password salah!</div>
+        <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-lg transition-all">Masuk ke Sistem</button>
+      </form>
+
+      <div class="mt-6 pt-6 border-t border-slate-200">
+        <p class="text-xs text-center text-slate-500 mb-3">⚡ Quick Demo Login:</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="quickLogin('admin')" class="p-3 rounded-xl border bg-slate-50 hover:bg-indigo-50 text-left text-xs font-bold text-slate-800"><i class="fa-solid fa-shield-halved text-indigo-500 mr-1"></i> Admin Panel</button>
+          <button onclick="quickLogin('operator1')" class="p-3 rounded-xl border bg-slate-50 hover:bg-emerald-50 text-left text-xs font-bold text-slate-800"><i class="fa-solid fa-mobile-screen text-emerald-500 mr-1"></i> Operator Mobile</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="view-admin" class="hidden flex h-screen overflow-hidden bg-slate-100">
+    <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0">
+      <div class="h-16 flex items-center gap-3 px-6 bg-slate-950 border-b border-slate-800">
+        <i class="fa-solid fa-boxes-packing text-indigo-400 text-xl"></i>
+        <h2 class="font-bold text-white text-sm">PackStock Admin</h2>
+      </div>
+      <nav class="flex-1 px-3 py-4 space-y-1.5">
+        <button onclick="switchAdminTab('dashboard')" id="nav-admin-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 text-white"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</button>
+        <button onclick="switchAdminTab('inventory')" id="nav-admin-inventory" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-box-archive w-5"></i> Master Stok</button>
+        <button onclick="switchAdminTab('inbound')" id="nav-admin-inbound" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-truck-ramp-box w-5 text-emerald-400"></i> Barang Masuk</button>
+        <button onclick="switchAdminTab('outbound')" id="nav-admin-outbound" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-dolly w-5 text-amber-400"></i> Barang Keluar</button>
+        <button onclick="switchAdminTab('tasks')" id="nav-admin-tasks" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-clipboard-list w-5 text-sky-400"></i> Assign Task</button>
+        <button onclick="switchAdminTab('mutations')" id="nav-admin-mutations" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800"><i class="fa-solid fa-clock-rotate-left w-5"></i> Log Mutasi</button>
+      </nav>
+      <div class="p-3 border-t border-slate-800 flex items-center justify-between">
+        <span class="text-xs text-slate-300 font-semibold" id="admin-user-name">Admin</span>
+        <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 text-xs"><i class="fa-solid fa-power-off"></i> Logout</button>
+      </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden">
+      <header class="h-16 bg-white border-b px-8 flex items-center justify-between">
+        <h1 id="admin-page-title" class="text-lg font-bold text-slate-800">Dashboard Overview</h1>
+        <div class="flex gap-2">
+          <button onclick="openAssignTaskModal()" class="px-3.5 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl shadow"><i class="fa-solid fa-plus mr-1"></i> Assign Task Baru</button>
+          <button onclick="switchAdminTab('inbound')" class="px-3.5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow"><i class="fa-solid fa-truck-ramp-box mr-1"></i> Input Masuk</button>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-8 space-y-6">
+        <!-- Tab Dashboard -->
+        <div id="tab-admin-dashboard" class="space-y-6">
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-xs text-slate-500">Total Material</p><h3 id="stat-total-items" class="text-2xl font-bold text-slate-900 mt-1">0</h3></div>
+            <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-xs text-slate-500">Total Stok Fisik</p><h3 id="stat-total-stock" class="text-2xl font-bold text-emerald-600 mt-1">0</h3></div>
+            <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-xs text-slate-500">Stok Kritis</p><h3 id="stat-low-stock" class="text-2xl font-bold text-rose-600 mt-1">0</h3></div>
+            <div class="bg-white p-5 rounded-2xl border shadow-sm"><p class="text-xs text-slate-500">Tugas Aktif</p><h3 id="stat-active-tasks" class="text-2xl font-bold text-sky-600 mt-1">0</h3></div>
+          </div>
+          <div class="bg-white p-6 rounded-2xl border shadow-sm">
+            <h3 class="font-bold text-sm text-slate-800 mb-3">Monitoring Tugas Lapangan</h3>
+            <table class="w-full text-xs text-left">
+              <thead class="bg-emerald-800 text-white"><tr class="border-b border-emerald-900"><th class="p-2.5">No. Task</th><th class="p-2.5">Material</th><th class="p-2.5">Tujuan</th><th class="p-2.5">Operator</th><th class="p-2.5">Status</th></tr></thead>
+              <tbody id="table-dashboard-tasks" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab Inventory -->
+        <div id="tab-admin-inventory" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border flex justify-between">
+            <input type="text" id="search-inventory" oninput="renderInventoryTable()" placeholder="Cari material atau rak..." class="px-3 py-2 border rounded-xl text-xs w-72">
+            <button onclick="openAddMaterialModal()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold">+ Tambah Material</button>
+          </div>
+          <div class="bg-white rounded-2xl border overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-emerald-800 text-white font-bold"><tr class="border-b border-emerald-900"><th class="p-3">Kode</th><th class="p-3">Nama Packaging</th><th class="p-3">Kategori</th><th class="p-3">Lokasi Rak</th><th class="p-3">Min</th><th class="p-3">Sisa Stok</th><th class="p-3">Aksi</th></tr></thead>
+              <tbody id="table-inventory-body" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab Inbound -->
+        <div id="tab-admin-inbound" class="hidden max-w-xl bg-white p-6 rounded-2xl border">
+          <h3 class="font-bold text-emerald-600 text-base mb-4"><i class="fa-solid fa-truck-ramp-box mr-2"></i>Input Barang Masuk (Inbound)</h3>
+          <form onsubmit="handleInboundSubmit(event)" class="space-y-3 text-xs">
+            <div><label class="block font-semibold mb-1">No. PO / Surat Jalan</label><input type="text" id="inbound-po" required placeholder="PO-2026-001" class="w-full p-2 border rounded-xl"></div>
+            <div><label class="block font-semibold mb-1">Supplier</label><input type="text" id="inbound-supplier" required placeholder="PT. Mitra Kemasan" class="w-full p-2 border rounded-xl"></div>
+            <div><label class="block font-semibold mb-1">Pilih Material</label><select id="inbound-material-select" required class="w-full p-2 border rounded-xl"></select></div>
+            <div><label class="block font-semibold mb-1">Jumlah Masuk</label><input type="number" id="inbound-qty" required min="1" class="w-full p-2 border rounded-xl font-bold text-emerald-700"></div>
+            <button type="submit" class="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold">Simpan & Tambah Stok</button>
+          </form>
+        </div>
+
+        <!-- Tab Outbound -->
+        <div id="tab-admin-outbound" class="hidden max-w-xl bg-white p-6 rounded-2xl border">
+          <h3 class="font-bold text-amber-600 text-base mb-4"><i class="fa-solid fa-dolly mr-2"></i>Input Barang Keluar Manual</h3>
+          <form onsubmit="handleOutboundSubmit(event)" class="space-y-3 text-xs">
+            <div><label class="block font-semibold mb-1">Pilih Material</label><select id="outbound-material-select" required class="w-full p-2 border rounded-xl"></select></div>
+            <div><label class="block font-semibold mb-1">Jumlah Keluar</label><input type="number" id="outbound-qty" required min="1" class="w-full p-2 border rounded-xl font-bold text-amber-700"></div>
+            <div><label class="block font-semibold mb-1">Alasan / Departemen</label><input type="text" id="outbound-reason" required placeholder="Reject / Sample QC / Line Packing" class="w-full p-2 border rounded-xl"></div>
+            <button type="submit" class="w-full py-2.5 bg-amber-600 text-white rounded-xl font-bold">Kurangi Stok</button>
+          </form>
+        </div>
+
+        <!-- Tab Tasks -->
+        <div id="tab-admin-tasks" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border flex justify-between">
+            <h3 class="font-bold text-sm">Daftar Task Operator</h3>
+            <button onclick="openAssignTaskModal()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-semibold">+ Buat Task Baru</button>
+          </div>
+          <div class="bg-white rounded-2xl border overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-emerald-800 text-white font-bold"><tr class="border-b border-emerald-900"><th class="p-3">No. Task</th><th class="p-3">Material</th><th class="p-3">Lokasi</th><th class="p-3">Qty Target</th><th class="p-3">Tujuan</th><th class="p-3">Operator</th><th class="p-3">Status</th></tr></thead>
+              <tbody id="table-admin-tasks-body" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tab Mutations -->
+        <div id="tab-admin-mutations" class="hidden space-y-4">
+          <div class="bg-white p-4 rounded-2xl border"><h3 class="font-bold text-sm">Audit Trail Mutasi Stok</h3></div>
+          <div class="bg-white rounded-2xl border overflow-hidden">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-emerald-800 text-white font-bold"><tr class="border-b border-emerald-900"><th class="p-3">Waktu</th><th class="p-3">Tipe</th><th class="p-3">Material</th><th class="p-3">Perubahan</th><th class="p-3">Sisa Stok</th><th class="p-3">Keterangan</th></tr></thead>
+              <tbody id="table-mutations-body" class="divide-y"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- OPERATOR MOBILE PANEL -->
+  <div id="view-operator" class="hidden bg-slate-900 min-h-screen py-0 sm:py-6">
+    <div class="mobile-frame bg-slate-50 flex flex-col h-screen sm:h-[844px] sm:rounded-[36px] overflow-hidden relative shadow-2xl">
+      <header class="bg-indigo-600 text-white px-5 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-helmet-safety text-amber-300"></i></div>
+          <div><h3 class="font-bold text-sm leading-tight" id="op-user-name">Operator</h3><p class="text-[10px] text-indigo-200">Packaging Dispatch</p></div>
+        </div>
+        <button onclick="handleLogout()" class="w-8 h-8 rounded-full bg-indigo-700 flex items-center justify-center text-xs"><i class="fa-solid fa-power-off"></i></button>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-3 pb-24">
+        <!-- Tasks List -->
+        <div id="tab-op-tasks" class="space-y-3">
+          <h4 class="font-bold text-xs text-slate-700 uppercase">Tugas Pengambilan Hari Ini</h4>
+          <div id="op-tasks-container" class="space-y-3"></div>
+        </div>
+
+        <!-- Stock Checker -->
+        <div id="tab-op-stock" class="hidden space-y-3">
+          <h4 class="font-bold text-xs text-slate-700 uppercase">Cek Lokasi & Sisa Stok</h4>
+          <input type="text" id="op-search-stock" oninput="renderOperatorStockList()" placeholder="Cari material..." class="w-full p-2.5 bg-white border rounded-xl text-xs">
+          <div id="op-stock-container" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Nav -->
+      <nav class="absolute bottom-0 inset-x-0 bg-white border-t px-6 py-2.5 flex justify-around">
+        <button onclick="switchOperatorTab('tasks')" id="op-nav-tasks" class="flex flex-col items-center text-indigo-600 font-bold text-[10px]"><i class="fa-solid fa-clipboard-list text-base mb-0.5"></i>Tugas</button>
+        <button onclick="switchOperatorTab('stock')" id="op-nav-stock" class="flex flex-col items-center text-slate-400 font-medium text-[10px]"><i class="fa-solid fa-boxes-stacked text-base mb-0.5"></i>Cek Stok</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- MODAL ASSIGN TASK -->
+  <div id="modal-assign-task" class="fixed inset-0 z-50 bg-black/60 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between font-bold text-indigo-600 border-b pb-2"><h3>Assign Task Operator</h3><button onclick="closeAssignTaskModal()">✕</button></div>
+      <form onsubmit="handleCreateTask(event)" class="space-y-3 text-xs">
+        <div><label class="block font-semibold mb-1">Pilih Material</label><select id="task-material-id" required class="w-full p-2 border rounded-xl"></select></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div><label class="block font-semibold mb-1">Qty Ambil</label><input type="number" id="task-qty" required min="1" class="w-full p-2 border rounded-xl font-bold"></div>
+          <div><label class="block font-semibold mb-1">Prioritas</label><select id="task-priority" class="w-full p-2 border rounded-xl"><option value="NORMAL">Normal</option><option value="URGENT">URGENT</option></select></div>
+        </div>
+        <div><label class="block font-semibold mb-1">Tujuan Line</label><input type="text" id="task-destination" required placeholder="Line 1" class="w-full p-2 border rounded-xl"></div>
+        <div><label class="block font-semibold mb-1">Assign ke</label><select id="task-operator-id" class="w-full p-2 border rounded-xl"><option value="operator1">Operator 1</option><option value="operator2">Operator 2</option></select></div>
+        <button type="submit" class="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold">Kirim Tugas</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL SUBMIT TASK (OPERATOR) -->
+  <div id="modal-submit-task" class="fixed inset-0 z-50 bg-black/70 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex justify-between font-bold text-emerald-600 border-b pb-2"><h3>Submit Pengambilan Barang</h3><button onclick="closeSubmitTaskModal()">✕</button></div>
+      <form onsubmit="handleFinalSubmitTask(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="submit-task-id">
+        <div><label class="block font-semibold mb-1">Jumlah Riil yang Diambil</label><input type="number" id="submit-actual-qty" required min="1" class="w-full p-3 bg-emerald-50 border border-emerald-300 rounded-xl font-bold text-base text-emerald-800"></div>
+        <div><label class="block font-semibold mb-1">Catatan Penerima</label><input type="text" id="submit-delivery-notes" placeholder="Diterima oleh Pak Joko di Line" class="w-full p-2 border rounded-xl"></div>
+        <button type="submit" class="w-full py-3 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg">Submit & Potong Stok</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    let materials = JSON.parse(localStorage.getItem('ps_m')) || [
+      { id: 'm1', code: 'PKG-BOX-001', name: 'Corrugated Box 40x30x25', category: 'Box', unit: 'Pcs', rack: 'Rak A-01', minStock: 100, currentStock: 500 },
+      { id: 'm2', code: 'PKG-BOX-002', name: 'Inner Box Duplex 15x10', category: 'Box', unit: 'Pcs', rack: 'Rak A-02', minStock: 200, currentStock: 80 },
+      { id: 'm3', code: 'PKG-PLT-001', name: 'Bubble Wrap 1.25m x 50m', category: 'Plastik', unit: 'Roll', rack: 'Zona B-01', minStock: 15, currentStock: 30 },
+      { id: 'm4', code: 'PKG-BTL-001', name: 'Botol PET 250ml Clear', category: 'Botol', unit: 'Pcs', rack: 'Rak C-03', minStock: 500, currentStock: 1500 }
+    ];
+    let tasks = JSON.parse(localStorage.getItem('ps_t')) || [
+      { id: 't1', taskNo: 'TSK-001', materialId: 'm1', qty: 100, destination: 'Line Packing 1', operatorId: 'operator1', priority: 'URGENT', status: 'PENDING' }
+    ];
+    let mutations = JSON.parse(localStorage.getItem('ps_mut')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('ps_u')) || null;
+
+    function save() {
+      localStorage.setItem('ps_m', JSON.stringify(materials));
+      localStorage.setItem('ps_t', JSON.stringify(tasks));
+      localStorage.setItem('ps_mut', JSON.stringify(mutations));
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value.trim();
+      const p = document.getElementById('login-password').value.trim();
+      if (u === 'admin' && p === 'admin123') currentUser = { username: 'admin', name: 'Admin Gudang', role: 'admin' };
+      else if (u.startsWith('operator') && p === 'op123') currentUser = { username: u, name: u.toUpperCase(), role: 'operator' };
+      else { document.getElementById('login-error').classList.remove('hidden'); return; }
+      localStorage.setItem('ps_u', JSON.stringify(currentUser));
+      route();
+    }
+    function quickLogin(r) {
+      document.getElementById('login-username').value = r;
+      document.getElementById('login-password').value = r === 'admin' ? 'admin123' : 'op123';
+      document.getElementById('form-login').dispatchEvent(new Event('submit'));
+    }
+    function handleLogout() {
+      currentUser = null; localStorage.removeItem('ps_u'); route();
+    }
+    function route() {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('view-admin').classList.add('hidden');
+      document.getElementById('view-operator').classList.add('hidden');
+      if (!currentUser) { document.getElementById('view-login').classList.remove('hidden'); return; }
+      if (currentUser.role === 'admin') {
+        document.getElementById('view-admin').classList.remove('hidden');
+        document.getElementById('admin-user-name').innerText = currentUser.name;
+        renderAdminDashboard(); renderInventoryTable(); populateSelects();
+      } else {
+        document.getElementById('view-operator').classList.remove('hidden');
+        document.getElementById('op-user-name').innerText = currentUser.name;
+        renderOperatorView();
+      }
+    }
+
+    function switchAdminTab(t) {
+      ['dashboard','inventory','inbound','outbound','tasks','mutations'].forEach(x => {
+        const el = document.getElementById('tab-admin-'+x); if(el) el.classList.add('hidden');
+      });
+      document.getElementById('tab-admin-'+t).classList.remove('hidden');
+      if(t==='dashboard') renderAdminDashboard();
+      if(t==='inventory') renderInventoryTable();
+      if(t==='tasks') renderAdminTasksTable();
+      if(t==='mutations') renderMutationsTable();
+      populateSelects();
+    }
+
+    function renderAdminDashboard() {
+      document.getElementById('stat-total-items').innerText = materials.length;
+      document.getElementById('stat-total-stock').innerText = materials.reduce((a,b)=>a+b.currentStock,0);
+      document.getElementById('stat-low-stock').innerText = materials.filter(m=>m.currentStock<=m.minStock).length;
+      document.getElementById('stat-active-tasks').innerText = tasks.filter(t=>t.status!=='COMPLETED').length;
+      const tb = document.getElementById('table-dashboard-tasks'); tb.innerHTML='';
+      tasks.forEach(t=>{
+        const m = materials.find(x=>x.id===t.materialId);
+        tb.innerHTML += `<tr><td class="py-2 font-bold">${t.taskNo}</td><td>${m?m.name:''} (${t.qty})</td><td>${t.destination}</td><td>${t.operatorId}</td><td><span class="px-2 py-0.5 rounded text-[10px] ${t.status==='COMPLETED'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-800'}">${t.status}</span></td></tr>`;
+      });
+    }
+
+    function renderInventoryTable() {
+      const q = (document.getElementById('search-inventory').value||'').toLowerCase();
+      const tb = document.getElementById('table-inventory-body'); tb.innerHTML='';
+      materials.filter(m=>m.name.toLowerCase().includes(q)||m.code.toLowerCase().includes(q)).forEach(m=>{
+        tb.innerHTML += `<tr><td class="p-3 font-mono font-bold">${m.code}</td><td class="p-3 font-semibold">${m.name}</td><td class="p-3">${m.category}</td><td class="p-3"><span class="bg-slate-100 px-2 py-0.5 rounded">${m.rack}</span></td><td class="p-3">${m.minStock}</td><td class="p-3 font-bold ${m.currentStock<=m.minStock?'text-rose-600':'text-slate-800'}">${m.currentStock} ${m.unit}</td><td class="p-3"><button onclick="quickAssign('${m.id}')" class="px-2 py-1 bg-indigo-50 text-indigo-600 rounded font-bold">Assign</button></td></tr>`;
+      });
+    }
+
+    function populateSelects() {
+      ['inbound-material-select','outbound-material-select','task-material-id'].forEach(id=>{
+        const el = document.getElementById(id); if(!el) return; el.innerHTML='';
+        materials.forEach(m=>{ el.innerHTML += `<option value="${m.id}">${m.name} (Stok: ${m.currentStock})</option>`; });
+      });
+    }
+
+    function handleInboundSubmit(e) {
+      e.preventDefault();
+      const m = materials.find(x=>x.id===document.getElementById('inbound-material-select').value);
+      const qty = parseInt(document.getElementById('inbound-qty').value);
+      m.currentStock += qty;
+      mutations.push({ time: new Date().toLocaleTimeString(), type: 'INBOUND', material: m.name, qty: '+'+qty, stock: m.currentStock, ref: document.getElementById('inbound-po').value });
+      save(); switchAdminTab('inventory');
+    }
+
+    function handleOutboundSubmit(e) {
+      e.preventDefault();
+      const m = materials.find(x=>x.id===document.getElementById('outbound-material-select').value);
+      const qty = parseInt(document.getElementById('outbound-qty').value);
+      if(qty > m.currentStock) { alert('Stok tidak cukup!'); return; }
+      m.currentStock -= qty;
+      mutations.push({ time: new Date().toLocaleTimeString(), type: 'OUTBOUND', material: m.name, qty: '-'+qty, stock: m.currentStock, ref: document.getElementById('outbound-reason').value });
+      save(); switchAdminTab('inventory');
+    }
+
+    function openAssignTaskModal() { populateSelects(); document.getElementById('modal-assign-task').classList.remove('hidden'); }
+    function closeAssignTaskModal() { document.getElementById('modal-assign-task').classList.add('hidden'); }
+    function quickAssign(id) { openAssignTaskModal(); document.getElementById('task-material-id').value=id; }
+
+    function handleCreateTask(e) {
+      e.preventDefault();
+      tasks.unshift({
+        id: 't'+Date.now(),
+        taskNo: 'TSK-'+String(tasks.length+1).padStart(3,'0'),
+        materialId: document.getElementById('task-material-id').value,
+        qty: parseInt(document.getElementById('task-qty').value),
+        priority: document.getElementById('task-priority').value,
+        destination: document.getElementById('task-destination').value,
+        operatorId: document.getElementById('task-operator-id').value,
+        status: 'PENDING'
+      });
+      save(); closeAssignTaskModal(); switchAdminTab('tasks');
+    }
+
+    function renderAdminTasksTable() {
+      const tb = document.getElementById('table-admin-tasks-body'); tb.innerHTML='';
+      tasks.forEach(t=>{
+        const m = materials.find(x=>x.id===t.materialId);
+        tb.innerHTML += `<tr><td class="p-3 font-bold">${t.taskNo}</td><td class="p-3">${m?m.name:''}</td><td class="p-3">${m?m.rack:''}</td><td class="p-3 font-bold text-indigo-600">${t.qty}</td><td class="p-3">${t.destination}</td><td class="p-3">${t.operatorId}</td><td class="p-3">${t.status}</td></tr>`;
+      });
+    }
+
+    function renderMutationsTable() {
+      const tb = document.getElementById('table-mutations-body'); tb.innerHTML='';
+      mutations.slice().reverse().forEach(m=>{
+        tb.innerHTML += `<tr><td class="p-3 text-slate-400">${m.time}</td><td class="p-3 font-bold">${m.type}</td><td class="p-3">${m.material}</td><td class="p-3 font-bold">${m.qty}</td><td class="p-3">${m.stock}</td><td class="p-3">${m.ref}</td></tr>`;
+      });
+    }
+
+    // OPERATOR FUNCTIONS
+    function switchOperatorTab(t) {
+      document.getElementById('tab-op-tasks').classList.add('hidden');
+      document.getElementById('tab-op-stock').classList.add('hidden');
+      document.getElementById('tab-op-'+t).classList.remove('hidden');
+      if(t==='tasks') renderOperatorView();
+      if(t==='stock') renderOperatorStockList();
+    }
+
+    function renderOperatorView() {
+      const c = document.getElementById('op-tasks-container'); c.innerHTML='';
+      const my = tasks.filter(t=>t.operatorId===currentUser.username);
+      if(my.length===0) { c.innerHTML='<div class="p-4 bg-white rounded-xl text-center text-xs text-slate-400">Tidak ada tugas.</div>'; return; }
+      my.forEach(t=>{
+        const m = materials.find(x=>x.id===t.materialId);
+        c.innerHTML += `
+          <div class="bg-white p-4 rounded-2xl border shadow-sm space-y-2">
+            <div class="flex justify-between font-bold text-xs"><span class="font-mono">${t.taskNo}</span><span class="px-2 py-0.5 rounded text-[10px] ${t.status==='COMPLETED'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-800'}">${t.status}</span></div>
+            <h5 class="font-bold text-sm text-slate-800">${m?m.name:''}</h5>
+            <div class="flex justify-between bg-slate-50 p-2 rounded-xl text-xs"><span>Lokasi: <b>${m?m.rack:''}</b></span><span>Target: <b class="text-indigo-600">${t.qty} ${m?m.unit:''}</b></span></div>
+            <p class="text-[11px] text-slate-500">Tujuan: <b>${t.destination}</b></p>
+            ${t.status!=='COMPLETED'?`
+              <button onclick="openSubmitModal('${t.id}')" class="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs shadow">Submit Selesai (Potong Stok)</button>
+            `:'<div class="text-center text-xs text-emerald-600 font-bold">✓ Selesai</div>'}
+          </div>
+        `;
+      });
+    }
+
+    function renderOperatorStockList() {
+      const q = (document.getElementById('op-search-stock').value||'').toLowerCase();
+      const c = document.getElementById('op-stock-container'); c.innerHTML='';
+      materials.filter(m=>m.name.toLowerCase().includes(q)).forEach(m=>{
+        c.innerHTML += `<div class="bg-white p-3 rounded-xl border flex justify-between"><div><h6 class="font-bold text-xs">${m.name}</h6><p class="text-[10px] text-slate-400">Lokasi: ${m.rack}</p></div><div class="text-right"><span class="font-bold text-sm">${m.currentStock}</span> <span class="text-[10px] text-slate-400">${m.unit}</span></div></div>`;
+      });
+    }
+
+    function openSubmitModal(id) {
+      const t = tasks.find(x=>x.id===id);
+      document.getElementById('submit-task-id').value = id;
+      document.getElementById('submit-actual-qty').value = t.qty;
+      document.getElementById('modal-submit-task').classList.remove('hidden');
+    }
+    function closeSubmitTaskModal() { document.getElementById('modal-submit-task').classList.add('hidden'); }
+
+    function handleFinalSubmitTask(e) {
+      e.preventDefault();
+      const id = document.getElementById('submit-task-id').value;
+      const actual = parseInt(document.getElementById('submit-actual-qty').value);
+      const t = tasks.find(x=>x.id===id);
+      const m = materials.find(x=>x.id===t.materialId);
+      m.currentStock -= actual;
+      t.status = 'COMPLETED';
+      mutations.push({ time: new Date().toLocaleTimeString(), type: 'TASK_PICKING', material: m.name, qty: '-'+actual, stock: m.currentStock, ref: t.taskNo });
+      save(); closeSubmitTaskModal(); renderOperatorView();
+    }
+
+    route();
+  </script>
+</body>
+</html>
