@@ -22,9 +22,9 @@ $MENUS_CATALOG = [
     ],
     [
         'key' => 'inventory',
-        'label' => 'Master Stok Packaging',
+        'label' => 'Stock Kemas',
         'icon' => 'shelves',
-        'description' => 'Katalog stok packaging, rumus stok akhir, kartu stok, dan upload Excel master.'
+        'description' => 'Katalog Stock Kemas, rumus stok akhir, kartu stok, dan upload Excel master.'
     ],
     [
         'key' => 'dynamic_count',

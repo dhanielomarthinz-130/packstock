@@ -27,7 +27,7 @@ if ($action === 'stats') {
         $stats = [];
         
         $tables = [
-            'materials'            => 'Master Stok Packaging',
+            'materials'            => 'Stock Kemas',
             'inbound_transactions' => 'Riwayat Barang Masuk',
             'outbound_transactions'=> 'Riwayat Barang Keluar',
             'tasks'                => 'Penugasan Task Operator',

@@ -48,10 +48,10 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="sidebar-section-title px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Inventory</div>
         <div class="space-y-1">
           <button onclick="switchAdminTab('inventory')" id="nav-inventory" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Master Stok Kemas / Consumble">
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0">shelves</span>
-              <span class="sidebar-text truncate">Master Stok Kemas / Consumble</span>
+              <span class="sidebar-text truncate">Stock Kemas</span>
             </div>
             <span id="sidebarAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs">0</span>
           </button>
@@ -419,7 +419,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <tr>
                   <th class="p-3 text-center w-12 border-r border-white/20">No</th>
                   <th class="p-3 w-36 border-r border-white/20">Item No</th>
-                  <th class="p-3 border-r border-white/20">Deskripsi Kemas / Consumble</th>
+                  <th class="p-3 border-r border-white/20">Deskripsi Kemas</th>
                   <th class="p-3 text-center w-20 border-r border-white/20">Satuan</th>
                   <th class="p-3 w-28 border-r border-white/20">Lokasi Rak</th>
                   <th class="p-3 text-center w-24 border-r border-white/20 font-mono">Stok Awal</th>
@@ -1185,7 +1185,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <tr>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Inbound</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas / Consumble</th>
+                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas</th>
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty In</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Lokasi Rak</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Petugas Penerima</th>
@@ -1266,7 +1266,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Dokumen / Task</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Status</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas / Consumble</th>
+                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas</th>
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty Out</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tujuan Antar & PIC</th>
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
@@ -1324,7 +1324,7 @@ require_once __DIR__ . '/../includes/header.php';
               <div>
                 <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  <span>Form Assign Picking Kemas / Consumble</span>
+                  <span>Form Assign Picking Stock Kemas</span>
                 </h3>
               </div>
             </div>
@@ -1368,7 +1368,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950 sticky top-0 z-10">
                       <tr>
                         <th class="p-3 w-12 text-center border-r border-white/10">No</th>
-                        <th class="p-3 min-w-[300px] border-r border-white/10">Kemas / Consumble <span class="text-amber-300">*</span></th>
+                        <th class="p-3 min-w-[300px] border-r border-white/10">Stock Kemas <span class="text-amber-300">*</span></th>
                         <th class="p-3 w-28 text-center border-r border-white/10">Satuan (UOM)</th>
                         <th class="p-3 w-32 border-r border-white/10">Target Qty <span class="text-amber-300">*</span></th>
                         <th class="p-3 w-40 border-r border-white/10">Tujuan Spesifik</th>
@@ -1460,7 +1460,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <tr>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">Tanggal & Waktu</th>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">No. Task</th>
-                    <th class="p-3 border-r border-white/10">Kemas / Consumble</th>
+                    <th class="p-3 border-r border-white/10">Kemas</th>
                     <th class="p-3 text-center border-r border-white/10 font-mono whitespace-nowrap">Target & Realisasi</th>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">Tujuan Antar</th>
                     <th class="p-3 text-center border-r border-white/10 whitespace-nowrap">Prioritas</th>
@@ -2451,7 +2451,7 @@ require_once __DIR__ . '/../includes/header.php';
       <input type="hidden" id="editTaskId" value="">
 
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Kemas / Consumble (Produk) <span class="text-rose-500">*</span></label>
+        <label class="block font-semibold text-slate-700 mb-1">Stock Kemas (Produk) <span class="text-rose-500">*</span></label>
         <select id="editTaskMaterialSelect" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-medium text-xs"></select>
       </div>
 
