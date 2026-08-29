@@ -291,26 +291,29 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $catIdx    = -1;
     $unitIdx   = -1;
     $rackIdx   = -1;
+    $minStockIdx = -1;
 
     foreach ($headers as $idx => $header) {
-        if (in_array($header, ['item no', 'itemno', 'item_no', 'itemnumber', 'item number', 'kode item', 'kode', 'code', 'sku', 'kode material'])) {
+        if (strpos($header, 'item no') !== false || strpos($header, 'itemno') !== false || strpos($header, 'kode') !== false || strpos($header, 'sku') !== false) {
             $itemNoIdx = $idx;
-        } elseif (in_array($header, ['item description', 'itemdescription', 'item_description', 'description', 'deskripsi', 'nama barang', 'nama item', 'nama packaging', 'nama material', 'nama'])) {
+        } elseif (strpos($header, 'description') !== false || strpos($header, 'deskripsi') !== false || strpos($header, 'nama') !== false) {
             $descIdx = $idx;
-        } elseif (in_array($header, ['ending stock', 'ending_stock', 'endingstock', 'sisa stock', 'sisa stok', 'stock', 'stok', 'qty', 'stok akhir', 'ending', 'balance'])) {
+        } elseif (strpos($header, 'ending stock') !== false || strpos($header, 'sisa stock') !== false || strpos($header, 'sisa stok') !== false || strpos($header, 'stok akhir') !== false || $header === 'stock' || $header === 'stok' || $header === 'qty' || $header === 'balance') {
             $stockIdx = $idx;
-        } elseif (in_array($header, ['category', 'kategori', 'jenis', 'kategori barang'])) {
+        } elseif (strpos($header, 'category') !== false || strpos($header, 'kategori') !== false || strpos($header, 'jenis') !== false) {
             $catIdx = $idx;
-        } elseif (in_array($header, ['unit', 'satuan', 'uom', 'oum', 'satuan barang', 'unit of measure'])) {
+        } elseif (strpos($header, 'unit') !== false || strpos($header, 'satuan') !== false || strpos($header, 'uom') !== false) {
             $unitIdx = $idx;
-        } elseif (in_array($header, ['rack location', 'rack', 'lokasi rak', 'lokasi', 'rak', 'bin', 'location'])) {
+        } elseif (strpos($header, 'rack') !== false || strpos($header, 'rak') !== false || strpos($header, 'lokasi') !== false || strpos($header, 'bin') !== false) {
             $rackIdx = $idx;
+        } elseif (strpos($header, 'safety') !== false || strpos($header, 'min') !== false || strpos($header, 'safety stock') !== false) {
+            $minStockIdx = $idx;
         }
     }
 
-    if ($itemNoIdx === -1) $itemNoIdx = 0;
-    if ($descIdx === -1) $descIdx = 1;
-    if ($stockIdx === -1) $stockIdx = 2;
+    if ($itemNoIdx === -1) $itemNoIdx = 1;
+    if ($descIdx === -1) $descIdx = 2;
+    if ($stockIdx === -1) $stockIdx = 5;
     $startRow = $headerRowIdx + 1;
 
     // Existing materials check
@@ -348,6 +351,10 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $category = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim($r[$catIdx]) : $meta['category'];
         $unit     = ($unitIdx !== -1 && !empty($r[$unitIdx])) ? trim($r[$unitIdx]) : $meta['unit'];
         $rack     = ($rackIdx !== -1 && !empty($r[$rackIdx])) ? trim($r[$rackIdx]) : $meta['rack'];
+        
+        $minStockRaw = ($minStockIdx !== -1 && isset($r[$minStockIdx])) ? trim($r[$minStockIdx]) : '';
+        $minStockClean = preg_replace('/[^0-9]/', '', $minStockRaw);
+        $minStock = ($minStockClean !== '') ? (int)$minStockClean : 50;
 
         $isExisting = isset($existing[$itemNo]);
         if ($isExisting) {
@@ -369,7 +376,7 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'category' => $category,
             'unit' => $unit,
             'rack_location' => $rack,
-            'min_stock' => 50,
+            'min_stock' => $minStock,
             'status' => $statusType
         ];
         $validCount++;
