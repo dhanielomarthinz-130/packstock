@@ -118,15 +118,8 @@ require_once __DIR__ . '/includes/header.php';
       
       <!-- Top Form Header -->
       <div>
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
-          <div>
-            <h2 class="text-base font-black text-slate-900 tracking-tight">Portal Masuk Pengguna</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Masukkan kredensial akun untuk mengakses sistem</p>
-          </div>
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 shadow-2xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Gateway Aktif</span>
-          </div>
+        <div class="border-b border-slate-100 pb-3 mb-6">
+          <h2 class="text-base font-black text-slate-900 tracking-tight">Portal Masuk Pengguna</h2>
         </div>
 
         <!-- Form Elements -->
@@ -135,7 +128,7 @@ require_once __DIR__ . '/includes/header.php';
           <!-- Username Input -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">
-              Username Akun <span class="text-rose-500">*</span>
+              Username <span class="text-rose-500">*</span>
             </label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
@@ -150,7 +143,7 @@ require_once __DIR__ . '/includes/header.php';
           <div>
             <div class="flex items-center justify-between mb-1.5">
               <label class="block text-xs font-bold text-slate-700">
-                Kata Sandi (Password) <span class="text-rose-500">*</span>
+                Password <span class="text-rose-500">*</span>
               </label>
             </div>
             <div class="relative">
