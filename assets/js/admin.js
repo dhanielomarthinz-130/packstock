@@ -610,11 +610,6 @@ function renderMaterialsTable(materials) {
         </td>
         <td class="p-3 text-slate-600 text-xs font-medium">${escapeHtml(m.category || '-')}</td>
         
-        <!-- Satuan (UOM) -->
-        <td class="p-3 text-center text-xs font-semibold text-slate-700 whitespace-nowrap">
-          <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">${escapeHtml(m.unit || 'Pcs')}</span>
-        </td>
-
         <!-- Stok Awal Upload Excel -->
         <td class="p-3 text-center font-mono font-semibold text-slate-600 text-xs">
           ${App.formatNumber(m.initial_upload_stock)}
@@ -635,6 +630,11 @@ function renderMaterialsTable(materials) {
           <span class="font-black text-sm ${m.current_stock <= m.min_stock ? 'text-rose-600' : 'text-emerald-800'}">
             ${App.formatNumber(m.current_stock)}
           </span>
+        </td>
+
+        <!-- Satuan (UOM) -->
+        <td class="p-3 text-center text-xs font-semibold text-slate-700 whitespace-nowrap">
+          <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">${escapeHtml(m.unit || 'Pcs')}</span>
         </td>
 
         <td class="p-3 text-xs text-slate-700 font-medium whitespace-nowrap">${escapeHtml(m.rack_location)}</td>

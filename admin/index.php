@@ -497,14 +497,14 @@ require_once __DIR__ . '/../includes/header.php';
             <table class="w-full text-left border-collapse">
               <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
                 <tr>
-                  <th class="p-3 border-r border-white/20">Item No (Klik Riwayat)</th>
+                  <th class="p-3 border-r border-white/20">Item No</th>
                   <th class="p-3 border-r border-white/20">Item Description</th>
                   <th class="p-3 border-r border-white/20">Kategori</th>
-                  <th class="p-3 text-center border-r border-white/20">Satuan (UOM)</th>
                   <th class="p-3 text-center border-r border-white/20">Stok Awal</th>
                   <th class="p-3 text-center border-r border-white/20 font-bold">Total Masuk (+)</th>
                   <th class="p-3 text-center border-r border-white/20 font-bold">Total Keluar (-)</th>
                   <th class="p-3 text-center font-black border-r border-white/20">Sisa Stok Akhir</th>
+                  <th class="p-3 text-center border-r border-white/20">Satuan (UOM)</th>
                   <th class="p-3 border-r border-white/20">Lokasi Rak</th>
                   <th class="p-3 border-r border-white/20">Status</th>
                   <th class="p-3 text-right">Aksi</th>
