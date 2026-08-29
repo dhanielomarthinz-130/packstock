@@ -1,24 +1,19 @@
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteBase /packstock/
 
 # Disable directory browsing
 Options -Indexes
 
-# 1. External Redirect: Remove index.php / index to trailing slash for GET requests
+# 1. External Redirect: Remove index.php or index from URL to trailing slash
 RewriteCond %{REQUEST_METHOD} !POST
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/packstock/(?:index\.php|index)[\s\?] [NC]
-RewriteRule ^ ./ [R=301,L]
+RewriteCond %{THE_REQUEST} \s/([^\s\?]*/)?(?:index\.php|index)[\s\?] [NC]
+RewriteRule ^ /%1 [R=301,L]
 
+# 2. External Redirect: Remove .php extension from non-API GET requests (e.g. /login.php -> /login)
 RewriteCond %{REQUEST_METHOD} !POST
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/packstock/(.*)/index(?:\.php)?[\s\?] [NC]
-RewriteRule ^ %1/ [R=301,L]
-
-# 2. External Redirect: Remove .php from non-API GET requests (e.g. /packstock/login.php -> /packstock/login)
-RewriteCond %{REQUEST_METHOD} !POST
-RewriteCond %{THE_REQUEST} !/packstock/api/ [NC]
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,}\s/packstock/([^\s\?]+)\.php [NC]
-RewriteRule ^ %1 [R=301,L]
+RewriteCond %{REQUEST_URI} !/api/ [NC]
+RewriteCond %{THE_REQUEST} \s/([^\s\?]+)\.php [NC]
+RewriteRule ^ /%1 [R=301,L]
 
 # 3. Allow real directories
 RewriteCond %{REQUEST_FILENAME} -d
