@@ -55,8 +55,8 @@ if ($action === 'list') {
         $params[] = $category;
     }
 
-    if ($stockStatus === 'low') {
-        $query .= " AND m.current_stock <= m.min_stock AND m.current_stock > 0";
+    if ($stockStatus === 'critical' || $stockStatus === 'low') {
+        $query .= " AND m.current_stock <= m.min_stock";
     } elseif ($stockStatus === 'empty') {
         $query .= " AND m.current_stock <= 0";
     } elseif ($stockStatus === 'safe') {
