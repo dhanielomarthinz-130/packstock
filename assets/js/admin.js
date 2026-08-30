@@ -103,15 +103,11 @@ function initPremiumPickers() {
   // 3. Stock Opname Toolbar Filter
   initDate('#opnameDateFilter', () => loadOpnameMatrix());
 
-  // 4. Inbound Toolbar & Modal Form
+  // 4. Inbound Toolbar Filter
   initDate('#inboundDateFilter', () => loadInboundHistory());
-  initDate('#inboundFormDate');
-  initTime('#inboundFormTime');
 
-  // 5. Outbound Toolbar & Modal Form
+  // 5. Outbound Toolbar Filter
   initDate('#outboundDateFilter', () => loadOutboundHistory());
-  initDate('#outboundFormDate');
-  initTime('#outboundFormTime');
 
   // 6. Audit Mutasi Stok Toolbar
   initDate('#mutationDateFilter', () => renderMutationsTable());
@@ -2825,8 +2821,6 @@ async function deleteUser(id, name) {
 }
 
 // 8. INBOUND GOODS RECEIPT (ADMIN & OPERATOR TRACKER WITH DURATION & TAKT TIME)
-let inboundModalStartTime = null;
-
 function openAddInboundModal() {
   inboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
@@ -2834,6 +2828,9 @@ function openAddInboundModal() {
   
   const dateInput = document.getElementById('inboundFormDate');
   const timeInput = document.getElementById('inboundFormTime');
+  const dateDisplay = document.getElementById('inboundFormDateDisplay');
+  const timeDisplay = document.getElementById('inboundFormTimeDisplay');
+
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -2842,23 +2839,13 @@ function openAddInboundModal() {
   const mi = String(now.getMinutes()).padStart(2, '0');
   const dateStr = `${yyyy}-${mm}-${dd}`;
   const timeStr = `${hh}:${mi}`;
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const displayFormattedDate = `${now.getDate()} ${monthNames[now.getMonth()]} ${yyyy}`;
 
-  initPremiumPickers();
-
-  if (dateInput) {
-    if (dateInput._flatpickr) {
-      dateInput._flatpickr.setDate(dateStr, true);
-    } else {
-      dateInput.value = dateStr;
-    }
-  }
-  if (timeInput) {
-    if (timeInput._flatpickr) {
-      timeInput._flatpickr.setDate(timeStr, true);
-    } else {
-      timeInput.value = timeStr;
-    }
-  }
+  if (dateInput) dateInput.value = dateStr;
+  if (timeInput) timeInput.value = timeStr;
+  if (dateDisplay) dateDisplay.value = displayFormattedDate;
+  if (timeDisplay) timeDisplay.value = timeStr;
 
   App.openModal('modalAddInbound');
 }
@@ -2886,7 +2873,7 @@ async function loadInboundHistory() {
     if (res.data.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="p-8 text-center text-slate-400 text-xs font-medium">
+          <td colspan="6" class="p-8 text-center text-slate-400 text-xs font-medium">
             <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">move_to_inbox</span>
             <p>Tidak ada riwayat penerimaan barang masuk.</p>
           </td>
@@ -2896,62 +2883,32 @@ async function loadInboundHistory() {
     }
 
     tbody.innerHTML = res.data.map((i, idx) => `
-      <tr class="hover:bg-slate-50/90 border-b border-slate-100 text-xs transition-colors duration-150">
-        <!-- 1. Tanggal -->
-        <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
-          <span class="font-extrabold text-slate-800 text-xs">${App.formatDate(i.completed_at || i.created_at)}</span>
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+        <td class="p-3 whitespace-nowrap">
+          <span class="font-extrabold text-slate-800">${App.formatDate(i.completed_at || i.created_at)}</span>
         </td>
-
-        <!-- 2. No Inbound (Klik untuk Detail) -->
-        <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
-          <button type="button" onclick="openInboundDetailModal(${idx})" class="inline-flex items-center gap-1 font-mono font-bold text-xs text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-lg shadow-2xs transition-colors cursor-pointer group text-left" title="Klik untuk melihat rincian detail dokumen">
-            <span class="material-symbols-outlined text-[13px] text-emerald-700 group-hover:text-emerald-900">receipt_long</span>
-            <span class="group-hover:underline underline-offset-2">${escapeHtml(i.inbound_no)}</span>
+        <td class="p-3 font-mono font-bold text-emerald-800 whitespace-nowrap">
+          <button type="button" onclick="openInboundDetailModal(${idx})" class="hover:underline inline-flex items-center gap-1 font-mono text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs" title="Klik untuk lihat detail transaksi">
+            <span class="material-symbols-outlined text-[13px] text-emerald-600">visibility</span>
+            <span>${escapeHtml(i.inbound_no)}</span>
           </button>
         </td>
-
-        <!-- 3. Packaging Material -->
-        <td class="py-3.5 px-3.5 align-middle min-w-[240px]">
-          <div>
-            <p class="font-bold text-slate-900 text-xs leading-snug">${escapeHtml(i.material_name)}</p>
-            <div class="flex items-center gap-2 text-[10px] text-slate-500 font-mono mt-1">
-              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200/70">${escapeHtml(i.material_code)}</span>
-            </div>
-          </div>
+        <td class="p-3">
+          <div class="font-bold text-slate-900">${escapeHtml(i.material_name)}</div>
+          <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(i.material_code)} &bull; Rak: ${escapeHtml(i.rack_location || '-')}</div>
         </td>
-
-        <!-- 4. Qty In -->
-        <td class="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
-          <span class="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/90 font-black text-xs font-mono shadow-2xs inline-flex items-center gap-1">
-            <span>+${App.formatNumber(i.qty)}</span>
-            <span class="text-[10px] font-bold text-emerald-700 uppercase">${escapeHtml(i.material_unit || 'Pcs')}</span>
+        <td class="p-3 text-center whitespace-nowrap">
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-xs font-mono">
+            +${App.formatNumber(i.qty)} <span class="text-[10px] text-emerald-700 font-normal">${escapeHtml(i.material_unit || 'Pcs')}</span>
           </span>
         </td>
-
-        <!-- 5. Lokasi Rak (Location) -->
-        <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
-          <div class="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-            <span class="material-symbols-outlined text-[15px] text-emerald-600">grid_view</span>
-            <span>${escapeHtml(i.rack_location || 'Gudang Utama')}</span>
-          </div>
+        <td class="p-3 whitespace-nowrap text-slate-700">
+          <span class="font-semibold text-slate-800">${escapeHtml(i.receiver_name || i.received_by || 'Admin')}</span>
         </td>
-
-        <!-- 6. Petugas Penerima -->
-        <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
-          <div class="flex items-center gap-1.5">
-            <div class="w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 font-bold text-[10px] flex-shrink-0">
-              <span class="material-symbols-outlined text-[13px]">how_to_reg</span>
-            </div>
-            <div class="leading-tight">
-              <span class="font-bold text-slate-800 block text-xs">${escapeHtml(i.receiver_name || 'Admin')}</span>
-              <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(i.receiver_shift || 'Shift')}</span>
-            </div>
-          </div>
-        </td>
-
-        <!-- 7. Catatan -->
-        <td class="py-3.5 px-3.5 align-middle text-slate-600 text-xs min-w-[140px]">
-          ${i.notes ? `<span class="bg-slate-50 border border-slate-200/70 rounded px-2 py-0.5 text-[11px] text-slate-700 inline-block font-medium">${escapeHtml(i.notes)}</span>` : '<span class="text-slate-400">-</span>'}
+        <td class="p-3 text-right whitespace-nowrap">
+          <button onclick="openInboundDetailModal(${idx})" title="Lihat Rincian Detail" class="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs">
+            <span class="material-symbols-outlined text-[16px]">visibility</span>
+          </button>
         </td>
       </tr>
     `).join('');
@@ -3170,6 +3127,9 @@ function openAddOutboundModal() {
 
   const dateInput = document.getElementById('outboundFormDate');
   const timeInput = document.getElementById('outboundFormTime');
+  const dateDisplay = document.getElementById('outboundFormDateDisplay');
+  const timeDisplay = document.getElementById('outboundFormTimeDisplay');
+
   const now = new Date();
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -3178,23 +3138,13 @@ function openAddOutboundModal() {
   const mi = String(now.getMinutes()).padStart(2, '0');
   const dateStr = `${yyyy}-${mm}-${dd}`;
   const timeStr = `${hh}:${mi}`;
+  const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const displayFormattedDate = `${now.getDate()} ${monthNames[now.getMonth()]} ${yyyy}`;
 
-  initPremiumPickers();
-
-  if (dateInput) {
-    if (dateInput._flatpickr) {
-      dateInput._flatpickr.setDate(dateStr, true);
-    } else {
-      dateInput.value = dateStr;
-    }
-  }
-  if (timeInput) {
-    if (timeInput._flatpickr) {
-      timeInput._flatpickr.setDate(timeStr, true);
-    } else {
-      timeInput.value = timeStr;
-    }
-  }
+  if (dateInput) dateInput.value = dateStr;
+  if (timeInput) timeInput.value = timeStr;
+  if (dateDisplay) dateDisplay.value = displayFormattedDate;
+  if (timeDisplay) timeDisplay.value = timeStr;
   
   App.openModal('modalAddOutbound');
 }

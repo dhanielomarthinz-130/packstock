@@ -2267,25 +2267,40 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <form id="inboundForm" onsubmit="handleInboundFormSubmit(event)" class="space-y-3 text-xs">
+      <!-- Tanggal & Waktu (Otomatis Terisi Waktu Saat Ini - Non-Editable) -->
       <div class="grid grid-cols-2 gap-2.5">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-emerald-600">calendar_month</span>
-            <span>Tanggal Masuk <span class="text-rose-500">*</span></span>
+          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-emerald-600">calendar_month</span>
+              <span>Tanggal Masuk</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[12px]">lock</span>
+              <span>Otomatis</span>
+            </span>
           </label>
-          <div class="premium-datepicker-wrapper w-full">
-            <span class="material-symbols-outlined picker-icon">calendar_month</span>
-            <input type="text" id="inboundFormDate" value="<?= date('Y-m-d') ?>" required placeholder="YYYY-MM-DD" class="premium-datepicker-input w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-emerald-600">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 text-[18px]">calendar_month</span>
+            <input type="text" id="inboundFormDateDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+            <input type="hidden" id="inboundFormDate" value="<?= date('Y-m-d') ?>">
           </div>
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-emerald-600">schedule</span>
-            <span>Jam / Waktu <span class="text-rose-500">*</span></span>
+          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-emerald-600">schedule</span>
+              <span>Jam / Waktu</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[12px]">lock</span>
+              <span>Otomatis</span>
+            </span>
           </label>
-          <div class="premium-datepicker-wrapper w-full">
-            <span class="material-symbols-outlined picker-icon">schedule</span>
-            <input type="text" id="inboundFormTime" value="<?= date('H:i') ?>" required placeholder="HH:MM" class="premium-datepicker-input w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-emerald-600">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 text-[18px]">schedule</span>
+            <input type="text" id="inboundFormTimeDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+            <input type="hidden" id="inboundFormTime" value="<?= date('H:i') ?>">
           </div>
         </div>
       </div>
@@ -2299,9 +2314,9 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Pilih Material Packaging <span class="text-rose-500">*</span></label>
+        <label class="block font-semibold text-slate-700 mb-1">Pilih Kemas/Consumable <span class="text-rose-500">*</span></label>
         <select id="inboundMaterialSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-emerald-600">
-          <option value="">-- Pilih Material --</option>
+          <option value="">-- Pilih Kemas/Consumable --</option>
         </select>
       </div>
 
@@ -2346,26 +2361,40 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form id="outboundForm" onsubmit="handleOutboundFormSubmit(event)" class="space-y-3.5 text-xs">
       
-      <!-- Tanggal & Waktu -->
+      <!-- Tanggal & Waktu (Otomatis Terisi Waktu Saat Ini - Non-Editable) -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-amber-600">calendar_month</span>
-            <span>Tanggal Keluar <span class="text-rose-500">*</span></span>
+          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-amber-600">calendar_month</span>
+              <span>Tanggal Keluar</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[12px]">lock</span>
+              <span>Otomatis</span>
+            </span>
           </label>
-          <div class="premium-datepicker-wrapper w-full">
-            <span class="material-symbols-outlined picker-icon text-amber-600">calendar_month</span>
-            <input type="text" id="outboundFormDate" value="<?= date('Y-m-d') ?>" required placeholder="YYYY-MM-DD" class="premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-600 text-[18px]">calendar_month</span>
+            <input type="text" id="outboundFormDateDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+            <input type="hidden" id="outboundFormDate" value="<?= date('Y-m-d') ?>">
           </div>
         </div>
         <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
-            <span>Jam / Waktu <span class="text-rose-500">*</span></span>
+          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
+              <span>Jam / Waktu</span>
+            </span>
+            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+              <span class="material-symbols-outlined text-[12px]">lock</span>
+              <span>Otomatis</span>
+            </span>
           </label>
-          <div class="premium-datepicker-wrapper w-full">
-            <span class="material-symbols-outlined picker-icon text-amber-600">schedule</span>
-            <input type="text" id="outboundFormTime" value="<?= date('H:i') ?>" required placeholder="HH:MM" class="premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
+          <div class="relative w-full">
+            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-600 text-[18px]">schedule</span>
+            <input type="text" id="outboundFormTimeDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+            <input type="hidden" id="outboundFormTime" value="<?= date('H:i') ?>">
           </div>
         </div>
       </div>
