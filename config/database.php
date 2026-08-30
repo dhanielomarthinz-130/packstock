@@ -254,6 +254,25 @@ class Database {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
+        // Handovers (Serah Terima Pekerjaan Shift)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `handovers` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `handover_no` VARCHAR(60) NOT NULL UNIQUE,
+                `from_user_id` INT NOT NULL,
+                `from_shift` VARCHAR(100) DEFAULT NULL,
+                `to_shift` VARCHAR(50) NOT NULL,
+                `notes` TEXT,
+                `photo_path` VARCHAR(255) DEFAULT NULL,
+                `status` ENUM('PENDING', 'RECEIVED') DEFAULT 'PENDING',
+                `received_by` INT DEFAULT NULL,
+                `receiver_shift` VARCHAR(100) DEFAULT NULL,
+                `received_at` DATETIME DEFAULT NULL,
+                `is_shared` TINYINT(1) NOT NULL DEFAULT 0,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
         // Schema migrations for start/submit duration & takt time tracking & multi-stage count
         $migrations = [
             "ALTER TABLE `tasks` ADD COLUMN `started_at` DATETIME NULL",
@@ -266,7 +285,10 @@ class Database {
             "ALTER TABLE `outbound_transactions` ADD COLUMN `duration_seconds` INT DEFAULT 0",
             "ALTER TABLE `stock_opnames` ADD COLUMN `counting_type` ENUM('STOCK_OPNAME', 'DYNAMIC_COUNT') NOT NULL DEFAULT 'STOCK_OPNAME'",
             "ALTER TABLE `stock_opnames` ADD COLUMN `max_stage` INT NOT NULL DEFAULT 1",
-            "ALTER TABLE `stock_opname_item_stages` ADD COLUMN `scanned_rack` VARCHAR(100) NULL"
+            "ALTER TABLE `stock_opname_item_stages` ADD COLUMN `scanned_rack` VARCHAR(100) NULL",
+            "ALTER TABLE `handovers` ADD COLUMN `is_shared` TINYINT(1) DEFAULT 0",
+            "ALTER TABLE `handovers` ADD COLUMN `from_shift` VARCHAR(100) NULL",
+            "ALTER TABLE `handovers` ADD COLUMN `receiver_shift` VARCHAR(100) NULL"
         ];
 
         foreach ($migrations as $sql) {
@@ -409,6 +431,19 @@ class Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS handovers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                handover_no TEXT NOT NULL UNIQUE,
+                from_user_id INTEGER NOT NULL,
+                to_shift TEXT NOT NULL,
+                notes TEXT,
+                photo_path TEXT,
+                status TEXT DEFAULT 'PENDING',
+                received_by INTEGER NULL,
+                received_at DATETIME NULL,
+                is_shared INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         ");
 
         // Schema migrations for SQLite
@@ -423,7 +458,10 @@ class Database {
             "ALTER TABLE outbound_transactions ADD COLUMN duration_seconds INTEGER DEFAULT 0",
             "ALTER TABLE stock_opnames ADD COLUMN counting_type TEXT DEFAULT 'STOCK_OPNAME'",
             "ALTER TABLE stock_opnames ADD COLUMN max_stage INTEGER DEFAULT 1",
-            "ALTER TABLE stock_opname_item_stages ADD COLUMN scanned_rack TEXT NULL"
+            "ALTER TABLE stock_opname_item_stages ADD COLUMN scanned_rack TEXT NULL",
+            "ALTER TABLE handovers ADD COLUMN is_shared INTEGER DEFAULT 0",
+            "ALTER TABLE handovers ADD COLUMN from_shift TEXT NULL",
+            "ALTER TABLE handovers ADD COLUMN receiver_shift TEXT NULL"
         ];
 
         foreach ($sqliteMigrations as $sql) {
@@ -466,8 +504,8 @@ class Database {
 
             $stmtUser = $pdo->prepare("{$insertIgnore} INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
             $stmtUser->execute(['admin', $passAdmin, 'Administrator Gudang', 'teknisi', 'Teknisi Gudang']);
-            $stmtUser->execute(['operator1', $passOp1, 'Budi Santoso', 'operator', 'Shift 1 (Pagi 07:00 - 15:00)']);
-            $stmtUser->execute(['operator2', $passOp2, 'Agus Pratama', 'operator', 'Shift 2 (Siang 15:00 - 23:00)']);
+            $stmtUser->execute(['operator1', $passOp1, 'Budi Santoso', 'operator', 'Shift 1 (Pagi 08:00 - 16:00)']);
+            $stmtUser->execute(['operator2', $passOp2, 'Agus Pratama', 'operator', 'Shift 2 (Siang 16:00 - 00:00)']);
         }
 
         // Seed default menu permissions
@@ -487,6 +525,7 @@ class Database {
             'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
             'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
             'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1],
+            'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1],
         ];
 
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

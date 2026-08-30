@@ -61,6 +61,87 @@ const App = {
     }, 4000);
   },
 
+  // Universal In-App Confirmation Modal (Promise-based replacement for window.confirm)
+  confirm({
+    title = 'Konfirmasi Tindakan',
+    message = 'Apakah Anda yakin ingin melanjutkan?',
+    confirmText = 'Ya, Lanjutkan',
+    cancelText = 'Batal',
+    type = 'emerald',
+    icon = 'help'
+  } = {}) {
+    return new Promise((resolve) => {
+      let modal = document.getElementById('app-confirm-dialog');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'app-confirm-dialog';
+        modal.className = 'fixed inset-0 z-[100000] bg-slate-950/80 backdrop-blur-xs hidden items-end sm:items-center justify-center p-4';
+        document.body.appendChild(modal);
+      }
+
+      const colorMap = {
+        emerald: {
+          bg: 'bg-emerald-100',
+          text: 'text-emerald-700',
+          btn: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/25',
+          icon: icon === 'help' ? 'check_circle' : icon
+        },
+        rose: {
+          bg: 'bg-rose-100',
+          text: 'text-rose-700',
+          btn: 'bg-rose-600 hover:bg-rose-700 shadow-rose-700/25',
+          icon: icon === 'help' ? 'warning' : icon
+        },
+        amber: {
+          bg: 'bg-amber-100',
+          text: 'text-amber-700',
+          btn: 'bg-amber-600 hover:bg-amber-700 shadow-amber-700/25',
+          icon: icon === 'help' ? 'help' : icon
+        },
+        blue: {
+          bg: 'bg-blue-100',
+          text: 'text-blue-700',
+          btn: 'bg-blue-600 hover:bg-blue-700 shadow-blue-700/25',
+          icon: icon === 'help' ? 'info' : icon
+        }
+      };
+
+      const c = colorMap[type] || colorMap.emerald;
+
+      modal.innerHTML = `
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up text-center">
+          <div class="w-14 h-14 rounded-2xl ${c.bg} ${c.text} flex items-center justify-center mx-auto shadow-inner">
+            <span class="material-symbols-outlined text-[30px]">${c.icon}</span>
+          </div>
+          <div>
+            <h3 class="font-black text-slate-900 text-sm tracking-tight leading-snug">${title}</h3>
+            <p class="text-xs text-slate-600 mt-1 leading-relaxed">${message}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+            <button type="button" id="appConfirmCancelBtn" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer">
+              ${cancelText}
+            </button>
+            <button type="button" id="appConfirmOkBtn" class="py-2.5 px-4 ${c.btn} active:scale-95 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer">
+              <span>${confirmText}</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      const cleanup = (val) => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        resolve(val);
+      };
+
+      document.getElementById('appConfirmOkBtn').onclick = () => cleanup(true);
+      document.getElementById('appConfirmCancelBtn').onclick = () => cleanup(false);
+    });
+  },
+
   // Generic JSON Fetch Helper
   async fetchJson(url, options = {}) {
     try {
@@ -163,6 +244,16 @@ const App = {
     if (val <= 0) return '-';
     if (val < 60) return `${val.toFixed(1)} dtk/item`;
     return `${(val / 60).toFixed(1)} mnt/item`;
+  },
+
+  escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   },
 
   // ================= UNIVERSAL SEARCHABLE DROPDOWN =================
@@ -448,6 +539,8 @@ const App = {
     });
   }
 };
+
+window.escapeHtml = App.escapeHtml;
 
 document.addEventListener('DOMContentLoaded', () => {
   App.initAllSearchableSelects();

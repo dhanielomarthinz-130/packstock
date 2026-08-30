@@ -309,6 +309,34 @@ if ($action === 'update_my_password' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 9. UPDATE MY ACTIVE SHIFT (Self-service rolling shift by operator / any user)
+if ($action === 'update_my_shift') {
+    $myId = (int)Auth::id();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $newShift = trim($input['shift'] ?? '');
+
+    if (empty($newShift)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Pilih shift kerja aktif terlebih dahulu!']);
+        exit;
+    }
+
+    $stmtUpdate = $pdo->prepare("UPDATE users SET shift = ? WHERE id = ?");
+    $stmtUpdate->execute([$newShift, $myId]);
+
+    // Update Session
+    if (isset($_SESSION['user'])) {
+        $_SESSION['user']['shift'] = $newShift;
+    }
+
+    echo json_encode([
+        'success' => true, 
+        'message' => 'Shift aktif berhasil diperbarui ke ' . $newShift,
+        'shift' => $newShift
+    ]);
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Aksi user tidak valid']);
 

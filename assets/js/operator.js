@@ -15,13 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
   loadOperatorBlankCounts(true);
   loadOperatorRecountTasks(true);
   loadOperatorStock(true);
+  loadHandovers(true);
+  initMandatoryShiftGate();
 
   // Auto refresh data every 15 seconds in background
   setInterval(() => {
     if (currentOpTab === 'tasks') loadOperatorTasks(true);
     if (currentOpTab === 'dynamic_count') loadOperatorDynamicTasks(true);
     if (currentOpTab === 'opname') { loadOperatorBlankCounts(true); loadOperatorRecountTasks(true); }
+    if (currentOpTab === 'handover') loadHandovers(true);
     loadOperatorStats(true);
+    loadHandovers(true);
   }, 15000);
 });
 
@@ -70,7 +74,7 @@ async function refreshOperatorData() {
 // Mobile Screen / Tab Switcher
 function switchOpTab(tabName) {
   currentOpTab = tabName;
-  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'history'];
+  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'history', 'handover'];
 
   allTabs.forEach(t => {
     const el = document.getElementById('op-tab-' + t);
@@ -84,6 +88,21 @@ function switchOpTab(tabName) {
     if (viewport) viewport.scrollTop = 0;
   }
 
+  // Update bottom navigation bar active states
+  const bottomNavs = ['home', 'tasks', 'dynamic_count', 'opname'];
+  bottomNavs.forEach(nav => {
+    const navBtn = document.getElementById('bottom-nav-' + nav);
+    if (navBtn) {
+      if (nav === tabName) {
+        navBtn.classList.remove('text-slate-400', 'font-semibold');
+        navBtn.classList.add('text-emerald-700', 'font-bold');
+      } else {
+        navBtn.classList.remove('text-emerald-700', 'font-bold');
+        navBtn.classList.add('text-slate-400', 'font-semibold');
+      }
+    }
+  });
+
   // Trigger sub-view data loading
   if (tabName === 'tasks') loadOperatorTasks();
   if (tabName === 'dynamic_count') loadOperatorDynamicTasks();
@@ -96,6 +115,7 @@ function switchOpTab(tabName) {
   if (tabName === 'inbound') populateOpInboundMaterials();
   if (tabName === 'stock') loadOperatorStock();
   if (tabName === 'history') renderCompletedHistory();
+  if (tabName === 'handover') loadHandovers();
 }
 
 // Side Drawer Navigation (Toggle in Top-Left)
@@ -1153,11 +1173,11 @@ async function loadOperatorRecountTasks(silent = false) {
     if (homeBadgeOpname) {
       if (pendingRecounts > 0) {
         homeBadgeOpname.innerText = `${pendingRecounts} Recount`;
-        homeBadgeOpname.className = 'px-2 py-0.5 rounded-full bg-purple-600 text-white font-black text-[10px] shadow-xs animate-pulse';
+        homeBadgeOpname.className = 'absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-purple-600 text-white font-black text-[9px] shadow-xs animate-pulse leading-none';
         homeBadgeOpname.classList.remove('hidden');
       } else {
         homeBadgeOpname.innerText = 'Aktif';
-        homeBadgeOpname.className = 'px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] shadow-xs';
+        homeBadgeOpname.className = 'absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none';
       }
     }
   }
@@ -1278,6 +1298,725 @@ async function handleRecountSubmit(e) {
     switchOpnameSubTab('recount');
   } else {
     App.toast(res.message || 'Gagal menyimpan recount', 'error');
+  }
+}
+
+// =========================================================================
+// HANDOVER SHIFT MODULE
+// =========================================================================
+let myHandoversList = [];
+let handoverSelectedFiles = [];
+
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  return text.toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function toggleHandoverForm() {
+  const formContainer = document.getElementById('handoverFormContainer');
+  const btnText = document.getElementById('btnToggleHandoverText');
+  if (!formContainer || !btnText) return;
+
+  const isHidden = formContainer.classList.contains('hidden');
+  if (isHidden) {
+    // Pre-select current active shift in handoverFromShift
+    const fromShiftSel = document.getElementById('handoverFromShift');
+    if (fromShiftSel && typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
+      for (let opt of fromShiftSel.options) {
+        if (opt.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(opt.value.toLowerCase()) || opt.value.toLowerCase().includes(CURRENT_USER_SHIFT.toLowerCase())) {
+          fromShiftSel.value = opt.value;
+          break;
+        }
+      }
+    }
+    formContainer.classList.remove('hidden');
+    btnText.innerText = 'Tutup Form Handover';
+  } else {
+    formContainer.classList.add('hidden');
+    btnText.innerText = 'Buat Handover Baru';
+  }
+}
+
+function previewHandoverPhoto(e) {
+  const files = e.target.files;
+  if (!files || files.length === 0) return;
+  
+  for (let i = 0; i < files.length; i++) {
+    handoverSelectedFiles.push(files[i]);
+  }
+  
+  // Clear file input so the same file or subsequent selections work properly
+  e.target.value = '';
+  
+  renderHandoverPreviews();
+}
+
+function renderHandoverPreviews() {
+  const label = document.getElementById('handoverPhotoLabel');
+  const previewContainer = document.getElementById('handoverPhotoPreviewContainer');
+  const clearBtn = document.getElementById('btnClearHandoverPhotos');
+  
+  if (label) {
+    label.innerText = handoverSelectedFiles.length > 0 
+      ? `${handoverSelectedFiles.length} Foto terpilih` 
+      : 'Belum ada foto';
+  }
+  
+  if (!previewContainer) return;
+  
+  if (handoverSelectedFiles.length === 0) {
+    previewContainer.innerHTML = '';
+    previewContainer.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+  
+  previewContainer.innerHTML = '';
+  previewContainer.className = 'grid grid-cols-3 gap-2 mt-2';
+  previewContainer.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+  
+  handoverSelectedFiles.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200';
+      itemDiv.innerHTML = `
+        <img src="${event.target.result}" alt="Preview" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedHandoverFile(${index})" class="absolute top-0.5 right-0.5 w-5 h-5 bg-rose-600/90 hover:bg-rose-700 text-white rounded-full flex items-center justify-center shadow-xs">
+          <span class="material-symbols-outlined text-[12px] font-black">close</span>
+        </button>
+      `;
+      previewContainer.appendChild(itemDiv);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeSelectedHandoverFile(index) {
+  handoverSelectedFiles.splice(index, 1);
+  renderHandoverPreviews();
+}
+
+function clearHandoverPhoto() {
+  const input = document.getElementById('handoverPhoto');
+  if (input) input.value = '';
+  handoverSelectedFiles = [];
+  renderHandoverPreviews();
+}
+
+async function submitHandover(e) {
+  e.preventDefault();
+  const fromShift = document.getElementById('handoverFromShift')?.value || CURRENT_USER_SHIFT || '';
+  const toShift = document.getElementById('handoverToShift').value;
+  const notes = document.getElementById('handoverNotes').value.trim();
+  
+  if (!toShift || !notes) {
+    App.toast('Mohon lengkapi shift tujuan dan catatan.', 'error');
+    return;
+  }
+  
+  const btn = document.getElementById('btnSubmitHandover');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>Mengirim...</span>';
+  
+  const formData = new FormData();
+  formData.append('from_shift', fromShift);
+  formData.append('to_shift', toShift);
+  formData.append('notes', notes);
+  
+  for (let i = 0; i < handoverSelectedFiles.length; i++) {
+    formData.append('photos[]', handoverSelectedFiles[i]);
+  }
+  
+  try {
+    const response = await fetch('../api/handovers.php?action=submit', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
+    
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span><span>Kirim Handover</span>';
+    
+    if (res.success) {
+      App.toast(res.message, 'success', 'Handover Berhasil');
+      document.getElementById('formSubmitHandover').reset();
+      clearHandoverPhoto();
+      toggleHandoverForm();
+      loadHandovers();
+    } else {
+      App.toast(res.message || 'Gagal mengirim handover', 'error');
+    }
+  } catch (error) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span><span>Kirim Handover</span>';
+    App.toast('Terjadi kesalahan jaringan.', 'error');
+  }
+}
+
+async function loadHandovers(silent = false) {
+  const container = document.getElementById('handoverListContainer');
+  if (!container) {
+    const res = await App.fetchJson('../api/handovers.php?action=list');
+    if (res.success) {
+      myHandoversList = res.data || [];
+      updateHandoverBadge();
+    }
+    return;
+  }
+  
+  if (!silent) {
+    container.innerHTML = `
+      <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+        <span class="material-symbols-outlined text-[20px] animate-spin text-rose-600 mb-1">progress_activity</span>
+        <p>Memuat daftar handover...</p>
+      </div>
+    `;
+  }
+  
+  const res = await App.fetchJson('../api/handovers.php?action=list');
+  if (res.success) {
+    myHandoversList = res.data || [];
+    renderHandoversList();
+    updateHandoverBadge();
+  } else {
+    container.innerHTML = `
+      <div class="p-6 bg-white rounded-2xl text-center text-rose-500 text-xs shadow-xs border border-rose-200">
+        <p>Gagal memuat data handover.</p>
+      </div>
+    `;
+  }
+}
+
+function updateHandoverBadge() {
+  const badge = document.getElementById('homeBadgeHandover');
+  if (!badge) return;
+  
+  const canAcceptHandover = (toShift) => {
+    if (typeof CURRENT_USER_SHIFT === 'undefined' || !CURRENT_USER_SHIFT || !toShift) return false;
+    const getShiftKey = (str) => {
+      const match = str.match(/shift\s*([0-9a-zA-Z]+)/i);
+      return match ? match[0].toLowerCase().replace(/\s+/g, '') : str.toLowerCase();
+    };
+    return getShiftKey(CURRENT_USER_SHIFT) === getShiftKey(toShift);
+  };
+  
+  const pendingForMe = myHandoversList.filter(item => item.status === 'PENDING' && canAcceptHandover(item.to_shift));
+  
+  if (pendingForMe.length > 0) {
+    badge.innerText = pendingForMe.length;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+function renderHandoversList() {
+  const container = document.getElementById('handoverListContainer');
+  if (!container) return;
+  
+  if (myHandoversList.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 bg-white/70 rounded-2xl text-center text-slate-400 text-xs border border-slate-200/50">
+        <span class="material-symbols-outlined text-[26px] text-slate-300 mb-1">published_with_changes</span>
+        <p>Belum ada serah terima shift hari ini.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  myHandoversList.forEach(item => {
+    const isPending = item.status === 'PENDING';
+    const statusBadge = isPending 
+      ? '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>' 
+      : `<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase">DONE</span>`;
+    
+    const shareBadge = (item.is_shared == 1)
+      ? `<span class="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 text-[9px] font-bold flex items-center gap-0.5 leading-none"><span class="material-symbols-outlined text-[10px] font-bold">check</span>Shared</span>`
+      : `<span class="px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 text-[9px] font-bold leading-none">Unshared</span>`;
+
+    html += `
+      <!-- COMPACT CARD FOR HANDOVER -->
+      <div onclick="openHandoverDetail(${item.id})" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs hover:border-rose-300 hover:shadow-sm transition-all cursor-pointer space-y-1.5 relative group active:scale-98">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-rose-500 text-[18px]">published_with_changes</span>
+            <h4 class="font-mono font-black text-slate-800 text-[11px]">${escapeHtml(item.handover_no)}</h4>
+          </div>
+          <div class="flex items-center gap-1">
+            ${statusBadge}
+            ${shareBadge}
+          </div>
+        </div>
+        
+        <div class="text-[10px] space-y-0.5 text-slate-600">
+          <div class="flex justify-between">
+            <span>Dari: <b class="text-slate-900">${escapeHtml(item.from_user_name)}</b> (${escapeHtml(item.from_user_shift)})</span>
+            <span class="text-slate-400 font-mono text-[9px]">${escapeHtml(item.created_at.substring(0, 16))}</span>
+          </div>
+          <div class="flex justify-between items-center mt-1">
+            <span>Tujuan: <b class="text-indigo-700">${escapeHtml(item.to_shift)}</b></span>
+            <span class="text-[9px] text-rose-500 font-bold flex items-center gap-0.5">Lihat Detail &rarr;</span>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+function openHandoverDetail(id) {
+  const item = myHandoversList.find(x => x.id == id);
+  if (!item) return;
+
+  // Set text contents
+  document.getElementById('detHandoverNo').innerText = item.handover_no;
+  document.getElementById('detHandoverDate').innerText = item.created_at;
+  document.getElementById('detHandoverFrom').innerText = item.from_user_name;
+  document.getElementById('detHandoverFromShift').innerText = item.from_user_shift;
+  document.getElementById('detHandoverToShift').innerText = item.to_shift;
+  document.getElementById('detHandoverNotes').innerText = item.notes;
+
+  // Status Badge
+  const isPending = item.status === 'PENDING';
+  const statusBadge = isPending 
+    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>' 
+    : `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase">DONE</span>`;
+  document.getElementById('detHandoverStatusBadge').innerHTML = statusBadge;
+
+  // Share Badge
+  const shareBadge = (item.is_shared == 1)
+    ? `<span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 border border-teal-200 text-[9px] font-bold flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px] font-bold">check</span>Shared</span>`
+    : `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-bold">Unshared</span>`;
+  document.getElementById('detHandoverShareBadge').innerHTML = shareBadge;
+
+  // Receiver info
+  const recContainer = document.getElementById('detHandoverReceivedByContainer');
+  if (item.received_by_name) {
+    document.getElementById('detHandoverReceivedBy').innerText = `${item.received_by_name} (${item.received_at})`;
+    recContainer.classList.remove('hidden');
+  } else {
+    recContainer.classList.add('hidden');
+  }
+
+  // Parse photos
+  let photos = [];
+  if (item.photo_path) {
+    if (item.photo_path.startsWith('[')) {
+      try {
+        photos = JSON.parse(item.photo_path);
+      } catch(e) {
+        photos = [item.photo_path];
+      }
+    } else {
+      photos = [item.photo_path];
+    }
+  }
+
+  // Populate Photos Grid
+  const grid = document.getElementById('detHandoverPhotosGrid');
+  if (photos.length > 0) {
+    let html = '';
+    photos.forEach((p, idx) => {
+      html += `
+        <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative" onclick="openPhotoViewer('${escapeHtml(p)}', '${escapeHtml(item.handover_no)}', '${escapeHtml(item.created_at)}', '${escapeHtml(item.from_user_name)}')">
+          <img src="../${escapeHtml(p)}" alt="Attachment" class="h-24 w-full object-cover">
+          <div class="absolute bottom-1 right-1 bg-black/40 text-white/50 text-[7px] px-1 rounded font-mono scale-[0.9]">VIEW</div>
+        </div>
+      `;
+    });
+    grid.innerHTML = html;
+    grid.parentElement.classList.remove('hidden');
+  } else {
+    grid.innerHTML = '';
+    grid.parentElement.classList.add('hidden');
+  }
+
+  // Action buttons
+  const canAcceptHandover = (toShift) => {
+    if (typeof CURRENT_USER_SHIFT === 'undefined' || !CURRENT_USER_SHIFT || !toShift) return false;
+    const getShiftKey = (str) => {
+      const match = str.match(/shift\s*([0-9a-zA-Z]+)/i);
+      return match ? match[0].toLowerCase().replace(/\s+/g, '') : str.toLowerCase();
+    };
+    return getShiftKey(CURRENT_USER_SHIFT) === getShiftKey(toShift);
+  };
+
+  const actions = document.getElementById('detHandoverActions');
+  let actionsHtml = '';
+  
+  if (isPending && canAcceptHandover(item.to_shift)) {
+    actionsHtml += `
+      <button onclick="receiveHandoverInModal(${item.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1 shadow-md">
+        <span class="material-symbols-outlined text-[16px]">done_all</span>
+        <span>Terima & Selesaikan</span>
+      </button>
+    `;
+  }
+
+  actionsHtml += `
+    <button onclick="shareHandover(${item.id})" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1 border border-slate-300">
+      <span class="material-symbols-outlined text-[16px] text-slate-600">share</span>
+      <span>Share</span>
+    </button>
+  `;
+
+  actions.innerHTML = actionsHtml;
+
+  App.openModal('modalHandoverDetail');
+}
+
+function openPhotoViewer(photoPath, handoverNo, date, creator) {
+  const viewerImage = document.getElementById('viewerImage');
+  const viewerDesc = document.getElementById('viewerImageDesc');
+  const wmTopLeft = document.getElementById('wmTopLeft');
+  const wmBottomLeft = document.getElementById('wmBottomLeft');
+  const wmBottomRight = document.getElementById('wmBottomRight');
+
+  if (viewerImage) viewerImage.src = `../${photoPath}`;
+  if (viewerDesc) viewerDesc.innerText = `Foto lampiran untuk berkas ${handoverNo} oleh ${creator}`;
+
+  // Apply Watermark content dynamically
+  if (wmTopLeft) wmTopLeft.innerText = `IMS - BY ${creator.toUpperCase()}`;
+  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${handoverNo}`;
+  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date.substring(0, 10)}`;
+
+  App.openModal('modalHandoverPhotoViewer');
+}
+
+async function receiveHandover(id) {
+  const confirmed = await App.confirm({
+    title: 'Terima Serah Terima Tugas',
+    message: 'Apakah Anda yakin ingin menerima serah terima pekerjaan ini dan menandainya sebagai Selesai (DONE)?',
+    confirmText: 'Ya, Terima & Selesaikan',
+    cancelText: 'Batal',
+    type: 'emerald',
+    icon: 'task_alt'
+  });
+
+  if (!confirmed) return;
+  
+  const res = await App.fetchJson('../api/handovers.php?action=receive', {
+    method: 'POST',
+    body: 'id=' + id,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+  
+  if (res.success) {
+    App.toast(res.message, 'success', 'Handover Diterima');
+    loadHandovers(true);
+  } else {
+    App.toast(res.message || 'Gagal menerima handover', 'error');
+  }
+}
+
+async function receiveHandoverInModal(id) {
+  const confirmed = await App.confirm({
+    title: 'Terima Serah Terima Tugas',
+    message: 'Apakah Anda yakin ingin menerima serah terima pekerjaan ini dan menandainya sebagai Selesai (DONE)?',
+    confirmText: 'Ya, Terima & Selesaikan',
+    cancelText: 'Batal',
+    type: 'emerald',
+    icon: 'task_alt'
+  });
+
+  if (!confirmed) return;
+
+  App.closeModal('modalHandoverDetail');
+
+  const res = await App.fetchJson('../api/handovers.php?action=receive', {
+    method: 'POST',
+    body: 'id=' + id,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Handover Diterima');
+    loadHandovers(true);
+  } else {
+    App.toast(res.message || 'Gagal menerima handover', 'error');
+  }
+}
+
+async function shareHandover(id) {
+  const item = myHandoversList.find(x => x.id == id);
+  if (!item) return;
+  
+  // Mark as shared in database asynchronously
+  fetch('../api/handovers.php?action=mark_shared', {
+    method: 'POST',
+    body: 'id=' + id,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  }).then(response => response.json()).then(res => {
+    if (res.success) {
+      item.is_shared = 1;
+      // Update share badge in the currently opened details modal if visible
+      const badge = document.getElementById('detHandoverShareBadge');
+      if (badge) {
+        badge.innerHTML = `<span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 border border-teal-200 text-[9px] font-bold flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px] font-bold">check</span>Shared</span>`;
+      }
+      loadHandovers(true);
+    }
+  }).catch(console.error);
+  
+  // Parse photos
+  let photos = [];
+  if (item.photo_path) {
+    if (item.photo_path.startsWith('[')) {
+      try {
+        photos = JSON.parse(item.photo_path);
+      } catch(e) {
+        photos = [item.photo_path];
+      }
+    } else {
+      photos = [item.photo_path];
+    }
+  }
+
+  const shareText = `*HANDOVER SHIFT REPORT*
+No: ${item.handover_no}
+Dari: ${item.from_user_name} (${item.from_user_shift})
+Tujuan: ${item.to_shift}
+Status: ${item.status === 'PENDING' ? '🔴 PENDING (Menunggu)' : '🟢 DONE (Diterima)'}
+
+Catatan / Pekerjaan:
+${item.notes}
+
+Dikirim via PackStock Mobile WMS`;
+
+  // Fetch actual photo files to attach directly to the share intent
+  let fileObjects = [];
+  if (photos.length > 0) {
+    try {
+      for (let i = 0; i < photos.length; i++) {
+        const p = photos[i];
+        const res = await fetch(`../${p}`);
+        const blob = await res.blob();
+        const ext = p.split('.').pop() || 'jpg';
+        const file = new File([blob], `handover_${item.handover_no}_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+        fileObjects.push(file);
+      }
+    } catch (err) {
+      console.warn('Could not load photo blobs for file sharing:', err);
+    }
+  }
+
+  // 1. If file sharing is supported by device, share actual photos with caption
+  if (navigator.share && fileObjects.length > 0 && navigator.canShare && navigator.canShare({ files: fileObjects })) {
+    try {
+      await navigator.share({
+        title: `Handover Shift Report - ${item.handover_no}`,
+        text: shareText,
+        files: fileObjects
+      });
+      return;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.warn('Native file share failed, trying text fallback:', err);
+      } else {
+        return; // User dismissed share sheet
+      }
+    }
+  }
+
+  // 2. Fallback text share with links if file sharing is not supported
+  let photoUrlText = '';
+  if (photos.length > 0) {
+    photoUrlText += '\n\nFoto Lampiran:';
+    photos.forEach((p, idx) => {
+      photoUrlText += `\n${idx + 1}. ${window.location.origin}/${p}`;
+    });
+  }
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Handover Shift Report - ${item.handover_no}`,
+        text: shareText + photoUrlText
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  // 3. Fallback to WhatsApp Web
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + photoUrlText)}`;
+  window.open(waUrl, '_blank');
+}
+
+// =========================================================================
+// SELF-SERVICE ROLLING SHIFT SWITCHER (OPERATOR)
+// =========================================================================
+function openShiftSwitcherModal() {
+  const radios = document.querySelectorAll('input[name="myActiveShift"]');
+  radios.forEach(r => {
+    if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
+      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase()) || r.value.toLowerCase().includes(CURRENT_USER_SHIFT.toLowerCase())) {
+        r.checked = true;
+      }
+    }
+  });
+  App.openModal('modalChangeMyShift');
+}
+
+async function submitChangeMyShift(e) {
+  e.preventDefault();
+  const selectedRadio = document.querySelector('input[name="myActiveShift"]:checked');
+  if (!selectedRadio) {
+    App.toast('Silakan pilih salah satu shift kerja.', 'warning');
+    return;
+  }
+
+  const chosenShift = selectedRadio.value;
+  const btn = document.getElementById('btnSaveMyShift');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+
+  try {
+    const res = await App.fetchJson('../api/users.php?action=update_my_shift', {
+      method: 'POST',
+      body: JSON.stringify({ shift: chosenShift })
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Shift</span>';
+
+    if (res.success) {
+      CURRENT_USER_SHIFT = chosenShift;
+      
+      // Update Header & Home UI
+      const headerDisplay = document.getElementById('headerUserShiftDisplay');
+      if (headerDisplay) headerDisplay.innerText = chosenShift;
+
+      const homeLabel = document.getElementById('homeCurrentShiftLabel');
+      if (homeLabel) homeLabel.innerText = chosenShift;
+
+      const fromShiftSel = document.getElementById('handoverFromShift');
+      if (fromShiftSel) fromShiftSel.value = chosenShift;
+
+      App.toast(res.message, 'success', 'Shift Diperbarui');
+      App.closeModal('modalChangeMyShift');
+
+      // Refresh handovers to re-evaluate notification badges for this new shift
+      loadHandovers(true);
+    } else {
+      App.toast(res.message || 'Gagal mengubah shift.', 'error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Shift</span>';
+    App.toast('Terjadi kesalahan jaringan.', 'error');
+  }
+}
+
+// =========================================================================
+// MANDATORY SHIFT GATEKEEPER & TIME-BASED AUTO-SELECTION
+// =========================================================================
+function initMandatoryShiftGate() {
+  const now = new Date();
+  const hour = now.getHours();
+  // 08:00 to 15:59 -> Shift 1
+  // 16:00 to 07:59 -> Shift 2
+  const isShift1Time = (hour >= 8 && hour < 16);
+
+  // Set default radio selection based on current clock in Gatekeeper
+  const gateRadio1 = document.querySelector('input[name="gateActiveShift"][value*="Shift 1"]');
+  const gateRadio2 = document.querySelector('input[name="gateActiveShift"][value*="Shift 2"]');
+  const badge1 = document.getElementById('gateBadgeShift1');
+  const badge2 = document.getElementById('gateBadgeShift2');
+
+  if (isShift1Time) {
+    if (gateRadio1) gateRadio1.checked = true;
+    if (badge1) badge1.classList.remove('hidden');
+    if (badge2) badge2.classList.add('hidden');
+  } else {
+    if (gateRadio2) gateRadio2.checked = true;
+    if (badge2) badge2.classList.remove('hidden');
+    if (badge1) badge1.classList.add('hidden');
+  }
+
+  // Also pre-check in regular shift modal
+  const shiftRadios = document.querySelectorAll('input[name="myActiveShift"]');
+  shiftRadios.forEach(r => {
+    if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
+      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase())) {
+        r.checked = true;
+      }
+    } else {
+      if (isShift1Time && r.value.includes('Shift 1')) r.checked = true;
+      if (!isShift1Time && r.value.includes('Shift 2')) r.checked = true;
+    }
+  });
+
+  // Check if operator has confirmed their shift for this session
+  const isConfirmed = sessionStorage.getItem('packstock_op_shift_confirmed');
+  const gateModal = document.getElementById('modalMandatoryShiftGate');
+  if (!isConfirmed && gateModal) {
+    gateModal.classList.remove('hidden');
+    gateModal.classList.add('flex');
+  }
+}
+
+async function submitMandatoryShiftGate(e) {
+  e.preventDefault();
+  const selectedRadio = document.querySelector('input[name="gateActiveShift"]:checked');
+  if (!selectedRadio) {
+    App.toast('Silakan pilih salah satu shift kerja.', 'warning');
+    return;
+  }
+
+  const chosenShift = selectedRadio.value;
+  const btn = document.getElementById('btnGateConfirmShift');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Mengonfirmasi...</span>';
+
+  try {
+    const res = await App.fetchJson('../api/users.php?action=update_my_shift', {
+      method: 'POST',
+      body: JSON.stringify({ shift: chosenShift })
+    });
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Buka Menu</span>';
+
+    if (res.success) {
+      sessionStorage.setItem('packstock_op_shift_confirmed', 'true');
+      CURRENT_USER_SHIFT = chosenShift;
+
+      // Update UI displays
+      const headerDisplay = document.getElementById('headerUserShiftDisplay');
+      if (headerDisplay) headerDisplay.innerText = chosenShift;
+
+      const homeLabel = document.getElementById('homeCurrentShiftLabel');
+      if (homeLabel) homeLabel.innerText = chosenShift;
+
+      const fromShiftSel = document.getElementById('handoverFromShift');
+      if (fromShiftSel) fromShiftSel.value = chosenShift;
+
+      const gateModal = document.getElementById('modalMandatoryShiftGate');
+      if (gateModal) {
+        gateModal.classList.add('hidden');
+        gateModal.classList.remove('flex');
+      }
+
+      App.toast(`Shift aktif Anda: ${chosenShift}`, 'success', 'Selamat Bertugas');
+      loadHandovers(true);
+    } else {
+      App.toast(res.message || 'Gagal menyimpan shift.', 'error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Buka Menu</span>';
+    App.toast('Terjadi kesalahan jaringan.', 'error');
   }
 }
 

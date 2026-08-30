@@ -32,7 +32,7 @@ require_once __DIR__ . '/../includes/header.php';
     <nav class="flex-1 px-3 py-3.5 space-y-3.5 overflow-y-auto">
       
       <!-- Section 1: Ringkasan & Dashboard -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="dashboard">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dashboard">
         <button type="button" onclick="toggleSidebarSection('dashboard')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
@@ -62,7 +62,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 2: Group Inventory -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="inventory">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="inventory">
         <button type="button" onclick="toggleSidebarSection('inventory')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
@@ -104,6 +104,15 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Task</span>
           </button>
 
+          <button onclick="switchAdminTab('handover')" id="nav-handover" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-rose-600">published_with_changes</span>
+              <span class="sidebar-text truncate">Handover Shift</span>
+            </div>
+            <span id="sidebarHandoverBadge" class="sidebar-badge hidden px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">0</span>
+          </button>
+
           <?php if (Auth::isSuperAdmin()): ?>
           <button onclick="switchAdminTab('mutations')" id="nav-mutations" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
@@ -118,7 +127,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 3: Group Dynamic Count -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="dynamic_count">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dynamic_count">
         <button type="button" onclick="toggleSidebarSection('dynamic_count')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">
@@ -151,7 +160,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 4: Group Stock Opname -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="opname">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="opname">
         <button type="button" onclick="toggleSidebarSection('opname')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-teal-100 text-teal-800 border border-teal-200 shrink-0">
@@ -184,7 +193,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 5: Group Adjustment -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="adjust">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="adjust">
         <button type="button" onclick="toggleSidebarSection('adjust')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
@@ -208,7 +217,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 6: Administrasi & Otorisasi -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="pengaturan">
+      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="pengaturan">
         <button type="button" onclick="toggleSidebarSection('pengaturan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
@@ -249,7 +258,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 7: Akses Lapangan (Field Access Card) -->
-      <div id="sidebarFieldAccessContainer" class="sidebar-section hidden pt-1 p-1 rounded-2xl transition-all" data-section-id="lapangan">
+      <div id="sidebarFieldAccessContainer" class="sidebar-section is-collapsed hidden pt-1 p-1 rounded-2xl transition-all" data-section-id="lapangan">
         <button type="button" onclick="toggleSidebarSection('lapangan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
@@ -2309,6 +2318,122 @@ require_once __DIR__ . '/../includes/header.php';
 
       </div>
 
+      <!-- ================= TAB: HANDOVER (SERAH TERIMA SHIFT) ================= -->
+      <div id="tab-handover" class="hidden space-y-4">
+        
+        <!-- Top KPI Metric Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">published_with_changes</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Handover</p>
+              <h3 id="adminHandoverTotalCount" class="text-xl font-black text-slate-900 mt-0.5">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">hourglass_top</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Menunggu (Pending)</p>
+              <h3 id="adminHandoverPendingCount" class="text-xl font-black text-amber-700 mt-0.5">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">task_alt</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Selesai (Done)</p>
+              <h3 id="adminHandoverDoneCount" class="text-xl font-black text-emerald-700 mt-0.5">0</h3>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[22px]">share</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-teal-600 uppercase tracking-wider">Sudah di-Share</p>
+              <h3 id="adminHandoverSharedCount" class="text-xl font-black text-teal-700 mt-0.5">0</h3>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            
+            <!-- Search Box -->
+            <div class="relative flex-1 min-w-[200px] max-w-md">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[18px]">search</span>
+              </span>
+              <input type="text" id="adminHandoverSearchInput" oninput="filterAdminHandovers()" placeholder="Cari No. Handover, PIC pengirim, penerima, atau catatan..." 
+                class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-rose-500 focus:bg-white transition-all">
+            </div>
+
+            <!-- Filters -->
+            <div class="flex items-center gap-2 flex-wrap text-xs">
+              <select id="adminHandoverStatusFilter" onchange="filterAdminHandovers()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:border-rose-500">
+                <option value="ALL">Semua Status (All)</option>
+                <option value="PENDING">🔴 Status: PENDING</option>
+                <option value="DONE">🟢 Status: DONE</option>
+              </select>
+
+              <select id="adminHandoverToShiftFilter" onchange="filterAdminHandovers()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:border-rose-500">
+                <option value="ALL">Semua Shift Tujuan</option>
+                <option value="Shift 1">Shift 1 (Pagi)</option>
+                <option value="Shift 2">Shift 2 (Siang)</option>
+                <option value="Shift 3">Shift 3 (Malam)</option>
+              </select>
+
+              <select id="adminHandoverShareFilter" onchange="filterAdminHandovers()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:border-rose-500">
+                <option value="ALL">Semua Share</option>
+                <option value="1">Sudah di-Share</option>
+                <option value="0">Belum di-Share</option>
+              </select>
+
+              <button type="button" onclick="loadAdminHandovers()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-xl flex items-center gap-1 transition-all">
+                <span class="material-symbols-outlined text-[16px]">refresh</span>
+                <span>Refresh</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DataTable Container -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-700 font-extrabold border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                  <th class="p-3 w-10 text-center">#</th>
+                  <th class="p-3 min-w-[140px]">No. Dokumen & Waktu</th>
+                  <th class="p-3 min-w-[150px]">Pengirim & Shift Asal</th>
+                  <th class="p-3 min-w-[130px]">Shift Tujuan</th>
+                  <th class="p-3 min-w-[220px]">Catatan / Pekerjaan (Caption)</th>
+                  <th class="p-3 min-w-[110px] text-center">Lampiran Foto</th>
+                  <th class="p-3 min-w-[110px] text-center">Status</th>
+                  <th class="p-3 min-w-[150px]">Penerima & Waktu</th>
+                  <th class="p-3 min-w-[100px] text-center">Share</th>
+                  <th class="p-3 w-20 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminHandoverTableBody" class="divide-y divide-slate-100">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
       <!-- ================= 6. TAB: LOG MUTASI STOK ================= -->
       <div id="tab-mutations" class="hidden space-y-4">
         <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
@@ -3218,8 +3343,14 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Shift / Divisi Penugasan</label>
-        <input type="text" id="userShiftInput" placeholder="Contoh: Shift 1 (Pagi 07:00-15:00) / Gudang B" 
-          class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
+        <select id="userShiftInput" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
+          <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
+          <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
+          <option value="Shift 3 (Malam 00:00 - 08:00)">Shift 3 (Malam 00:00 - 08:00)</option>
+          <option value="Non-Shift / Normal (08:00 - 17:00)">Non-Shift / Normal (08:00 - 17:00)</option>
+          <option value="Teknisi Utama">Teknisi Utama</option>
+          <option value="Teknisi Gudang">Teknisi Gudang</option>
+        </select>
       </div>
 
       <div>
@@ -3839,6 +3970,112 @@ require_once __DIR__ . '/../includes/header.php';
     <div id="countDetailContent" class="p-5 overflow-y-auto flex-1">
       <!-- Content populated by JS -->
     </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADMIN HANDOVER DETAIL ================= -->
+<div id="modalAdminHandoverDetail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto animate-scale-up relative">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[22px]">published_with_changes</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-sm uppercase tracking-wider">Detail Handover Shift</h3>
+          <p id="admDetHandoverNo" class="text-xs text-slate-500 font-mono">HND-XXXX</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalAdminHandoverDetail')" class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Details Grid Info -->
+    <div class="text-xs space-y-2 text-slate-600 bg-slate-50 p-4 rounded-2xl border border-slate-200/70">
+      <div class="flex justify-between items-center">
+        <span>Tanggal Dibuat:</span>
+        <b id="admDetHandoverDate" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Pengirim (PIC):</span>
+        <b id="admDetHandoverFrom" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Shift Pengirim:</span>
+        <b id="admDetHandoverFromShift" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Target Shift Tujuan:</span>
+        <b id="admDetHandoverToShift" class="text-indigo-700 font-black"></b>
+      </div>
+      <div id="admDetHandoverReceivedByContainer" class="flex justify-between items-center hidden">
+        <span>Diterima Oleh:</span>
+        <b id="admDetHandoverReceivedBy" class="text-emerald-700 font-black"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Status Berkas:</span>
+        <span id="admDetHandoverStatusBadge"></span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Status Share:</span>
+        <span id="admDetHandoverShareBadge"></span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="space-y-1.5">
+      <label class="block font-black text-slate-700 text-xs uppercase tracking-wider">Catatan / Pekerjaan (Caption):</label>
+      <div id="admDetHandoverNotes" class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-slate-800 text-xs font-mono whitespace-pre-wrap leading-relaxed"></div>
+    </div>
+
+    <!-- Photos Grid -->
+    <div class="space-y-2">
+      <label class="block font-black text-slate-700 text-xs uppercase tracking-wider">Foto Lampiran:</label>
+      <div id="admDetHandoverPhotosGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+
+    <div class="pt-3 border-t border-slate-100 flex justify-end">
+      <button type="button" onclick="App.closeModal('modalAdminHandoverDetail')" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADMIN PHOTO VIEWER WITH WATERMARK ================= -->
+<div id="modalAdminPhotoViewer" class="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="max-w-2xl w-full flex flex-col items-center space-y-4 relative">
+    <button onclick="App.closeModal('modalAdminPhotoViewer')" class="absolute -top-12 right-0 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined text-[22px]">close</span>
+    </button>
+
+    <div class="relative w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black flex items-center justify-center select-none" style="aspect-ratio: 4/3;">
+      <img id="adminViewerImage" src="#" alt="Watermarked Image" class="w-full h-full object-contain">
+
+      <!-- Dynamic Visual Watermark Overlay -->
+      <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-5 z-10 text-[10px] font-mono tracking-wider font-extrabold uppercase select-none">
+        <div class="flex justify-between items-center text-white/60 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/40 px-3 py-1 rounded-lg">
+          <span id="admWmTopLeft">PACKSTOCK CONTROL</span>
+          <span id="admWmTopRight">HANDOVER REPORT</span>
+        </div>
+        
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden rotate-[-30deg]">
+          <span class="text-white/15 text-6xl font-black tracking-[0.3em] whitespace-nowrap select-none drop-shadow-sm">
+            IMS
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center text-white/60 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/40 px-3 py-1 rounded-lg mt-auto">
+          <span id="admWmBottomLeft">NO: HND-XXXX</span>
+          <span id="admWmBottomRight">DATE: 2026-08-30</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full text-center text-white/80 text-xs px-2" id="adminViewerImageDesc"></div>
   </div>
 </div>
 

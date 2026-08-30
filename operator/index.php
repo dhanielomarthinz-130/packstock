@@ -15,7 +15,12 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="hidden sm:block absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- MOBILE APP WRAPPER (Smartphone Frame on Desktop, Fullscreen on Mobile) -->
-  <div class="mobile-app-wrapper bg-slate-100 flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-800 shadow-2xl shadow-emerald-950/40 relative font-sans">
+  <div class="mobile-app-wrapper flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-800 shadow-2xl shadow-emerald-950/40 relative font-sans" style="background-image: linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(to bottom, #f8fafc, #f1f5f9 95%, #e2e8f0); background-size: 24px 24px, 24px 24px, 100% 100%;">
+    
+    <!-- Premium Ambient Background Orbs -->
+    <div class="absolute top-[250px] -left-16 w-52 h-52 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute bottom-20 -right-16 w-52 h-52 bg-indigo-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute bottom-[-50px] left-10 w-44 h-44 bg-teal-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
     
     <!-- TOP APP BAR (TOGGLE MENU, OPERATOR PROFILE & QUICK ACTIONS) -->
     <header class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white px-3.5 py-3 flex items-center justify-between shadow-md flex-shrink-0 z-10 border-b border-emerald-900/40">
@@ -28,7 +33,7 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
 
-        <div onclick="openSettingProfileModal()" title="Lihat Profil & Pengaturan" class="flex items-center gap-2 min-w-0 truncate cursor-pointer group">
+        <div onclick="openShiftSwitcherModal()" title="Klik untuk Ganti Shift Kerja Aktif" class="flex items-center gap-2 min-w-0 truncate cursor-pointer group">
           <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-200 p-0.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
             <div class="w-full h-full rounded-[14px] bg-emerald-900 flex items-center justify-center text-emerald-300 font-black">
               <span class="material-symbols-outlined text-[20px]">engineering</span>
@@ -40,7 +45,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="w-2 h-2 rounded-full bg-emerald-300 shrink-0"></span>
             </div>
             <p class="text-[10px] text-emerald-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
-              <span class="truncate"><?= htmlspecialchars($user['shift'] ?? 'PIC') ?></span>
+              <span id="headerUserShiftDisplay" class="truncate font-bold bg-emerald-900/60 px-1.5 py-0.2 rounded border border-emerald-500/40 text-emerald-200"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></span>
               <span class="text-emerald-300/70">&bull;</span>
               <span class="text-emerald-200 font-mono text-[9px]">#<?= htmlspecialchars($user['id'] ?? '0') ?></span>
             </p>
@@ -95,9 +100,18 @@ require_once __DIR__ . '/../includes/header.php';
             <h3 class="text-lg font-black tracking-tight leading-snug">
               Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
             </h3>
-            <p class="text-xs text-emerald-100/90 leading-relaxed font-medium">
-              Pilih menu di bawah untuk serah terima packaging ke line produksi, stock opname, atau input barang masuk.
-            </p>
+
+            <!-- Quick Shift Indicator & Switcher Strip -->
+            <div class="flex items-center justify-between pt-2 border-t border-emerald-600/40">
+              <div class="flex items-center gap-1.5 text-xs text-emerald-100 font-medium truncate">
+                <span class="material-symbols-outlined text-[16px] text-emerald-300 shrink-0">schedule</span>
+                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></b></span>
+              </div>
+              <button type="button" onclick="openShiftSwitcherModal()" class="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-[10px] font-black transition-all flex items-center gap-1 border border-white/25 shadow-xs shrink-0 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
+                <span>Ganti Shift</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -126,113 +140,114 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="flex items-center justify-between px-1 pt-1">
           <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
             <span class="material-symbols-outlined text-emerald-700 text-[18px]">grid_view</span>
-            <span>Menu Operasional Lapangan</span>
+            <span>Menu Operator</span>
           </h4>
           <span class="text-[11px] text-slate-400 font-bold">6 Modul</span>
         </div>
 
         <!-- APP LAUNCHER GRID (NATIVE MOBILE APP TILES) -->
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-3 gap-y-4 gap-x-2">
 
           <!-- APP 1: TUGAS PENGAMBILAN PACKAGING -->
           <div onclick="switchOpTab('tasks')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">assignment</span>
               </div>
-              <span id="homeBadgeTasks" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-black text-[10px] shadow-xs animate-bounce">
-                0 Tugas
+              <span id="homeBadgeTasks" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] shadow-xs leading-none">
+                0
               </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Tugas Pengambilan</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Serah terima packaging ke line</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Picking</h5>
             </div>
           </div>
 
           <!-- APP 2: DYNAMIC COUNTING (TASK SKU) -->
           <div onclick="switchOpTab('dynamic_count')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-indigo-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">checklist</span>
               </div>
-              <span id="homeBadgeDynamicCount" class="hidden px-2 py-0.5 rounded-full bg-indigo-600 text-white font-black text-[10px] shadow-xs animate-pulse">
-                0 Task
+              <span id="homeBadgeDynamicCount" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-indigo-600 text-white font-black text-[9px] shadow-xs leading-none">
+                0
               </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-indigo-700 transition-colors">Dynamic Counting</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Task SKU & konfirmasi rak</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-indigo-700 transition-colors">Counting</h5>
             </div>
           </div>
 
           <!-- APP 3: STOCK OPNAME (PURE BLANK COUNT) -->
           <div onclick="switchOpTab('opname')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-emerald-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">inventory_2</span>
               </div>
-              <span id="homeBadgeOpname" class="hidden px-2 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[10px] shadow-xs animate-pulse">
+              <span id="homeBadgeOpname" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none">
                 Aktif
               </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Hitung fisik mandiri & recount</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
             </div>
           </div>
 
           <!-- APP 4: PENERIMAAN BARANG MASUK -->
           <div onclick="switchOpTab('inbound')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-teal-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">move_to_inbox</span>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 font-bold text-[10px] border border-teal-200">
-                Draft
-              </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-teal-700 transition-colors">Penerimaan Barang</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Inbound multi-product draft</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-teal-700 transition-colors">Putaway</h5>
             </div>
           </div>
 
           <!-- APP 5: CEK STOK & RAK -->
           <div onclick="switchOpTab('stock')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-sky-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">shelves</span>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 font-bold text-[10px] border border-sky-200">
-                Pencarian
-              </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-sky-700 transition-colors">Cek Stok & Rak</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Cari lokasi rak & sisa stok</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-sky-700 transition-colors">Stock</h5>
             </div>
           </div>
 
           <!-- APP 6: RIWAYAT SELESAI -->
           <div onclick="switchOpTab('history')" 
-            class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md hover:border-slate-400 active:scale-95 transition-all cursor-pointer flex flex-col justify-between h-32 relative overflow-hidden group">
-            <div class="flex items-start justify-between">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform">
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform">
                 <span class="material-symbols-outlined text-[24px]">history</span>
               </div>
-              <span id="homeBadgeDone" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] border border-slate-200">
-                Log
+            </div>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-slate-800 transition-colors">History</h5>
+            </div>
+          </div>
+
+          <!-- APP 7: HANDOVER (SERAH TERIMA SHIFT) -->
+          <div onclick="switchOpTab('handover')" 
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">published_with_changes</span>
+              </div>
+              <span id="homeBadgeHandover" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[9px] shadow-xs leading-none">
+                New
               </span>
             </div>
-            <div>
-              <h5 class="font-black text-slate-900 text-xs tracking-tight leading-snug group-hover:text-slate-800 transition-colors">Riwayat Selesai</h5>
-              <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-1">Catatan serah terima line</p>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-rose-700 transition-colors">Handover</h5>
             </div>
           </div>
 
@@ -598,7 +613,143 @@ require_once __DIR__ . '/../includes/header.php';
         <div id="opHistoryContainer" class="space-y-2.5"></div>
       </div>
 
+      <!-- ========================================================================= -->
+      <!-- 6. SCREEN: HANDOVER SHIFT (SERAH TERIMA PEKERJAAN) -->
+      <!-- ========================================================================= -->
+      <div id="op-tab-handover" class="hidden space-y-3.5 animate-fade-in">
+        
+        <!-- Screen Back Bar -->
+        <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-rose-800 bg-slate-100 hover:bg-rose-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Menu Utama</span>
+          </button>
+
+          <div class="text-right">
+            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Handover Shift</h3>
+            <span class="text-[10px] text-rose-700 font-semibold">Serah Terima Tugas</span>
+          </div>
+        </div>
+
+        <!-- Button to Toggle Handover Form -->
+        <button type="button" onclick="toggleHandoverForm()" 
+          class="w-full py-2.5 bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-600 hover:to-orange-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-98">
+          <span class="material-symbols-outlined text-[18px]">add_circle</span>
+          <span id="btnToggleHandoverText">Buat Handover Baru</span>
+        </button>
+
+        <!-- Form Submit Handover (Hidden by default) -->
+        <div id="handoverFormContainer" class="hidden bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+          <h4 class="font-black text-slate-900 text-xs uppercase tracking-wider">Form Serah Terima Shift</h4>
+          
+          <form id="formSubmitHandover" onsubmit="submitHandover(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Shift Asal Saya (Pengirim) <span class="text-rose-500">*</span></label>
+                <select id="handoverFromShift" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-rose-500 focus:bg-white text-xs font-semibold">
+                  <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
+                  <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Shift Tujuan (Penerima) <span class="text-rose-500">*</span></label>
+                <select id="handoverToShift" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-rose-500 focus:bg-white text-xs font-semibold">
+                  <option value="">-- Pilih Shift Tujuan --</option>
+                  <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
+                  <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
+                  <option value="Semua Shift / Umum">Semua Shift / Umum</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-[11px]">Catatan / Pekerjaan (Caption) <span class="text-rose-500">*</span></label>
+              <textarea id="handoverNotes" required rows="3" placeholder="Tuliskan detail status pekerjaan, kendala, atau hal penting yang wajib dilanjutkan oleh shift berikutnya..." 
+                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-rose-500 focus:bg-white text-xs"></textarea>
+            </div>
+
+             <div>
+              <label class="block font-bold text-slate-700 mb-1 text-[11px]">Foto Dokumentasi (Opsional - Bisa Lebih dari 1)</label>
+              <div class="flex items-center gap-2">
+                <input type="file" id="handoverPhoto" accept="image/*" class="hidden" name="photos[]" multiple onchange="previewHandoverPhoto(event)">
+                <button type="button" onclick="document.getElementById('handoverPhoto').click()" 
+                  class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[18px]">photo_camera</span>
+                  <span>Pilih Foto</span>
+                </button>
+                <span id="handoverPhotoLabel" class="text-[10px] text-slate-400 truncate">Belum ada foto</span>
+              </div>
+              <!-- Preview thumbnails grid -->
+              <div id="handoverPhotoPreviewContainer" class="hidden mt-2"></div>
+              <!-- Clear button -->
+              <button type="button" id="btnClearHandoverPhotos" onclick="clearHandoverPhoto()" class="hidden mt-2 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold rounded-lg border border-rose-200 transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+                <span>Hapus Semua Foto</span>
+              </button>
+            </div>
+
+            <div class="pt-1">
+              <button type="submit" id="btnSubmitHandover" 
+                class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[18px]">send</span>
+                <span>Kirim Handover</span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Handover Feed/List -->
+        <div id="handoverListContainer" class="space-y-3">
+          <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+            <span class="material-symbols-outlined text-[20px] animate-spin text-rose-600 mb-1">progress_activity</span>
+            <p>Memuat daftar handover...</p>
+          </div>
+        </div>
+
+      </div>
+
     </div>
+
+    <!-- PREMIUM BOTTOM NAVIGATION BAR -->
+    <nav class="bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-2.5 flex items-center justify-around flex-shrink-0 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] rounded-b-[40px] sm:rounded-b-none">
+      
+      <!-- Home Button -->
+      <button onclick="switchOpTab('home')" id="bottom-nav-home" 
+        class="flex flex-col items-center gap-0.5 text-emerald-700 font-bold active:scale-95 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[20px] leading-none">home</span>
+        <span class="text-[9px] tracking-tight">Beranda</span>
+      </button>
+
+      <!-- Picking Button -->
+      <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
+        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[20px] leading-none">assignment</span>
+        <span class="text-[9px] tracking-tight">Picking</span>
+      </button>
+
+      <!-- Counting Button -->
+      <button onclick="switchOpTab('dynamic_count')" id="bottom-nav-dynamic_count" 
+        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[20px] leading-none">checklist</span>
+        <span class="text-[9px] tracking-tight">Counting</span>
+      </button>
+
+      <!-- Opname Button -->
+      <button onclick="switchOpTab('opname')" id="bottom-nav-opname" 
+        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[20px] leading-none">inventory_2</span>
+        <span class="text-[9px] tracking-tight">Opname</span>
+      </button>
+
+      <!-- Logout Button -->
+      <a href="../logout" 
+        class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-600 font-semibold active:scale-95 transition-all cursor-pointer decoration-none">
+        <span class="material-symbols-outlined text-[20px] leading-none">logout</span>
+        <span class="text-[9px] tracking-tight">Logout</span>
+      </a>
+
+    </nav>
 
     <!-- ========================================================================= -->
     <!-- SLIDE-OVER OFF-CANVAS DRAWER (SIDEBAR MENU TOGGLE) -->
@@ -839,6 +990,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div>
         <h4 class="font-black text-base tracking-tight">PackStock Mobile WMS</h4>
         <p class="text-[11px] text-emerald-200 font-mono mt-0.5">Versi 2.4.0 (Enterprise Edition)</p>
+        <p class="text-[10px] text-emerald-100 font-bold tracking-wide mt-1">Dibuat oleh: dhanielo-marthinz IMS</p>
       </div>
       <p class="text-xs text-emerald-100/90 leading-relaxed max-w-xs mx-auto">
         Aplikasi manajemen operasional stok material packaging gudang dengan sinkronisasi data real-time, blank counting opname, dan verifikasi serah terima picking.
@@ -885,10 +1037,13 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <!-- Close Button -->
-    <div class="pt-2 border-t border-slate-100">
+    <div class="pt-2 border-t border-slate-100 space-y-2">
       <button type="button" onclick="App.closeModal('modalOperatorAbout')" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-colors">
         Tutup Informasi
       </button>
+      <div class="text-center text-[9px] text-slate-400 font-extrabold tracking-wider uppercase">
+        Powered By Dhanielo Marthinz - IMS
+      </div>
     </div>
 
   </div>
@@ -1113,7 +1268,232 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<!-- ================= MODAL: HANDOVER DETAIL ================= -->
+<div id="modalHandoverDetail" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto animate-scale-up relative">
+    
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold shadow-xs">
+          <span class="material-symbols-outlined text-[20px]">published_with_changes</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-xs uppercase tracking-wider">Detail Handover</h3>
+          <p id="detHandoverNo" class="text-[10px] text-slate-500 font-mono">HND-XXXX</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalHandoverDetail')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Handover Info -->
+    <div class="text-[11px] space-y-1.5 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
+      <div class="flex justify-between items-center">
+        <span>Tanggal Kirim:</span>
+        <b id="detHandoverDate" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Dari Pengirim:</span>
+        <b id="detHandoverFrom" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Shift Pengirim:</span>
+        <b id="detHandoverFromShift" class="text-slate-950"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Target Shift Tujuan:</span>
+        <b id="detHandoverToShift" class="text-indigo-700 font-black"></b>
+      </div>
+      <div id="detHandoverReceivedByContainer" class="flex justify-between items-center hidden">
+        <span>Diterima Oleh:</span>
+        <b id="detHandoverReceivedBy" class="text-emerald-700 font-black"></b>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Status Berkas:</span>
+        <span id="detHandoverStatusBadge"></span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span>Status Share:</span>
+        <span id="detHandoverShareBadge"></span>
+      </div>
+    </div>
+
+    <!-- Handover Notes (Caption) -->
+    <div class="space-y-1">
+      <label class="block font-black text-slate-700 text-[10px] uppercase tracking-wider">Catatan Pekerjaan (Caption):</label>
+      <div id="detHandoverNotes" class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-slate-800 text-xs font-mono whitespace-pre-wrap leading-relaxed"></div>
+    </div>
+
+    <!-- Handover Photos -->
+    <div class="space-y-1.5">
+      <label class="block font-black text-slate-700 text-[10px] uppercase tracking-wider">Foto Lampiran:</label>
+      <div id="detHandoverPhotosGrid" class="grid grid-cols-2 gap-2.5">
+        <!-- populated dynamically -->
+      </div>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="pt-2 border-t border-slate-100 flex gap-2" id="detHandoverActions">
+      <!-- populated dynamically -->
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= MODAL: PHOTO VIEWER WITH WATERMARK ================= -->
+<div id="modalHandoverPhotoViewer" class="fixed inset-0 z-[60] bg-slate-950/95 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="max-w-xl w-full flex flex-col items-center space-y-4 relative">
+    
+    <!-- Close Button -->
+    <button onclick="App.closeModal('modalHandoverPhotoViewer')" class="absolute -top-12 right-0 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+      <span class="material-symbols-outlined text-[22px]">close</span>
+    </button>
+
+    <!-- Image Wrapper Container -->
+    <div class="relative w-full rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black flex items-center justify-center select-none" style="aspect-ratio: 4/3;">
+      
+      <!-- Viewer Image -->
+      <img id="viewerImage" src="#" alt="Watermarked Image" class="w-full h-full object-contain">
+
+      <!-- Dynamic Visual Watermark Overlay -->
+      <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 z-10 text-[9px] font-mono tracking-wider font-extrabold uppercase select-none">
+        <!-- Top Row Watermark -->
+        <div class="flex justify-between items-center text-white/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/35 px-2 py-0.5 rounded-md">
+          <span id="wmTopLeft">PACKSTOCK MOBILE WMS</span>
+          <span id="wmTopRight">SERAH TERIMA SHIFT</span>
+        </div>
+        
+        <!-- Center Diagonal Watermark -->
+        <div class="absolute inset-0 flex items-center justify-center overflow-hidden rotate-[-30deg]">
+          <span class="text-white/10 text-5xl sm:text-6xl font-black tracking-[0.3em] whitespace-nowrap select-none drop-shadow-xs">
+            IMS
+          </span>
+        </div>
+
+        <!-- Bottom Row Watermark -->
+        <div class="flex justify-between items-center text-white/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/35 px-2 py-0.5 rounded-md mt-auto">
+          <span id="wmBottomLeft">NO: HND-XXXX</span>
+          <span id="wmBottomRight">DATE: 2026-08-30</span>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Description Details below image -->
+    <div class="w-full text-center text-white/80 text-xs px-2" id="viewerImageDesc"></div>
+
+  </div>
+</div>
+
+<!-- ================= MODAL: GANTI SHIFT AKTIF (ROLLING SHIFT MANDIRI) ================= -->
+<div id="modalChangeMyShift" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4">
+  <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4 animate-scale-up relative">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[20px]">schedule</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-xs uppercase tracking-wider">Pilih Shift Kerja Hari Ini</h3>
+          <p class="text-[10px] text-slate-500">Sesuaikan jadwal rolling shift Anda</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalChangeMyShift')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <form id="formChangeMyShift" onsubmit="submitChangeMyShift(event)" class="space-y-2.5 text-xs">
+      <div class="space-y-2" id="shiftRadioGroup">
+        <label class="flex items-center gap-3 p-3 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 cursor-pointer transition-all has-checked:border-emerald-600 has-checked:bg-emerald-50/80 shadow-2xs">
+          <input type="radio" name="myActiveShift" value="Shift 1 (Pagi 08:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
+          <div>
+            <div class="font-black text-slate-900 text-xs">Shift 1 (Pagi)</div>
+            <div class="text-[10px] text-slate-500 font-mono">08:00 - 16:00 WIB</div>
+          </div>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 cursor-pointer transition-all has-checked:border-indigo-600 has-checked:bg-indigo-50/80 shadow-2xs">
+          <input type="radio" name="myActiveShift" value="Shift 2 (Siang 16:00 - 00:00)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" required>
+          <div>
+            <div class="font-black text-slate-900 text-xs">Shift 2 (Siang / Sore)</div>
+            <div class="text-[10px] text-slate-500 font-mono">16:00 - 00:00 WIB</div>
+          </div>
+        </label>
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 flex gap-2">
+        <button type="button" onclick="App.closeModal('modalChangeMyShift')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">
+          Batal
+        </button>
+        <button type="submit" id="btnSaveMyShift" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">save</span>
+          <span>Simpan Shift</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL MANDATORY: KONFIRMASI SHIFT SEBELUM AKSES MENU ================= -->
+<div id="modalMandatoryShiftGate" class="fixed inset-0 z-[99999] bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up text-center">
+    
+    <!-- Top Icon Badge -->
+    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-600/30">
+      <span class="material-symbols-outlined text-[32px]">schedule</span>
+    </div>
+
+    <div>
+      <h3 class="font-black text-slate-900 text-base tracking-tight">Pilih Shift Kerja Hari Ini</h3>
+      <p class="text-xs text-slate-500 mt-1">Konfirmasi shift Anda untuk membuka seluruh menu & tugas operator</p>
+    </div>
+
+    <form id="formMandatoryShiftGate" onsubmit="submitMandatoryShiftGate(event)" class="space-y-3 text-left">
+      <div class="space-y-2.5">
+        
+        <!-- Option Shift 1 -->
+        <label id="gateLabelShift1" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 cursor-pointer transition-all has-checked:border-emerald-600 has-checked:bg-emerald-50/80 shadow-2xs relative">
+          <input type="radio" name="gateActiveShift" value="Shift 1 (Pagi 08:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-slate-900 text-xs">Shift 1 (Pagi)</span>
+              <span id="gateBadgeShift1" class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full hidden">Otomatis Terpilih</span>
+            </div>
+            <div class="text-[10px] text-slate-500 font-mono mt-0.5">08:00 - 16:00 WIB</div>
+          </div>
+        </label>
+
+        <!-- Option Shift 2 -->
+        <label id="gateLabelShift2" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 cursor-pointer transition-all has-checked:border-indigo-600 has-checked:bg-indigo-50/80 shadow-2xs relative">
+          <input type="radio" name="gateActiveShift" value="Shift 2 (Siang 16:00 - 00:00)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" required>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-slate-900 text-xs">Shift 2 (Siang)</span>
+              <span id="gateBadgeShift2" class="text-[9px] font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-full hidden">Otomatis Terpilih</span>
+            </div>
+            <div class="text-[10px] text-slate-500 font-mono mt-0.5">16:00 - 00:00 WIB</div>
+          </div>
+        </label>
+
+      </div>
+
+      <div class="pt-2">
+        <button type="submit" id="btnGateConfirmShift" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-98 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-700/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          <span>Konfirmasi & Buka Menu</span>
+        </button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
 <!-- Scripts with Cache Buster -->
+<script>
+  let CURRENT_USER_SHIFT = <?= json_encode($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)') ?>;
+</script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/operator.js?v=<?= time() ?>"></script>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

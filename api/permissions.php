@@ -81,6 +81,12 @@ $MENUS_CATALOG = [
         'description' => 'Penugasan pengambilan material ke operator (single, multi-row, upload Excel).'
     ],
     [
+        'key' => 'handover',
+        'label' => 'Handover Shift',
+        'icon' => 'published_with_changes',
+        'description' => 'Monitoring serah terima tugas antar shift (foto, catatan, progress status).'
+    ],
+    [
         'key' => 'mutations',
         'label' => 'Audit Mutasi Stok',
         'icon' => 'history',

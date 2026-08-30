@@ -10,3 +10,7 @@ scratch/
 *.tmp
 .DS_Store
 Thumbs.db
+
+# User Uploaded Photos
+uploads/handovers/*
+!uploads/handovers/.gitkeep

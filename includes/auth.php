@@ -112,7 +112,7 @@ class Auth {
         // Operators are allowed, and Admin/Super Admin can also view operator mobile interface for testing/dispatching
     }
 
-    public static function login(string $username, string $password): array {
+    public static function login(string $username, string $password, string $shift = ''): array {
         $pdo = Database::getConnection();
         $trimmedUser = trim($username);
         $trimmedPass = trim($password);
@@ -135,12 +135,20 @@ class Auth {
         }
 
         if ($isMatch) {
+            $userShift = !empty($shift) ? $shift : ($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)');
+            
+            // If shift was chosen and differs from DB, update DB
+            if (!empty($shift) && $shift !== ($user['shift'] ?? '')) {
+                $stmtUpdateShift = $pdo->prepare("UPDATE users SET shift = ? WHERE id = ?");
+                $stmtUpdateShift->execute([$shift, $user['id']]);
+            }
+
             $_SESSION['user'] = [
                 'id' => (int)$user['id'],
                 'username' => $user['username'],
                 'name' => $user['name'],
                 'role' => $user['role'],
-                'shift' => $user['shift'] ?? 'Shift Standar'
+                'shift' => $userShift
             ];
 
             $isAdminRole = ($user['role'] === 'teknisi' || $user['role'] === 'admin' || $user['role'] === 'superadmin' || strtolower($user['username']) === 'daniel');

@@ -161,6 +161,42 @@ require_once __DIR__ . '/includes/header.php';
             </div>
           </div>
 
+          <!-- Shift Selection (MANDATORY: Shift 1 or Shift 2) -->
+          <div class="pt-1">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[17px] text-emerald-600">schedule</span>
+                <span>Pilih Shift Kerja Hari Ini</span> <span class="text-rose-500 font-bold">*</span>
+              </label>
+              <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Wajib Pilih</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5" id="loginShiftSelector">
+              
+              <!-- Option Shift 1 -->
+              <label class="flex flex-col p-3 rounded-2xl border-2 border-emerald-600 bg-emerald-50/80 text-slate-900 cursor-pointer transition-all hover:border-emerald-600 has-checked:border-emerald-600 has-checked:bg-emerald-50/90 shadow-2xs group relative">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-black tracking-tight text-emerald-950">Shift 1 (Pagi)</span>
+                  <input type="radio" name="loginShift" value="Shift 1 (Pagi 08:00 - 16:00)" checked class="w-4 h-4 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                </div>
+                <div class="flex items-center gap-1 text-[10px] text-emerald-800 font-mono font-bold">
+                  <span>08:00 - 16:00 WIB</span>
+                </div>
+              </label>
+
+              <!-- Option Shift 2 -->
+              <label class="flex flex-col p-3 rounded-2xl border-2 border-slate-200 bg-slate-50/80 text-slate-900 cursor-pointer transition-all hover:border-indigo-500 has-checked:border-indigo-600 has-checked:bg-indigo-50/90 shadow-2xs group relative">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-black tracking-tight text-slate-800 group-has-checked:text-indigo-950">Shift 2 (Siang)</span>
+                  <input type="radio" name="loginShift" value="Shift 2 (Siang 16:00 - 00:00)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                </div>
+                <div class="flex items-center gap-1 text-[10px] text-slate-500 font-mono font-bold group-has-checked:text-indigo-800">
+                  <span>16:00 - 00:00 WIB</span>
+                </div>
+              </label>
+
+            </div>
+          </div>
+
           <!-- Security Notice & Remember Session -->
           <div class="flex items-center justify-between pt-0.5 text-xs">
             <label class="flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
@@ -222,6 +258,14 @@ require_once __DIR__ . '/includes/header.php';
     e.preventDefault();
     const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value.trim();
+    const selectedShiftEl = document.querySelector('input[name="loginShift"]:checked');
+    const s = selectedShiftEl ? selectedShiftEl.value : '';
+
+    if (!s) {
+      App.toast('Silakan pilih salah satu Shift Kerja (Shift 1 atau Shift 2)!', 'warning');
+      return;
+    }
+
     const btn = document.getElementById('btnSubmit');
     const alertBox = document.getElementById('loginAlert');
     const alertText = document.getElementById('loginAlertText');
@@ -234,14 +278,14 @@ require_once __DIR__ . '/includes/header.php';
 
     const res = await App.fetchJson('api/auth.php?action=login', {
       method: 'POST',
-      body: JSON.stringify({ username: u, password: p })
+      body: JSON.stringify({ username: u, password: p, shift: s })
     });
 
     btn.disabled = false;
     btn.innerHTML = '<span>Masuk ke Sistem PackStock</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
 
     if (res.success) {
-      App.toast(`Login berhasil. Selamat datang, ${res.user.name}`, 'success');
+      App.toast(`Login berhasil. Shift aktif: ${s}`, 'success');
       setTimeout(() => {
         window.location.href = res.redirect;
       }, 350);
@@ -253,6 +297,24 @@ require_once __DIR__ . '/includes/header.php';
       App.toast(res.message || 'Login gagal. Periksa kembali kredensial Anda.', 'error');
     }
   }
+
+  // Smart Time-Based Auto-Selection for Shifts
+  function autoSelectShiftByCurrentTime() {
+    const now = new Date();
+    const hour = now.getHours();
+    const isShift1 = (hour >= 8 && hour < 16);
+    
+    const shift1Radio = document.querySelector('input[name="loginShift"][value*="Shift 1"]');
+    const shift2Radio = document.querySelector('input[name="loginShift"][value*="Shift 2"]');
+
+    if (isShift1) {
+      if (shift1Radio) shift1Radio.checked = true;
+    } else {
+      if (shift2Radio) shift2Radio.checked = true;
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', autoSelectShiftByCurrentTime);
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

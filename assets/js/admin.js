@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentAdminTab === 'tasks') loadTasks();
     if (currentAdminTab === 'inbound') loadInboundHistory();
     if (currentAdminTab === 'outbound') loadOutboundHistory();
+    if (currentAdminTab === 'handover') loadAdminHandovers(true);
   }, 25000);
 });
 
@@ -174,7 +175,7 @@ function toggleSidebarSection(sectionId, forceOpen = null) {
     section.classList.remove('is-collapsed');
     try {
       const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
-      delete collapsedMap[sectionId];
+      collapsedMap[sectionId] = false;
       localStorage.setItem('packstock_collapsed_sections', JSON.stringify(collapsedMap));
     } catch (e) {}
   } else {
@@ -191,9 +192,8 @@ function initSidebarSections() {
   try {
     const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
     Object.keys(collapsedMap).forEach(sectionId => {
-      if (collapsedMap[sectionId]) {
-        toggleSidebarSection(sectionId, false);
-      }
+      const shouldCollapse = collapsedMap[sectionId];
+      toggleSidebarSection(sectionId, !shouldCollapse);
     });
   } catch (e) {}
 }
@@ -211,7 +211,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -238,7 +238,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
   
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
   
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -285,6 +285,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     inbound: 'Penerimaan Barang Masuk (Inbound)',
     outbound: 'Pengeluaran Barang Keluar (Outbound)',
     tasks: 'Manajemen Penugasan Operator (Task Dispatch)',
+    handover: 'Monitoring Serah Terima Tugas & Handover Shift',
     mutations: 'Buku Mutasi & Audit Trail Stok',
     users: 'Manajemen User & Role',
     permissions: 'Otorisasi & Pengaturan Hak Akses Menu',
@@ -302,6 +303,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'opname') { loadOpnames(); }
   if (tabName === 'adjust') { loadDirectAdjustMaterials(); }
   if (tabName === 'counting_detail') { loadCountingDetails(); }
+  if (tabName === 'handover') { loadAdminHandovers(); }
   if (tabName === 'inbound') { 
     const inDateEl = document.getElementById('inboundDateFilter');
     if (inDateEl && !inDateEl.value) {
@@ -4179,6 +4181,7 @@ async function applyMyPermissions() {
       inbound: 'nav-inbound',
       outbound: 'nav-outbound',
       tasks: 'nav-tasks',
+      handover: 'nav-handover',
       mutations: 'nav-mutations',
       users: 'nav-users',
       permissions: 'nav-permissions',
@@ -7616,6 +7619,296 @@ function openDetailLogFromProgress(opnameId, countingType) {
       loadCountingDetails();
     }
   }
+}
+
+// =========================================================================
+// 17. HANDOVER SHIFT MONITORING & DATA TABLE MODULE (ADMIN)
+// =========================================================================
+let allAdminHandovers = [];
+
+async function loadAdminHandovers(silent = false) {
+  const tbody = document.getElementById('adminHandoverTableBody');
+  if (!tbody) return;
+
+  if (!silent) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="p-8 text-center text-slate-400">
+          <div class="inline-flex items-center gap-2 font-semibold">
+            <span class="material-symbols-outlined text-[22px] animate-spin text-rose-600">progress_activity</span>
+            <span>Memuat data serah terima shift...</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const res = await App.fetchJson('../api/handovers.php?action=list');
+    if (res.success) {
+      allAdminHandovers = res.data || [];
+      updateAdminHandoverKPIs();
+      filterAdminHandovers();
+    } else {
+      if (!silent) {
+        tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-rose-500 font-bold">Gagal memuat data handover: ${App.escapeHtml(res.message || '')}</td></tr>`;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading admin handovers:', err);
+    if (!silent) {
+      tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-rose-500 font-bold">Terjadi kesalahan saat memuat data.</td></tr>`;
+    }
+  }
+}
+
+function updateAdminHandoverKPIs() {
+  const total = allAdminHandovers.length;
+  const pending = allAdminHandovers.filter(x => x.status === 'PENDING').length;
+  const done = allAdminHandovers.filter(x => x.status !== 'PENDING').length;
+  const shared = allAdminHandovers.filter(x => Number(x.is_shared) === 1).length;
+
+  const totalEl = document.getElementById('adminHandoverTotalCount');
+  const pendingEl = document.getElementById('adminHandoverPendingCount');
+  const doneEl = document.getElementById('adminHandoverDoneCount');
+  const sharedEl = document.getElementById('adminHandoverSharedCount');
+  const badgeEl = document.getElementById('sidebarHandoverBadge');
+
+  if (totalEl) totalEl.innerText = total.toLocaleString();
+  if (pendingEl) pendingEl.innerText = pending.toLocaleString();
+  if (doneEl) doneEl.innerText = done.toLocaleString();
+  if (sharedEl) sharedEl.innerText = shared.toLocaleString();
+
+  if (badgeEl) {
+    if (pending > 0) {
+      badgeEl.innerText = pending;
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+}
+
+function filterAdminHandovers() {
+  const q = (document.getElementById('adminHandoverSearchInput')?.value || '').toLowerCase().trim();
+  const statusFilter = document.getElementById('adminHandoverStatusFilter')?.value || 'ALL';
+  const toShiftFilter = document.getElementById('adminHandoverToShiftFilter')?.value || 'ALL';
+  const shareFilter = document.getElementById('adminHandoverShareFilter')?.value || 'ALL';
+
+  let filtered = allAdminHandovers.filter(item => {
+    // Search query match
+    if (q) {
+      const matchDoc = (item.handover_no || '').toLowerCase().includes(q);
+      const matchFrom = (item.from_user_name || '').toLowerCase().includes(q);
+      const matchFromShift = (item.from_user_shift || '').toLowerCase().includes(q);
+      const matchToShift = (item.to_shift || '').toLowerCase().includes(q);
+      const matchRec = (item.received_by_name || '').toLowerCase().includes(q);
+      const matchNotes = (item.notes || '').toLowerCase().includes(q);
+      if (!matchDoc && !matchFrom && !matchFromShift && !matchToShift && !matchRec && !matchNotes) {
+        return false;
+      }
+    }
+
+    // Status filter
+    if (statusFilter !== 'ALL') {
+      if (statusFilter === 'PENDING' && item.status !== 'PENDING') return false;
+      if (statusFilter === 'DONE' && item.status === 'PENDING') return false;
+    }
+
+    // To Shift filter
+    if (toShiftFilter !== 'ALL') {
+      if (!item.to_shift || !item.to_shift.toLowerCase().includes(toShiftFilter.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Share filter
+    if (shareFilter !== 'ALL') {
+      if (Number(item.is_shared || 0) !== Number(shareFilter)) return false;
+    }
+
+    return true;
+  });
+
+  renderAdminHandoversTable(filtered);
+}
+
+function renderAdminHandoversTable(dataList) {
+  const tbody = document.getElementById('adminHandoverTableBody');
+  if (!tbody) return;
+
+  const list = dataList || allAdminHandovers;
+  if (list.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="p-8 text-center text-slate-400">
+          <div class="flex flex-col items-center justify-center gap-1.5">
+            <span class="material-symbols-outlined text-[32px] text-slate-300">published_with_changes</span>
+            <p class="font-bold text-xs">Tidak ada data serah terima shift yang sesuai dengan filter.</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach((item, index) => {
+    const isPending = item.status === 'PENDING';
+    const statusBadge = isPending 
+      ? '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING</span>' 
+      : '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black uppercase">DONE</span>';
+
+    const shareBadge = (Number(item.is_shared) === 1)
+      ? '<span class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 text-[10px] font-bold flex items-center gap-0.5 justify-center"><span class="material-symbols-outlined text-[12px] font-bold">check</span>Shared</span>'
+      : '<span class="px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-200 text-[10px] font-bold">Unshared</span>';
+
+    // Parse photos
+    let photos = [];
+    if (item.photo_path) {
+      if (item.photo_path.startsWith('[')) {
+        try { photos = JSON.parse(item.photo_path); } catch(e) { photos = [item.photo_path]; }
+      } else {
+        photos = [item.photo_path];
+      }
+    }
+
+    let photoThumbHtml = '<span class="text-slate-300 text-[10px]">-</span>';
+    if (photos.length > 0) {
+      photoThumbHtml = `
+        <div class="flex items-center justify-center gap-1">
+          <img src="../${App.escapeHtml(photos[0])}" class="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-2xs cursor-pointer hover:opacity-80" onclick="openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(item.handover_no)}', '${App.escapeHtml(item.created_at)}', '${App.escapeHtml(item.from_user_name)}')" title="Klik untuk perbesar foto">
+          ${photos.length > 1 ? `<span class="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded">+${photos.length - 1}</span>` : ''}
+        </div>
+      `;
+    }
+
+    const receiverInfo = item.received_by_name 
+      ? `<div class="leading-tight"><b class="text-emerald-700 font-bold">${App.escapeHtml(item.received_by_name)}</b><p class="text-[10px] font-mono text-slate-400">${App.escapeHtml(item.received_at || '')}</p></div>`
+      : '<span class="text-slate-400 italic text-[11px]">-</span>';
+
+    html += `
+      <tr class="hover:bg-slate-50/80 transition-colors">
+        <td class="p-3 text-center text-slate-400 font-mono text-[11px]">${index + 1}</td>
+        <td class="p-3">
+          <div class="font-mono font-black text-slate-900 text-xs">${App.escapeHtml(item.handover_no)}</div>
+          <div class="text-[10px] text-slate-400 font-mono">${App.escapeHtml(item.created_at || '')}</div>
+        </td>
+        <td class="p-3">
+          <div class="font-bold text-slate-800 text-xs">${App.escapeHtml(item.from_user_name)}</div>
+          <div class="text-[10px] text-slate-500">${App.escapeHtml(item.from_user_shift || '-')}</div>
+        </td>
+        <td class="p-3">
+          <span class="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-xs">
+            ${App.escapeHtml(item.to_shift)}
+          </span>
+        </td>
+        <td class="p-3 max-w-[240px]">
+          <p class="text-slate-700 text-xs line-clamp-2 leading-relaxed whitespace-pre-wrap">${App.escapeHtml(item.notes || '-')}</p>
+        </td>
+        <td class="p-3 text-center">
+          ${photoThumbHtml}
+        </td>
+        <td class="p-3 text-center">
+          ${statusBadge}
+        </td>
+        <td class="p-3">
+          ${receiverInfo}
+        </td>
+        <td class="p-3 text-center">
+          ${shareBadge}
+        </td>
+        <td class="p-3 text-center">
+          <button type="button" onclick="openAdminHandoverDetail(${item.id})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition-all cursor-pointer shadow-2xs" title="Lihat Detail Handover">
+            <span class="material-symbols-outlined text-[17px]">visibility</span>
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function openAdminHandoverDetail(id) {
+  const item = allAdminHandovers.find(x => x.id == id);
+  if (!item) return;
+
+  // Set Info
+  document.getElementById('admDetHandoverNo').innerText = item.handover_no;
+  document.getElementById('admDetHandoverDate').innerText = item.created_at;
+  document.getElementById('admDetHandoverFrom').innerText = item.from_user_name;
+  document.getElementById('admDetHandoverFromShift').innerText = item.from_user_shift || '-';
+  document.getElementById('admDetHandoverToShift').innerText = item.to_shift;
+  document.getElementById('admDetHandoverNotes').innerText = item.notes || '-';
+
+  // Badges
+  const isPending = item.status === 'PENDING';
+  const statusBadge = isPending 
+    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING (Menunggu)</span>' 
+    : '<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-black uppercase">DONE (Diterima)</span>';
+  document.getElementById('admDetHandoverStatusBadge').innerHTML = statusBadge;
+
+  const shareBadge = (Number(item.is_shared) === 1)
+    ? '<span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 border border-teal-200 text-[10px] font-bold flex items-center gap-0.5"><span class="material-symbols-outlined text-[12px] font-bold">check</span>Shared</span>'
+    : '<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 text-[10px] font-bold">Unshared</span>';
+  document.getElementById('admDetHandoverShareBadge').innerHTML = shareBadge;
+
+  // Receiver Info
+  const recContainer = document.getElementById('admDetHandoverReceivedByContainer');
+  if (item.received_by_name) {
+    const recShiftStr = item.receiver_user_shift ? ` [${item.receiver_user_shift}]` : '';
+    document.getElementById('admDetHandoverReceivedBy').innerText = `${item.received_by_name}${recShiftStr} (${item.received_at})`;
+    recContainer.classList.remove('hidden');
+  } else {
+    recContainer.classList.add('hidden');
+  }
+
+  // Parse photos
+  let photos = [];
+  if (item.photo_path) {
+    if (item.photo_path.startsWith('[')) {
+      try { photos = JSON.parse(item.photo_path); } catch(e) { photos = [item.photo_path]; }
+    } else {
+      photos = [item.photo_path];
+    }
+  }
+
+  const grid = document.getElementById('admDetHandoverPhotosGrid');
+  if (photos.length > 0) {
+    let html = '';
+    photos.forEach((p, idx) => {
+      html += `
+        <div class="rounded-2xl overflow-hidden border border-slate-200 h-28 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(item.handover_no)}', '${App.escapeHtml(item.created_at)}', '${App.escapeHtml(item.from_user_name)}')">
+          <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-28 w-full object-cover">
+          <div class="absolute bottom-1.5 right-1.5 bg-black/60 backdrop-blur-xs text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-md">ZOOM</div>
+        </div>
+      `;
+    });
+    grid.innerHTML = html;
+    grid.parentElement.classList.remove('hidden');
+  } else {
+    grid.innerHTML = '<p class="text-slate-400 text-xs italic col-span-2">Tidak ada foto lampiran.</p>';
+  }
+
+  App.openModal('modalAdminHandoverDetail');
+}
+
+function openAdminPhotoViewer(photoPath, handoverNo, date, creator) {
+  const viewerImage = document.getElementById('adminViewerImage');
+  const viewerDesc = document.getElementById('adminViewerImageDesc');
+  const wmTopLeft = document.getElementById('admWmTopLeft');
+  const wmBottomLeft = document.getElementById('admWmBottomLeft');
+  const wmBottomRight = document.getElementById('admWmBottomRight');
+
+  if (viewerImage) viewerImage.src = `../${photoPath}`;
+  if (viewerDesc) viewerDesc.innerText = `Foto Lampiran Handover ${handoverNo} oleh ${creator}`;
+
+  if (wmTopLeft) wmTopLeft.innerText = `IMS - BY ${creator.toUpperCase()}`;
+  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${handoverNo}`;
+  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date.substring(0, 10)}`;
+
+  App.openModal('modalAdminPhotoViewer');
 }
 
 
