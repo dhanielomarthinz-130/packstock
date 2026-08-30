@@ -17,19 +17,6 @@ require_once __DIR__ . '/../includes/header.php';
   <!-- MOBILE APP WRAPPER (Smartphone Frame on Desktop, Fullscreen on Mobile) -->
   <div class="mobile-app-wrapper bg-slate-100 flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-800 shadow-2xl shadow-emerald-950/40 relative font-sans">
     
-    <!-- PHONE STATUS BAR (TIME, SIGNAL, APP NAME) -->
-    <div class="bg-emerald-900 text-emerald-100 px-5 pt-3 pb-1 flex items-center justify-between text-[11px] font-semibold tracking-wide flex-shrink-0 z-20 select-none border-b border-emerald-800/40">
-      <div class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-xs shadow-emerald-400"></span>
-        <span id="liveClock" class="font-mono font-black text-white text-xs">08:00</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span class="text-[9px] bg-emerald-800/90 text-emerald-200 px-2 py-0.5 rounded-full font-extrabold uppercase tracking-wider border border-emerald-600/30">PackStock Mobile</span>
-        <span class="material-symbols-outlined text-[15px]">wifi</span>
-        <span class="material-symbols-outlined text-[15px]">battery_full</span>
-      </div>
-    </div>
-
     <!-- TOP APP BAR (TOGGLE MENU, OPERATOR PROFILE & QUICK ACTIONS) -->
     <header class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white px-3.5 py-3 flex items-center justify-between shadow-md flex-shrink-0 z-10 border-b border-emerald-900/40">
       

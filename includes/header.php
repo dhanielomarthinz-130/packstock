@@ -4,6 +4,7 @@ if (!isset($pageTitle)) {
     $pageTitle = 'PackStock WMS - Stock Kemas & Task Assignment';
 }
 $baseUrl = Auth::getBaseUrl();
+$favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favicon.svg';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -13,9 +14,9 @@ $baseUrl = Auth::getBaseUrl();
   <title><?= htmlspecialchars($pageTitle) ?></title>
   
   <!-- App Favicon & Touch Icon -->
-  <link rel="icon" type="image/svg+xml" href="<?= $baseUrl ?>/assets/img/favicon.svg?v=<?= time() ?>">
-  <link rel="alternate icon" type="image/svg+xml" href="<?= $baseUrl ?>/assets/img/favicon.svg">
-  <link rel="apple-touch-icon" href="<?= $baseUrl ?>/assets/img/favicon.svg">
+  <link rel="icon" type="image/svg+xml" href="<?= $favIconUrl ?>?v=2">
+  <link rel="alternate icon" type="image/svg+xml" href="<?= $favIconUrl ?>">
+  <link rel="apple-touch-icon" href="<?= $favIconUrl ?>">
   <meta name="theme-color" content="#047857">
   
   <!-- Tailwind CSS CDN -->

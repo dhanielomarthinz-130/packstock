@@ -119,7 +119,7 @@ require_once __DIR__ . '/includes/header.php';
       <!-- Top Form Header -->
       <div>
         <div class="border-b border-slate-100 pb-3 mb-6 flex items-center gap-3.5">
-          <img src="/assets/img/favicon.svg" alt="Logo" class="w-9 h-9 flex-shrink-0">
+          <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/favicon.svg" alt="Logo" class="w-9 h-9 flex-shrink-0">
           <h2 class="text-3xl font-black text-slate-900 tracking-tight uppercase">Login</h2>
         </div>
 
