@@ -685,6 +685,40 @@ if ($action === 'counting_progress_summary') {
     $stmtLeaderboard->execute();
     $leaderboard = $stmtLeaderboard->fetchAll();
 
+    // Stock Opname Progress: Counted SKUs vs Total Database SKUs with current_stock > 0
+    $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0");
+    $totalDbSkusPositive = (int)$stmtDbPos->fetchColumn();
+
+    $stmtOpCounted = $pdo->query("
+        SELECT COUNT(DISTINCT soi.material_id) 
+        FROM stock_opname_item_stages st 
+        JOIN stock_opnames so ON st.opname_id = so.id 
+        JOIN stock_opname_items soi ON st.item_id = soi.id 
+        WHERE so.counting_type = 'STOCK_OPNAME' AND st.status = 'COUNTED' AND st.stage_number = 1
+    ");
+    $opnameCountedSkus = (int)$stmtOpCounted->fetchColumn();
+    $opnameUncountedSkus = max(0, $totalDbSkusPositive - $opnameCountedSkus);
+    $opnameProgressPct = $totalDbSkusPositive > 0 ? round(($opnameCountedSkus / $totalDbSkusPositive) * 100, 1) : 0;
+
+    // Dynamic Count Progress: Done SKUs vs Assigned SKUs in Dynamic Count
+    $stmtDynAssign = $pdo->query("
+        SELECT COUNT(*) 
+        FROM stock_opname_items soi 
+        JOIN stock_opnames so ON soi.opname_id = so.id 
+        WHERE so.counting_type = 'DYNAMIC_COUNT'
+    ");
+    $dynamicAssignedSkus = (int)$stmtDynAssign->fetchColumn();
+
+    $stmtDynDone = $pdo->query("
+        SELECT COUNT(DISTINCT st.item_id) 
+        FROM stock_opname_item_stages st 
+        JOIN stock_opnames so ON st.opname_id = so.id 
+        WHERE so.counting_type = 'DYNAMIC_COUNT' AND st.status = 'COUNTED' AND st.stage_number = 1
+    ");
+    $dynamicDoneSkus = (int)$stmtDynDone->fetchColumn();
+    $dynamicPendingSkus = max(0, $dynamicAssignedSkus - $dynamicDoneSkus);
+    $dynamicProgressPct = $dynamicAssignedSkus > 0 ? round(($dynamicDoneSkus / $dynamicAssignedSkus) * 100, 1) : 0;
+
     echo json_encode([
         'success' => true,
         'sessions' => $sessions,
@@ -699,6 +733,20 @@ if ($action === 'counting_progress_summary') {
             'overall_progress_pct' => $overallPct,
             'overall_total_qty' => $overallQty,
             'total_variance_count' => $totalVarianceCount
+        ],
+        'charts' => [
+            'stock_opname' => [
+                'counted_skus' => $opnameCountedSkus,
+                'uncounted_skus' => $opnameUncountedSkus,
+                'total_target_db_skus' => $totalDbSkusPositive,
+                'progress_pct' => $opnameProgressPct
+            ],
+            'dynamic_count' => [
+                'done_skus' => $dynamicDoneSkus,
+                'pending_skus' => $dynamicPendingSkus,
+                'total_assigned_skus' => $dynamicAssignedSkus,
+                'progress_pct' => $dynamicProgressPct
+            ]
         ],
         'leaderboard' => $leaderboard
     ]);
