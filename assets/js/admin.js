@@ -6231,7 +6231,7 @@ async function handleDirectExcelUpload(input) {
           if (itemNoIdx === -1 && ['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'materialcode', 'itemcode', 'kodebarang', 'kodeproduk', 'nomoritem', 'material'].includes(h)) itemNoIdx = idx;
           else if (descIdx === -1 && ['deskripsi', 'description', 'itemdescription', 'namabarang', 'namamaterial', 'namaitem', 'nama'].includes(h)) descIdx = idx;
           else if (adjustIdx === -1 && (['qtyadjust', 'adjustqty', 'adjust', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik', 'jumlah', 'qty', 'penyesuaian', 'koreksi'].some(k => h.includes(k)))) adjustIdx = idx;
-          else if (notesIdx === -1 && ['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'ket'].some(k => h.includes(k))) notesIdx = idx;
+          else if (notesIdx === -1 && ['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'ket'].some(k => h.includes(k) && !h.includes('qty') && !h.includes('adjust') && !h.includes('selisih'))) notesIdx = idx;
         });
 
         if (itemNoIdx === -1) itemNoIdx = 0;
@@ -6240,6 +6240,9 @@ async function handleDirectExcelUpload(input) {
             if (cleanHeaders[c].includes('adjust') || cleanHeaders[c].includes('selisih') || cleanHeaders[c].includes('qty') || cleanHeaders[c].includes('penyesuaian') || cleanHeaders[c].includes('diff')) { adjustIdx = c; break; }
           }
           if (adjustIdx === -1) adjustIdx = cleanHeaders.length >= 3 ? 2 : 1;
+        }
+        if (notesIdx === -1 && cleanHeaders.length >= 4) {
+          notesIdx = 3;
         }
 
         // Process all rows from the Excel
@@ -6272,8 +6275,8 @@ async function handleDirectExcelUpload(input) {
             adjustQty = cleanDigits ? sign * parseFloat(cleanDigits) : 0;
           }
 
-          // Extract notes
-          const notesVal = (notesIdx !== -1 && row[notesIdx]) ? String(row[notesIdx]).trim() : 'Upload Excel Adjust';
+          // Extract notes from Excel
+          const notesVal = (notesIdx !== -1 && row[notesIdx] !== undefined && row[notesIdx] !== null) ? String(row[notesIdx]).trim() : '';
 
           let target = findTarget(rawCode, rawDesc);
           if (target) {

@@ -115,7 +115,7 @@ if ($action === 'template') {
     
     $output = fopen('php://output', 'w');
     fputs($output, "\xEF\xBB\xBF");
-    fputcsv($output, ['Item No', 'Item Description', 'Qty Adjust (+/-)', 'Notes / Alasan']);
+    fputcsv($output, ['Item No', 'Item Description', 'Qty Adjust (+/-)', 'Alasan / Catatan Penyesuaian']);
     fputcsv($output, ['4000010001', 'Dus E-commerce Hanasui Uk. Kecil', '+150', 'Penyesuaian Hasil Stock Opname (Surplus Fisik)']);
     fputcsv($output, ['4000010002', 'Dus E-commerce Hanasui Uk. Besar', '-20', 'Penyesuaian Hasil Stock Opname (Barang Rusak/Reject)']);
     fputcsv($output, ['4000020001', 'Plastik Hanasui Ukuran Besar', '+500', 'Koreksi Selisih Opname Lapangan']);
@@ -227,8 +227,8 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (in_array($clean, ['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'qty', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik', 'jumlah', 'stokfisik', 'fisik']) 
                   || strpos($clean, 'adjust') !== false || strpos($clean, 'selisih') !== false || strpos($clean, 'diff') !== false || strpos($clean, 'qty') !== false || strpos($clean, 'penyesuaian') !== false) {
             if ($adjustIdx === -1) $adjustIdx = $idx;
-        } elseif (in_array($clean, ['notesalasan', 'notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'keteranganselisih', 'ket'])
-                  || strpos($clean, 'alasan') !== false || strpos($clean, 'catatan') !== false || strpos($clean, 'note') !== false || strpos($clean, 'keterangan') !== false) {
+        } elseif (in_array($clean, ['notesalasan', 'notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'keteranganselisih', 'ket', 'alasancatatanpenyesuaian', 'catatanpenyesuaian', 'alasanpenyesuaian', 'catatanpenerimaan', 'alasanpenerimaan'])
+                  || strpos($clean, 'alasan') !== false || strpos($clean, 'catatan') !== false || strpos($clean, 'note') !== false || strpos($clean, 'keterangan') !== false || strpos($clean, 'reason') !== false) {
             if ($notesIdx === -1) $notesIdx = $idx;
         }
     }
@@ -244,6 +244,9 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($adjustIdx === -1) {
             $adjustIdx = count($cleanHeaders) >= 3 ? 2 : 1;
         }
+    }
+    if ($notesIdx === -1 && count($cleanHeaders) >= 4) {
+        $notesIdx = 3;
     }
 
     // Load existing materials
@@ -285,7 +288,7 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $digits = preg_replace('/[^0-9\.]/', '', $normalizedAdjust);
         $qtyAdjust = ($digits !== '') ? $sign * (float)$digits : 0;
 
-        $notes = ($notesIdx !== -1 && isset($r[$notesIdx]) && trim((string)$r[$notesIdx]) !== '') ? trim((string)$r[$notesIdx]) : 'Penyesuaian Stok Excel';
+        $notes = ($notesIdx !== -1 && isset($r[$notesIdx]) && trim((string)$r[$notesIdx]) !== '') ? trim((string)$r[$notesIdx]) : '';
 
         // Match material
         $mat = null;
@@ -422,7 +425,8 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $matIdInput = (int)($item['material_id'] ?? 0);
             $code = strtoupper(trim((string)($item['item_no'] ?? '')));
             $qtyAdjust = (int)($item['qty_adjust'] ?? 0);
-            $notes = trim($item['notes'] ?? $batchNotes) ?: $batchNotes;
+            $rawNotes = trim((string)($item['notes'] ?? ''));
+            $notes = !empty($rawNotes) ? $rawNotes : (!empty($batchNotes) ? $batchNotes : 'Penyesuaian Stok');
 
             if ($qtyAdjust === 0) continue;
 
