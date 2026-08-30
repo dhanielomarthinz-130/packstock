@@ -17,12 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
         exit;
     }
 
-    if (empty($shift)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Wajib memilih Shift Kerja (Shift 1 atau Shift 2) sebelum login!']);
-        exit;
-    }
-
     $res = Auth::login($username, $password, $shift);
     echo json_encode($res);
     exit;
