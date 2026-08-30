@@ -9,6 +9,7 @@ let currentAdminTab = 'dashboard';
 // Initialize Admin App
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarState();
+  initSidebarSections();
   applyMyPermissions();
   initPremiumPickers();
   handleUrlHashNavigation(false);
@@ -157,6 +158,42 @@ function initSidebarState() {
   } catch (e) {}
 }
 
+// ================= 0.3 SIDEBAR SECTION COLLAPSE / EXPAND CONTROLLER =================
+function toggleSidebarSection(sectionId, forceOpen = null) {
+  const section = document.querySelector(`.sidebar-section[data-section-id="${sectionId}"]`);
+  if (!section) return;
+
+  const isCollapsed = section.classList.contains('is-collapsed');
+  const willBeOpen = forceOpen !== null ? forceOpen : isCollapsed;
+
+  if (willBeOpen) {
+    section.classList.remove('is-collapsed');
+    try {
+      const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
+      delete collapsedMap[sectionId];
+      localStorage.setItem('packstock_collapsed_sections', JSON.stringify(collapsedMap));
+    } catch (e) {}
+  } else {
+    section.classList.add('is-collapsed');
+    try {
+      const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
+      collapsedMap[sectionId] = true;
+      localStorage.setItem('packstock_collapsed_sections', JSON.stringify(collapsedMap));
+    } catch (e) {}
+  }
+}
+
+function initSidebarSections() {
+  try {
+    const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
+    Object.keys(collapsedMap).forEach(sectionId => {
+      if (collapsedMap[sectionId]) {
+        toggleSidebarSection(sectionId, false);
+      }
+    });
+  } catch (e) {}
+}
+
 // Listen to browser Back / Forward buttons
 window.addEventListener('hashchange', () => {
   handleUrlHashNavigation(false);
@@ -216,6 +253,13 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (activeNav) {
     activeNav.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
     activeNav.classList.add('bg-emerald-600', 'text-white', 'shadow-xs', 'font-bold');
+
+    // Auto-expand section if active tab's group is currently collapsed
+    const parentSection = activeNav.closest('.sidebar-section');
+    if (parentSection) {
+      const sectionId = parentSection.getAttribute('data-section-id');
+      if (sectionId) toggleSidebarSection(sectionId, true);
+    }
   }
 
   // Set page title
@@ -4146,7 +4190,7 @@ async function applyMyPermissions() {
 
     // Hide empty sections automatically
     document.querySelectorAll('.sidebar-section').forEach(section => {
-      const buttons = section.querySelectorAll('.sidebar-nav-btn');
+      const buttons = section.querySelectorAll('.sidebar-nav-btn, .sidebar-field-access-btn');
       const visibleButtons = Array.from(buttons).filter(btn => !btn.classList.contains('hidden'));
       if (visibleButtons.length === 0) {
         section.classList.add('hidden');

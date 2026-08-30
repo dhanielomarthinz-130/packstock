@@ -114,6 +114,28 @@ body {
   border: 1px solid #bbf7d0;
 }
 
+/* Sidebar Collapsible Section Group Styles */
+.sidebar-section-header {
+  user-select: none;
+  cursor: pointer;
+}
+
+.sidebar-section-chevron {
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-section.is-collapsed .sidebar-section-chevron {
+  transform: rotate(-90deg);
+}
+
+.sidebar-section.is-collapsed .sidebar-section-content {
+  display: none !important;
+}
+
+#adminSidebar.collapsed .sidebar-section-header {
+  display: none !important;
+}
+
 /* Mobile Frame Wrapper for Operator View */
 .mobile-app-wrapper {
   max-width: 480px;
