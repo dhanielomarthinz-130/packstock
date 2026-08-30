@@ -3117,42 +3117,6 @@ function validateOutboundQtyInput(inputEl) {
   }
 }
 
-function syncOutboundDestinationField() {
-  const brand = document.getElementById('outboundBrandSelect')?.value?.trim() || '';
-  const line = document.getElementById('outboundDestinationLine')?.value?.trim() || '';
-  const mergedInput = document.getElementById('outboundDestination');
-  if (mergedInput) {
-    if (brand && line) {
-      mergedInput.value = `[${brand}] ${line}`;
-    } else if (brand) {
-      mergedInput.value = `[${brand}]`;
-    } else {
-      mergedInput.value = line;
-    }
-  }
-}
-
-function setOutboundLinePreset(lineText) {
-  const lineInput = document.getElementById('outboundDestinationLine');
-  if (lineInput) {
-    lineInput.value = lineText;
-    syncOutboundDestinationField();
-    lineInput.focus();
-  }
-}
-
-function onOutboundReasonSelectChange(selectEl) {
-  const reasonInput = document.getElementById('outboundReason');
-  if (!reasonInput) return;
-  if (selectEl.value === 'custom') {
-    reasonInput.value = '';
-    reasonInput.placeholder = 'Tuliskan alasan pengeluaran khusus...';
-    reasonInput.focus();
-  } else {
-    reasonInput.value = selectEl.value;
-  }
-}
-
 function openAddOutboundModal() {
   outboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
@@ -3167,10 +3131,11 @@ function openAddOutboundModal() {
   if (infoBox) infoBox.classList.add('hidden');
   if (warningEl) warningEl.classList.add('hidden');
 
-  const reasonSelect = document.getElementById('outboundReasonSelect');
+  const destSelect = document.getElementById('outboundDestination');
+  if (destSelect) destSelect.value = '';
+
   const reasonInput = document.getElementById('outboundReason');
-  if (reasonSelect) reasonSelect.value = 'Kebutuhan Produksi Harian';
-  if (reasonInput) reasonInput.value = 'Kebutuhan Produksi Harian';
+  if (reasonInput) reasonInput.value = '';
 
   const dateInput = document.getElementById('outboundFormDate');
   const timeInput = document.getElementById('outboundFormTime');
@@ -3543,8 +3508,6 @@ async function handleOutboundFormSubmit(e) {
 
   const material_id = document.getElementById('outboundMaterialSelect')?.value;
   const qty         = parseInt(document.getElementById('outboundQty')?.value || '0');
-  const brand       = document.getElementById('outboundBrandSelect')?.value?.trim();
-  const line        = document.getElementById('outboundDestinationLine')?.value?.trim();
   const destination = document.getElementById('outboundDestination')?.value?.trim();
   const reason      = document.getElementById('outboundReason')?.value?.trim();
   const notes       = document.getElementById('outboundNotes')?.value?.trim() || '';
@@ -3560,14 +3523,9 @@ async function handleOutboundFormSubmit(e) {
     App.toast('Jumlah keluar (Qty) harus lebih dari 0', 'warning');
     return;
   }
-  if (!brand) {
-    App.toast('Silakan pilih Brand / Lini Produk tujuan pengeluaran', 'warning');
-    document.getElementById('outboundBrandSelect')?.focus();
-    return;
-  }
-  if (!line) {
-    App.toast('Silakan isi Line / Area tujuan pengeluaran', 'warning');
-    document.getElementById('outboundDestinationLine')?.focus();
+  if (!destination) {
+    App.toast('Silakan pilih Brand Tujuan pengeluaran', 'warning');
+    document.getElementById('outboundDestination')?.focus();
     return;
   }
   if (!reason) {

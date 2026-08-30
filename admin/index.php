@@ -2407,71 +2407,32 @@ require_once __DIR__ . '/../includes/header.php';
         </p>
       </div>
 
-      <!-- Tujuan Pengeluaran (Dropdown Brand & Lokasi/Line Tujuan) -->
-      <div class="p-3 bg-amber-50/40 rounded-xl border border-amber-200/70 space-y-2.5">
-        <label class="block font-extrabold text-amber-950 flex items-center gap-1 text-xs">
-          <span class="material-symbols-outlined text-[16px] text-amber-700">fmd_good</span>
-          <span>Tujuan Pengeluaran & Brand Produk <span class="text-rose-500">*</span></span>
+      <!-- Tujuan Pengeluaran (Dropdown Brand) -->
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">
+          Tujuan Pengeluaran (Brand) <span class="text-rose-500">*</span>
         </label>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <!-- Dropdown Brand -->
-          <div>
-            <label class="block font-bold text-slate-600 mb-1 text-[11px]">Brand / Lini Produk <span class="text-rose-500">*</span></label>
-            <select id="outboundBrandSelect" required onchange="syncOutboundDestinationField()" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-600 text-xs font-bold text-slate-800">
-              <option value="">-- Pilih Brand --</option>
-              <option value="HANASUI">HANASUI</option>
-              <option value="NCO">NCO</option>
-              <option value="FYNE">FYNE</option>
-              <option value="EOMMA">EOMMA</option>
-              <option value="ALL BRAND">ALL BRAND / UMUM</option>
-              <option value="LAINNYA">LAINNYA</option>
-            </select>
-          </div>
-
-          <!-- Detail Line / Lokasi Tujuan -->
-          <div>
-            <label class="block font-bold text-slate-600 mb-1 text-[11px]">Line / Area Tujuan <span class="text-rose-500">*</span></label>
-            <input type="text" id="outboundDestinationLine" required placeholder="Contoh: Line Packing 1 / QC Lab" oninput="syncOutboundDestinationField()" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-600 text-xs font-semibold text-slate-800">
-          </div>
-        </div>
-
-        <!-- Quick Select Chips for Destination -->
-        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <span class="text-[10px] text-slate-400 font-medium">Pilihan cepat:</span>
-          <button type="button" onclick="setOutboundLinePreset('Line Packing 1')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Packing 1</button>
-          <button type="button" onclick="setOutboundLinePreset('Line Packing 2')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Packing 2</button>
-          <button type="button" onclick="setOutboundLinePreset('Line Filling Botol')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Filling</button>
-          <button type="button" onclick="setOutboundLinePreset('QC Lab / Sampling')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">QC Lab</button>
-          <button type="button" onclick="setOutboundLinePreset('Rework / Repacking')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Rework</button>
-        </div>
-
-        <!-- Hidden merged destination input for backward compatibility -->
-        <input type="hidden" id="outboundDestination" required>
+        <select id="outboundDestination" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-bold text-slate-800">
+          <option value="">-- Pilih Brand Tujuan --</option>
+          <option value="HANASUI">HANASUI</option>
+          <option value="NCO">NCO</option>
+          <option value="FYNE">FYNE</option>
+          <option value="EOMMA">EOMMA</option>
+        </select>
       </div>
 
       <!-- Alasan Pengeluaran -->
       <div>
-        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-          <span>Alasan Pengeluaran <span class="text-rose-500">*</span></span>
+        <label class="block font-bold text-slate-700 mb-1">
+          Alasan Pengeluaran <span class="text-rose-500">*</span>
         </label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <select id="outboundReasonSelect" onchange="onOutboundReasonSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-semibold text-slate-700">
-            <option value="Kebutuhan Produksi Harian">Kebutuhan Produksi Harian</option>
-            <option value="Uji Kualitas (QC Lab / Sampling)">Uji Kualitas (QC Lab / Sampling)</option>
-            <option value="Sampel R&D / Promosi">Sampel R&D / Promosi</option>
-            <option value="Pengemasan Ulang (Rework)">Pengemasan Ulang (Rework)</option>
-            <option value="Material Rusak / Afkir / Reject">Material Rusak / Afkir / Reject</option>
-            <option value="custom">Alasan Lainnya (Ketik Manual)...</option>
-          </select>
-          <input type="text" id="outboundReason" required value="Kebutuhan Produksi Harian" placeholder="Tuliskan alasan pengeluaran..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium text-slate-800">
-        </div>
+        <input type="text" id="outboundReason" required placeholder="Contoh: Uji Kualitas / Rusak / Reject" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium text-slate-800">
       </div>
 
       <!-- Catatan Tambahan -->
       <div>
-        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
-        <input type="text" id="outboundNotes" placeholder="No. SPK / Keterangan tambahan..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs">
+        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+        <input type="text" id="outboundNotes" placeholder="Keterangan..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs">
       </div>
 
       <!-- Action Buttons -->
