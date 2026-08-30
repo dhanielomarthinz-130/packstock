@@ -1231,32 +1231,46 @@ if ($action === 'delete_blank_count') {
 }
 
 // =========================================================================
-// 10. ASSIGN RECOUNT FOR DISCREPANCY ITEMS (DIFFERENCE != 0)
+// 10. ASSIGN RECOUNT FOR DISCREPANCY ITEMS (AUTO-SPLIT BALANCED TO MULTIPLE OPERATORS)
 // =========================================================================
 if ($action === 'assign_recount') {
     Auth::requireAdmin();
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
     $opname_id   = (int)($input['opname_id'] ?? 0);
-    $assigned_to = (int)($input['assigned_to_operator'] ?? $input['assigned_to'] ?? $input['operator_id'] ?? 0);
+    $rawOps      = $input['assigned_to_operators'] ?? $input['assigned_to_operator'] ?? $input['assigned_to'] ?? $input['operator_id'] ?? [];
     $item_ids    = $input['item_ids'] ?? []; // Optional: if empty, selects all discrepancy items
     $notes       = trim($input['notes'] ?? '');
 
-    if ($opname_id <= 0 || $assigned_to <= 0) {
+    // Normalize operator IDs
+    $operatorIds = [];
+    if (is_array($rawOps)) {
+        foreach ($rawOps as $opId) {
+            $val = (int)$opId;
+            if ($val > 0 && !in_array($val, $operatorIds)) $operatorIds[] = $val;
+        }
+    } elseif ((int)$rawOps > 0) {
+        $operatorIds[] = (int)$rawOps;
+    }
+
+    if ($opname_id <= 0 || empty($operatorIds)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Sesi Opname dan Operator Recount wajib dipilih']);
+        echo json_encode(['success' => false, 'message' => 'Sesi Opname dan minimal 1 Operator Recount wajib dipilih']);
         exit;
     }
 
-    // Verify Operator
-    $stmtOp = $pdo->prepare("SELECT id, name FROM users WHERE id = ?");
-    $stmtOp->execute([$assigned_to]);
-    $op = $stmtOp->fetch();
-    if (!$op) {
+    // Fetch operator names
+    $placeholdersOps = implode(',', array_fill(0, count($operatorIds), '?'));
+    $stmtOps = $pdo->prepare("SELECT id, name FROM users WHERE id IN ($placeholdersOps)");
+    $stmtOps->execute($operatorIds);
+    $validOps = $stmtOps->fetchAll();
+    if (empty($validOps)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Operator penugasan tidak valid']);
         exit;
     }
+    $validOpIds = array_column($validOps, 'id');
+    $validOpNames = array_column($validOps, 'name');
 
     // Verify Opname
     $stmtSo = $pdo->prepare("SELECT * FROM stock_opnames WHERE id = ?");
@@ -1308,31 +1322,56 @@ if ($action === 'assign_recount') {
 
         $stageLabel = getStageLabel($nextStageNumber);
 
-        // Insert Stage N record for each discrepancy item
+        $stmtCheckStage = $pdo->prepare("
+            SELECT id FROM stock_opname_item_stages 
+            WHERE opname_id = ? AND item_id = ? AND stage_number = ?
+        ");
         $stmtStageInsert = $pdo->prepare("
             INSERT INTO stock_opname_item_stages (opname_id, item_id, stage_number, assigned_to, count_qty, status, notes, created_at)
             VALUES (?, ?, ?, ?, NULL, 'PENDING', ?, CURRENT_TIMESTAMP)
-            ON DUPLICATE KEY UPDATE assigned_to = VALUES(assigned_to), count_qty = NULL, status = 'PENDING', notes = VALUES(notes)
+        ");
+        $stmtStageUpdate = $pdo->prepare("
+            UPDATE stock_opname_item_stages 
+            SET assigned_to = ?, count_qty = NULL, status = 'PENDING', notes = ?
+            WHERE id = ?
+        ");
+        $stmtItemUpdate = $pdo->prepare("
+            UPDATE stock_opname_items 
+            SET status = 'RECOUNT_REQUESTED' 
+            WHERE id = ?
         ");
 
-        foreach ($targetItemIds as $itemId) {
-            $stmtStageInsert->execute([$opname_id, $itemId, $nextStageNumber, $assigned_to, $notes]);
+        $opCount = count($validOpIds);
+        foreach ($targetItemIds as $idx => $itemId) {
+            // Round-robin balanced distribution
+            $assignedOpId = $validOpIds[$idx % $opCount];
 
-            $pdo->prepare("
-                UPDATE stock_opname_items 
-                SET status = 'RECOUNT_REQUESTED' 
-                WHERE id = ?
-            ")->execute([$itemId]);
+            $stmtCheckStage->execute([$opname_id, $itemId, $nextStageNumber]);
+            $existingStageId = $stmtCheckStage->fetchColumn();
+
+            if ($existingStageId) {
+                $stmtStageUpdate->execute([$assignedOpId, $notes, $existingStageId]);
+            } else {
+                $stmtStageInsert->execute([$opname_id, $itemId, $nextStageNumber, $assignedOpId, $notes]);
+            }
+
+            $stmtItemUpdate->execute([$itemId]);
         }
 
         $pdo->commit();
 
+        $opNamesText = implode(', ', $validOpNames);
+        $message = count($validOpIds) > 1
+            ? "Berhasil membagi & menugaskan {$stageLabel} untuk " . count($targetItemIds) . " SKU selisih secara merata ke " . count($validOpIds) . " operator ({$opNamesText})."
+            : "Berhasil menugaskan {$stageLabel} untuk " . count($targetItemIds) . " SKU selisih ke operator '{$validOpNames[0]}'.";
+
         echo json_encode([
             'success' => true,
-            'message' => "Berhasil menugaskan {$stageLabel} untuk " . count($targetItemIds) . " SKU selisih ke operator '{$op['name']}'.",
+            'message' => $message,
             'next_stage' => $nextStageNumber,
             'stage_label' => $stageLabel,
-            'assigned_items_count' => count($targetItemIds)
+            'assigned_items_count' => count($targetItemIds),
+            'operator_count' => count($validOpIds)
         ]);
         exit;
     } catch (Exception $e) {

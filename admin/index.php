@@ -3112,7 +3112,7 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: TUGASKAN RECOUNT (DYNAMIC STAGE 2nd, 3rd, dst.) ================= -->
+<!-- ================= MODAL: TUGASKAN RECOUNT (MULTI-OPERATOR AUTO-SPLIT BALANCED) ================= -->
 <div id="modalAssignRecount" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
   <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -3134,12 +3134,32 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <form id="formAssignRecount" onsubmit="handleAssignRecountSubmit(event)" class="space-y-3.5 text-xs">
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke Operator Recount <span class="text-rose-500">*</span></label>
-        <select id="recountOperatorSelect" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-600 font-bold text-xs">
-          <option value="">-- Pilih Operator Recount --</option>
-        </select>
-        <p class="text-[10px] text-slate-400 mt-0.5">Operator ini akan menerima task recount untuk menghitung ulang fisik di rak.</p>
+      
+      <!-- Multi-Operator Checklist & Distribution Info -->
+      <div class="space-y-2 p-3 bg-purple-50/50 rounded-xl border border-purple-200">
+        <div class="flex items-center justify-between">
+          <label class="font-bold text-slate-800 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-purple-700 text-[17px]">group_add</span>
+            <span>Pilih Operator Recount <span class="text-rose-500">*</span></span>
+          </label>
+          <div class="flex items-center gap-1.5 text-[10px]">
+            <button type="button" onclick="toggleSelectAllRecountOperators(true)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-bold transition-colors">Pilih Semua</button>
+            <button type="button" onclick="toggleSelectAllRecountOperators(false)" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-bold transition-colors">Reset</button>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-slate-500">Centang 1 atau beberapa operator. Sistem akan <b>otomatis membagi rata SKU</b> ke semua operator yang dipilih.</p>
+
+        <!-- Operators Checklist Container -->
+        <div id="recountOperatorsChecklistContainer" class="max-h-40 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-lg border border-purple-200/80 divide-y divide-slate-100">
+          <!-- Injected by JavaScript -->
+        </div>
+
+        <!-- Live Distribution Summary -->
+        <div id="recountDistributionSummary" class="p-2 rounded-lg bg-white border border-purple-200 text-[11px] font-semibold text-purple-900 flex items-center gap-2">
+          <span class="material-symbols-outlined text-purple-600 text-[16px]">info</span>
+          <span id="recountDistributionSummaryText">Pilih minimal 1 operator untuk melanjutkan.</span>
+        </div>
       </div>
 
       <!-- Preview of Selected Discrepancy Items -->
@@ -3148,7 +3168,7 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="font-bold text-slate-800">Daftar SKU Selisih yang Ditugaskan:</label>
           <span id="recountItemsCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900">0 SKU</span>
         </div>
-        <div id="recountItemsPreviewList" class="max-h-48 overflow-y-auto space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200 divide-y divide-slate-100">
+        <div id="recountItemsPreviewList" class="max-h-40 overflow-y-auto space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200 divide-y divide-slate-100">
           <!-- Rendered dynamically -->
         </div>
       </div>

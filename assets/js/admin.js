@@ -5169,8 +5169,83 @@ async function handleCreateStockOpnameSubmit(e) {
 }
 
 let _isRecountForDynamic = false;
+let _currentRecountTargetItemCount = 0;
 
-function openAssignRecountModal(specificItemId = null, isDynamic = false) {
+function renderRecountOperatorsChecklist(targetCount) {
+  _currentRecountTargetItemCount = targetCount;
+  const container = document.getElementById('recountOperatorsChecklistContainer');
+  if (!container) return;
+
+  if (!allOperators || allOperators.length === 0) {
+    container.innerHTML = `
+      <div class="p-3 text-center text-slate-400 text-xs">
+        <span class="material-symbols-outlined text-[20px] text-amber-500 mb-1">warning</span>
+        <p class="font-bold text-slate-700">Tidak ada operator aktif yang terdaftar</p>
+        <p class="text-[11px] text-slate-400">Silakan tambahkan pengguna dengan role Operator di menu Pengguna.</p>
+      </div>
+    `;
+    updateRecountDistributionPreview();
+    return;
+  }
+
+  container.innerHTML = allOperators.map((op, idx) => {
+    return `
+      <label class="flex items-center justify-between p-2 hover:bg-purple-50/60 rounded-lg cursor-pointer transition-colors text-xs select-none">
+        <div class="flex items-center gap-2.5">
+          <input type="checkbox" value="${op.id}" class="recount-op-checkbox rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer" onchange="updateRecountDistributionPreview()" ${idx === 0 ? 'checked' : ''}>
+          <div>
+            <span class="font-bold text-slate-900">${escapeHtml(op.name)}</span>
+            <span class="text-[10px] text-slate-400 font-mono ml-1.5">(@${escapeHtml(op.username || '')})</span>
+          </div>
+        </div>
+        <span class="px-2 py-0.5 rounded bg-purple-100/80 text-purple-800 font-semibold text-[10px] border border-purple-200">${escapeHtml(op.shift || 'Shift')}</span>
+      </label>
+    `;
+  }).join('');
+
+  updateRecountDistributionPreview();
+}
+
+function toggleSelectAllRecountOperators(selectAll) {
+  const checkboxes = document.querySelectorAll('.recount-op-checkbox');
+  checkboxes.forEach(cb => { cb.checked = !!selectAll; });
+  updateRecountDistributionPreview();
+}
+
+function updateRecountDistributionPreview() {
+  const checkboxes = Array.from(document.querySelectorAll('.recount-op-checkbox:checked'));
+  const checkedCount = checkboxes.length;
+  const targetCount = _currentRecountTargetItemCount || 0;
+  const summaryEl = document.getElementById('recountDistributionSummaryText');
+  const btnSubmit = document.getElementById('btnSubmitRecount');
+
+  if (!summaryEl) return;
+
+  if (checkedCount === 0) {
+    summaryEl.innerHTML = '<span class="text-rose-600 font-bold">⚠️ Pilih minimal 1 operator untuk ditugaskan!</span>';
+    if (btnSubmit) btnSubmit.disabled = true;
+    return;
+  }
+
+  if (targetCount === 0) {
+    summaryEl.innerHTML = '<span class="text-slate-500">Tidak ada SKU selisih yang perlu recount.</span>';
+    if (btnSubmit) btnSubmit.disabled = true;
+    return;
+  }
+
+  if (btnSubmit) btnSubmit.disabled = false;
+
+  if (checkedCount === 1) {
+    summaryEl.innerHTML = `<b>1 Operator Terpilih:</b> Semua <b>${targetCount} SKU</b> akan ditugaskan ke operator ini.`;
+  } else {
+    const avgPerOp = Math.floor(targetCount / checkedCount);
+    const remainder = targetCount % checkedCount;
+    let distText = `<b>${checkedCount} Operator Terpilih:</b> Total <b>${targetCount} SKU</b> otomatis dibagi rata (~${avgPerOp}${remainder > 0 ? ` s/d ${avgPerOp + 1}` : ''} SKU per operator).`;
+    summaryEl.innerHTML = distText;
+  }
+}
+
+async function openAssignRecountModal(specificItemId = null, isDynamic = false) {
   _recountSpecificItemId = specificItemId;
   _isRecountForDynamic = isDynamic;
 
@@ -5178,6 +5253,14 @@ function openAssignRecountModal(specificItemId = null, isDynamic = false) {
   if (!session || !session.id) {
     App.toast('Pilih atau buat sesi penghitungan terlebih dahulu', 'warning');
     return;
+  }
+
+  // Ensure operators are loaded
+  if (!allOperators || allOperators.length === 0) {
+    const resOp = await App.fetchJson('../api/users.php?action=operators');
+    if (resOp && resOp.success && resOp.data) {
+      allOperators = resOp.data;
+    }
   }
 
   const items = isDynamic ? currentDynamicItems : currentOpnameItems;
@@ -5188,14 +5271,6 @@ function openAssignRecountModal(specificItemId = null, isDynamic = false) {
 
   const stageBadge = document.getElementById('recountStageTargetBadge');
   if (stageBadge) stageBadge.innerText = nextStageLabel;
-
-  const opSelect = document.getElementById('recountOperatorSelect');
-  if (opSelect) {
-    opSelect.innerHTML = '<option value="">-- Pilih Operator Recount --</option>' +
-      allOperators.map(op => `
-        <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift Aktif')})</option>
-      `).join('');
-  }
 
   const subtitle = document.getElementById('recountOpnameSubtitle');
   if (subtitle) {
@@ -5256,10 +5331,8 @@ function openAssignRecountModal(specificItemId = null, isDynamic = false) {
     }
   }
 
-  const btnSubmit = document.getElementById('btnSubmitRecount');
-  if (btnSubmit) {
-    btnSubmit.disabled = (targetItems.length === 0);
-  }
+  // Render multi-operator checklist & update live distribution preview
+  renderRecountOperatorsChecklist(targetItems.length);
 
   App.openModal('modalAssignRecount');
 }
@@ -5269,8 +5342,14 @@ async function handleAssignRecountSubmit(e) {
   const isDynamic = _isRecountForDynamic;
   const session = isDynamic ? currentDynamicSession : (currentOpnameDetail || currentOpnameSession);
   const opname_id = session?.id;
-  const operator_id = document.getElementById('recountOperatorSelect').value;
+
+  const checkedOps = Array.from(document.querySelectorAll('.recount-op-checkbox:checked')).map(cb => parseInt(cb.value)).filter(id => id > 0);
   const notes = document.getElementById('recountNotesInput')?.value.trim() || '';
+
+  if (checkedOps.length === 0) {
+    App.toast('Centang minimal 1 operator recount untuk menerima tugas', 'warning');
+    return;
+  }
 
   const items = isDynamic ? currentDynamicItems : currentOpnameItems;
   const targetSet = isDynamic ? selectedDynamicRecountIds : selectedOpnameRecountIds;
@@ -5298,7 +5377,7 @@ async function handleAssignRecountSubmit(e) {
     method: 'POST',
     body: JSON.stringify({
       opname_id,
-      assigned_to_operator: operator_id,
+      assigned_to_operators: checkedOps,
       item_ids,
       notes
     })
