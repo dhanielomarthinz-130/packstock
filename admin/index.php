@@ -2274,7 +2274,7 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form id="inboundForm" onsubmit="handleInboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Meta Information Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
             <span>Tanggal Masuk</span>
@@ -2300,13 +2300,8 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div>
-          <label class="block font-bold text-slate-700 mb-1">No. Surat Jalan / PO</label>
-          <input type="text" id="inboundPoNumber" placeholder="Contoh: PO-2026-001 (Opsional)" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
-        </div>
-
-        <div>
           <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
-          <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
+          <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
         </div>
       </div>
 

@@ -2883,7 +2883,7 @@ function addInboundTableRow(data = null) {
   tr.innerHTML = `
     <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
     <td class="p-2.5">
-      <select required class="inbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-emerald-600" onchange="onInboundRowMaterialChange(this)">
+      <select required class="inbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-emerald-600">
         ${matOptions}
       </select>
     </td>
@@ -2903,13 +2903,35 @@ function addInboundTableRow(data = null) {
     </td>
   `;
   tbody.appendChild(tr);
+
+  const selectEl = tr.querySelector('.inbound-row-mat');
+  if (typeof TomSelect !== 'undefined' && selectEl) {
+    const ts = new TomSelect(selectEl, {
+      create: false,
+      maxItems: 1,
+      allowEmptyOption: true,
+      placeholder: '-- Cari Kemas/Consumable --',
+      dropdownParent: 'body',
+      searchField: ['text'],
+      onChange: function(value) {
+        onInboundRowMaterialChange(selectEl, value);
+      }
+    });
+    tr._tomSelect = ts;
+  }
+
   recalcInboundTotalQty();
 }
 
 function removeInboundTableRow(btn) {
   const tbody = document.getElementById('inboundItemsTableBody');
   const tr = btn.closest('tr');
-  if (tr) tr.remove();
+  if (tr) {
+    if (tr._tomSelect) {
+      try { tr._tomSelect.destroy(); } catch (e) {}
+    }
+    tr.remove();
+  }
 
   if (tbody) {
     const rows = tbody.querySelectorAll('tr');
@@ -2925,14 +2947,16 @@ function removeInboundTableRow(btn) {
   recalcInboundTotalQty();
 }
 
-function onInboundRowMaterialChange(selectEl) {
+function onInboundRowMaterialChange(selectEl, val = null) {
   const tr = selectEl.closest('tr');
   if (!tr) return;
-  const opt = selectEl.options[selectEl.selectedIndex];
+  const matId = parseInt(val || selectEl.value || '0');
+  const foundMat = (allMaterials || []).find(m => m.id === matId);
   const rackInput = tr.querySelector('.inbound-row-rack');
-  if (rackInput && opt) {
-    const rack = opt.getAttribute('data-rack');
-    if (rack && rack !== '-') rackInput.value = rack;
+  if (rackInput && foundMat) {
+    if (foundMat.rack_location && foundMat.rack_location !== '-') {
+      rackInput.value = foundMat.rack_location;
+    }
   }
 }
 
@@ -3230,7 +3254,7 @@ function addOutboundTableRow(data = null) {
   tr.innerHTML = `
     <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
     <td class="p-2.5">
-      <select required class="outbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-amber-600" onchange="onOutboundRowMaterialChange(this)">
+      <select required class="outbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
         ${matOptions}
       </select>
     </td>
@@ -3255,13 +3279,35 @@ function addOutboundTableRow(data = null) {
     </td>
   `;
   tbody.appendChild(tr);
+
+  const selectEl = tr.querySelector('.outbound-row-mat');
+  if (typeof TomSelect !== 'undefined' && selectEl) {
+    const ts = new TomSelect(selectEl, {
+      create: false,
+      maxItems: 1,
+      allowEmptyOption: true,
+      placeholder: '-- Cari Kemas/Consumable --',
+      dropdownParent: 'body',
+      searchField: ['text'],
+      onChange: function(value) {
+        onOutboundRowMaterialChange(selectEl, value);
+      }
+    });
+    tr._tomSelect = ts;
+  }
+
   recalcOutboundTotalQty();
 }
 
 function removeOutboundTableRow(btn) {
   const tbody = document.getElementById('outboundItemsTableBody');
   const tr = btn.closest('tr');
-  if (tr) tr.remove();
+  if (tr) {
+    if (tr._tomSelect) {
+      try { tr._tomSelect.destroy(); } catch (e) {}
+    }
+    tr.remove();
+  }
 
   if (tbody) {
     const rows = tbody.querySelectorAll('tr');
@@ -3277,7 +3323,7 @@ function removeOutboundTableRow(btn) {
   recalcOutboundTotalQty();
 }
 
-function onOutboundRowMaterialChange(selectEl) {
+function onOutboundRowMaterialChange(selectEl, val = null) {
   const tr = selectEl.closest('tr');
   if (!tr) return;
   const qtyInput = tr.querySelector('.outbound-row-qty');
@@ -3288,11 +3334,12 @@ function validateOutboundRowQty(qtyInput) {
   const tr = qtyInput.closest('tr');
   if (!tr) return;
   const matSelect = tr.querySelector('.outbound-row-mat');
-  const selectedOpt = matSelect?.options[matSelect.selectedIndex];
-  const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
+  const matId = parseInt(matSelect?.value || '0');
+  const foundMat = (allMaterials || []).find(m => m.id === matId);
+  const stock = foundMat ? parseInt(foundMat.current_stock || '0') : 0;
   const val = parseInt(qtyInput.value || '0');
 
-  if (selectedOpt && selectedOpt.value && val > stock) {
+  if (matId > 0 && val > stock) {
     qtyInput.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-700');
     qtyInput.classList.remove('border-slate-300', 'bg-slate-50', 'text-amber-900');
   } else {
