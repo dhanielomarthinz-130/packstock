@@ -600,6 +600,9 @@ if ($action === 'counting_progress_summary') {
         $params[] = $date;
     }
 
+    // Only include sessions that have at least 1 item generated/assigned
+    $where[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
+
     $whereSql = implode(" AND ", $where);
 
     // Fetch sessions with stage breakdown
