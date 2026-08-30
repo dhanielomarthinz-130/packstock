@@ -3659,18 +3659,23 @@ async function loadOutboundHistory() {
             </div>
           </td>
 
-          <!-- 7. Aksi (Edit & Batal untuk Task Aktif) -->
+          <!-- 7. Aksi -->
           <td class="py-3.5 px-3.5 align-middle text-center whitespace-nowrap">
-            ${isTask && (o.status === 'PENDING' || o.status === 'IN_PROGRESS') ? `
-              <div class="flex items-center justify-center gap-1.5">
-                <button type="button" onclick="openEditTaskModal(${o.task_id})" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 transition-colors inline-flex items-center justify-center shadow-2xs" title="Edit Penugasan Task (Ganti Produk / Operator)">
+            <div class="flex items-center justify-center gap-1.5">
+              <!-- Tombol Icon Mata Detail -->
+              <button type="button" onclick="openOutboundDetailModal(${idx})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Lihat Rincian Detail Transaksi">
+                <span class="material-symbols-outlined text-[16px]">visibility</span>
+              </button>
+
+              ${isTask && (o.status === 'PENDING' || o.status === 'IN_PROGRESS') ? `
+                <button type="button" onclick="openEditTaskModal(${o.task_id})" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Edit Penugasan Task (Ganti Produk / Operator)">
                   <span class="material-symbols-outlined text-[16px]">edit</span>
                 </button>
-                <button type="button" onclick="cancelOutboundTask(${o.task_id})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs" title="Batalkan Penugasan Task">
+                <button type="button" onclick="cancelOutboundTask(${o.task_id})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Batalkan Penugasan Task">
                   <span class="material-symbols-outlined text-[16px]">cancel</span>
                 </button>
-              </div>
-            ` : `<span class="text-slate-400 font-mono text-[11px]">-</span>`}
+              ` : ''}
+            </div>
           </td>
         </tr>
       `;
