@@ -55,12 +55,12 @@ require_once __DIR__ . '/includes/header.php';
             </div>
           </div>
           <div>
-            <h1 class="text-xl font-black tracking-tight text-white leading-none">PackStock</h1>
-            <p class="text-[11px] text-emerald-300/80 font-semibold mt-1">Stock Kemas / Consumable Control & Dispatch</p>
+            <h1 class="text-2xl font-black tracking-tight text-white leading-tight">PackStock</h1>
+            <p class="text-[10.5px] text-emerald-300 font-bold tracking-wide">Stock Kemas / Consumable Control & Dispatch</p>
           </div>
         </div>
 
-        <p class="text-xs text-slate-300 leading-relaxed pt-1">
+        <p class="text-xs text-slate-300/90 leading-relaxed pt-1.5 font-normal">
           Sistem manajemen persediaan Stock Kemas / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
@@ -183,7 +183,7 @@ require_once __DIR__ . '/includes/header.php';
           <div class="pt-2">
             <button type="submit" id="btnSubmit" 
               class="w-full py-3.5 px-5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-700/25 hover:shadow-emerald-700/40 transition-all flex items-center justify-center gap-2 cursor-pointer">
-              <span>Masuk ke Sistem PackStock</span>
+              <span>Login</span>
               <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </div>
@@ -197,7 +197,7 @@ require_once __DIR__ . '/includes/header.php';
           PackStock WMS &bull; Enterprise Stock Control Panel &copy; <?= date('Y') ?>
         </p>
         <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
-          Powered By <span class="text-emerald-700 font-black">dhanielo-Marthinz IMS</span>
+          Powered By <span class="text-emerald-700 font-black">Dhanielo-Marthinz IMS</span>
         </p>
       </div>
 
@@ -242,7 +242,7 @@ require_once __DIR__ . '/includes/header.php';
     });
 
     btn.disabled = false;
-    btn.innerHTML = '<span>Masuk ke Sistem PackStock</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
+    btn.innerHTML = '<span>Login</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
 
     if (res.success) {
       App.toast('Login berhasil. Mengalihkan...', 'success');
