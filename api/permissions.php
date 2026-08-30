@@ -45,6 +45,12 @@ $MENUS_CATALOG = [
         'description' => 'Penyesuaian selisih stok manual atau upload file Excel hasil opname.'
     ],
     [
+        'key' => 'dynamic_counting_detail',
+        'label' => 'Detail Dynamic Count',
+        'icon' => 'playlist_add_check',
+        'description' => 'Log detail riwayat hitung fisik Dynamic Count per putaran, filter dokumen sesi SKU, dan export Excel.'
+    ],
+    [
         'key' => 'counting_detail',
         'label' => 'Detail Stock Opname',
         'icon' => 'table_rows',

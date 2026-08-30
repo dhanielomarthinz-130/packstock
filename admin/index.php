@@ -103,6 +103,15 @@ require_once __DIR__ . '/../includes/header.php';
             <span id="sidebarDynamicBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-xs">0</span>
           </button>
 
+          <button onclick="switchAdminTab('dynamic_counting_detail')" id="nav-dynamic_counting_detail" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Dynamic Count">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-indigo-600">playlist_add_check</span>
+              <span class="sidebar-text truncate">Detail Dynamic Count</span>
+            </div>
+            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">Log</span>
+          </button>
+
           <button onclick="switchAdminTab('opname')" id="nav-opname" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Opname">
             <div class="flex items-center gap-3">
@@ -1102,6 +1111,129 @@ require_once __DIR__ . '/../includes/header.php';
             <table class="w-full text-left border-collapse">
               <thead id="opnameItemsTableHead" class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950"></thead>
               <tbody id="opnameItemsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= 2.2.B TAB: DETAIL HASIL DYNAMIC COUNTING (LOG BREAKDOWN PER PUTARAN) ================= -->
+      <div id="tab-dynamic_counting_detail" class="hidden space-y-4">
+
+        <!-- Single-Line Clean Action & Filter Toolbar -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5 flex-1">
+            <!-- Session / Document Selector -->
+            <div class="flex items-center gap-1.5 min-w-[240px] max-w-[300px]">
+              <span class="material-symbols-outlined text-indigo-600 text-[19px] shrink-0">folder_open</span>
+              <select id="dcdFilterSession" onchange="loadDynamicCountingDetails()" class="w-full h-[38px] px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white cursor-pointer transition-colors">
+                <option value="0">Semua Dokumen Sesi (Dynamic Count)</option>
+              </select>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
+              <input type="text" id="dcdFilterDate" placeholder="Filter Tanggal..." class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600 focus:bg-white" title="Filter Tanggal">
+            </div>
+
+            <!-- Round / Putaran Filter -->
+            <select id="dcdFilterStage" onchange="loadDynamicCountingDetails()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600">
+              <option value="0">Semua Putaran (Round)</option>
+              <option value="1">1st Count</option>
+              <option value="2">2nd Count</option>
+              <option value="3">3rd Count</option>
+              <option value="4">4th Count</option>
+            </select>
+
+            <!-- Search Input -->
+            <div class="relative flex-1 min-w-[180px] max-w-xs">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[16px]">search</span>
+              </span>
+              <input type="text" id="dcdSearchInput" oninput="loadDynamicCountingDetails()" placeholder="Cari Dokumen, SKU, Nama, Rak, PIC..." 
+                class="w-full h-[38px] pl-8 pr-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
+            </div>
+
+            <button type="button" onclick="loadDynamicCountingDetails()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <!-- Action Buttons Right (Export Excel) -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="exportDynamicCountingDetailExcel()" class="h-[38px] px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Download Excel Log Detail Dynamic Count (.xlsx)">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
+              <span>Download Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 KPI Summary Cards -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold flex-shrink-0 border border-indigo-100">
+              <span class="material-symbols-outlined text-[22px]">format_list_numbered</span>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-bold text-slate-400">Total Data Count</div>
+              <div id="dcdStatTotalRecords" class="text-base sm:text-lg font-black text-slate-900">0 Data</div>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0 border border-emerald-100">
+              <span class="material-symbols-outlined text-[22px]">pin</span>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-bold text-slate-400">Total Qty Dihitung</div>
+              <div id="dcdStatTotalQty" class="text-base sm:text-lg font-black text-emerald-800">0 Pcs</div>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold flex-shrink-0 border border-purple-100">
+              <span class="material-symbols-outlined text-[22px]">category</span>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-bold text-slate-400">Total SKU Terhitung</div>
+              <div id="dcdStatTotalSku" class="text-base sm:text-lg font-black text-purple-900">0 SKU</div>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold flex-shrink-0 border border-amber-100">
+              <span class="material-symbols-outlined text-[22px]">folder</span>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-bold text-slate-400">Dokumen Sesi</div>
+              <div id="dcdStatTotalSessions" class="text-base sm:text-lg font-black text-amber-900">0 Dokumen</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail Dynamic Count Data Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950">
+                <tr>
+                  <th class="p-3 text-center w-12 border-r border-white/20">No</th>
+                  <th class="p-3 border-r border-white/20">No. Dokumen Sesi</th>
+                  <th class="p-3 border-r border-white/20">Tanggal & Waktu</th>
+                  <th class="p-3 text-center border-r border-white/20">Round</th>
+                  <th class="p-3 border-r border-white/20">Item No</th>
+                  <th class="p-3 border-r border-white/20">Deskripsi Product</th>
+                  <th class="p-3 text-center border-r border-white/20">Satuan</th>
+                  <th class="p-3 text-center border-r border-white/20 font-black">Qty Count</th>
+                  <th class="p-3 border-r border-white/20">Lokasi Rak (Scan)</th>
+                  <th class="p-3 border-r border-white/20">PIC Operator</th>
+                  <th class="p-3 text-center border-r border-white/20">Status</th>
+                  <th class="p-3">Catatan Fisik</th>
+                </tr>
+              </thead>
+              <tbody id="dynamicCountingDetailTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
             </table>
           </div>
         </div>

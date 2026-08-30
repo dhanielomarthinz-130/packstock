@@ -837,15 +837,16 @@ if ($type === 'mutations') {
 // =========================================================================
 // 10.B. EXPORT DETAIL COUNTING LOGS (.xlsx)
 // =========================================================================
-if ($type === 'counting_detail') {
+if ($type === 'counting_detail' || $type === 'dynamic_counting_detail') {
+    $targetCountingType = ($type === 'dynamic_counting_detail' || ($_GET['counting_type'] ?? '') === 'DYNAMIC_COUNT' || ($_GET['type_filter'] ?? '') === 'DYNAMIC_COUNT') ? 'DYNAMIC_COUNT' : 'STOCK_OPNAME';
     $opnameId    = (int)($_GET['opname_id'] ?? 0);
     $stageNumber = (int)($_GET['stage_number'] ?? 0);
     $date        = trim($_GET['date'] ?? '');
     $search      = trim($_GET['search'] ?? '');
     $status      = trim($_GET['status'] ?? '');
 
-    $where = ["so.counting_type = 'STOCK_OPNAME'"];
-    $params = [];
+    $where = ["so.counting_type = ?"];
+    $params = [$targetCountingType];
 
     if ($opnameId > 0) {
         $where[] = "st.opname_id = ?";
@@ -900,8 +901,9 @@ if ($type === 'counting_detail') {
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
 
-    $filename = "Detail_Stock_Opname_Logs_" . date('Ymd_His') . ".xlsx";
-    $title = "LOG DETAIL HASIL STOCK OPNAME (BREAKDOWN PER PUTARAN)";
+    $isDynamic = $targetCountingType === 'DYNAMIC_COUNT';
+    $filename = ($isDynamic ? "Detail_Dynamic_Count_Logs_" : "Detail_Stock_Opname_Logs_") . date('Ymd_His') . ".xlsx";
+    $title = $isDynamic ? "LOG DETAIL HASIL DYNAMIC COUNT (BREAKDOWN PER PUTARAN)" : "LOG DETAIL HASIL STOCK OPNAME (BREAKDOWN PER PUTARAN)";
 
     $headers = [
         'No',

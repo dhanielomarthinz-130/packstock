@@ -459,42 +459,41 @@ if ($action === 'item_detail') {
 // 1.D. LIST ALL COUNTING DETAILS (LOG HITUNG FISIK SEMUA PUTARAN DENGAN FILTER SESI/DOKUMEN)
 // =========================================================================
 if ($action === 'list_counting_details') {
+    $countingType = trim($_GET['type'] ?? 'STOCK_OPNAME');
+    if (!in_array($countingType, ['STOCK_OPNAME', 'DYNAMIC_COUNT', 'ALL'])) {
+        $countingType = 'STOCK_OPNAME';
+    }
+
     $opnameId    = (int)($_GET['opname_id'] ?? 0);
     $stageNumber = (int)($_GET['stage_number'] ?? 0);
     $date        = trim($_GET['date'] ?? '');
     $search      = trim($_GET['search'] ?? '');
     $status      = trim($_GET['status'] ?? '');
 
-    // Build list of Stock Opname sessions for dropdown
-    $stmtSessions = $pdo->query("
-        SELECT id, opname_no, title, counting_type, status, max_stage, created_at
-        FROM stock_opnames
-        WHERE counting_type = 'STOCK_OPNAME'
-        ORDER BY created_at DESC, id DESC
-    ");
+    // Build list of sessions for dropdown
+    if ($countingType === 'ALL') {
+        $stmtSessions = $pdo->query("
+            SELECT id, opname_no, title, counting_type, status, max_stage, created_at
+            FROM stock_opnames
+            ORDER BY created_at DESC, id DESC
+        ");
+    } else {
+        $stmtSessions = $pdo->prepare("
+            SELECT id, opname_no, title, counting_type, status, max_stage, created_at
+            FROM stock_opnames
+            WHERE counting_type = ?
+            ORDER BY created_at DESC, id DESC
+        ");
+        $stmtSessions->execute([$countingType]);
+    }
     $sessions = $stmtSessions->fetchAll();
 
-    $where = ["so.counting_type = 'STOCK_OPNAME'"];
+    $where = [];
     $params = [];
 
-    if ($opnameId > 0) {
-        $where[] = "st.opname_id = ?";
-        $params[] = $opnameId;
-    }
-
-    if ($stageNumber > 0) {
-        $where[] = "st.stage_number = ?";
-        $params[] = $stageNumber;
-    }
-
-    if (!empty($status) && $status !== 'ALL') {
-        $where[] = "st.status = ?";
-        $params[] = $status;
-    }
-
-    if (!empty($type) && $type !== 'ALL') {
+    if ($countingType !== 'ALL') {
         $where[] = "so.counting_type = ?";
-        $params[] = $type;
+        $params[] = $countingType;
     }
 
     if (!empty($date)) {

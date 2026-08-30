@@ -472,16 +472,20 @@ class Database {
 
         // Seed default menu permissions
         $defaultMenus = [
-            'dashboard'   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'inventory'   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'opname'      => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'inbound'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'outbound'    => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'tasks'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'mutations'   => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0],
-            'users'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'permissions' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'field_access'=> ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1],
+            'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'counting_detail'         => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0],
+            'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1],
         ];
 
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

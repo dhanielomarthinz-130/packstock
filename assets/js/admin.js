@@ -122,6 +122,9 @@ function initPremiumPickers() {
 
   // 9. Detail Counting Filter
   initDate('#cdFilterDate', () => loadCountingDetails());
+
+  // 10. Detail Dynamic Counting Filter
+  initDate('#dcdFilterDate', () => loadDynamicCountingDetails());
 }
 
 // ================= 0.2 SIDEBAR MINIMIZE / MAXIMIZE TOGGLE =================
@@ -167,7 +170,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'inventory', 'dynamic_count', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -194,7 +197,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
   
-  const tabs = ['dashboard', 'inventory', 'dynamic_count', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
   
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -220,6 +223,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     dashboard: 'Dashboard Monitoring Stok & Lapangan',
     inventory: 'Master Stok Packaging & Stok Akhir',
     dynamic_count: 'Dynamic Counting (Penugasan SKU Terpilih)',
+    dynamic_counting_detail: 'Detail Dynamic Count (Log Breakdown per Putaran)',
     opname: 'Stock Opname (Blank Count & Recount)',
     adjust: 'Penyesuaian Stok Packaging (Adjust Plus / Minus)',
     counting_detail: 'Detail Stock Opname (Log Breakdown per Putaran)',
@@ -239,6 +243,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'dashboard') { loadDashboardStockSummary(); loadStats(true); }
   if (tabName === 'inventory') { loadMaterials(); }
   if (tabName === 'dynamic_count') { loadDynamicSessions(); }
+  if (tabName === 'dynamic_counting_detail') { loadDynamicCountingDetails(); }
   if (tabName === 'opname') { loadOpnames(); }
   if (tabName === 'adjust') { loadDirectAdjustMaterials(); }
   if (tabName === 'counting_detail') { loadCountingDetails(); }
@@ -4111,6 +4116,7 @@ async function applyMyPermissions() {
       dashboard: 'nav-dashboard',
       inventory: 'nav-inventory',
       dynamic_count: 'nav-dynamic_count',
+      dynamic_counting_detail: 'nav-dynamic_counting_detail',
       opname: 'nav-opname',
       counting_detail: 'nav-counting_detail',
       adjust: 'nav-adjust',
@@ -4127,7 +4133,9 @@ async function applyMyPermissions() {
     Object.keys(menuNavMap).forEach(key => {
       const el = document.getElementById(menuNavMap[key]);
       if (el) {
-        const permKey = key === 'counting_detail' ? 'opname' : key;
+        let permKey = key;
+        if (key === 'counting_detail') permKey = 'opname';
+        if (key === 'dynamic_counting_detail') permKey = 'dynamic_count';
         if (p[permKey] === false || ((permKey === 'permissions' || permKey === 'maintenance') && !res.is_super_admin)) {
           el.classList.add('hidden');
         } else {
@@ -4630,9 +4638,9 @@ function buildMatrixRowHtml(item, idx, maxStage, isDynamic = false) {
       </td>
 
       <td class="p-3 whitespace-nowrap">
-        <button type="button" onclick="navigateToCountingDetail(${opnameId}, '${escapeHtml(item.material_code || '')}')" 
+        <button type="button" onclick="${isDynamic ? `navigateToDynamicCountingDetail(${opnameId}, '${escapeHtml(item.material_code || '')}')` : `navigateToCountingDetail(${opnameId}, '${escapeHtml(item.material_code || '')}')`}" 
           class="font-mono font-bold text-xs ${isDynamic ? 'text-indigo-700 hover:text-indigo-900' : 'text-emerald-800 hover:text-emerald-950'} hover:underline cursor-pointer bg-transparent border-none p-0 transition-colors" 
-          title="Buka Halaman Detail Stock Opname untuk Item ini">
+          title="Buka Halaman Detail ${isDynamic ? 'Dynamic Count' : 'Stock Opname'} untuk Item ini">
           ${escapeHtml(item.material_code || '-')}
         </button>
       </td>
@@ -5920,6 +5928,187 @@ function exportCountingDetailExcel() {
 
   const params = new URLSearchParams({
     type: 'counting_detail',
+    opname_id,
+    stage_number,
+    date,
+    search
+  });
+
+  window.open(`export.php?${params.toString()}`, '_blank');
+}
+
+// =========================================================================
+// DETAIL DYNAMIC COUNTING TAB CONTROLLER — Log Breakdown Data Table per Putaran
+// =========================================================================
+let currentDynamicCountingDetailRows = [];
+
+function navigateToDynamicCountingDetail(opnameId, materialCode) {
+  // 1. Switch to dynamic_counting_detail tab
+  switchAdminTab('dynamic_counting_detail');
+
+  // 2. Set Session & SKU filter values
+  const sessionSelect = document.getElementById('dcdFilterSession');
+  if (sessionSelect) {
+    sessionSelect.value = opnameId ? String(opnameId) : '0';
+  }
+
+  const searchInput = document.getElementById('dcdSearchInput');
+  if (searchInput) {
+    searchInput.value = materialCode || '';
+  }
+
+  const stageSelect = document.getElementById('dcdFilterStage');
+  if (stageSelect) stageSelect.value = '0';
+
+  const dateInput = document.getElementById('dcdFilterDate');
+  if (dateInput) dateInput.value = '';
+
+  // 3. Load data with pre-filled filters
+  loadDynamicCountingDetails();
+}
+
+async function loadDynamicCountingDetails() {
+  const sessionSelect = document.getElementById('dcdFilterSession');
+  const opname_id = sessionSelect ? sessionSelect.value : '0';
+  const stage_number = document.getElementById('dcdFilterStage')?.value || '0';
+  const date = document.getElementById('dcdFilterDate')?.value || '';
+  const search = document.getElementById('dcdSearchInput')?.value || '';
+
+  const tbody = document.getElementById('dynamicCountingDetailTableBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="12" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[32px] animate-spin mb-1">progress_activity</span>
+          <p class="text-xs font-medium">Memuat data log detail dynamic count...</p>
+        </td>
+      </tr>
+    `;
+  }
+
+  const query = new URLSearchParams({
+    action: 'list_counting_details',
+    type: 'DYNAMIC_COUNT',
+    opname_id,
+    stage_number,
+    date,
+    search
+  });
+
+  const res = await App.fetchJson(`../api/opnames.php?${query.toString()}`);
+  if (!res.success) {
+    App.toast(res.message || 'Gagal memuat log detail dynamic count', 'error');
+    return;
+  }
+
+  // Populate Sessions Dropdown if needed
+  if (sessionSelect && res.sessions) {
+    const currentVal = sessionSelect.value;
+    sessionSelect.innerHTML = '<option value="0">Semua Dokumen Sesi (Dynamic Count)</option>' +
+      res.sessions.map(s => `
+        <option value="${s.id}" ${currentVal == s.id ? 'selected' : ''}>
+          ${escapeHtml(s.opname_no)} - ${escapeHtml(s.title || '')}
+        </option>
+      `).join('');
+    if (currentVal && currentVal !== '0') {
+      sessionSelect.value = currentVal;
+    }
+  }
+
+  const data = res.data || [];
+  currentDynamicCountingDetailRows = data;
+  const stats = res.stats || {};
+
+  // Update KPI Cards
+  const elRecords = document.getElementById('dcdStatTotalRecords');
+  const elQty = document.getElementById('dcdStatTotalQty');
+  const elSku = document.getElementById('dcdStatTotalSku');
+  const elSessions = document.getElementById('dcdStatTotalSessions');
+
+  if (elRecords) elRecords.innerText = `${App.formatNumber(stats.total_records || 0)} Data`;
+  if (elQty) elQty.innerText = `${App.formatNumber(stats.total_qty || 0)} Pcs`;
+  if (elSku) elSku.innerText = `${App.formatNumber(stats.total_unique_sku || 0)} SKU`;
+  if (elSessions) elSessions.innerText = `${App.formatNumber(stats.total_sessions || 0)} Dokumen`;
+
+  // Render Table
+  if (tbody) {
+    if (data.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="p-8 text-center text-slate-400 text-xs font-medium">
+            <span class="material-symbols-outlined text-[36px] text-slate-300 mb-1">playlist_add_check</span>
+            <p>Tidak ditemukan data log detail dynamic count yang sesuai filter.</p>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = data.map((r, idx) => {
+        const stageLabel = r.stage_label || `Round ${r.stage_number}`;
+        const isFirst = r.stage_number === 1;
+        const stageBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold ${isFirst ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">${escapeHtml(stageLabel)}</span>`;
+        
+        const statusBadge = r.status === 'COUNTED'
+          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">COUNTED</span>'
+          : r.status === 'PENDING'
+          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(r.status)}</span>`;
+
+        const countedTime = r.counted_at ? App.formatDate(r.counted_at) : App.formatDate(r.created_at);
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 text-xs">
+            <td class="p-3 font-mono text-slate-400 text-center whitespace-nowrap">${idx + 1}</td>
+            <td class="p-3 font-mono font-bold text-indigo-700 whitespace-nowrap">
+              ${escapeHtml(r.opname_no)}
+            </td>
+            <td class="p-3 font-mono text-[11px] text-slate-600 whitespace-nowrap">${countedTime}</td>
+            <td class="p-3 text-center whitespace-nowrap">${stageBadge}</td>
+            <td class="p-3 whitespace-nowrap">
+              <button type="button" onclick="openCountDetailView(${r.opname_id}, ${r.item_id})" 
+                class="font-mono font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer bg-transparent border-none p-0 transition-colors" 
+                title="Lihat Rincian Item">
+                ${escapeHtml(r.material_code || '-')}
+              </button>
+            </td>
+            <td class="p-3 font-semibold text-slate-900 whitespace-nowrap">${escapeHtml(r.material_name || '-')}</td>
+            <td class="p-3 text-center whitespace-nowrap">
+              <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px]">
+                ${escapeHtml(r.material_unit || 'Pcs')}
+              </span>
+            </td>
+            <td class="p-3 text-center font-mono font-black text-slate-900 bg-slate-50/50 text-sm whitespace-nowrap">
+              ${r.count_qty !== null ? App.formatNumber(r.count_qty) : '<span class="text-slate-400 font-normal">-</span>'}
+            </td>
+            <td class="p-3 whitespace-nowrap">
+              <span class="font-bold text-slate-800">${escapeHtml(r.scanned_rack || r.material_rack || '-')}</span>
+            </td>
+            <td class="p-3 whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px] text-slate-400">person</span>
+                <span class="font-bold text-slate-800">${escapeHtml(r.operator_name || r.operator_username || 'Operator')}</span>
+              </div>
+              ${r.operator_shift ? `<div class="text-[10px] text-slate-400">Shift: ${escapeHtml(r.operator_shift)}</div>` : ''}
+            </td>
+            <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
+            <td class="p-3 text-slate-600 text-[11px] max-w-[200px] truncate" title="${escapeHtml(r.notes || '')}">
+              ${escapeHtml(r.notes || '-')}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+function exportDynamicCountingDetailExcel() {
+  const opname_id = document.getElementById('dcdFilterSession')?.value || '0';
+  const stage_number = document.getElementById('dcdFilterStage')?.value || '0';
+  const date = document.getElementById('dcdFilterDate')?.value || '';
+  const search = document.getElementById('dcdSearchInput')?.value || '';
+
+  const params = new URLSearchParams({
+    type: 'dynamic_counting_detail',
+    counting_type: 'DYNAMIC_COUNT',
     opname_id,
     stage_number,
     date,
