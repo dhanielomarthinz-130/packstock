@@ -3112,75 +3112,111 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: TUGASKAN RECOUNT (MULTI-OPERATOR AUTO-SPLIT BALANCED) ================= -->
+<!-- ================= MODAL: TUGASKAN RECOUNT (MULTI-OPERATOR AUTO-SPLIT BALANCED DATA TABLE) ================= -->
 <div id="modalAssignRecount" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
-          <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold shadow-xs">
+          <span class="material-symbols-outlined text-[22px]">how_to_reg</span>
         </div>
         <div>
-          <h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+          <h3 class="font-extrabold text-slate-900 text-base flex items-center gap-2">
             <span>Tugaskan Recount (Hitung Ulang)</span>
-            <span id="recountStageTargetBadge" class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300">2nd Count</span>
+            <span id="recountStageTargetBadge" class="px-2.5 py-0.5 rounded-md text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300">2nd Count</span>
           </h3>
           <p class="text-xs text-slate-500" id="recountOpnameSubtitle">Verifikasi selisih fisik oleh PIC</p>
         </div>
       </div>
-      <button type="button" onclick="App.closeModal('modalAssignRecount')" class="text-slate-400 hover:text-slate-600 p-1">
-        <span class="material-symbols-outlined text-[20px]">close</span>
+      <button type="button" onclick="App.closeModal('modalAssignRecount')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined text-[22px]">close</span>
       </button>
     </div>
 
-    <form id="formAssignRecount" onsubmit="handleAssignRecountSubmit(event)" class="space-y-3.5 text-xs">
+    <form id="formAssignRecount" onsubmit="handleAssignRecountSubmit(event)" class="space-y-4 text-xs">
       
-      <!-- Multi-Operator Checklist & Distribution Info -->
-      <div class="space-y-2 p-3 bg-purple-50/50 rounded-xl border border-purple-200">
-        <div class="flex items-center justify-between">
-          <label class="font-bold text-slate-800 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-purple-700 text-[17px]">group_add</span>
-            <span>Pilih Operator Recount <span class="text-rose-500">*</span></span>
-          </label>
-          <div class="flex items-center gap-1.5 text-[10px]">
-            <button type="button" onclick="toggleSelectAllRecountOperators(true)" class="px-2 py-0.5 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-bold transition-colors">Pilih Semua</button>
-            <button type="button" onclick="toggleSelectAllRecountOperators(false)" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded font-bold transition-colors">Reset</button>
+      <!-- 1. DATA TABLE: PILIH OPERATOR RECOUNT -->
+      <div class="space-y-2.5 p-4 bg-purple-50/40 rounded-xl border border-purple-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <label class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-purple-700 text-[18px]">group_add</span>
+              <span>Pilih Operator Recount <span class="text-rose-500">*</span></span>
+            </label>
+            <p class="text-[11px] text-slate-500 mt-0.5">Centang 1 atau beberapa operator. Sistem akan <b>otomatis membagi rata SKU</b> ke semua operator yang dipilih.</p>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs">
+            <button type="button" onclick="toggleSelectAllRecountOperators(true)" class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold transition-colors border border-purple-200 shadow-2xs">Pilih Semua</button>
+            <button type="button" onclick="toggleSelectAllRecountOperators(false)" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors shadow-2xs">Reset</button>
           </div>
         </div>
 
-        <p class="text-[10px] text-slate-500">Centang 1 atau beberapa operator. Sistem akan <b>otomatis membagi rata SKU</b> ke semua operator yang dipilih.</p>
-
-        <!-- Operators Checklist Container -->
-        <div id="recountOperatorsChecklistContainer" class="max-h-40 overflow-y-auto space-y-1.5 bg-white p-2.5 rounded-lg border border-purple-200/80 divide-y divide-slate-100">
-          <!-- Injected by JavaScript -->
+        <!-- Operators Data Table -->
+        <div class="overflow-x-auto rounded-xl border border-purple-200 bg-white shadow-2xs">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-purple-100/70 text-purple-950 font-extrabold border-b border-purple-200 text-[11px]">
+                <th class="p-2.5 text-center w-12">
+                  <input type="checkbox" id="recountSelectAllOpsCheckbox" onchange="toggleSelectAllRecountOperators(this.checked)" class="rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer">
+                </th>
+                <th class="p-2.5">Nama Operator</th>
+                <th class="p-2.5">Username</th>
+                <th class="p-2.5 text-center">Shift Kerja</th>
+                <th class="p-2.5 text-center">Estimasi Alokasi Beban</th>
+              </tr>
+            </thead>
+            <tbody id="recountOperatorsTableBody" class="divide-y divide-purple-100">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
         </div>
 
         <!-- Live Distribution Summary -->
-        <div id="recountDistributionSummary" class="p-2 rounded-lg bg-white border border-purple-200 text-[11px] font-semibold text-purple-900 flex items-center gap-2">
-          <span class="material-symbols-outlined text-purple-600 text-[16px]">info</span>
+        <div id="recountDistributionSummary" class="p-2.5 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-purple-900 flex items-center gap-2 shadow-2xs">
+          <span class="material-symbols-outlined text-purple-600 text-[18px]">info</span>
           <span id="recountDistributionSummaryText">Pilih minimal 1 operator untuk melanjutkan.</span>
         </div>
       </div>
 
-      <!-- Preview of Selected Discrepancy Items -->
+      <!-- 2. DATA TABLE: DAFTAR SKU SELISIH YANG DITUGASKAN -->
       <div class="space-y-2">
         <div class="flex items-center justify-between">
-          <label class="font-bold text-slate-800">Daftar SKU Selisih yang Ditugaskan:</label>
-          <span id="recountItemsCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-900">0 SKU</span>
+          <label class="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-slate-700 text-[18px]">inventory_2</span>
+            <span>Daftar SKU Selisih yang Ditugaskan ke Operator:</span>
+          </label>
+          <span id="recountItemsCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-900 border border-purple-300">0 SKU</span>
         </div>
-        <div id="recountItemsPreviewList" class="max-h-40 overflow-y-auto space-y-1.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200 divide-y divide-slate-100">
-          <!-- Rendered dynamically -->
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-2xs max-h-60 overflow-y-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-slate-100/95 backdrop-blur-xs text-slate-800 font-extrabold border-b border-slate-200 text-[11px] z-10">
+              <tr>
+                <th class="p-2.5 text-center w-10">No</th>
+                <th class="p-2.5 whitespace-nowrap">Item No / SKU</th>
+                <th class="p-2.5 min-w-[220px]">Deskripsi Material Packaging</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Lokasi Rak</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Stok Sistem</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Fisik 1st</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Selisih (+/-)</th>
+                <th class="p-2.5 text-center whitespace-nowrap min-w-[150px]">Ditugaskan Ke</th>
+              </tr>
+            </thead>
+            <tbody id="recountItemsTableBody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Catatan / Instruksi Tambahan (Opsional)</label>
-        <input type="text" id="recountNotesInput" placeholder="Contoh: Pastikan hitung box yang ada di atas palet juga..." class="w-full p-2 bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-600 text-xs">
+        <input type="text" id="recountNotesInput" placeholder="Contoh: Pastikan hitung box yang ada di atas palet juga..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-purple-600 text-xs shadow-2xs">
       </div>
 
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalAssignRecount')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitRecount" class="px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1.5">
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalAssignRecount')" class="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnSubmitRecount" class="px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">send</span>
           <span id="btnSubmitRecountText">Kirim Tugas Recount</span>
         </button>

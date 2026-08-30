@@ -5169,37 +5169,46 @@ async function handleCreateStockOpnameSubmit(e) {
 }
 
 let _isRecountForDynamic = false;
-let _currentRecountTargetItemCount = 0;
+let _currentRecountTargetItems = [];
 
-function renderRecountOperatorsChecklist(targetCount) {
-  _currentRecountTargetItemCount = targetCount;
-  const container = document.getElementById('recountOperatorsChecklistContainer');
-  if (!container) return;
+function renderRecountOperatorsTable() {
+  const tbody = document.getElementById('recountOperatorsTableBody');
+  if (!tbody) return;
 
   if (!allOperators || allOperators.length === 0) {
-    container.innerHTML = `
-      <div class="p-3 text-center text-slate-400 text-xs">
-        <span class="material-symbols-outlined text-[20px] text-amber-500 mb-1">warning</span>
-        <p class="font-bold text-slate-700">Tidak ada operator aktif yang terdaftar</p>
-        <p class="text-[11px] text-slate-400">Silakan tambahkan pengguna dengan role Operator di menu Pengguna.</p>
-      </div>
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="p-6 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[24px] text-amber-500 mb-1">warning</span>
+          <p class="font-bold text-slate-700">Tidak ada operator aktif yang terdaftar</p>
+          <p class="text-[11px] text-slate-400">Silakan tambahkan pengguna dengan role Operator di menu Pengguna.</p>
+        </td>
+      </tr>
     `;
     updateRecountDistributionPreview();
     return;
   }
 
-  container.innerHTML = allOperators.map((op, idx) => {
+  tbody.innerHTML = allOperators.map((op, idx) => {
     return `
-      <label class="flex items-center justify-between p-2 hover:bg-purple-50/60 rounded-lg cursor-pointer transition-colors text-xs select-none">
-        <div class="flex items-center gap-2.5">
+      <tr class="hover:bg-purple-50/50 transition-colors text-xs">
+        <td class="p-2.5 text-center">
           <input type="checkbox" value="${op.id}" class="recount-op-checkbox rounded text-purple-600 focus:ring-purple-500 w-4 h-4 cursor-pointer" onchange="updateRecountDistributionPreview()" ${idx === 0 ? 'checked' : ''}>
-          <div>
-            <span class="font-bold text-slate-900">${escapeHtml(op.name)}</span>
-            <span class="text-[10px] text-slate-400 font-mono ml-1.5">(@${escapeHtml(op.username || '')})</span>
-          </div>
-        </div>
-        <span class="px-2 py-0.5 rounded bg-purple-100/80 text-purple-800 font-semibold text-[10px] border border-purple-200">${escapeHtml(op.shift || 'Shift')}</span>
-      </label>
+        </td>
+        <td class="p-2.5 font-bold text-slate-900 flex items-center gap-1.5">
+          <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+            ${escapeHtml((op.name || 'OP').charAt(0).toUpperCase())}
+          </span>
+          <span>${escapeHtml(op.name)}</span>
+        </td>
+        <td class="p-2.5 font-mono text-slate-500 text-[11px]">@${escapeHtml(op.username || '')}</td>
+        <td class="p-2.5 text-center">
+          <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-800 font-bold text-[10px] border border-purple-200">${escapeHtml(op.shift || 'Shift')}</span>
+        </td>
+        <td class="p-2.5 text-center" id="op-load-badge-${op.id}">
+          <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono text-[10px] font-bold">-</span>
+        </td>
+      </tr>
     `;
   }).join('');
 
@@ -5209,20 +5218,58 @@ function renderRecountOperatorsChecklist(targetCount) {
 function toggleSelectAllRecountOperators(selectAll) {
   const checkboxes = document.querySelectorAll('.recount-op-checkbox');
   checkboxes.forEach(cb => { cb.checked = !!selectAll; });
+  const masterCb = document.getElementById('recountSelectAllOpsCheckbox');
+  if (masterCb) masterCb.checked = !!selectAll;
   updateRecountDistributionPreview();
 }
 
 function updateRecountDistributionPreview() {
   const checkboxes = Array.from(document.querySelectorAll('.recount-op-checkbox:checked'));
-  const checkedCount = checkboxes.length;
-  const targetCount = _currentRecountTargetItemCount || 0;
+  const checkedOpIds = checkboxes.map(cb => parseInt(cb.value)).filter(id => id > 0);
+  const checkedCount = checkedOpIds.length;
+  const targetItems = _currentRecountTargetItems || [];
+  const targetCount = targetItems.length;
   const summaryEl = document.getElementById('recountDistributionSummaryText');
   const btnSubmit = document.getElementById('btnSubmitRecount');
+
+  // Update master select-all checkbox state
+  const allCbs = document.querySelectorAll('.recount-op-checkbox');
+  const masterCb = document.getElementById('recountSelectAllOpsCheckbox');
+  if (masterCb && allCbs.length > 0) {
+    masterCb.checked = (checkedCount === allCbs.length);
+  }
+
+  // Calculate allocation counts per operator
+  const loadCountMap = {};
+  checkedOpIds.forEach(id => { loadCountMap[id] = 0; });
+  targetItems.forEach((it, idx) => {
+    if (checkedCount > 0) {
+      const assignedOpId = checkedOpIds[idx % checkedCount];
+      loadCountMap[assignedOpId] = (loadCountMap[assignedOpId] || 0) + 1;
+    }
+  });
+
+  // Update table badges for each operator
+  (allOperators || []).forEach(op => {
+    const badgeEl = document.getElementById(`op-load-badge-${op.id}`);
+    if (badgeEl) {
+      const isChecked = checkedOpIds.includes(op.id);
+      if (isChecked) {
+        const count = loadCountMap[op.id] || 0;
+        badgeEl.innerHTML = `<span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[10px] font-black border border-emerald-300 shadow-2xs">${count} SKU Dialokasikan</span>`;
+      } else {
+        badgeEl.innerHTML = `<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-400 font-mono text-[10px] font-medium">Tidak dipilih</span>`;
+      }
+    }
+  });
+
+  // Render SKU Items Table with Assigned Operator column
+  renderRecountItemsTable(targetItems, checkedOpIds);
 
   if (!summaryEl) return;
 
   if (checkedCount === 0) {
-    summaryEl.innerHTML = '<span class="text-rose-600 font-bold">⚠️ Pilih minimal 1 operator untuk ditugaskan!</span>';
+    summaryEl.innerHTML = '<span class="text-rose-600 font-bold">⚠️ Centang minimal 1 operator untuk ditugaskan!</span>';
     if (btnSubmit) btnSubmit.disabled = true;
     return;
   }
@@ -5236,13 +5283,63 @@ function updateRecountDistributionPreview() {
   if (btnSubmit) btnSubmit.disabled = false;
 
   if (checkedCount === 1) {
-    summaryEl.innerHTML = `<b>1 Operator Terpilih:</b> Semua <b>${targetCount} SKU</b> akan ditugaskan ke operator ini.`;
+    const singleOp = (allOperators || []).find(o => o.id === checkedOpIds[0]);
+    const opName = singleOp ? singleOp.name : 'Operator';
+    summaryEl.innerHTML = `<b>1 Operator Terpilih (${escapeHtml(opName)}):</b> Seluruh <b>${targetCount} SKU</b> akan ditugaskan ke operator ini.`;
   } else {
     const avgPerOp = Math.floor(targetCount / checkedCount);
     const remainder = targetCount % checkedCount;
     let distText = `<b>${checkedCount} Operator Terpilih:</b> Total <b>${targetCount} SKU</b> otomatis dibagi rata (~${avgPerOp}${remainder > 0 ? ` s/d ${avgPerOp + 1}` : ''} SKU per operator).`;
     summaryEl.innerHTML = distText;
   }
+}
+
+function renderRecountItemsTable(targetItems, checkedOpIds) {
+  const tbody = document.getElementById('recountItemsTableBody');
+  if (!tbody) return;
+
+  if (!targetItems || targetItems.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-6 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[24px] text-emerald-500 mb-1">check_circle</span>
+          <p class="font-bold text-slate-700">Semua item saat ini berstatus Balance (0)!</p>
+          <p class="text-[11px] text-slate-400">Tidak ada item selisih stok (Difference != 0) yang perlu di-recount.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const opCount = (checkedOpIds || []).length;
+
+  tbody.innerHTML = targetItems.map((it, idx) => {
+    const diff = parseFloat(it.final_difference) || 0;
+    const diffBadge = diff > 0 
+      ? `<span class="px-2 py-0.5 rounded font-black text-blue-800 bg-blue-100 border border-blue-300 text-[10px]">+${App.formatNumber(diff)}</span>`
+      : `<span class="px-2 py-0.5 rounded font-black text-rose-800 bg-rose-100 border border-rose-300 text-[10px]">${App.formatNumber(diff)}</span>`;
+
+    let assignedBadge = '<span class="text-slate-400 italic text-[10px]">- Belum ada operator -</span>';
+    if (opCount > 0) {
+      const assignedOpId = checkedOpIds[idx % opCount];
+      const assignedOp = (allOperators || []).find(o => o.id === assignedOpId);
+      const opName = assignedOp ? assignedOp.name : `Operator #${assignedOpId}`;
+      assignedBadge = `<span class="px-2 py-0.5 rounded-lg bg-purple-100 text-purple-900 font-extrabold text-[10px] border border-purple-200 inline-flex items-center gap-1 shadow-2xs"><span class="material-symbols-outlined text-[11px] text-purple-700">person</span>${escapeHtml(opName)}</span>`;
+    }
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+        <td class="p-2.5 text-center text-slate-400 font-mono">${idx + 1}</td>
+        <td class="p-2.5 font-mono font-bold text-amber-800 whitespace-nowrap">${escapeHtml(it.material_code)}</td>
+        <td class="p-2.5 font-semibold text-slate-900">${escapeHtml(it.material_name)}</td>
+        <td class="p-2.5 text-center text-slate-600 font-medium whitespace-nowrap">${escapeHtml(it.material_rack || it.rack_location || '-')}</td>
+        <td class="p-2.5 text-center font-mono font-bold text-slate-700 whitespace-nowrap">${App.formatNumber(it.system_stock)}</td>
+        <td class="p-2.5 text-center font-mono font-bold text-blue-800 whitespace-nowrap bg-blue-50/40">${App.formatNumber(it.final_physical_qty)}</td>
+        <td class="p-2.5 text-center whitespace-nowrap">${diffBadge}</td>
+        <td class="p-2.5 text-center whitespace-nowrap">${assignedBadge}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 async function openAssignRecountModal(specificItemId = null, isDynamic = false) {
@@ -5289,50 +5386,15 @@ async function openAssignRecountModal(specificItemId = null, isDynamic = false) 
     targetItems = items.filter(i => i.final_difference !== null && i.final_difference != 0);
   }
 
-  const listContainer = document.getElementById('recountItemsPreviewList');
-  const countBadge = document.getElementById('recountItemsCountBadge');
+  _currentRecountTargetItems = targetItems;
 
+  const countBadge = document.getElementById('recountItemsCountBadge');
   if (countBadge) {
     countBadge.innerText = `${targetItems.length} SKU Selisih`;
   }
 
-  if (listContainer) {
-    if (targetItems.length === 0) {
-      listContainer.innerHTML = `
-        <div class="p-4 text-center text-slate-400 text-xs">
-          <span class="material-symbols-outlined text-[24px] text-emerald-500 mb-1">check_circle</span>
-          <p class="font-bold text-slate-700">Semua item saat ini berstatus Balance (0)!</p>
-          <p class="text-[11px] text-slate-400">Tidak ada item selisih stok (Difference != 0) yang perlu di-recount.</p>
-        </div>
-      `;
-    } else {
-      listContainer.innerHTML = targetItems.map(it => {
-        const diff = parseFloat(it.final_difference) || 0;
-        const diffBadge = diff > 0 
-          ? `<span class="px-2 py-0.5 rounded font-black text-blue-800 bg-blue-100 border border-blue-300 text-[10px]">+${App.formatNumber(diff)}</span>`
-          : `<span class="px-2 py-0.5 rounded font-black text-rose-800 bg-rose-100 border border-rose-300 text-[10px]">${App.formatNumber(diff)}</span>`;
-
-        return `
-          <div class="flex items-center justify-between p-2 hover:bg-white rounded-lg transition-colors text-xs">
-            <div>
-              <p class="font-bold text-slate-900">${escapeHtml(it.material_name)}</p>
-              <div class="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
-                <span class="font-mono font-bold text-indigo-700">${escapeHtml(it.material_code)}</span>
-                <span>&bull; Rak: ${escapeHtml(it.material_rack || it.rack_location || '-')}</span>
-                <span>&bull; Fisik: <b>${App.formatNumber(it.final_physical_qty)}</b> vs Sistem: <b>${App.formatNumber(it.system_stock)}</b></span>
-              </div>
-            </div>
-            <div class="text-right">
-              ${diffBadge}
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-  }
-
-  // Render multi-operator checklist & update live distribution preview
-  renderRecountOperatorsChecklist(targetItems.length);
+  // Render operator table and live recount items data table
+  renderRecountOperatorsTable();
 
   App.openModal('modalAssignRecount');
 }
