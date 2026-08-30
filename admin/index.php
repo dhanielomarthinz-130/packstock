@@ -1438,7 +1438,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div class="premium-datepicker-wrapper">
               <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
-              <input type="text" id="inboundDateFilter" onchange="loadInboundHistory()" placeholder="Filter Tanggal..." 
+              <input type="text" id="inboundDateFilter" value="<?= date('Y-m-d') ?>" onchange="loadInboundHistory()" placeholder="Filter Tanggal..." 
                 class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Filter Tanggal Inbound">
             </div>
           </div>
@@ -1500,7 +1500,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div class="premium-datepicker-wrapper">
               <span class="material-symbols-outlined picker-icon text-amber-700">calendar_today</span>
-              <input type="text" id="outboundDateFilter" onchange="loadOutboundHistory()" placeholder="Filter Tanggal..." 
+              <input type="text" id="outboundDateFilter" value="<?= date('Y-m-d') ?>" onchange="loadOutboundHistory()" placeholder="Filter Tanggal..." 
                 class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600" title="Filter Tanggal Outbound">
             </div>
 

@@ -39,6 +39,7 @@ function initPremiumPickers() {
       altInput: true,
       altFormat: "d F Y",
       dateFormat: "Y-m-d",
+      defaultDate: el.value ? el.value : null,
       altInputClass: "premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600 cursor-pointer",
       allowInput: true,
       clickOpens: true,
@@ -241,8 +242,28 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'opname') { loadOpnames(); }
   if (tabName === 'adjust') { loadDirectAdjustMaterials(); }
   if (tabName === 'counting_detail') { loadCountingDetails(); }
-  if (tabName === 'inbound') { populateMaterialSelects(); loadInboundHistory(); }
-  if (tabName === 'outbound') { populateMaterialSelects(); loadOutboundHistory(); }
+  if (tabName === 'inbound') { 
+    const inDateEl = document.getElementById('inboundDateFilter');
+    if (inDateEl && !inDateEl.value) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (inDateEl._flatpickr) inDateEl._flatpickr.setDate(todayStr, false);
+      else inDateEl.value = todayStr;
+    }
+    populateMaterialSelects(); 
+    loadInboundHistory(); 
+  }
+  if (tabName === 'outbound') { 
+    const outDateEl = document.getElementById('outboundDateFilter');
+    if (outDateEl && !outDateEl.value) {
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (outDateEl._flatpickr) outDateEl._flatpickr.setDate(todayStr, false);
+      else outDateEl.value = todayStr;
+    }
+    populateMaterialSelects(); 
+    loadOutboundHistory(); 
+  }
   if (tabName === 'tasks') {
     populateMaterialSelects();
     populateTaskOperators();
@@ -2874,7 +2895,7 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
           ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${m.current_stock <= 0 ? 'bg-rose-100 text-rose-800' : (m.current_stock <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}">Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit)}</span>`
           : `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
         return `
-          <div class="custom-mat-dropdown-item p-2 hover:bg-emerald-50 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-emerald-100 text-emerald-900 font-bold' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
+          <div class="custom-mat-dropdown-item p-2 hover:bg-emerald-50 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-emerald-100 text-emerald-900 font-bold' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-category="${escapeHtml(m.category || '-')}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
             <div class="flex-1 truncate mr-2">
               <span class="font-bold text-slate-800">${escapeHtml(m.name)}</span>
               <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || '')}</span>
@@ -2902,6 +2923,7 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     if (!itemEl) return;
     const id = itemEl.getAttribute('data-id');
     const name = itemEl.getAttribute('data-name');
+    const category = itemEl.getAttribute('data-category');
     const stock = itemEl.getAttribute('data-stock');
     const unit = itemEl.getAttribute('data-unit');
     const rack = itemEl.getAttribute('data-rack');
@@ -2912,7 +2934,7 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     hideFloatingDropdown();
 
     if (onSelectCallback) {
-      onSelectCallback({ id: parseInt(id), name, stock: parseInt(stock), unit, rack });
+      onSelectCallback({ id: parseInt(id), name, category, stock: parseInt(stock), unit, rack });
     }
 
     const tr = container.closest('tr');

@@ -38,7 +38,7 @@ if ($action === 'list') {
                 COALESCE(t.completed_at, t.created_at) as completed_at,
                 COALESCE(t.duration_seconds, 0) as duration_seconds,
                 t.created_at,
-                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location
+                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location
             FROM tasks t
             JOIN materials m ON t.material_id = m.id
             JOIN users u_to ON t.assigned_to = u_to.id
@@ -68,7 +68,7 @@ if ($action === 'list') {
                 COALESCE(o.completed_at, o.created_at) as completed_at,
                 COALESCE(o.duration_seconds, 0) as duration_seconds,
                 o.created_at,
-                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location
+                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location
             FROM outbound_transactions o
             JOIN materials m ON o.material_id = m.id
         ) combined_outbound

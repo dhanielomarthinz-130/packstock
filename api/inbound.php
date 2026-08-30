@@ -17,7 +17,7 @@ if ($action === 'list') {
                COALESCE(i.started_at, i.created_at) as started_at,
                COALESCE(i.completed_at, i.created_at) as completed_at,
                COALESCE(i.duration_seconds, 0) as duration_seconds,
-               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
+               m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
                COALESCE(u.name, i.received_by, 'Admin') as receiver_name,
                COALESCE(u.username, i.received_by, 'admin') as receiver_username,
                COALESCE(u.role, 'admin') as receiver_role,
