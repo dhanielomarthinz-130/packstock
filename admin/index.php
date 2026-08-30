@@ -593,17 +593,18 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
             </div>
 
-            <button type="button" onclick="switchAdminTab('tasks')" 
-              class="h-[34px] px-3.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Manajemen Penugasan Operator">
-              <span class="material-symbols-outlined text-[17px]">assignment</span>
-              <span>Kelola Penugasan</span>
+            <button type="button" onclick="navigateFromDashboard('tasks')" 
+              class="h-[34px] px-3.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Buka Daftar Data Task Operator">
+              <span class="material-symbols-outlined text-[17px]">format_list_bulleted</span>
+              <span>Data Task</span>
             </button>
           </div>
 
           <!-- 4 Kartu Metrik KPI Operator -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             <!-- 1. Tingkat Penyelesaian Task -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+            <div onclick="navigateFromDashboard('tasks', 'COMPLETED')" title="Klik untuk lihat task yang sudah selesai" 
+              class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Penyelesaian Task</span>
                 <span class="material-symbols-outlined text-emerald-600 text-[20px]">task_alt</span>
@@ -620,7 +621,8 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <!-- 2. Task On-Proses -->
-            <div class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between">
+            <div onclick="navigateFromDashboard('tasks', 'IN_PROGRESS')" title="Klik untuk filter task yang sedang dikerjakan" 
+              class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Sedang Dikerjakan</span>
                 <span class="material-symbols-outlined text-amber-600 text-[20px] animate-spin">sync</span>
@@ -632,7 +634,8 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <!-- 3. Antrean / Menunggu -->
-            <div class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs flex flex-col justify-between">
+            <div onclick="navigateFromDashboard('tasks', 'PENDING')" title="Klik untuk filter task yang menunggu dikerjakan" 
+              class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Antrean / Menunggu</span>
                 <span class="material-symbols-outlined text-blue-600 text-[20px]">pending_actions</span>
@@ -644,7 +647,8 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <!-- 4. Rata-rata Durasi Picking -->
-            <div class="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/20 shadow-2xs flex flex-col justify-between">
+            <div onclick="navigateFromDashboard('tasks')" title="Klik untuk membuka riwayat task" 
+              class="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">Rata-rata Durasi</span>
                 <span class="material-symbols-outlined text-indigo-600 text-[20px]">timer</span>

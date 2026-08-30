@@ -502,6 +502,18 @@ function navigateFromDashboard(targetTab, filterVal = null) {
       if (searchInput) searchInput.value = '';
       loadAdjustHistory();
     }, 60);
+  } else if (targetTab === 'tasks') {
+    setTimeout(() => {
+      switchTaskSubView('list');
+      setFilterDateInput('#taskDateFilter', activeDate);
+      const searchInput = document.getElementById('taskSearchInput');
+      if (searchInput) searchInput.value = '';
+      const statusFilter = document.getElementById('taskStatusFilter');
+      if (statusFilter) {
+        statusFilter.value = filterVal || 'ALL';
+      }
+      loadTasks();
+    }, 60);
   }
 }
 
