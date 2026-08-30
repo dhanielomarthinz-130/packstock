@@ -545,7 +545,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        $stmtTask = $pdo->prepare("SELECT * FROM tasks WHERE id = ? FOR UPDATE");
+        $stmtTask = $pdo->prepare("SELECT * FROM tasks WHERE id = ?");
         $stmtTask->execute([$taskId]);
         $task = $stmtTask->fetch();
 
@@ -565,7 +565,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $materialId = (int)$task['material_id'];
 
-        $stmtMat = $pdo->prepare("SELECT id, name, code, unit, current_stock FROM materials WHERE id = ? FOR UPDATE");
+        $stmtMat = $pdo->prepare("SELECT id, name, code, unit, current_stock FROM materials WHERE id = ?");
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 

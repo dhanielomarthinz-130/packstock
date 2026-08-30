@@ -2820,16 +2820,28 @@ async function deleteUser(id, name) {
   }
 }
 
-// 8. INBOUND GOODS RECEIPT (ADMIN & OPERATOR TRACKER WITH DURATION & TAKT TIME)
+// 8. INBOUND GOODS RECEIPT (ADMIN & OPERATOR TRACKER WITH TABLE BATCH INPUT)
+let inboundModalStartTime = null;
+
+function renderMaterialOptionsHtml(selectedId = '', showStock = false) {
+  let html = '<option value="">-- Pilih Kemas/Consumable --</option>';
+  (allMaterials || []).forEach(m => {
+    const isSel = (m.id == selectedId) ? 'selected' : '';
+    const stockInfo = showStock ? ` (Stok: ${m.current_stock} ${m.unit})` : '';
+    html += `<option value="${m.id}" data-rack="${escapeHtml(m.rack_location || '-')}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" ${isSel}>${escapeHtml(m.name)}${stockInfo}</option>`;
+  });
+  return html;
+}
+
 function openAddInboundModal() {
   inboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
-  document.getElementById('inboundForm')?.reset();
   
-  const dateInput = document.getElementById('inboundFormDate');
-  const timeInput = document.getElementById('inboundFormTime');
-  const dateDisplay = document.getElementById('inboundFormDateDisplay');
-  const timeDisplay = document.getElementById('inboundFormTimeDisplay');
+  const form = document.getElementById('inboundForm');
+  if (form) form.reset();
+
+  const tbody = document.getElementById('inboundItemsTableBody');
+  if (tbody) tbody.innerHTML = '';
 
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -2842,12 +2854,97 @@ function openAddInboundModal() {
   const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const displayFormattedDate = `${now.getDate()} ${monthNames[now.getMonth()]} ${yyyy}`;
 
+  const dateInput = document.getElementById('inboundFormDate');
+  const timeInput = document.getElementById('inboundFormTime');
+  const dateDisplay = document.getElementById('inboundFormDateDisplay');
+  const timeDisplay = document.getElementById('inboundFormTimeDisplay');
+
   if (dateInput) dateInput.value = dateStr;
   if (timeInput) timeInput.value = timeStr;
   if (dateDisplay) dateDisplay.value = displayFormattedDate;
   if (timeDisplay) timeDisplay.value = timeStr;
 
+  // Add 1 default row
+  addInboundTableRow();
+  recalcInboundTotalQty();
+
   App.openModal('modalAddInbound');
+}
+
+function addInboundTableRow(data = null) {
+  const tbody = document.getElementById('inboundItemsTableBody');
+  if (!tbody) return;
+
+  const rowCount = tbody.querySelectorAll('tr').length + 1;
+  const matOptions = renderMaterialOptionsHtml(data?.material_id || '', false);
+
+  const tr = document.createElement('tr');
+  tr.className = 'hover:bg-slate-50 text-xs border-b border-slate-100 transition-colors';
+  tr.innerHTML = `
+    <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
+    <td class="p-2.5">
+      <select required class="inbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-emerald-600" onchange="onInboundRowMaterialChange(this)">
+        ${matOptions}
+      </select>
+    </td>
+    <td class="p-2.5">
+      <input type="text" class="inbound-row-rack w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:bg-white focus:border-emerald-600" placeholder="Rak..." value="${escapeHtml(data?.rack || '')}">
+    </td>
+    <td class="p-2.5">
+      <input type="number" required min="1" class="inbound-row-qty w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-emerald-800 outline-none focus:bg-white focus:border-emerald-600" placeholder="0" value="${data?.qty || ''}" oninput="recalcInboundTotalQty()">
+    </td>
+    <td class="p-2.5">
+      <input type="text" class="inbound-row-notes w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-emerald-600" placeholder="Catatan item..." value="${escapeHtml(data?.notes || '')}">
+    </td>
+    <td class="p-2.5 text-center">
+      <button type="button" onclick="removeInboundTableRow(this)" class="w-8 h-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center transition-colors mx-auto" title="Hapus Baris">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+  recalcInboundTotalQty();
+}
+
+function removeInboundTableRow(btn) {
+  const tbody = document.getElementById('inboundItemsTableBody');
+  const tr = btn.closest('tr');
+  if (tr) tr.remove();
+
+  if (tbody) {
+    const rows = tbody.querySelectorAll('tr');
+    if (rows.length === 0) {
+      addInboundTableRow();
+    } else {
+      rows.forEach((r, idx) => {
+        const idxEl = r.querySelector('.row-index');
+        if (idxEl) idxEl.innerText = idx + 1;
+      });
+    }
+  }
+  recalcInboundTotalQty();
+}
+
+function onInboundRowMaterialChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  if (!tr) return;
+  const opt = selectEl.options[selectEl.selectedIndex];
+  const rackInput = tr.querySelector('.inbound-row-rack');
+  if (rackInput && opt) {
+    const rack = opt.getAttribute('data-rack');
+    if (rack && rack !== '-') rackInput.value = rack;
+  }
+}
+
+function recalcInboundTotalQty() {
+  const qtyInputs = document.querySelectorAll('.inbound-row-qty');
+  let total = 0;
+  qtyInputs.forEach(input => {
+    const val = parseInt(input.value || '0');
+    if (val > 0) total += val;
+  });
+  const summaryEl = document.getElementById('inboundTotalQtySummary');
+  if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
 async function loadInboundHistory() {
@@ -3019,24 +3116,58 @@ function openInboundDetailModal(idx) {
   App.openModal('modalInboundDetail');
 }
 
-async function handleInboundFormSubmit(e) {
+async function handleInboundTableSubmit(e) {
   e.preventDefault();
-  const material_id = document.getElementById('inboundMaterialSelect')?.value;
-  const qty         = document.getElementById('inboundQty')?.value;
-  const notes       = document.getElementById('inboundNotes')?.value.trim() || '';
-  const formDate    = document.getElementById('inboundFormDate')?.value;
-  const formTime    = document.getElementById('inboundFormTime')?.value;
-  const started_at  = (formDate && formTime) ? `${formDate} ${formTime}:00` : (inboundModalStartTime || new Date().toISOString());
+  const rows = document.querySelectorAll('#inboundItemsTableBody tr');
+  const items = [];
 
-  const res = await App.fetchJson('../api/inbound.php?action=create', {
-    method: 'POST',
-    body: JSON.stringify({ po_number: '-', supplier: '-', material_id, qty, notes, started_at })
+  rows.forEach(r => {
+    const matSelect = r.querySelector('.inbound-row-mat');
+    const qtyInput = r.querySelector('.inbound-row-qty');
+    const rackInput = r.querySelector('.inbound-row-rack');
+    const notesInput = r.querySelector('.inbound-row-notes');
+
+    const material_id = parseInt(matSelect?.value || '0');
+    const qty = parseInt(qtyInput?.value || '0');
+    const rack = rackInput?.value?.trim() || '';
+    const notes = notesInput?.value?.trim() || '';
+
+    if (material_id > 0 && qty > 0) {
+      items.push({ material_id, qty, rack_location: rack, notes });
+    }
   });
+
+  if (items.length === 0) {
+    App.toast('Silakan pilih minimal 1 material dengan Qty lebih dari 0', 'warning');
+    return;
+  }
+
+  const po_number = document.getElementById('inboundPoNumber')?.value?.trim() || '-';
+  const notes = document.getElementById('inboundGlobalNotes')?.value?.trim() || '';
+  const formDate = document.getElementById('inboundFormDate')?.value;
+  const formTime = document.getElementById('inboundFormTime')?.value;
+  const started_at = (formDate && formTime) ? `${formDate} ${formTime}:00` : (inboundModalStartTime || new Date().toISOString());
+
+  const btnSubmit = document.getElementById('btnSubmitInboundTable');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+  }
+
+  const res = await App.fetchJson('../api/inbound.php?action=batch_create', {
+    method: 'POST',
+    body: JSON.stringify({ po_number, supplier: '-', items, notes, started_at })
+  });
+
+  if (btnSubmit) {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Simpan & Tambah Stok</span>';
+  }
 
   if (res.success) {
     App.toast(res.message, 'success', 'Barang Masuk Disimpan');
     App.closeModal('modalAddInbound');
-    document.getElementById('inboundForm').reset();
+    document.getElementById('inboundForm')?.reset();
     loadInboundHistory();
     loadStats();
     loadMaterials();
@@ -3046,64 +3177,8 @@ async function handleInboundFormSubmit(e) {
 }
 
 // 9. OUTBOUND MANUAL GOODS DISPATCH & OPERATOR PICKING TRACKER (WITH DURATION & TAKT TIME)
+// 9. OUTBOUND MANUAL GOODS DISPATCH & OPERATOR PICKING TRACKER (TABLE BATCH INPUT)
 let outboundModalStartTime = null;
-
-function onOutboundMaterialChange(selectEl) {
-  const selectedOpt = selectEl.options[selectEl.selectedIndex];
-  const stockBadge = document.getElementById('outboundAvailableStockBadge');
-  const stockVal = document.getElementById('outboundAvailableStockVal');
-  const infoBox = document.getElementById('outboundMaterialInfoBox');
-  const rackEl = document.getElementById('outboundMatRack');
-  const unitEl = document.getElementById('outboundMatUnit');
-  const catEl = document.getElementById('outboundMatCat');
-  const qtyUnitTag = document.getElementById('outboundQtyUnitTag');
-  const qtyInput = document.getElementById('outboundQty');
-
-  if (!selectedOpt || !selectedOpt.value) {
-    if (stockBadge) stockBadge.classList.add('hidden');
-    if (infoBox) infoBox.classList.add('hidden');
-    if (qtyUnitTag) qtyUnitTag.innerText = 'Pcs';
-    return;
-  }
-
-  const stock = parseInt(selectedOpt.getAttribute('data-stock') || '0');
-  const unit = selectedOpt.getAttribute('data-unit') || 'Pcs';
-  const rack = selectedOpt.getAttribute('data-rack') || '-';
-  const matId = parseInt(selectedOpt.value);
-  const foundMat = (allMaterials || []).find(m => m.id === matId);
-  const category = foundMat?.category || selectedOpt.getAttribute('data-cat') || '-';
-
-  if (stockBadge && stockVal) {
-    stockVal.innerText = App.formatNumber(stock);
-    stockBadge.className = `text-[11px] font-black font-mono px-2 py-0.5 rounded border ${stock <= 0 ? 'text-rose-700 bg-rose-50 border-rose-200' : (stock <= 50 ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200')}`;
-    stockBadge.classList.remove('hidden');
-  }
-
-  if (infoBox) {
-    if (rackEl) rackEl.innerText = rack;
-    if (unitEl) unitEl.innerText = unit;
-    if (catEl) catEl.innerText = category;
-    infoBox.classList.remove('hidden');
-  }
-
-  if (qtyUnitTag) qtyUnitTag.innerText = unit;
-  validateOutboundQtyInput(qtyInput);
-}
-
-function validateOutboundQtyInput(inputEl) {
-  if (!inputEl) return;
-  const matSelect = document.getElementById('outboundMaterialSelect');
-  const selectedOpt = matSelect?.options[matSelect.selectedIndex];
-  const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
-  const warningEl = document.getElementById('outboundQtyWarning');
-  const val = parseInt(inputEl.value || '0');
-
-  if (selectedOpt && selectedOpt.value && val > stock) {
-    if (warningEl) warningEl.classList.remove('hidden');
-  } else {
-    if (warningEl) warningEl.classList.add('hidden');
-  }
-}
 
 function openAddOutboundModal() {
   outboundModalStartTime = new Date().toISOString();
@@ -3112,23 +3187,8 @@ function openAddOutboundModal() {
   const form = document.getElementById('outboundForm');
   if (form) form.reset();
 
-  const stockBadge = document.getElementById('outboundAvailableStockBadge');
-  const infoBox = document.getElementById('outboundMaterialInfoBox');
-  const warningEl = document.getElementById('outboundQtyWarning');
-  if (stockBadge) stockBadge.classList.add('hidden');
-  if (infoBox) infoBox.classList.add('hidden');
-  if (warningEl) warningEl.classList.add('hidden');
-
-  const destSelect = document.getElementById('outboundDestination');
-  if (destSelect) destSelect.value = '';
-
-  const reasonInput = document.getElementById('outboundReason');
-  if (reasonInput) reasonInput.value = '';
-
-  const dateInput = document.getElementById('outboundFormDate');
-  const timeInput = document.getElementById('outboundFormTime');
-  const dateDisplay = document.getElementById('outboundFormDateDisplay');
-  const timeDisplay = document.getElementById('outboundFormTimeDisplay');
+  const tbody = document.getElementById('outboundItemsTableBody');
+  if (tbody) tbody.innerHTML = '';
 
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -3141,12 +3201,115 @@ function openAddOutboundModal() {
   const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   const displayFormattedDate = `${now.getDate()} ${monthNames[now.getMonth()]} ${yyyy}`;
 
+  const dateInput = document.getElementById('outboundFormDate');
+  const timeInput = document.getElementById('outboundFormTime');
+  const dateDisplay = document.getElementById('outboundFormDateDisplay');
+  const timeDisplay = document.getElementById('outboundFormTimeDisplay');
+
   if (dateInput) dateInput.value = dateStr;
   if (timeInput) timeInput.value = timeStr;
   if (dateDisplay) dateDisplay.value = displayFormattedDate;
   if (timeDisplay) timeDisplay.value = timeStr;
-  
+
+  // Add 1 default row
+  addOutboundTableRow();
+  recalcOutboundTotalQty();
+
   App.openModal('modalAddOutbound');
+}
+
+function addOutboundTableRow(data = null) {
+  const tbody = document.getElementById('outboundItemsTableBody');
+  if (!tbody) return;
+
+  const rowCount = tbody.querySelectorAll('tr').length + 1;
+  const matOptions = renderMaterialOptionsHtml(data?.material_id || '', true);
+
+  const tr = document.createElement('tr');
+  tr.className = 'hover:bg-slate-50 text-xs border-b border-slate-100 transition-colors';
+  tr.innerHTML = `
+    <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
+    <td class="p-2.5">
+      <select required class="outbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-amber-600" onchange="onOutboundRowMaterialChange(this)">
+        ${matOptions}
+      </select>
+    </td>
+    <td class="p-2.5">
+      <select required class="outbound-row-brand w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
+        <option value="HANASUI" ${data?.destination === 'HANASUI' ? 'selected' : ''}>HANASUI</option>
+        <option value="NCO" ${data?.destination === 'NCO' ? 'selected' : ''}>NCO</option>
+        <option value="FYNE" ${data?.destination === 'FYNE' ? 'selected' : ''}>FYNE</option>
+        <option value="EOMMA" ${data?.destination === 'EOMMA' ? 'selected' : ''}>EOMMA</option>
+      </select>
+    </td>
+    <td class="p-2.5">
+      <input type="number" required min="1" class="outbound-row-qty w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-amber-900 outline-none focus:bg-white focus:border-amber-600" placeholder="0" value="${data?.qty || ''}" oninput="validateOutboundRowQty(this); recalcOutboundTotalQty();">
+    </td>
+    <td class="p-2.5">
+      <input type="text" required class="outbound-row-reason w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-600" placeholder="Contoh: Uji Kualitas / Rusak / Reject" value="${escapeHtml(data?.reason || 'Kebutuhan Produksi')}">
+    </td>
+    <td class="p-2.5 text-center">
+      <button type="button" onclick="removeOutboundTableRow(this)" class="w-8 h-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center transition-colors mx-auto" title="Hapus Baris">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+      </button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+  recalcOutboundTotalQty();
+}
+
+function removeOutboundTableRow(btn) {
+  const tbody = document.getElementById('outboundItemsTableBody');
+  const tr = btn.closest('tr');
+  if (tr) tr.remove();
+
+  if (tbody) {
+    const rows = tbody.querySelectorAll('tr');
+    if (rows.length === 0) {
+      addOutboundTableRow();
+    } else {
+      rows.forEach((r, idx) => {
+        const idxEl = r.querySelector('.row-index');
+        if (idxEl) idxEl.innerText = idx + 1;
+      });
+    }
+  }
+  recalcOutboundTotalQty();
+}
+
+function onOutboundRowMaterialChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  if (!tr) return;
+  const qtyInput = tr.querySelector('.outbound-row-qty');
+  if (qtyInput) validateOutboundRowQty(qtyInput);
+}
+
+function validateOutboundRowQty(qtyInput) {
+  const tr = qtyInput.closest('tr');
+  if (!tr) return;
+  const matSelect = tr.querySelector('.outbound-row-mat');
+  const selectedOpt = matSelect?.options[matSelect.selectedIndex];
+  const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
+  const val = parseInt(qtyInput.value || '0');
+
+  if (selectedOpt && selectedOpt.value && val > stock) {
+    qtyInput.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-700');
+    qtyInput.classList.remove('border-slate-300', 'bg-slate-50', 'text-amber-900');
+  } else {
+    qtyInput.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-700');
+    qtyInput.classList.add('border-slate-300', 'bg-slate-50', 'text-amber-900');
+  }
+}
+
+function recalcOutboundTotalQty() {
+  const qtyInputs = document.querySelectorAll('.outbound-row-qty');
+  let total = 0;
+  qtyInputs.forEach(input => {
+    const val = parseInt(input.value || '0');
+    if (val > 0) total += val;
+  });
+  const summaryEl = document.getElementById('outboundTotalQtySummary');
+  if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
 async function loadOutboundHistory() {
@@ -3495,47 +3658,59 @@ async function cancelOutboundTask(taskId) {
   }
 }
 
-async function handleOutboundFormSubmit(e) {
+async function handleOutboundTableSubmit(e) {
   e.preventDefault();
-  syncOutboundDestinationField();
+  const rows = document.querySelectorAll('#outboundItemsTableBody tr');
+  const items = [];
+  let hasStockError = false;
 
-  const material_id = document.getElementById('outboundMaterialSelect')?.value;
-  const qty         = parseInt(document.getElementById('outboundQty')?.value || '0');
-  const destination = document.getElementById('outboundDestination')?.value?.trim();
-  const reason      = document.getElementById('outboundReason')?.value?.trim();
-  const notes       = document.getElementById('outboundNotes')?.value?.trim() || '';
-  const formDate    = document.getElementById('outboundFormDate')?.value;
-  const formTime    = document.getElementById('outboundFormTime')?.value;
-  const started_at  = (formDate && formTime) ? `${formDate} ${formTime}:00` : (outboundModalStartTime || new Date().toISOString());
+  rows.forEach(r => {
+    const matSelect = r.querySelector('.outbound-row-mat');
+    const brandSelect = r.querySelector('.outbound-row-brand');
+    const qtyInput = r.querySelector('.outbound-row-qty');
+    const reasonInput = r.querySelector('.outbound-row-reason');
 
-  if (!material_id) {
-    App.toast('Silakan pilih Kemas/Consumable terlebih dahulu', 'warning');
-    return;
-  }
-  if (!qty || qty <= 0) {
-    App.toast('Jumlah keluar (Qty) harus lebih dari 0', 'warning');
-    return;
-  }
-  if (!destination) {
-    App.toast('Silakan pilih Brand Tujuan pengeluaran', 'warning');
-    document.getElementById('outboundDestination')?.focus();
-    return;
-  }
-  if (!reason) {
-    App.toast('Silakan isi alasan pengeluaran barang', 'warning');
-    document.getElementById('outboundReason')?.focus();
+    const material_id = parseInt(matSelect?.value || '0');
+    const destination = brandSelect?.value?.trim() || 'HANASUI';
+    const qty = parseInt(qtyInput?.value || '0');
+    const reason = reasonInput?.value?.trim() || 'Kebutuhan Produksi';
+
+    const selectedOpt = matSelect?.options[matSelect?.selectedIndex];
+    const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
+
+    if (material_id > 0 && qty > 0) {
+      if (qty > stock) {
+        hasStockError = true;
+        qtyInput?.focus();
+      }
+      items.push({ material_id, qty, destination, reason });
+    }
+  });
+
+  if (hasStockError) {
+    App.toast('Terdapat jumlah keluar yang melebihi sisa stok gudang!', 'error');
     return;
   }
 
-  const btnSubmit = document.getElementById('btnSubmitOutbound');
+  if (items.length === 0) {
+    App.toast('Silakan pilih minimal 1 material dengan Qty lebih dari 0', 'warning');
+    return;
+  }
+
+  const notes = document.getElementById('outboundGlobalNotes')?.value?.trim() || '';
+  const formDate = document.getElementById('outboundFormDate')?.value;
+  const formTime = document.getElementById('outboundFormTime')?.value;
+  const started_at = (formDate && formTime) ? `${formDate} ${formTime}:00` : (outboundModalStartTime || new Date().toISOString());
+
+  const btnSubmit = document.getElementById('btnSubmitOutboundTable');
   if (btnSubmit) {
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
   }
 
-  const res = await App.fetchJson('../api/outbound.php?action=create', {
+  const res = await App.fetchJson('../api/outbound.php?action=batch_create', {
     method: 'POST',
-    body: JSON.stringify({ material_id, qty, destination, reason, notes, started_at })
+    body: JSON.stringify({ items, notes, started_at })
   });
 
   if (btnSubmit) {
@@ -3551,7 +3726,7 @@ async function handleOutboundFormSubmit(e) {
     loadStats();
     loadMaterials();
   } else {
-    App.toast(res.message || 'Gagal mencatat pengeluaran', 'error');
+    App.toast(res.message || 'Gagal memproses pengeluaran barang', 'error');
   }
 }
 

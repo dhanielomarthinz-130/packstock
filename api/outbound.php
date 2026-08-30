@@ -170,7 +170,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         // Check stock
-        $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ? FOR UPDATE");
+        $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 
@@ -235,6 +235,112 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->rollBack();
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Gagal memproses barang keluar: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 3. BATCH CREATE OUTBOUND (Multi-item Table Input)
+if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $items       = $input['items'] ?? [];
+    $globalNotes = trim($input['notes'] ?? '');
+    $startedAt   = trim($input['started_at'] ?? '');
+    $issuedBy    = Auth::name() ?? 'Admin Gudang';
+
+    if (empty($items) || !is_array($items)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Daftar item pengeluaran tidak boleh kosong!']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $prefix = 'OUT-' . date('Ym') . '-';
+        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM outbound_transactions WHERE outbound_no LIKE ?");
+        $stmtCount->execute([$prefix . '%']);
+        $nextNum = (int)$stmtCount->fetchColumn() + 1;
+
+        $now = date('Y-m-d H:i:s');
+        $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 150);
+        $totalDuration = max(1, strtotime($now) - strtotime($startTime));
+        $itemCount = count($items);
+        $itemDuration = max(1, (int)round($totalDuration / max(1, $itemCount)));
+
+        $stmtOut = $pdo->prepare("
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+        $stmtMut = $pdo->prepare("
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
+            VALUES (?, 'OUTBOUND', ?, ?, ?, ?, ?, ?)
+        ");
+
+        $processedItems = 0;
+        $totalQtyProcessed = 0;
+        $createdOutboundNos = [];
+
+        foreach ($items as $item) {
+            $materialId  = (int)($item['material_id'] ?? 0);
+            $qty         = (int)($item['qty'] ?? 0);
+            $destination = trim($item['destination'] ?? 'HANASUI');
+            $reason      = trim($item['reason'] ?? 'Kebutuhan Produksi');
+            $itemNotes   = trim($item['notes'] ?? '');
+
+            if ($materialId <= 0 || $qty <= 0) continue;
+
+            $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
+            $stmtMat->execute([$materialId]);
+            $mat = $stmtMat->fetch();
+            if (!$mat) continue;
+
+            $stockBefore = (int)$mat['current_stock'];
+            if ($qty > $stockBefore) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Stok untuk {$mat['name']} tidak mencukupi! Tersisa {$stockBefore}."]);
+                exit;
+            }
+
+            $stockAfter = $stockBefore - $qty;
+            $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+            $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
+
+            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $startTime, $now, $itemDuration]);
+            $stmtUpdateMat->execute([$stockAfter, $materialId]);
+
+            $mutNotes = "Pengeluaran ke: {$destination} ({$reason})";
+            if (!empty($combinedNotes)) $mutNotes .= " - " . $combinedNotes;
+            $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id()]);
+
+            $processedItems++;
+            $totalQtyProcessed += $qty;
+            $createdOutboundNos[] = $outboundNo;
+        }
+
+        if ($processedItems === 0) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada item yang valid untuk diproses!']);
+            exit;
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Berhasil mencatat {$processedItems} item pengeluaran barang (Total: {$totalQtyProcessed} Qty).",
+            'processed_items' => $processedItems,
+            'total_qty' => $totalQtyProcessed,
+            'outbound_nos' => $createdOutboundNos
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal memproses pengeluaran batch: ' . $e->getMessage()]);
     }
     exit;
 }

@@ -2253,86 +2253,102 @@ require_once __DIR__ . '/../includes/header.php';
   </main>
 </div>
 
-<!-- ================= MODAL: INPUT INBOUND MANUAL ================= -->
+<!-- ================= MODAL: INPUT INBOUND TABLE ================= -->
 <div id="modalAddInbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-emerald-700 text-[22px]">move_to_inbox</span>
-        <h3 class="font-bold text-slate-900 text-sm">Input Penerimaan Barang Masuk</h3>
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80 shadow-2xs">
+          <span class="material-symbols-outlined text-[22px]">move_to_inbox</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Penerimaan Barang Masuk (Tabel)</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Input satu atau beberapa material kemas/consumable dalam satu transaksi</p>
+        </div>
       </div>
-      <button onclick="App.closeModal('modalAddInbound')" class="text-slate-400 hover:text-slate-700">
+      <button onclick="App.closeModal('modalAddInbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
     </div>
 
-    <form id="inboundForm" onsubmit="handleInboundFormSubmit(event)" class="space-y-3 text-xs">
-      <!-- Tanggal & Waktu (Otomatis Terisi Waktu Saat Ini - Non-Editable) -->
-      <div class="grid grid-cols-2 gap-2.5">
+    <form id="inboundForm" onsubmit="handleInboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
+      <!-- Meta Information Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px] text-emerald-600">calendar_month</span>
-              <span>Tanggal Masuk</span>
-            </span>
+            <span>Tanggal Masuk</span>
             <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
               <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Otomatis</span>
+              <span>Auto</span>
             </span>
           </label>
-          <div class="relative w-full">
-            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 text-[18px]">calendar_month</span>
-            <input type="text" id="inboundFormDateDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-            <input type="hidden" id="inboundFormDate" value="<?= date('Y-m-d') ?>">
-          </div>
+          <input type="text" id="inboundFormDateDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+          <input type="hidden" id="inboundFormDate" value="<?= date('Y-m-d') ?>">
         </div>
+
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px] text-emerald-600">schedule</span>
-              <span>Jam / Waktu</span>
-            </span>
+            <span>Jam / Waktu</span>
             <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
               <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Otomatis</span>
+              <span>Auto</span>
             </span>
           </label>
-          <div class="relative w-full">
-            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-600 text-[18px]">schedule</span>
-            <input type="text" id="inboundFormTimeDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-            <input type="hidden" id="inboundFormTime" value="<?= date('H:i') ?>">
-          </div>
+          <input type="text" id="inboundFormTimeDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+          <input type="hidden" id="inboundFormTime" value="<?= date('H:i') ?>">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">No. Surat Jalan / PO</label>
+          <input type="text" id="inboundPoNumber" placeholder="Contoh: PO-2026-001 (Opsional)" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+          <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
         </div>
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
-          <span class="material-symbols-outlined text-[15px] text-emerald-600">grid_view</span>
-          <span>Lokasi Rak Simpan (Location)</span>
-        </label>
-        <input type="text" id="inboundLocation" placeholder="Contoh: Rak A1 / Gudang Utama" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-emerald-600">
+      <!-- Items Table Container -->
+      <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10">
+            <tr>
+              <th class="p-2.5 w-10 text-center">#</th>
+              <th class="p-2.5 min-w-[240px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-32">Lokasi Rak</th>
+              <th class="p-2.5 w-28 text-center">Qty Masuk <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 min-w-[150px]">Catatan Item</th>
+              <th class="p-2.5 w-12 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="inboundItemsTableBody" class="divide-y divide-slate-100">
+            <!-- Dynamic rows inserted here -->
+          </tbody>
+        </table>
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Pilih Kemas/Consumable <span class="text-rose-500">*</span></label>
-        <select id="inboundMaterialSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-emerald-600">
-          <option value="">-- Pilih Kemas/Consumable --</option>
-        </select>
+      <!-- Bottom Bar with Add Row and Total Summary -->
+      <div class="flex items-center justify-between pt-1 flex-shrink-0">
+        <button type="button" onclick="addInboundTableRow()" class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">add_circle</span>
+          <span>Tambah Baris</span>
+        </button>
+
+        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+          <span>Total Qty Masuk:</span>
+          <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-mono font-black text-sm" id="inboundTotalQtySummary">0</span>
+        </div>
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Jumlah Masuk (Qty) <span class="text-rose-500">*</span></label>
-        <input type="number" id="inboundQty" required min="1" placeholder="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm text-emerald-800 outline-none focus:bg-white focus:border-emerald-600">
-      </div>
-
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
-        <input type="text" id="inboundNotes" placeholder="Kondisi barang, keterangan..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-emerald-600">
-      </div>
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalAddInbound')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm text-xs flex items-center gap-1.5 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">save</span>
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
+        <button type="button" onclick="App.closeModal('modalAddInbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+          Batal
+        </button>
+        <button type="submit" id="btnSubmitInboundTable" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
+          <span class="material-symbols-outlined text-[17px]">save</span>
           <span>Simpan & Tambah Stok</span>
         </button>
       </div>
@@ -2340,18 +2356,18 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: INPUT OUTBOUND MANUAL ================= -->
+<!-- ================= MODAL: INPUT OUTBOUND TABLE ================= -->
 <div id="modalAddOutbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
       <div class="flex items-center gap-2.5">
         <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 shadow-2xs">
           <span class="material-symbols-outlined text-[22px]">outbox</span>
         </div>
         <div>
-          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Pengeluaran Kemas/Consumable</h3>
-          <p class="text-[11px] text-slate-400 font-medium">Catat pengeluaran barang keluar manual secara langsung</p>
+          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Pengeluaran Kemas/Consumable (Tabel)</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Catat pengeluaran barang keluar langsung ke lini brand produksi</p>
         </div>
       </div>
       <button onclick="App.closeModal('modalAddOutbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
@@ -2359,117 +2375,77 @@ require_once __DIR__ . '/../includes/header.php';
       </button>
     </div>
 
-    <form id="outboundForm" onsubmit="handleOutboundFormSubmit(event)" class="space-y-3.5 text-xs">
-      
-      <!-- Tanggal & Waktu (Otomatis Terisi Waktu Saat Ini - Non-Editable) -->
-      <div class="grid grid-cols-2 gap-3">
+    <form id="outboundForm" onsubmit="handleOutboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
+      <!-- Meta Information Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px] text-amber-600">calendar_month</span>
-              <span>Tanggal Keluar</span>
-            </span>
+            <span>Tanggal Keluar</span>
             <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
               <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Otomatis</span>
+              <span>Auto</span>
             </span>
           </label>
-          <div class="relative w-full">
-            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-600 text-[18px]">calendar_month</span>
-            <input type="text" id="outboundFormDateDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-            <input type="hidden" id="outboundFormDate" value="<?= date('Y-m-d') ?>">
-          </div>
+          <input type="text" id="outboundFormDateDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+          <input type="hidden" id="outboundFormDate" value="<?= date('Y-m-d') ?>">
         </div>
+
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span class="flex items-center gap-1">
-              <span class="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
-              <span>Jam / Waktu</span>
-            </span>
+            <span>Jam / Waktu</span>
             <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
               <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Otomatis</span>
+              <span>Auto</span>
             </span>
           </label>
-          <div class="relative w-full">
-            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-600 text-[18px]">schedule</span>
-            <input type="text" id="outboundFormTimeDisplay" readonly class="w-full h-[38px] pl-9 pr-3 bg-slate-100 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-            <input type="hidden" id="outboundFormTime" value="<?= date('H:i') ?>">
-          </div>
+          <input type="text" id="outboundFormTimeDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+          <input type="hidden" id="outboundFormTime" value="<?= date('H:i') ?>">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+          <input type="text" id="outboundGlobalNotes" placeholder="Keterangan / No SPK (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-amber-600">
         </div>
       </div>
 
-      <!-- Pilih Material -->
-      <div>
-        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-          <span class="flex items-center gap-1">
-            <span class="material-symbols-outlined text-[15px] text-amber-600">inventory_2</span>
-            <span>Pilih Kemas/Consumable <span class="text-rose-500">*</span></span>
-          </span>
-          <span id="outboundAvailableStockBadge" class="hidden text-[11px] font-black font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-            Sisa Stok: <span id="outboundAvailableStockVal">0</span> Pcs
-          </span>
-        </label>
-        <select id="outboundMaterialSelect" required onchange="onOutboundMaterialChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium">
-          <option value="">-- Pilih Kemas/Consumable --</option>
-        </select>
-        <div id="outboundMaterialInfoBox" class="hidden mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] flex items-center justify-between text-slate-600">
-          <span>Rak: <strong id="outboundMatRack" class="text-slate-800">-</strong></span>
-          <span>Satuan: <strong id="outboundMatUnit" class="text-slate-800">Pcs</strong></span>
-          <span>Kategori: <strong id="outboundMatCat" class="text-slate-800">-</strong></span>
+      <!-- Items Table Container -->
+      <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10">
+            <tr>
+              <th class="p-2.5 w-10 text-center">#</th>
+              <th class="p-2.5 min-w-[240px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-36">Tujuan Brand <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-28 text-center">Qty Keluar <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 min-w-[180px]">Alasan Pengeluaran <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-12 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="outboundItemsTableBody" class="divide-y divide-slate-100">
+            <!-- Dynamic rows inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom Bar with Add Row and Total Summary -->
+      <div class="flex items-center justify-between pt-1 flex-shrink-0">
+        <button type="button" onclick="addOutboundTableRow()" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5 transition-colors">
+          <span class="material-symbols-outlined text-[16px]">add_circle</span>
+          <span>Tambah Baris</span>
+        </button>
+
+        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+          <span>Total Qty Keluar:</span>
+          <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-mono font-black text-sm" id="outboundTotalQtySummary">0</span>
         </div>
       </div>
 
-      <!-- Jumlah Keluar (Qty) -->
-      <div>
-        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-          <span>Jumlah Keluar (Qty) <span class="text-rose-500">*</span></span>
-          <span class="text-[10px] text-slate-400 font-normal">Pastikan qty tidak melebihi sisa stok</span>
-        </label>
-        <div class="relative">
-          <input type="number" id="outboundQty" required min="1" placeholder="0" oninput="validateOutboundQtyInput(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-black text-sm text-amber-900 outline-none focus:bg-white focus:border-amber-600">
-          <span id="outboundQtyUnitTag" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Pcs</span>
-        </div>
-        <p id="outboundQtyWarning" class="hidden text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1">
-          <span class="material-symbols-outlined text-[14px]">warning</span>
-          <span>Jumlah melebihi stok yang tersedia di gudang!</span>
-        </p>
-      </div>
-
-      <!-- Tujuan Pengeluaran (Dropdown Brand) -->
-      <div>
-        <label class="block font-bold text-slate-700 mb-1">
-          Tujuan Pengeluaran (Brand) <span class="text-rose-500">*</span>
-        </label>
-        <select id="outboundDestination" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-bold text-slate-800">
-          <option value="">-- Pilih Brand Tujuan --</option>
-          <option value="HANASUI">HANASUI</option>
-          <option value="NCO">NCO</option>
-          <option value="FYNE">FYNE</option>
-          <option value="EOMMA">EOMMA</option>
-        </select>
-      </div>
-
-      <!-- Alasan Pengeluaran -->
-      <div>
-        <label class="block font-bold text-slate-700 mb-1">
-          Alasan Pengeluaran <span class="text-rose-500">*</span>
-        </label>
-        <input type="text" id="outboundReason" required placeholder="Contoh: Uji Kualitas / Rusak / Reject" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium text-slate-800">
-      </div>
-
-      <!-- Catatan Tambahan -->
-      <div>
-        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
-        <input type="text" id="outboundNotes" placeholder="Keterangan..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs">
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
         <button type="button" onclick="App.closeModal('modalAddOutbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
           Batal
         </button>
-        <button type="submit" id="btnSubmitOutbound" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
+        <button type="submit" id="btnSubmitOutboundTable" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
           <span class="material-symbols-outlined text-[17px]">save</span>
           <span>Catat & Potong Stok</span>
         </button>

@@ -108,7 +108,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        $stmtMat = $pdo->prepare("SELECT id, name, current_stock, unit FROM materials WHERE id = ? FOR UPDATE");
+        $stmtMat = $pdo->prepare("SELECT id, name, current_stock, unit FROM materials WHERE id = ?");
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 
@@ -227,7 +227,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($materialId <= 0 || $qty <= 0) continue;
 
-            $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ? FOR UPDATE");
+            $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
             $stmtMat->execute([$materialId]);
             $mat = $stmtMat->fetch();
             if (!$mat) continue;
