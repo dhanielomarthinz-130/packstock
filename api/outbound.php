@@ -24,7 +24,7 @@ if ($action === 'list') {
                 t.assigned_to,
                 t.target_qty,
                 t.actual_qty,
-                IF(t.status = 'COMPLETED', t.actual_qty, t.target_qty) as qty,
+                (CASE WHEN t.status = 'COMPLETED' THEN t.actual_qty ELSE t.target_qty END) as qty,
                 t.destination,
                 u_to.name as issued_by,
                 u_to.username as issued_by_username,
@@ -36,7 +36,7 @@ if ($action === 'list') {
                 t.priority,
                 COALESCE(t.started_at, t.created_at) as started_at,
                 COALESCE(t.completed_at, t.created_at) as completed_at,
-                COALESCE(t.duration_seconds, TIMESTAMPDIFF(SECOND, COALESCE(t.started_at, t.created_at), COALESCE(t.completed_at, CURRENT_TIMESTAMP))) as duration_seconds,
+                COALESCE(t.duration_seconds, 0) as duration_seconds,
                 t.created_at,
                 m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location
             FROM tasks t
@@ -66,7 +66,7 @@ if ($action === 'list') {
                 'NORMAL' as priority,
                 COALESCE(o.started_at, o.created_at) as started_at,
                 COALESCE(o.completed_at, o.created_at) as completed_at,
-                COALESCE(o.duration_seconds, TIMESTAMPDIFF(SECOND, COALESCE(o.started_at, o.created_at), COALESCE(o.completed_at, o.created_at))) as duration_seconds,
+                COALESCE(o.duration_seconds, 0) as duration_seconds,
                 o.created_at,
                 m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location
             FROM outbound_transactions o
@@ -86,13 +86,13 @@ if ($action === 'list') {
     }
 
     if (!empty($date)) {
-        $query .= " AND DATE(created_at) = ?";
-        $params[] = $date;
+        $query .= " AND created_at LIKE ?";
+        $params[] = "{$date}%";
     }
 
     if (!empty($time)) {
-        $query .= " AND TIME_FORMAT(created_at, '%H:%i') LIKE ?";
-        $params[] = "%{$time}%";
+        $query .= " AND created_at LIKE ?";
+        $params[] = "% {$time}%";
     }
 
     if (!empty($typeFilter) && $typeFilter !== 'ALL') {

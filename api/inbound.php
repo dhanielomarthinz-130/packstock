@@ -16,12 +16,15 @@ if ($action === 'list') {
         SELECT i.*, 
                COALESCE(i.started_at, i.created_at) as started_at,
                COALESCE(i.completed_at, i.created_at) as completed_at,
-               COALESCE(i.duration_seconds, TIMESTAMPDIFF(SECOND, COALESCE(i.started_at, i.created_at), COALESCE(i.completed_at, i.created_at))) as duration_seconds,
+               COALESCE(i.duration_seconds, 0) as duration_seconds,
                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
-               u.name as receiver_name, u.username as receiver_username, u.role as receiver_role, u.shift as receiver_shift
+               COALESCE(u.name, i.received_by, 'Admin') as receiver_name,
+               COALESCE(u.username, i.received_by, 'admin') as receiver_username,
+               COALESCE(u.role, 'admin') as receiver_role,
+               COALESCE(u.shift, 'Head Office') as receiver_shift
         FROM inbound_transactions i
         JOIN materials m ON i.material_id = m.id
-        LEFT JOIN users u ON i.received_by = u.id
+        LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username OR i.received_by = u.name)
         WHERE 1=1
     ";
     $params = [];
@@ -36,13 +39,13 @@ if ($action === 'list') {
     }
 
     if (!empty($date)) {
-        $query .= " AND DATE(i.created_at) = ?";
-        $params[] = $date;
+        $query .= " AND i.created_at LIKE ?";
+        $params[] = "{$date}%";
     }
 
     if (!empty($time)) {
-        $query .= " AND TIME_FORMAT(i.created_at, '%H:%i') LIKE ?";
-        $params[] = "%{$time}%";
+        $query .= " AND i.created_at LIKE ?";
+        $params[] = "% {$time}%";
     }
 
     $query .= " ORDER BY i.created_at DESC LIMIT " . $limit;

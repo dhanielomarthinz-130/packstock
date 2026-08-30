@@ -627,13 +627,13 @@ if ($action === 'history') {
     }
 
     if (!empty($date)) {
-        $query .= " AND DATE(sm.created_at) = ?";
-        $params[] = $date;
+        $query .= " AND sm.created_at LIKE ?";
+        $params[] = "{$date}%";
     }
 
     if (!empty($time)) {
-        $query .= " AND TIME_FORMAT(sm.created_at, '%H:%i') LIKE ?";
-        $params[] = "%{$time}%";
+        $query .= " AND sm.created_at LIKE ?";
+        $params[] = "% {$time}%";
     }
 
     $query .= " ORDER BY sm.created_at DESC, sm.id DESC LIMIT {$limit}";
