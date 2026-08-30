@@ -784,19 +784,21 @@ if ($action === 'create') {
 
         // 2. Insert Items & Stage 1 if targetMaterials found
         $assignedUserId = $assigned_to_1 > 0 ? $assigned_to_1 : Auth::id();
+        
+        $stmtItem = $pdo->prepare("
+            INSERT INTO stock_opname_items (opname_id, material_id, system_stock, final_qty, difference, status, created_at)
+            VALUES (?, ?, ?, NULL, 0, 'PENDING', CURRENT_TIMESTAMP)
+        ");
+        $stmtStage1 = $assigned_to_1 > 0 ? $pdo->prepare("
+            INSERT INTO stock_opname_item_stages (opname_id, item_id, stage_number, assigned_to, count_qty, status, created_at)
+            VALUES (?, ?, 1, ?, NULL, 'PENDING', CURRENT_TIMESTAMP)
+        ") : null;
+
         foreach ($targetMaterials as $m) {
-            $stmtItem = $pdo->prepare("
-                INSERT INTO stock_opname_items (opname_id, material_id, system_stock, final_qty, difference, status, created_at)
-                VALUES (?, ?, ?, NULL, 0, 'PENDING', CURRENT_TIMESTAMP)
-            ");
             $stmtItem->execute([$opnameId, $m['id'], $m['current_stock']]);
             $itemId = (int)$pdo->lastInsertId();
 
-            if ($assigned_to_1 > 0) {
-                $stmtStage1 = $pdo->prepare("
-                    INSERT INTO stock_opname_item_stages (opname_id, item_id, stage_number, assigned_to, count_qty, status, created_at)
-                    VALUES (?, ?, 1, ?, NULL, 'PENDING', CURRENT_TIMESTAMP)
-                ");
+            if ($stmtStage1) {
                 $stmtStage1->execute([$opnameId, $itemId, $assigned_to_1]);
             }
         }

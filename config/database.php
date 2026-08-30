@@ -54,8 +54,15 @@ class Database {
             $sqlitePath = __DIR__ . '/packstock.sqlite';
             self::$pdo = new PDO("sqlite:" . $sqlitePath, null, null, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_TIMEOUT => 30
             ]);
+            try {
+                self::$pdo->exec("PRAGMA journal_mode = WAL;");
+                self::$pdo->exec("PRAGMA synchronous = NORMAL;");
+                self::$pdo->exec("PRAGMA busy_timeout = 30000;");
+            } catch (Throwable $ignored) {}
+
             self::initSQLiteTables(self::$pdo);
             return self::$pdo;
         }
