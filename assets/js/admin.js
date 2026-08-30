@@ -32,12 +32,17 @@ function initPremiumPickers() {
   const initDate = (selector, onChangeCallback) => {
     const el = document.querySelector(selector);
     if (!el) return;
-    if (el._flatpickr) el._flatpickr.destroy();
-    flatpickr(el, {
+    if (el._flatpickr) {
+      return el._flatpickr;
+    }
+    return flatpickr(el, {
       altInput: true,
       altFormat: "d F Y",
       dateFormat: "Y-m-d",
+      altInputClass: "premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600 cursor-pointer",
       allowInput: true,
+      clickOpens: true,
+      disableMobile: true,
       onChange: (selectedDates, dateStr) => {
         if (onChangeCallback) onChangeCallback(dateStr);
       }
@@ -47,13 +52,20 @@ function initPremiumPickers() {
   const initTime = (selector, onChangeCallback) => {
     const el = document.querySelector(selector);
     if (!el) return;
-    if (el._flatpickr) el._flatpickr.destroy();
-    flatpickr(el, {
+    if (el._flatpickr) {
+      return el._flatpickr;
+    }
+    return flatpickr(el, {
       enableTime: true,
       noCalendar: true,
       dateFormat: "H:i",
       time_24hr: true,
+      altInput: true,
+      altFormat: "H:i",
+      altInputClass: "premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600 cursor-pointer",
       allowInput: true,
+      clickOpens: true,
+      disableMobile: true,
       onChange: (selectedDates, dateStr) => {
         if (onChangeCallback) onChangeCallback(dateStr);
       }
@@ -63,14 +75,19 @@ function initPremiumPickers() {
   const initDateTime = (selector, onChangeCallback) => {
     const el = document.querySelector(selector);
     if (!el) return;
-    if (el._flatpickr) el._flatpickr.destroy();
-    flatpickr(el, {
+    if (el._flatpickr) {
+      return el._flatpickr;
+    }
+    return flatpickr(el, {
       enableTime: true,
       altInput: true,
       altFormat: "d F Y - H:i",
       dateFormat: "Y-m-d H:i",
       time_24hr: true,
+      altInputClass: "premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600 cursor-pointer",
       allowInput: true,
+      clickOpens: true,
+      disableMobile: true,
       onChange: (selectedDates, dateStr) => {
         if (onChangeCallback) onChangeCallback(dateStr);
       }
@@ -2814,21 +2831,35 @@ function openAddInboundModal() {
   inboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
   document.getElementById('inboundForm')?.reset();
+  
   const dateInput = document.getElementById('inboundFormDate');
   const timeInput = document.getElementById('inboundFormTime');
   const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+  const timeStr = `${hh}:${mi}`;
+
+  initPremiumPickers();
+
   if (dateInput) {
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    dateInput.value = `${yyyy}-${mm}-${dd}`;
+    if (dateInput._flatpickr) {
+      dateInput._flatpickr.setDate(dateStr, true);
+    } else {
+      dateInput.value = dateStr;
+    }
   }
   if (timeInput) {
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mi = String(now.getMinutes()).padStart(2, '0');
-    timeInput.value = `${hh}:${mi}`;
+    if (timeInput._flatpickr) {
+      timeInput._flatpickr.setDate(timeStr, true);
+    } else {
+      timeInput.value = timeStr;
+    }
   }
-  initPremiumPickers();
+
   App.openModal('modalAddInbound');
 }
 
@@ -3140,19 +3171,31 @@ function openAddOutboundModal() {
   const dateInput = document.getElementById('outboundFormDate');
   const timeInput = document.getElementById('outboundFormTime');
   const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  const dateStr = `${yyyy}-${mm}-${dd}`;
+  const timeStr = `${hh}:${mi}`;
+
+  initPremiumPickers();
+
   if (dateInput) {
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const dd = String(now.getDate()).padStart(2, '0');
-    dateInput.value = `${yyyy}-${mm}-${dd}`;
+    if (dateInput._flatpickr) {
+      dateInput._flatpickr.setDate(dateStr, true);
+    } else {
+      dateInput.value = dateStr;
+    }
   }
   if (timeInput) {
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mi = String(now.getMinutes()).padStart(2, '0');
-    timeInput.value = `${hh}:${mi}`;
+    if (timeInput._flatpickr) {
+      timeInput._flatpickr.setDate(timeStr, true);
+    } else {
+      timeInput.value = timeStr;
+    }
   }
   
-  initPremiumPickers();
   App.openModal('modalAddOutbound');
 }
 

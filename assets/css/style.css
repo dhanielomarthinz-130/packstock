@@ -367,6 +367,11 @@ table th {
 /* ========================================================================= */
 /* PREMIUM FLATPICKR DATE & TIME PICKER THEME */
 /* ========================================================================= */
+.flatpickr-wrapper {
+  width: 100% !important;
+  display: block !important;
+}
+
 .flatpickr-calendar {
   background: #ffffff !important;
   border-radius: 1rem !important;
@@ -375,7 +380,7 @@ table th {
   border: none !important;
   padding: 0.5rem !important;
   width: auto !important;
-  z-index: 99999 !important;
+  z-index: 999999 !important;
 }
 
 .flatpickr-calendar.arrowTop:before,
