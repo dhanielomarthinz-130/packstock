@@ -7343,6 +7343,32 @@ function renderCountingProgressCharts(charts) {
       }
     });
   }
+
+  // Handle Visibility & Full Width Auto-Resize based on Filter Type
+  const filterType = document.getElementById('cpFilterType')?.value || 'ALL';
+  const cardOp = document.getElementById('cardChartStockOpname');
+  const cardDyn = document.getElementById('cardChartDynamicCount');
+
+  if (cardOp && cardDyn) {
+    if (filterType === 'DYNAMIC_COUNT') {
+      cardOp.classList.add('hidden');
+      cardDyn.classList.remove('hidden');
+      cardDyn.classList.add('md:col-span-2');
+    } else if (filterType === 'STOCK_OPNAME') {
+      cardDyn.classList.add('hidden');
+      cardOp.classList.remove('hidden');
+      cardOp.classList.add('md:col-span-2');
+    } else {
+      cardOp.classList.remove('hidden', 'md:col-span-2');
+      cardDyn.classList.remove('hidden', 'md:col-span-2');
+    }
+  }
+
+  // Trigger resize smoothly
+  setTimeout(() => {
+    if (stockOpnameProgressChartInstance) stockOpnameProgressChartInstance.resize();
+    if (dynamicCountProgressChartInstance) dynamicCountProgressChartInstance.resize();
+  }, 60);
 }
 
 function renderCountingProgressCards(sessions) {

@@ -926,10 +926,10 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <!-- ================= VISUAL PROGRESS CHARTS ROW (BAR COLUMN CHARTS) ================= -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div id="cpChartsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
           <!-- Chart 1: Stock Opname Progress Column Bar Chart -->
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <div id="cardChartStockOpname" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3 transition-all">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div class="flex items-center gap-2">
                 <span class="w-7 h-7 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
@@ -966,7 +966,7 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <!-- Chart 2: Dynamic Count Progress Column Bar Chart -->
-          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <div id="cardChartDynamicCount" class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3 transition-all">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div class="flex items-center gap-2">
                 <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
