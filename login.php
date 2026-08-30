@@ -56,12 +56,12 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div>
             <h1 class="text-xl font-black tracking-tight text-white leading-none">PackStock</h1>
-            <p class="text-[11px] text-emerald-300/80 font-semibold mt-1">Stock Kemas Control & Dispatch</p>
+            <p class="text-[11px] text-emerald-300/80 font-semibold mt-1">Stock Kemas / Consumable Control & Dispatch</p>
           </div>
         </div>
 
         <p class="text-xs text-slate-300 leading-relaxed pt-1">
-          Sistem manajemen persediaan Stock Kemas terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
+          Sistem manajemen persediaan Stock Kemas / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div class="min-w-0">
             <h4 class="font-bold text-xs text-white truncate">Picking Task Dispatch</h4>
-            <p class="text-[10px] text-slate-400 truncate">Serah terima Stock Kemas ke line produksi</p>
+            <p class="text-[10px] text-slate-400 truncate">Serah terima Stock Kemas / Consumable ke line produksi</p>
           </div>
         </div>
 
@@ -192,9 +192,12 @@ require_once __DIR__ . '/includes/header.php';
       </div>
 
       <!-- Footer Branding & Copyright -->
-      <div class="pt-6 mt-4 border-t border-slate-100 text-center">
+      <div class="pt-6 mt-4 border-t border-slate-100 text-center space-y-1">
         <p class="text-[11px] text-slate-400 font-medium">
           PackStock WMS &bull; Enterprise Stock Control Panel &copy; <?= date('Y') ?>
+        </p>
+        <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
+          Powered By <span class="text-emerald-700 font-black">dhanielo-Marthinz IMS</span>
         </p>
       </div>
 
