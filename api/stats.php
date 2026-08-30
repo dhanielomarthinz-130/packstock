@@ -338,7 +338,7 @@ try {
                 COALESCE(AVG(CASE WHEN t.status = 'COMPLETED' AND t.duration_seconds > 0 THEN t.duration_seconds ELSE NULL END), 0) AS avg_duration_seconds
             FROM users u
             LEFT JOIN tasks t ON t.assigned_to = u.id " . ($taskDateCondition ? "AND DATE(t.created_at) BETWEEN ? AND ?" : "") . "
-            WHERE u.role IN ('operator', 'teknisi')
+            WHERE LOWER(u.role) = 'operator' AND LOWER(u.username) NOT IN ('admin', 'superadmin', 'daniel')
             GROUP BY u.id
             ORDER BY completed_count DESC, total_picked_qty DESC
         ");
