@@ -7219,11 +7219,34 @@ function renderCountingProgressCharts(charts) {
   const opTargetDbEl = document.getElementById('chartOpnameTargetDb');
   if (opTargetDbEl) opTargetDbEl.innerText = `${opTotalDb.toLocaleString()} SKU`;
 
+  const chartTopValueLabelsPlugin = {
+    id: 'chartTopValueLabels',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      chart.data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        meta.data.forEach((bar, index) => {
+          const val = dataset.data[index];
+          if (val !== undefined && val !== null) {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = '700 11px Inter, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText(`${val.toLocaleString()} SKU`, bar.x, bar.y - 4);
+            ctx.restore();
+          }
+        });
+      });
+    }
+  };
+
   const ctxOp = document.getElementById('chartStockOpnameProgress');
   if (ctxOp && typeof Chart !== 'undefined') {
     if (stockOpnameProgressChartInstance) stockOpnameProgressChartInstance.destroy();
     stockOpnameProgressChartInstance = new Chart(ctxOp, {
       type: 'bar',
+      plugins: [chartTopValueLabelsPlugin],
       data: {
         labels: ['Selesai Dihitung', 'Belum Dihitung', 'Target DB (>0)'],
         datasets: [{
@@ -7239,6 +7262,9 @@ function renderCountingProgressCharts(charts) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: { top: 15 }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -7257,6 +7283,7 @@ function renderCountingProgressCharts(charts) {
           },
           y: {
             beginAtZero: true,
+            grace: '18%',
             grid: {
               color: '#f1f5f9',
               drawBorder: false
@@ -7296,6 +7323,7 @@ function renderCountingProgressCharts(charts) {
     if (dynamicCountProgressChartInstance) dynamicCountProgressChartInstance.destroy();
     dynamicCountProgressChartInstance = new Chart(ctxDyn, {
       type: 'bar',
+      plugins: [chartTopValueLabelsPlugin],
       data: {
         labels: ['Selesai (Done)', 'Belum Selesai', 'Total Ditugaskan'],
         datasets: [{
@@ -7311,6 +7339,9 @@ function renderCountingProgressCharts(charts) {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: { top: 15 }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -7329,6 +7360,7 @@ function renderCountingProgressCharts(charts) {
           },
           y: {
             beginAtZero: true,
+            grace: '18%',
             grid: {
               color: '#f1f5f9',
               drawBorder: false
