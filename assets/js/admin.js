@@ -131,6 +131,9 @@ function initPremiumPickers() {
 
   // 11. Progress Counting Toolbar Filter
   initDate('#cpFilterDate', () => loadCountingProgressDashboard());
+
+  // 12. Handover Shift Toolbar Filter
+  initDate('#adminHandoverDateFilter', () => filterAdminHandovers());
 }
 
 // ================= 0.2 SIDEBAR MINIMIZE / MAXIMIZE TOGGLE =================
@@ -7691,11 +7694,18 @@ function updateAdminHandoverKPIs() {
 
 function filterAdminHandovers() {
   const q = (document.getElementById('adminHandoverSearchInput')?.value || '').toLowerCase().trim();
+  const dateFilter = (document.getElementById('adminHandoverDateFilter')?.value || '').trim();
   const statusFilter = document.getElementById('adminHandoverStatusFilter')?.value || 'ALL';
   const toShiftFilter = document.getElementById('adminHandoverToShiftFilter')?.value || 'ALL';
   const shareFilter = document.getElementById('adminHandoverShareFilter')?.value || 'ALL';
 
   let filtered = allAdminHandovers.filter(item => {
+    // Date filter
+    if (dateFilter) {
+      const itemDate = (item.created_at || '').substring(0, 10);
+      if (itemDate !== dateFilter) return false;
+    }
+
     // Search query match
     if (q) {
       const matchDoc = (item.handover_no || '').toLowerCase().includes(q);

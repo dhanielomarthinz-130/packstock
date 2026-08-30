@@ -2379,6 +2379,11 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- Filters -->
             <div class="flex items-center gap-2 flex-wrap text-xs">
+              <!-- Date Filter Picker (Identical to other pages) -->
+              <div class="relative flex items-center">
+                <input type="text" id="adminHandoverDateFilter" onchange="filterAdminHandovers()" placeholder="Filter Tanggal..." class="premium-datepicker-input h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 outline-none focus:border-rose-500 focus:bg-white transition-all w-36" title="Filter Tanggal Serah Terima">
+              </div>
+
               <select id="adminHandoverStatusFilter" onchange="filterAdminHandovers()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:border-rose-500">
                 <option value="ALL">Semua Status (All)</option>
                 <option value="PENDING">🔴 Status: PENDING</option>
@@ -2389,7 +2394,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <option value="ALL">Semua Shift Tujuan</option>
                 <option value="Shift 1">Shift 1 (Pagi)</option>
                 <option value="Shift 2">Shift 2 (Siang)</option>
-                <option value="Shift 3">Shift 3 (Malam)</option>
+                <option value="Semua Shift">Semua Shift / Umum</option>
               </select>
 
               <select id="adminHandoverShareFilter" onchange="filterAdminHandovers()" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-semibold text-slate-700 outline-none focus:border-rose-500">
@@ -2397,6 +2402,11 @@ require_once __DIR__ . '/../includes/header.php';
                 <option value="1">Sudah di-Share</option>
                 <option value="0">Belum di-Share</option>
               </select>
+
+              <button type="button" onclick="document.getElementById('adminHandoverDateFilter').value = ''; filterAdminHandovers();" class="py-2 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-[11px] font-semibold rounded-xl flex items-center gap-1 transition-all" title="Reset Filter Tanggal">
+                <span class="material-symbols-outlined text-[14px]">clear_all</span>
+                <span>Reset Tanggal</span>
+              </button>
 
               <button type="button" onclick="loadAdminHandovers()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-xl flex items-center gap-1 transition-all">
                 <span class="material-symbols-outlined text-[16px]">refresh</span>

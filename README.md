@@ -34,7 +34,7 @@ Repository ini sudah dilengkapi dengan **GitHub Actions Auto-Deploy via FTP**.
 ```php
 <?php
 return [
-    'DB_HOST' => 'sqlxxx.infinityfree.com', // Lihat di cPanel MySQL Details
+    'DB_HOST' => 'sqlxxx.infinityfree.com',
     'DB_PORT' => '3306',
     'DB_USER' => 'if0_xxxxxxxx',
     'DB_PASS' => 'password_hosting_anda',
