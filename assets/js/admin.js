@@ -211,7 +211,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -4169,6 +4169,7 @@ async function applyMyPermissions() {
     // Map menu keys to sidebar nav IDs
     const menuNavMap = {
       dashboard: 'nav-dashboard',
+      counting_progress: 'nav-counting_progress',
       inventory: 'nav-inventory',
       dynamic_count: 'nav-dynamic_count',
       dynamic_counting_detail: 'nav-dynamic_counting_detail',
