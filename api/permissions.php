@@ -21,6 +21,12 @@ $MENUS_CATALOG = [
         'description' => 'Ringkasan statistik stok, aktivitas operasional, dan grafik harian.'
     ],
     [
+        'key' => 'counting_progress',
+        'label' => 'Progress Counting',
+        'icon' => 'donut_large',
+        'description' => 'Dashboard monitoring live progress hitung fisik Dynamic Count dan Stock Opname secara visual.'
+    ],
+    [
         'key' => 'inventory',
         'label' => 'Stock Kemas',
         'icon' => 'shelves',

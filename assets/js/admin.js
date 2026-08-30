@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Auto refresh live stats & task monitor periodically
   setInterval(() => {
     if (currentAdminTab === 'dashboard') loadStats(true);
+    if (currentAdminTab === 'counting_progress') loadCountingProgressDashboard();
     if (currentAdminTab === 'tasks') loadTasks();
     if (currentAdminTab === 'inbound') loadInboundHistory();
     if (currentAdminTab === 'outbound') loadOutboundHistory();
@@ -126,6 +127,9 @@ function initPremiumPickers() {
 
   // 10. Detail Dynamic Counting Filter
   initDate('#dcdFilterDate', () => loadDynamicCountingDetails());
+
+  // 11. Progress Counting Toolbar Filter
+  initDate('#cpFilterDate', () => loadCountingProgressDashboard());
 }
 
 // ================= 0.2 SIDEBAR MINIMIZE / MAXIMIZE TOGGLE =================
@@ -234,7 +238,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
   
-  const tabs = ['dashboard', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
   
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -270,6 +274,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   // Set page title
   const titles = {
     dashboard: 'Dashboard Monitoring Stok & Lapangan',
+    counting_progress: 'Dashboard Live Progress Counting (Dynamic Count & Stock Opname)',
     inventory: 'Master Stok Packaging & Stok Akhir',
     dynamic_count: 'Dynamic Counting (Penugasan SKU Terpilih)',
     dynamic_counting_detail: 'Detail Dynamic Count (Log Breakdown per Putaran)',
@@ -290,6 +295,7 @@ function switchAdminTab(tabName, updateUrl = true) {
 
   // Refresh tab specific data immediately on click
   if (tabName === 'dashboard') { loadDashboardStockSummary(); loadStats(true); }
+  if (tabName === 'counting_progress') { loadCountingProgressDashboard(); }
   if (tabName === 'inventory') { loadMaterials(); }
   if (tabName === 'dynamic_count') { loadDynamicSessions(); }
   if (tabName === 'dynamic_counting_detail') { loadDynamicCountingDetails(); }
@@ -7096,6 +7102,267 @@ async function toggleMaintenanceMode(active) {
     btn.innerHTML = origHtml;
   } finally {
     btn.disabled = false;
+  }
+}
+
+// =========================================================================
+// DASHBOARD PROGRESS COUNTING (DYNAMIC COUNT & STOCK OPNAME)
+// =========================================================================
+async function loadCountingProgressDashboard() {
+  const typeFilter = document.getElementById('cpFilterType')?.value || 'ALL';
+  const statusFilter = document.getElementById('cpFilterStatus')?.value || 'ACTIVE';
+  const dateFilter = document.getElementById('cpFilterDate')?.value || '';
+
+  const sessionsContainer = document.getElementById('cpSessionsContainer');
+  if (sessionsContainer && !sessionsContainer.children.length) {
+    sessionsContainer.innerHTML = `
+      <div class="p-8 bg-white rounded-xl border border-slate-200 text-center text-slate-400">
+        <span class="material-symbols-outlined text-[32px] animate-spin text-emerald-600">progress_activity</span>
+        <p class="text-xs font-semibold mt-2">Memuat live data progress counting...</p>
+      </div>
+    `;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      action: 'counting_progress_summary',
+      type: typeFilter,
+      status: statusFilter,
+      date: dateFilter
+    });
+
+    const res = await App.fetchJson(`api/opnames.php?${params.toString()}`);
+    if (!res || !res.success) {
+      if (sessionsContainer) {
+        sessionsContainer.innerHTML = `
+          <div class="p-6 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 text-xs font-bold text-center">
+            ${escapeHtml(res?.message || 'Gagal memuat progress dashboard')}
+          </div>
+        `;
+      }
+      return;
+    }
+
+    const kpi = res.kpi || {};
+    // Update KPI Cards
+    const overallPctEl = document.getElementById('cpKpiOverallPct');
+    if (overallPctEl) overallPctEl.innerText = `${kpi.overall_progress_pct || 0}%`;
+
+    const ratioEl = document.getElementById('cpKpiItemRatio');
+    if (ratioEl) ratioEl.innerText = `(${(kpi.overall_counted_items || 0).toLocaleString()} / ${(kpi.overall_total_items || 0).toLocaleString()} SKU)`;
+
+    const barEl = document.getElementById('cpKpiProgressBar');
+    if (barEl) barEl.style.width = `${Math.min(100, kpi.overall_progress_pct || 0)}%`;
+
+    const activeSessionsEl = document.getElementById('cpKpiActiveSessions');
+    if (activeSessionsEl) activeSessionsEl.innerText = `${kpi.active_sessions || 0} Sesi`;
+
+    const dynamicActiveEl = document.getElementById('cpKpiDynamicActive');
+    if (dynamicActiveEl) dynamicActiveEl.innerText = `${kpi.active_dynamic_count || 0} Dynamic`;
+
+    const opnameActiveEl = document.getElementById('cpKpiOpnameActive');
+    if (opnameActiveEl) opnameActiveEl.innerText = `${kpi.active_stock_opname || 0} Opname`;
+
+    const totalQtyEl = document.getElementById('cpKpiTotalQty');
+    if (totalQtyEl) totalQtyEl.innerText = `${(kpi.overall_total_qty || 0).toLocaleString()} Pcs`;
+
+    const varianceEl = document.getElementById('cpKpiVarianceItems');
+    if (varianceEl) varianceEl.innerText = `${(kpi.total_variance_count || 0).toLocaleString()} SKU`;
+
+    const countEl = document.getElementById('cpLiveSessionCount');
+    if (countEl) countEl.innerText = `${(res.sessions || []).length} Dokumen Terdaftar`;
+
+    // Render Sessions
+    renderCountingProgressCards(res.sessions || []);
+
+    // Render Leaderboard
+    renderCountingLeaderboard(res.leaderboard || []);
+
+  } catch (err) {
+    console.error('Error loading counting progress:', err);
+    if (sessionsContainer) {
+      sessionsContainer.innerHTML = `
+        <div class="p-6 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 text-xs font-bold text-center">
+          Terjadi kesalahan saat memuat data: ${escapeHtml(err.message)}
+        </div>
+      `;
+    }
+  }
+}
+
+function renderCountingProgressCards(sessions) {
+  const container = document.getElementById('cpSessionsContainer');
+  if (!container) return;
+
+  if (!sessions.length) {
+    container.innerHTML = `
+      <div class="p-10 bg-white rounded-xl border border-slate-200 text-center space-y-2">
+        <span class="material-symbols-outlined text-slate-300 text-[40px]">check_circle</span>
+        <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tidak Ada Sesi Terpilih</h4>
+        <p class="text-[11px] text-slate-400">Tidak ada sesi Dynamic Count atau Stock Opname yang cocok dengan filter aktif.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = sessions.map(s => {
+    const isDynamic = s.counting_type === 'DYNAMIC_COUNT';
+    const typeBadge = isDynamic
+      ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">Dynamic Count</span>`
+      : `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-teal-50 text-teal-700 border border-teal-200">Stock Opname</span>`;
+
+    let statusBadge = '';
+    if (s.status === 'COMPLETED') {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200">Selesai</span>`;
+    } else if (s.status === 'RECOUNTING') {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">Recounting</span>`;
+    } else if (s.status === 'COUNTING') {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">Sedang Berjalan</span>`;
+    } else {
+      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">Open</span>`;
+    }
+
+    const pct = s.progress_pct || 0;
+    const progressColor = pct >= 100 ? 'bg-emerald-600' : (pct >= 50 ? 'bg-blue-600' : 'bg-amber-500');
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md transition-all p-4 space-y-3">
+        <!-- Top Info Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+            ${typeBadge}
+            <span class="font-mono font-extrabold text-xs text-slate-900">${escapeHtml(s.opname_no)}</span>
+            <span class="text-slate-300">&bull;</span>
+            <span class="font-bold text-xs text-slate-700 truncate max-w-[200px] sm:max-w-[280px]">${escapeHtml(s.title || '')}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            ${statusBadge}
+            <span class="text-[10px] text-slate-400">${escapeHtml(s.created_at ? s.created_at.substring(0, 10) : '')}</span>
+          </div>
+        </div>
+
+        <!-- Progress Bar & Stages -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-slate-600 flex items-center gap-1.5">
+              <span>Progres 1st Count:</span>
+              <span class="text-slate-900">${(s.stage_1_counted || 0)} / ${(s.total_items || 0)} SKU</span>
+            </span>
+            <span class="font-mono ${pct >= 100 ? 'text-emerald-700' : 'text-slate-800'}">${pct}%</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/70">
+            <div class="${progressColor} h-2.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          </div>
+        </div>
+
+        <!-- Metric Details & Action Buttons -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+          <!-- Mini Badges -->
+          <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-600">
+            <span class="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
+              Total Qty: <b class="font-mono text-slate-900">${(s.total_counted_qty || 0).toLocaleString()} Pcs</b>
+            </span>
+            ${s.variance_items_count > 0 ? `
+              <span class="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 font-bold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">warning</span>
+                <span>${s.variance_items_count} SKU Selisih</span>
+              </span>
+            ` : `
+              <span class="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">verified</span>
+                <span>0 Selisih</span>
+              </span>
+            `}
+            ${s.creator_name ? `
+              <span class="text-slate-400">Oleh: <b>${escapeHtml(s.creator_name)}</b></span>
+            ` : ''}
+          </div>
+
+          <!-- Direct Links -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="openMatrixFromProgress(${s.id}, '${s.counting_type}')" 
+              class="px-2.5 py-1.5 rounded-xl ${isDynamic ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-700 hover:bg-teal-800'} text-white text-[11px] font-bold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer">
+              <span class="material-symbols-outlined text-[15px]">table_chart</span>
+              <span>Buka Matriks</span>
+            </button>
+            <button type="button" onclick="openDetailLogFromProgress(${s.id}, '${s.counting_type}')" 
+              class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer">
+              <span class="material-symbols-outlined text-[15px]">read_more</span>
+              <span>Detail Log</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderCountingLeaderboard(leaderboard) {
+  const tbody = document.getElementById('cpLeaderboardTableBody');
+  if (!tbody) return;
+
+  if (!leaderboard.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" class="p-4 text-center text-slate-400 text-xs">Belum ada data rekaman operator.</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = leaderboard.map((item, idx) => {
+    let rankBadge = `<span class="font-bold text-slate-400 font-mono">${idx + 1}</span>`;
+    if (idx === 0) rankBadge = `<span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-black text-[10px] shadow-2xs">🥇</span>`;
+    else if (idx === 1) rankBadge = `<span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shadow-2xs">🥈</span>`;
+    else if (idx === 2) rankBadge = `<span class="w-5 h-5 rounded-full bg-amber-700/20 text-amber-900 flex items-center justify-center font-black text-[10px] shadow-2xs">🥉</span>`;
+
+    return `
+      <tr class="hover:bg-slate-50/70 transition-colors">
+        <td class="py-2.5 pl-1">${rankBadge}</td>
+        <td class="py-2.5">
+          <p class="font-bold text-slate-900 leading-tight">${escapeHtml(item.operator_name || item.operator_username || 'Operator')}</p>
+          <p class="text-[10px] text-slate-400">${escapeHtml(item.operator_shift || 'Shift Standard')}</p>
+        </td>
+        <td class="py-2.5 text-right font-mono font-bold text-indigo-700">${(item.total_items_counted || 0).toLocaleString()}</td>
+        <td class="py-2.5 text-right font-mono font-bold text-slate-800">${(item.total_qty_counted || 0).toLocaleString()}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function openMatrixFromProgress(opnameId, countingType) {
+  if (countingType === 'DYNAMIC_COUNT') {
+    switchAdminTab('dynamic_count');
+    const select = document.getElementById('dynamicOpnameSelect');
+    if (select) {
+      select.value = String(opnameId);
+      loadDynamicCountingMatrix();
+    }
+  } else {
+    switchAdminTab('opname');
+    const select = document.getElementById('opnameSessionSelect');
+    if (select) {
+      select.value = String(opnameId);
+      loadOpnameMatrix();
+    }
+  }
+}
+
+function openDetailLogFromProgress(opnameId, countingType) {
+  if (countingType === 'DYNAMIC_COUNT') {
+    switchAdminTab('dynamic_counting_detail');
+    const select = document.getElementById('dynamicCountingDetailSessionFilter');
+    if (select) {
+      select.value = String(opnameId);
+      loadDynamicCountingDetails();
+    }
+  } else {
+    switchAdminTab('counting_detail');
+    const select = document.getElementById('countingDetailSessionFilter');
+    if (select) {
+      select.value = String(opnameId);
+      loadCountingDetails();
+    }
   }
 }
 

@@ -32,22 +32,31 @@ require_once __DIR__ . '/../includes/header.php';
     <nav class="flex-1 px-3 py-3.5 space-y-3.5 overflow-y-auto">
       
       <!-- Section 1: Ringkasan & Dashboard -->
-      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="utama">
-        <button type="button" onclick="toggleSidebarSection('utama')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="dashboard">
+        <button type="button" onclick="toggleSidebarSection('dashboard')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">space_dashboard</span>
             </span>
-            <span class="sidebar-section-title text-slate-600 font-bold">Utama</span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Dashboard</span>
             <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-xs" title="Dashboard Overview">
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-xs" title="Monitoring Stok Kemas">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">space_dashboard</span>
-            <span class="sidebar-text truncate">Dashboard Overview</span>
+            <span class="sidebar-text truncate">Monitoring Stok</span>
+          </button>
+
+          <button onclick="switchAdminTab('counting_progress')" id="nav-counting_progress" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Live Progress Counting Dynamic & Opname">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-emerald-600">donut_large</span>
+              <span class="sidebar-text truncate">Progress Counting</span>
+            </div>
+            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse">Live</span>
           </button>
         </div>
       </div>
@@ -794,6 +803,173 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
             </div>
 
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ================= 1.B TAB: DASHBOARD PROGRESS COUNTING (DYNAMIC COUNT & STOCK OPNAME) ================= -->
+      <div id="tab-counting_progress" class="hidden space-y-4">
+
+        <!-- Header / Filter Toolbar -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2.5 flex-1">
+            <!-- Filter Tipe Counting -->
+            <div class="flex items-center gap-1.5 min-w-[200px]">
+              <span class="material-symbols-outlined text-emerald-600 text-[19px] shrink-0">filter_alt</span>
+              <select id="cpFilterType" onchange="loadCountingProgressDashboard()" class="w-full h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-600 focus:bg-white cursor-pointer transition-colors">
+                <option value="ALL">Semua Tipe (Dynamic & Opname)</option>
+                <option value="DYNAMIC_COUNT">Hanya Dynamic Count</option>
+                <option value="STOCK_OPNAME">Hanya Stock Opname</option>
+              </select>
+            </div>
+
+            <!-- Filter Status Sesi -->
+            <select id="cpFilterStatus" onchange="loadCountingProgressDashboard()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600">
+              <option value="ACTIVE">Sesi Aktif (Berjalan / Recount)</option>
+              <option value="ALL">Semua Status (Aktif & Selesai)</option>
+              <option value="COMPLETED">Hanya Selesai (Completed)</option>
+            </select>
+
+            <!-- Date Filter -->
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
+              <input type="text" id="cpFilterDate" placeholder="Filter Tanggal..." class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600 focus:bg-white" title="Filter Tanggal Sesi">
+            </div>
+
+            <button type="button" onclick="loadCountingProgressDashboard()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data Progress">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <!-- Quick Navigation Actions -->
+          <div class="flex items-center gap-2 shrink-0">
+            <button type="button" onclick="switchAdminTab('dynamic_count')" class="h-[38px] px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Modul Dynamic Count">
+              <span class="material-symbols-outlined text-[17px]">checklist</span>
+              <span>Dynamic Count</span>
+            </button>
+            <button type="button" onclick="switchAdminTab('opname')" class="h-[38px] px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Modul Stock Opname">
+              <span class="material-symbols-outlined text-[17px]">fact_check</span>
+              <span>Stock Opname</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Top Executive KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <!-- 1. Overall Completion % -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Total Progres Fisik</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">donut_large</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-baseline gap-2">
+                <span id="cpKpiOverallPct" class="text-2xl font-black text-emerald-800">0%</span>
+                <span id="cpKpiItemRatio" class="text-xs text-slate-500 font-semibold">(0 / 0 SKU)</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-slate-200/60">
+                <div id="cpKpiProgressBar" class="bg-emerald-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Active Sessions -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Sesi Aktif Berjalan</span>
+              <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">sync</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div id="cpKpiActiveSessions" class="text-2xl font-black text-blue-900">0 Sesi</div>
+              <div class="flex items-center gap-2 mt-1 text-[10px] font-semibold text-slate-500">
+                <span id="cpKpiDynamicActive" class="text-indigo-700 font-bold">0 Dynamic</span>
+                <span>&bull;</span>
+                <span id="cpKpiOpnameActive" class="text-teal-700 font-bold">0 Opname</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Total Physical Qty Counted -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Total Qty Dihitung</span>
+              <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">pin</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div id="cpKpiTotalQty" class="text-2xl font-black text-purple-900">0 Pcs</div>
+              <div class="text-[10px] text-slate-500 font-medium mt-1">Akumulasi seluruh hitungan fisik</div>
+            </div>
+          </div>
+
+          <!-- 4. Variance / Selisih Alerts -->
+          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-bold text-slate-400">Item Selisih (Varians)</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div id="cpKpiVarianceItems" class="text-2xl font-black text-amber-800">0 SKU</div>
+              <div class="text-[10px] text-slate-500 font-medium mt-1">Memerlukan recount / penyesuaian</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Middle Section: Live Sessions Cards & Leaderboard -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          
+          <!-- Left: Live Active & Completed Counting Sessions Grid (8 Cols) -->
+          <div class="lg:col-span-8 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-800">Live Progress per Dokumen Sesi</h3>
+              </div>
+              <span id="cpLiveSessionCount" class="text-xs font-bold text-slate-500">0 Dokumen Terdaftar</span>
+            </div>
+
+            <!-- Session Cards Container -->
+            <div id="cpSessionsContainer" class="space-y-3">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
+          <!-- Right: Operator Leaderboard & Activity (4 Cols) -->
+          <div class="lg:col-span-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-amber-500 text-[18px]">military_tech</span>
+                <span>Top PIC Operator Hitung</span>
+              </h3>
+            </div>
+
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-3 overflow-hidden">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                  <thead class="text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-100 pb-2">
+                    <tr>
+                      <th class="py-2 pl-1 w-8">#</th>
+                      <th class="py-2">Operator</th>
+                      <th class="py-2 text-right font-mono">SKU</th>
+                      <th class="py-2 text-right font-mono">Qty (Pcs)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cpLeaderboardTableBody" class="divide-y divide-slate-100 font-medium">
+                    <!-- Rendered via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
         </div>

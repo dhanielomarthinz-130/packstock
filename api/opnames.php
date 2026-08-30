@@ -574,6 +574,138 @@ if ($action === 'list_counting_details') {
 }
 
 // =========================================================================
+// 1.C COUNTING PROGRESS DASHBOARD SUMMARY (DYNAMIC COUNT & STOCK OPNAME)
+// =========================================================================
+if ($action === 'counting_progress_summary') {
+    $type = trim($_GET['type'] ?? 'ALL'); // ALL, DYNAMIC_COUNT, STOCK_OPNAME
+    $status = trim($_GET['status'] ?? 'ALL'); // ALL, ACTIVE, COMPLETED
+    $date = trim($_GET['date'] ?? '');
+
+    $where = ["1=1"];
+    $params = [];
+
+    if ($type !== 'ALL') {
+        $where[] = "so.counting_type = ?";
+        $params[] = $type;
+    }
+
+    if ($status === 'ACTIVE') {
+        $where[] = "so.status IN ('OPEN', 'COUNTING', 'RECOUNTING')";
+    } elseif ($status === 'COMPLETED') {
+        $where[] = "so.status = 'COMPLETED'";
+    }
+
+    if (!empty($date)) {
+        $where[] = "DATE(so.created_at) = ?";
+        $params[] = $date;
+    }
+
+    $whereSql = implode(" AND ", $where);
+
+    // Fetch sessions with stage breakdown
+    $stmt = $pdo->prepare("
+        SELECT so.*,
+               u.name as creator_name,
+               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id) as total_items,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 1) as stage_1_counted,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 2) as stage_2_counted,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number >= 3) as stage_3_counted,
+               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id AND (soi.difference IS NOT NULL AND soi.difference != 0)) as variance_items_count,
+               (SELECT SUM(st.count_qty) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.count_qty IS NOT NULL) as total_counted_qty
+        FROM stock_opnames so
+        LEFT JOIN users u ON so.created_by = u.id
+        WHERE {$whereSql}
+        ORDER BY CASE WHEN so.status IN ('COUNTING', 'RECOUNTING', 'OPEN') THEN 0 ELSE 1 END, so.id DESC
+    ");
+    $stmt->execute($params);
+    $sessions = $stmt->fetchAll();
+
+    $overallTotalItems = 0;
+    $overallCountedItems = 0;
+    $overallQty = 0;
+    $totalActiveSessions = 0;
+    $totalCompletedSessions = 0;
+    $activeDynamicCount = 0;
+    $activeStockOpname = 0;
+    $totalVarianceCount = 0;
+
+    foreach ($sessions as &$s) {
+        $s['id'] = (int)$s['id'];
+        $s['total_items'] = (int)$s['total_items'];
+        $s['max_stage'] = (int)$s['max_stage'];
+        $s['stage_1_counted'] = (int)$s['stage_1_counted'];
+        $s['stage_2_counted'] = (int)$s['stage_2_counted'];
+        $s['stage_3_counted'] = (int)$s['stage_3_counted'];
+        $s['variance_items_count'] = (int)$s['variance_items_count'];
+        $s['total_counted_qty'] = (float)($s['total_counted_qty'] ?? 0);
+
+        // Calculate progress percentage
+        $progressPct = 0;
+        if ($s['total_items'] > 0) {
+            $progressPct = round(($s['stage_1_counted'] / $s['total_items']) * 100, 1);
+            if ($progressPct > 100) $progressPct = 100;
+        }
+        $s['progress_pct'] = $progressPct;
+
+        $overallTotalItems += $s['total_items'];
+        $overallCountedItems += $s['stage_1_counted'];
+        $overallQty += $s['total_counted_qty'];
+        $totalVarianceCount += $s['variance_items_count'];
+
+        $isActive = in_array($s['status'], ['OPEN', 'COUNTING', 'RECOUNTING']);
+        if ($isActive) {
+            $totalActiveSessions++;
+            if ($s['counting_type'] === 'DYNAMIC_COUNT') $activeDynamicCount++;
+            else $activeStockOpname++;
+        } elseif ($s['status'] === 'COMPLETED') {
+            $totalCompletedSessions++;
+        }
+    }
+    unset($s);
+
+    $overallPct = $overallTotalItems > 0 ? round(($overallCountedItems / $overallTotalItems) * 100, 1) : 0;
+
+    // Leaderboard of operators
+    $stmtLeaderboard = $pdo->prepare("
+        SELECT u.id as operator_id,
+               u.name as operator_name,
+               u.username as operator_username,
+               u.shift as operator_shift,
+               COUNT(DISTINCT st.item_id) as total_items_counted,
+               SUM(st.count_qty) as total_qty_counted,
+               COUNT(st.id) as total_scan_actions,
+               MAX(COALESCE(st.counted_at, st.created_at)) as last_active
+        FROM stock_opname_item_stages st
+        JOIN users u ON st.assigned_to = u.id
+        WHERE st.status = 'COUNTED'
+        GROUP BY u.id, u.name, u.username, u.shift
+        ORDER BY total_items_counted DESC, total_qty_counted DESC
+        LIMIT 10
+    ");
+    $stmtLeaderboard->execute();
+    $leaderboard = $stmtLeaderboard->fetchAll();
+
+    echo json_encode([
+        'success' => true,
+        'sessions' => $sessions,
+        'kpi' => [
+            'total_sessions' => count($sessions),
+            'active_sessions' => $totalActiveSessions,
+            'completed_sessions' => $totalCompletedSessions,
+            'active_dynamic_count' => $activeDynamicCount,
+            'active_stock_opname' => $activeStockOpname,
+            'overall_total_items' => $overallTotalItems,
+            'overall_counted_items' => $overallCountedItems,
+            'overall_progress_pct' => $overallPct,
+            'overall_total_qty' => $overallQty,
+            'total_variance_count' => $totalVarianceCount
+        ],
+        'leaderboard' => $leaderboard
+    ]);
+    exit;
+}
+
+// =========================================================================
 // 2. GET SINGLE OPNAME DETAIL WITH DYNAMIC STAGE MATRIX
 // =========================================================================
 if ($action === 'get') {

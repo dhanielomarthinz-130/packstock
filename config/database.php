@@ -473,6 +473,7 @@ class Database {
         // Seed default menu permissions
         $defaultMenus = [
             'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
+            'counting_progress'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
             'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
             'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
             'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
