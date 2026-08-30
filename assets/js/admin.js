@@ -5196,7 +5196,7 @@ function loadOpnames() {
   loadOpnameMatrix();
 }
 
-function openCreateStockOpnameModal() {
+async function openCreateStockOpnameModal() {
   const form = document.getElementById('formCreateStockOpname');
   if (form) form.reset();
 
@@ -5212,8 +5212,18 @@ function openCreateStockOpnameModal() {
 
   const catSelect = document.getElementById('createOpnameCategorySelect');
   if (catSelect) {
-    const cats = [...new Set(allMaterials.map(m => m.category).filter(Boolean))];
-    catSelect.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    catSelect.innerHTML = '<option value="">Memuat Kategori...</option>';
+    try {
+      const res = await App.fetchJson('../api/materials.php?action=categories');
+      if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+        catSelect.innerHTML = res.data.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+      } else {
+        catSelect.innerHTML = '<option value="">(Belum ada kategori terdaftar)</option>';
+      }
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      catSelect.innerHTML = '<option value="">Semua Kategori</option>';
+    }
   }
 
   toggleOpnameScopeFilter();

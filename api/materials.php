@@ -7,6 +7,14 @@ Auth::requireLogin();
 $pdo = Database::getConnection();
 $action = $_GET['action'] ?? 'list';
 
+// 0. GET DISTINCT CATEGORIES
+if ($action === 'categories') {
+    $stmt = $pdo->query("SELECT DISTINCT category FROM materials WHERE category IS NOT NULL AND TRIM(category) != '' ORDER BY category ASC");
+    $categories = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    echo json_encode(['success' => true, 'data' => $categories]);
+    exit;
+}
+
 // 1. LIST MATERIALS WITH DYNAMIC STOCK CALCULATION FORMULA:
 // Ending Stock = (Stok Awal Upload Excel) + (Total Masuk) - (Total Keluar)
 if ($action === 'list') {
