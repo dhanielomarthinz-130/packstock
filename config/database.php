@@ -306,6 +306,9 @@ class Database {
                 qty INTEGER NOT NULL,
                 received_by TEXT NOT NULL,
                 notes TEXT,
+                started_at DATETIME NULL,
+                completed_at DATETIME NULL,
+                duration_seconds INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS outbound_transactions (
@@ -317,6 +320,9 @@ class Database {
                 issued_by TEXT NOT NULL,
                 reason TEXT NOT NULL,
                 notes TEXT,
+                started_at DATETIME NULL,
+                completed_at DATETIME NULL,
+                duration_seconds INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS tasks (
@@ -332,7 +338,9 @@ class Database {
                 status TEXT DEFAULT 'PENDING',
                 notes TEXT,
                 completion_notes TEXT,
+                started_at DATETIME NULL,
                 completed_at DATETIME NULL,
+                duration_seconds INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS stock_mutations (
@@ -395,6 +403,29 @@ class Database {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
         ");
+
+        // Schema migrations for SQLite
+        $sqliteMigrations = [
+            "ALTER TABLE tasks ADD COLUMN started_at DATETIME NULL",
+            "ALTER TABLE tasks ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE inbound_transactions ADD COLUMN started_at DATETIME NULL",
+            "ALTER TABLE inbound_transactions ADD COLUMN completed_at DATETIME NULL",
+            "ALTER TABLE inbound_transactions ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE outbound_transactions ADD COLUMN started_at DATETIME NULL",
+            "ALTER TABLE outbound_transactions ADD COLUMN completed_at DATETIME NULL",
+            "ALTER TABLE outbound_transactions ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE stock_opnames ADD COLUMN counting_type TEXT DEFAULT 'STOCK_OPNAME'",
+            "ALTER TABLE stock_opnames ADD COLUMN max_stage INTEGER DEFAULT 1",
+            "ALTER TABLE stock_opname_item_stages ADD COLUMN scanned_rack TEXT NULL"
+        ];
+
+        foreach ($sqliteMigrations as $sql) {
+            try {
+                $pdo->exec($sql);
+            } catch (Throwable $e) {
+                // Column already exists
+            }
+        }
 
         self::seedDefaultData($pdo);
     }

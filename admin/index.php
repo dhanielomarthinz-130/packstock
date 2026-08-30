@@ -236,8 +236,8 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- CONTENT BODY (SCROLLABLE) -->
     <div class="flex-1 overflow-y-auto p-6 space-y-5">
 
-      <!-- ================= 1. TAB: DASHBOARD (TABEL RINGKASAN & ADJUSTMENT PER TANGGAL / WEEK) ================= -->
-      <div id="tab-dashboard" class="space-y-4">
+      <!-- ================= 1. TAB: DASHBOARD (OVERVIEW, TOP 10 CHARTS & TABLES, RINGKASAN STOK) ================= -->
+      <div id="tab-dashboard" class="space-y-5">
         
         <!-- Filter & Control Toolbar -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
@@ -255,15 +255,19 @@ require_once __DIR__ . '/../includes/header.php';
               <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
                 <button type="button" id="btnDashFilterDate" onclick="setDashboardFilterType('date')" 
                   class="py-1.5 px-3 rounded-lg bg-emerald-600 text-white shadow-2xs transition-all">
-                  📅 Harian (Tanggal)
+                  📅 Harian
                 </button>
                 <button type="button" id="btnDashFilterWeek" onclick="setDashboardFilterType('week')" 
                   class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-                  📆 Mingguan (Week)
+                  📆 Mingguan
                 </button>
                 <button type="button" id="btnDashFilterMonth" onclick="setDashboardFilterType('month')" 
                   class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
                   📊 Bulanan
+                </button>
+                <button type="button" id="btnDashFilterAll" onclick="setDashboardFilterType('all')" 
+                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                  🌐 Semua Waktu
                 </button>
               </div>
             </div>
@@ -346,93 +350,369 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- Bottom Row: Search, Category & Status Filter -->
+          <!-- Bottom Row: Active Period & Sub Info -->
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-2 flex-1">
-              <!-- Search -->
-              <div class="relative flex-1 min-w-[200px] max-w-sm">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
-                  <span class="material-symbols-outlined text-[18px]">search</span>
-                </span>
-                <input type="text" id="dashSearchInput" oninput="renderDashboardTable()" placeholder="Cari Item No, Deskripsi, Rak..." 
-                  class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
+            <div class="flex items-center gap-2">
+              <div class="inline-flex items-center gap-2 px-3 h-[34px] bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                <span id="dashActivePeriodBadge">Memuat Periode...</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= GRAND SUMMARY KPI CARDS (5 INTERACTIVE MODULES) ================= -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          
+          <!-- 1. SISA STOK TOTAL (Clickable -> Master Stok Inventory) -->
+          <div onclick="navigateFromDashboard('inventory')" title="Klik untuk membuka Master Stok Kemas" 
+            class="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white p-4 rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 group-hover:text-white transition-colors">Sisa Stok Total</span>
+              <span class="material-symbols-outlined text-emerald-300 text-[22px] group-hover:rotate-12 transition-transform">inventory_2</span>
+            </div>
+            <div class="mt-2">
+              <p id="dashKpiTotalStockUnits" class="text-xl lg:text-2xl font-black tracking-tight text-white">0</p>
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-[10px] text-emerald-200 font-medium">Seluruh fisik gudang</span>
+                <span class="material-symbols-outlined text-[14px] text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. TOTAL BARANG MASUK (+) (Clickable -> Inbound Tab with Date Filter) -->
+          <div onclick="navigateFromDashboard('inbound')" title="Klik untuk membuka Riwayat Barang Masuk sesuai tanggal" 
+            class="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">Barang Masuk (+)</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <p id="dashKpiTotalInbound" class="text-xl lg:text-2xl font-black tracking-tight text-emerald-700">0</p>
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-[10px] text-emerald-600 font-medium">Penerimaan periode ini</span>
+                <span class="material-symbols-outlined text-[14px] text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. TOTAL BARANG KELUAR (-) (Clickable -> Outbound Tab with Date Filter) -->
+          <div onclick="navigateFromDashboard('outbound')" title="Klik untuk membuka Riwayat Barang Keluar sesuai tanggal" 
+            class="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-rose-800">Barang Keluar (-)</span>
+              <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[18px]">outbox</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <p id="dashKpiTotalOutbound" class="text-xl lg:text-2xl font-black tracking-tight text-rose-700">0</p>
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-[10px] text-rose-600 font-medium">Pengeluaran periode ini</span>
+                <span class="material-symbols-outlined text-[14px] text-rose-700 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. TOTAL ADJUSTMENT (+/-) (Clickable -> Adjust -> Riwayat Penyesuaian with Date Filter) -->
+          <div onclick="navigateFromDashboard('adjust')" title="Klik untuk membuka Tab Riwayat Penyesuaian Stok (Adjust)" 
+            class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Adjustment (+/-)</span>
+              <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[18px]">tune</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <p id="dashKpiTotalAdjustment" class="text-xl lg:text-2xl font-black tracking-tight text-blue-700">0</p>
+              <div class="flex items-center justify-between mt-0.5">
+                <span id="dashKpiAdjSubtext" class="text-[10px] text-blue-600 font-medium">Penyesuaian stok</span>
+                <span class="material-symbols-outlined text-[14px] text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. STOK KRITIS / MENIPIS (Clickable -> Inventory with Low Stock Filter) -->
+          <div onclick="navigateFromDashboard('inventory', 'low')" title="Klik untuk memfilter SKU Stok Menipis & Habis" 
+            class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Stok Kritis</span>
+              <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <p id="dashKpiCriticalStock" class="text-xl lg:text-2xl font-black tracking-tight text-amber-700">0 SKU</p>
+              <div class="flex items-center justify-between mt-0.5">
+                <span class="text-[10px] text-amber-600 font-medium">≤ Safety / Habis</span>
+                <span class="material-symbols-outlined text-[14px] text-amber-700 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= INTERACTIVE CHARTS ROW ================= -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          
+          <!-- Chart 1: Top 10 Inbound / Outbound Bar Chart (Takes 2 cols on Large) -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                  <span class="material-symbols-outlined text-emerald-600 text-[20px]">bar_chart</span>
+                  <span>Top 10 Kemas/Consumable Teraktif</span>
+                </h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Grafik ranking kuantitas barang masuk (+) vs barang keluar (-)</p>
               </div>
 
-              <!-- Filter Category -->
-              <select id="dashCategoryFilter" onchange="renderDashboardTable()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
-                <option value="all">Semua Kategori</option>
-              </select>
-
-              <!-- Filter Activity / Status -->
-              <select id="dashStatusFilter" onchange="renderDashboardTable()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none">
-                <option value="all">Semua Material</option>
-                <option value="activity_only">Hanya Yang Ada Pergerakan / Adjust</option>
-                <option value="adjusted_only">Hanya Yang Ada Adjustment (+/-)</option>
-                <option value="low">Stok Menipis (≤ Safety Stock)</option>
-                <option value="empty">Stok Habis (0 Stock)</option>
-                <option value="safe">Stok Aman</option>
-              </select>
+              <!-- Chart Switcher Tabs -->
+              <div class="inline-flex p-1 bg-slate-100 rounded-lg text-xs font-bold">
+                <button type="button" id="btnChartTabIn" onclick="switchDashboardChart('inbound')" 
+                  class="py-1 px-3 rounded-md bg-emerald-600 text-white shadow-2xs transition-all">
+                  Top 10 Masuk
+                </button>
+                <button type="button" id="btnChartTabOut" onclick="switchDashboardChart('outbound')" 
+                  class="py-1 px-3 rounded-md text-slate-600 hover:text-slate-900 transition-all">
+                  Top 10 Keluar
+                </button>
+              </div>
             </div>
 
-            <!-- Active Period Badge Indicator -->
-            <div class="inline-flex items-center gap-2 px-3 h-[38px] bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold shrink-0">
-              <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-              <span id="dashActivePeriodBadge">Memuat Periode...</span>
+            <!-- Canvas Chart Container -->
+            <div class="relative w-full min-h-[330px] h-[340px] mt-4">
+              <canvas id="dashBarChartCanvas"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 2: Category Distribution Doughnut Chart -->
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div class="border-b border-slate-100 pb-3">
+              <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 text-[20px]">donut_small</span>
+                <span>Komposisi Stok per Kategori</span>
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Persentase distribusi fisik stok Kemas/Consumable</p>
+            </div>
+
+            <!-- Doughnut Canvas -->
+            <div class="relative w-full h-[175px] mt-1 flex items-center justify-center">
+              <canvas id="dashCategoryChartCanvas"></canvas>
+            </div>
+
+            <!-- Legend summary list (No scroll, all items displayed directly) -->
+            <div id="dashCategoryLegendList" class="mt-3 grid grid-cols-2 gap-1.5 text-[11px]"></div>
+          </div>
+
+        </div>
+
+        <!-- ================= TOP 10 DATA TABLES (BARANG MASUK & BARANG KELUAR) ================= -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          
+          <!-- TABLE 1: TOP 10 BARANG MASUK -->
+          <div class="bg-white rounded-xl border border-emerald-200/80 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 bg-emerald-50/60 border-b border-emerald-100 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                  <span class="material-symbols-outlined text-[18px]">move_to_inbox</span>
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold text-emerald-950 uppercase tracking-wide">Top 10 Barang Masuk (Inbound)</h4>
+                  <p class="text-[11px] text-emerald-700 font-medium">Kemas/Consumable paling banyak diterima ke gudang</p>
+                </div>
+              </div>
+              <span id="dashTopInboundBadge" class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-2xs">0 Masuk</span>
+            </div>
+
+            <div class="overflow-x-auto flex-1 max-h-[360px] overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="sticky top-0 bg-slate-100 text-slate-600 text-[10px] font-extrabold uppercase tracking-wider border-b border-slate-200 z-10">
+                  <tr>
+                    <th class="p-2.5 text-center w-10">Rank</th>
+                    <th class="p-2.5 w-28">Item No</th>
+                    <th class="p-2.5">Deskripsi Material</th>
+                    <th class="p-2.5 text-right font-mono font-bold text-emerald-800">Total Masuk</th>
+                    <th class="p-2.5 text-center w-14">Tx</th>
+                    <th class="p-2.5 text-right font-mono font-bold text-slate-700">Sisa Stok</th>
+                  </tr>
+                </thead>
+                <tbody id="dashTopInboundTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- TABLE 2: TOP 10 BARANG KELUAR -->
+          <div class="bg-white rounded-xl border border-rose-200/80 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 bg-rose-50/60 border-b border-rose-100 flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shadow-xs">
+                  <span class="material-symbols-outlined text-[18px]">outbox</span>
+                </div>
+                <div>
+                  <h4 class="text-xs font-extrabold text-rose-950 uppercase tracking-wide">Top 10 Barang Keluar (Outbound)</h4>
+                  <p class="text-[11px] text-rose-700 font-medium">Kemas/Consumable paling banyak dikeluarkan dari gudang</p>
+                </div>
+              </div>
+              <span id="dashTopOutboundBadge" class="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-600 text-white shadow-2xs">0 Keluar</span>
+            </div>
+
+            <div class="overflow-x-auto flex-1 max-h-[360px] overflow-y-auto">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="sticky top-0 bg-slate-100 text-slate-600 text-[10px] font-extrabold uppercase tracking-wider border-b border-slate-200 z-10">
+                  <tr>
+                    <th class="p-2.5 text-center w-10">Rank</th>
+                    <th class="p-2.5 w-28">Item No</th>
+                    <th class="p-2.5">Deskripsi Material</th>
+                    <th class="p-2.5 text-right font-mono font-bold text-rose-800">Total Keluar</th>
+                    <th class="p-2.5 text-center w-14">Tx</th>
+                    <th class="p-2.5 text-right font-mono font-bold text-slate-700">Sisa Stok</th>
+                  </tr>
+                </thead>
+                <tbody id="dashTopOutboundTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+              </table>
             </div>
           </div>
 
         </div>
 
-        <!-- Summary KPI Mini-Strip -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Material</span>
-            <p id="dashKpiTotalSku" class="text-base font-extrabold text-slate-900 mt-0.5">0 SKU</p>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stok Awal Total</span>
-            <p id="dashKpiBeginningStock" class="text-base font-extrabold text-slate-700 mt-0.5">0</p>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs">
-            <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Barang Masuk (+)</span>
-            <p id="dashKpiTotalInbound" class="text-base font-extrabold text-emerald-700 mt-0.5">0</p>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs">
-            <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Barang Keluar (-)</span>
-            <p id="dashKpiTotalOutbound" class="text-base font-extrabold text-amber-700 mt-0.5">0</p>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs">
-            <span class="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">Adjustment (+/-)</span>
-            <p id="dashKpiTotalAdjustment" class="text-base font-extrabold text-blue-700 mt-0.5">0</p>
-          </div>
-          <div class="bg-white p-3 rounded-xl border border-slate-300 bg-slate-50/80 shadow-2xs">
-            <span class="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">Stok Akhir Total</span>
-            <p id="dashKpiEndingStock" class="text-base font-black text-slate-900 mt-0.5">0</p>
-          </div>
-        </div>
+        <!-- ================= MODUL KPI PROSES & PRODUKTIVITAS OPERATOR ================= -->
+        <div class="space-y-4 pt-2">
+          
+          <!-- Header Modul KPI Operator -->
+          <div class="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shadow-2xs">
+                <span class="material-symbols-outlined text-[19px]">badge</span>
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold text-slate-900 leading-tight">KPI Proses & Produktivitas Operator</h3>
+                <p class="text-[11px] text-slate-400 font-medium">Monitoring performa pengerjaan task picking, durasi kerja, dan produktivitas operator</p>
+              </div>
+            </div>
 
-        <!-- Main Stock Summary & Adjustment Data Table -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead class="sticky top-0 thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700 z-10">
-                <tr>
-                  <th class="p-3 text-center w-12 border-r border-white/20">No</th>
-                  <th class="p-3 w-36 border-r border-white/20">Item No</th>
-                  <th class="p-3 border-r border-white/20">Deskripsi Kemas</th>
-                  <th class="p-3 text-center w-20 border-r border-white/20">Satuan</th>
-                  <th class="p-3 w-28 border-r border-white/20">Lokasi Rak</th>
-                  <th class="p-3 text-center w-24 border-r border-white/20 font-mono">Stok Awal</th>
-                  <th class="p-3 text-center w-24 border-r border-white/20 font-mono font-bold">Masuk (+)</th>
-                  <th class="p-3 text-center w-24 border-r border-white/20 font-mono font-bold">Keluar (-)</th>
-                  <th class="p-3 text-center w-28 border-r border-white/20 font-mono font-bold">Adjust (+/-)</th>
-                  <th class="p-3 text-center w-28 font-mono font-black border-r border-white/20">Stok Akhir</th>
-                  <th class="p-3 text-center w-24">Status</th>
-                </tr>
-              </thead>
-              <tbody id="dashboardStockSummaryTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
-            </table>
+            <button type="button" onclick="switchAdminTab('tasks')" 
+              class="h-[34px] px-3.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Manajemen Penugasan Operator">
+              <span class="material-symbols-outlined text-[17px]">assignment</span>
+              <span>Kelola Penugasan</span>
+            </button>
           </div>
+
+          <!-- 4 Kartu Metrik KPI Operator -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <!-- 1. Tingkat Penyelesaian Task -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Penyelesaian Task</span>
+                <span class="material-symbols-outlined text-emerald-600 text-[20px]">task_alt</span>
+              </div>
+              <div class="mt-2">
+                <div class="flex items-baseline gap-1.5">
+                  <p id="dashKpiOpRate" class="text-xl lg:text-2xl font-black text-emerald-700">0%</p>
+                  <span id="dashKpiOpCompletedRatio" class="text-[11px] text-slate-400 font-semibold">(0/0 Selesai)</span>
+                </div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
+                  <div id="dashKpiOpProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Task On-Proses -->
+            <div class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Sedang Dikerjakan</span>
+                <span class="material-symbols-outlined text-amber-600 text-[20px] animate-spin">sync</span>
+              </div>
+              <div class="mt-2">
+                <p id="dashKpiOpInProgress" class="text-xl lg:text-2xl font-black text-amber-700">0 Task</p>
+                <p class="text-[10px] text-amber-600 font-medium mt-0.5">Dalam proses picking di rak</p>
+              </div>
+            </div>
+
+            <!-- 3. Antrean / Menunggu -->
+            <div class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Antrean / Menunggu</span>
+                <span class="material-symbols-outlined text-blue-600 text-[20px]">pending_actions</span>
+              </div>
+              <div class="mt-2">
+                <p id="dashKpiOpPending" class="text-xl lg:text-2xl font-black text-blue-700">0 Task</p>
+                <p class="text-[10px] text-blue-600 font-medium mt-0.5">Menunggu diambil operator</p>
+              </div>
+            </div>
+
+            <!-- 4. Rata-rata Durasi Picking -->
+            <div class="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/20 shadow-2xs flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">Rata-rata Durasi</span>
+                <span class="material-symbols-outlined text-indigo-600 text-[20px]">timer</span>
+              </div>
+              <div class="mt-2">
+                <p id="dashKpiOpAvgDuration" class="text-xl lg:text-2xl font-black text-indigo-900 font-mono">00:00</p>
+                <p class="text-[10px] text-indigo-600 font-medium mt-0.5">Waktu pengerjaan per task</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Leaderboard Operator & Realtime Task Stream Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            
+            <!-- Leaderboard Kinerja Operator -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-indigo-600 text-[18px]">leaderboard</span>
+                  <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Peringkat Produktivitas Operator</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-medium">Berdasarkan task selesai</span>
+              </div>
+
+              <div class="overflow-x-auto flex-1 max-h-[280px] overflow-y-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead class="sticky top-0 bg-slate-100 text-slate-600 text-[10px] font-extrabold uppercase tracking-wider border-b border-slate-200 z-10">
+                    <tr>
+                      <th class="p-2.5 text-center w-10">Rank</th>
+                      <th class="p-2.5">Nama Operator</th>
+                      <th class="p-2.5 text-center w-24">Task Selesai</th>
+                      <th class="p-2.5 text-right font-mono font-bold text-slate-800">Total Qty Kemas</th>
+                      <th class="p-2.5 text-center font-mono w-24">Avg Waktu</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashOpLeaderboardBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Feed Status Pengerjaan Task Terkini -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+              <div class="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-amber-600 text-[18px]">stream</span>
+                  <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Status Antrean & Progress Penugasan</span>
+                </div>
+                <span class="text-[10px] text-slate-400 font-medium">Real-time task feed</span>
+              </div>
+
+              <div class="overflow-x-auto flex-1 max-h-[280px] overflow-y-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead class="sticky top-0 bg-slate-100 text-slate-600 text-[10px] font-extrabold uppercase tracking-wider border-b border-slate-200 z-10">
+                    <tr>
+                      <th class="p-2.5 w-24">No. Task</th>
+                      <th class="p-2.5">Kemas & Rak</th>
+                      <th class="p-2.5 text-center font-mono w-20">Target</th>
+                      <th class="p-2.5 w-28">Operator PIC</th>
+                      <th class="p-2.5 text-center w-24">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashOpRecentTasksBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
       </div>
@@ -987,6 +1267,7 @@ require_once __DIR__ . '/../includes/header.php';
               <!-- Filter Status -->
               <select id="directAdjustFilterSelect" onchange="renderDirectAdjustTable()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
                 <option value="ALL">Semua Material</option>
+                <option value="IMPORTED">Hanya Dari File Excel (Import)</option>
                 <option value="ADJUSTED_ONLY">Hanya Yang Ada Adjust (+/-)</option>
                 <option value="PLUS">Hanya Plus (+ Tambah)</option>
                 <option value="MINUS">Hanya Minus (- Potong)</option>

@@ -56,6 +56,9 @@ $baseUrl = Auth::getBaseUrl();
   <!-- SheetJS (xlsx) for fast client-side Excel reading & export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <!-- Chart.js for High Performance Interactive Dashboard Charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
   <!-- Flatpickr (Modern Date & Time Picker UI) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

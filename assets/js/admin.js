@@ -245,10 +245,16 @@ function switchAdminTab(tabName, updateUrl = true) {
   setTimeout(initPremiumPickers, 60);
 }
 
-// ================= 1.0 DASHBOARD STOCK SUMMARY & ADJUSTMENT TABLE =================
+// ================= 1.0 DASHBOARD STOCK SUMMARY, TOP 10 CHARTS & TABLES =================
 let currentDashFilterType = 'date';
 let dashboardStockData = [];
 let dashboardPeriodInfo = {};
+let dashboardTopInbound = [];
+let dashboardTopOutbound = [];
+let dashboardCategoryStats = [];
+let currentChartMode = 'inbound';
+let dashBarChartInstance = null;
+let dashCategoryChartInstance = null;
 
 function setDashboardFilterType(type) {
   currentDashFilterType = type;
@@ -256,6 +262,7 @@ function setDashboardFilterType(type) {
   const btnDate = document.getElementById('btnDashFilterDate');
   const btnWeek = document.getElementById('btnDashFilterWeek');
   const btnMonth = document.getElementById('btnDashFilterMonth');
+  const btnAll = document.getElementById('btnDashFilterAll');
 
   const containerDate = document.getElementById('dashFilterDateContainer');
   const containerWeek = document.getElementById('dashFilterWeekContainer');
@@ -267,6 +274,7 @@ function setDashboardFilterType(type) {
   if (btnDate) btnDate.className = type === 'date' ? activeClass : inactiveClass;
   if (btnWeek) btnWeek.className = type === 'week' ? activeClass : inactiveClass;
   if (btnMonth) btnMonth.className = type === 'month' ? activeClass : inactiveClass;
+  if (btnAll) btnAll.className = type === 'all' ? activeClass : inactiveClass;
 
   if (containerDate) containerDate.className = type === 'date' ? 'flex items-center gap-2' : 'hidden';
   if (containerWeek) containerWeek.className = type === 'week' ? 'flex items-center gap-2 flex-wrap' : 'hidden';
@@ -304,7 +312,6 @@ function updateDashWeekOptions() {
     <option value="4">Week 4 (22 - 28 ${mStr})</option>
     <option value="5">Week 5 (29 - ${lastDay} ${mStr})</option>
   `;
-  // Default to current week based on date
   const todayDate = new Date().getDate();
   let defaultWeek = 1;
   if (todayDate > 28) defaultWeek = 5;
@@ -321,7 +328,7 @@ async function loadDashboardStockSummary() {
       <tr>
         <td colspan="11" class="p-8 text-center text-slate-400">
           <span class="material-symbols-outlined text-[28px] animate-spin text-emerald-600">progress_activity</span>
-          <p class="text-xs font-semibold text-slate-600 mt-2">Memuat data ringkasan stok & penyesuaian...</p>
+          <p class="text-xs font-semibold text-slate-600 mt-2">Memuat ringkasan stok, top 10 & visualisasi grafik...</p>
         </td>
       </tr>
     `;
@@ -353,31 +360,67 @@ async function loadDashboardStockSummary() {
   if (res.success) {
     dashboardStockData = res.data || [];
     dashboardPeriodInfo = res.period || {};
+    dashboardTopInbound = res.top_inbound || [];
+    dashboardTopOutbound = res.top_outbound || [];
+    dashboardCategoryStats = res.category_stats || [];
     const sum = res.summary || {};
 
     const elPeriod = document.getElementById('dashActivePeriodBadge');
     if (elPeriod) elPeriod.innerText = dashboardPeriodInfo.label || 'Periode Aktif';
 
-    const elTotalSku = document.getElementById('dashKpiTotalSku');
+    // Grand KPI Cards
+    const elStockUnits = document.getElementById('dashKpiTotalStockUnits');
     const elIn = document.getElementById('dashKpiTotalInbound');
     const elOut = document.getElementById('dashKpiTotalOutbound');
     const elAdj = document.getElementById('dashKpiTotalAdjustment');
-    const elEnd = document.getElementById('dashKpiEndingStock');
-    const elBeg = document.getElementById('dashKpiBeginningStock');
+    const elAdjSub = document.getElementById('dashKpiAdjSubtext');
+    const elNet = document.getElementById('dashKpiNetFlow');
+    const elCrit = document.getElementById('dashKpiCriticalStock');
 
-    if (elTotalSku) elTotalSku.innerText = `${App.formatNumber(sum.total_sku || 0)} SKU`;
+    const totalStockDisplay = sum.total_warehouse_stock !== undefined ? sum.total_warehouse_stock : sum.total_ending_stock;
+    if (elStockUnits) elStockUnits.innerText = `${App.formatNumber(totalStockDisplay || 0)} Pcs`;
     if (elIn) elIn.innerText = `+${App.formatNumber(sum.total_inbound || 0)}`;
     if (elOut) elOut.innerText = `-${App.formatNumber(sum.total_outbound || 0)}`;
+    
     if (elAdj) {
       const adjVal = sum.total_adjustment || 0;
-      elAdj.innerText = `${adjVal > 0 ? '+' : ''}${App.formatNumber(adjVal)}`;
-    }
-    if (elEnd) elEnd.innerText = App.formatNumber(sum.total_ending_stock || 0);
-    if (elBeg) {
-      const begVal = (sum.total_ending_stock || 0) - (sum.total_inbound || 0) + (sum.total_outbound || 0) - (sum.total_adjustment || 0);
-      elBeg.innerText = App.formatNumber(begVal);
+      const prefix = adjVal > 0 ? '+' : '';
+      elAdj.innerText = `${prefix}${App.formatNumber(adjVal)}`;
+      if (adjVal > 0) elAdj.className = 'text-xl lg:text-2xl font-black tracking-tight text-blue-700';
+      else if (adjVal < 0) elAdj.className = 'text-xl lg:text-2xl font-black tracking-tight text-rose-700';
+      else elAdj.className = 'text-xl lg:text-2xl font-black tracking-tight text-slate-700';
     }
 
+    if (elAdjSub) {
+      const plusVal = sum.total_adjustment_plus || 0;
+      const minVal = Math.abs(sum.total_adjustment_minus || 0);
+      if (plusVal > 0 || minVal > 0) {
+        elAdjSub.innerText = `+${App.formatNumber(plusVal)} / -${App.formatNumber(minVal)}`;
+      } else {
+        elAdjSub.innerText = 'Tidak ada selisih';
+      }
+    }
+
+    if (elNet) {
+      const netVal = sum.net_flow !== undefined ? sum.net_flow : ((sum.total_inbound || 0) - (sum.total_outbound || 0) + (sum.total_adjustment || 0));
+      const prefix = netVal > 0 ? '+' : '';
+      elNet.innerText = `${prefix}${App.formatNumber(netVal)}`;
+      elNet.className = `text-xl lg:text-2xl font-black tracking-tight ${netVal >= 0 ? 'text-indigo-900' : 'text-rose-700'}`;
+    }
+
+    if (elCrit) elCrit.innerText = `${App.formatNumber(sum.critical_stock_count || 0)} SKU`;
+
+    // Render Charts
+    renderDashboardCharts();
+
+    // Render Top 10 Tables
+    renderDashboardTopTables();
+
+    // Render Operator Process KPIs & Leaderboard
+    dashboardOperatorKpi = res.operator_kpi || {};
+    renderDashboardOperatorKpi();
+
+    // Render Main Stock Table
     populateDashCategoryFilter();
     renderDashboardTable();
   } else {
@@ -389,6 +432,542 @@ async function loadDashboardStockSummary() {
           </td>
         </tr>
       `;
+    }
+  }
+}
+
+// ================= 1.1 DASHBOARD INTERACTIVE NAVIGATION (CONTEXT-AWARE FILTERS) =================
+function getDashboardActiveDate() {
+  if (currentDashFilterType === 'date') {
+    return document.getElementById('dashInputDate')?.value?.trim() || '';
+  }
+  return '';
+}
+
+function setFilterDateInput(selector, dateVal) {
+  const el = document.querySelector(selector);
+  if (!el) return;
+  if (el._flatpickr) {
+    if (dateVal) {
+      el._flatpickr.setDate(dateVal, false);
+    } else {
+      el._flatpickr.clear();
+    }
+  } else {
+    el.value = dateVal || '';
+  }
+}
+
+function navigateFromDashboard(targetTab, filterVal = null) {
+  if (!targetTab) return;
+  const activeDate = getDashboardActiveDate();
+
+  // 1. Switch to Target Tab View
+  switchAdminTab(targetTab);
+
+  // 2. Apply contextual filters matching the Dashboard Card
+  if (targetTab === 'inventory') {
+    setTimeout(() => {
+      const statusFilter = document.getElementById('inventoryStatusFilter');
+      const searchInput = document.getElementById('inventorySearch');
+      const catFilter = document.getElementById('inventoryCategoryFilter');
+      if (statusFilter) statusFilter.value = filterVal || 'all';
+      if (searchInput) searchInput.value = '';
+      if (catFilter) catFilter.value = 'all';
+      loadMaterials();
+    }, 60);
+  } else if (targetTab === 'inbound') {
+    setTimeout(() => {
+      setFilterDateInput('#inboundDateFilter', activeDate);
+      const searchInput = document.getElementById('inboundSearchInput');
+      if (searchInput) searchInput.value = '';
+      loadInboundHistory();
+    }, 60);
+  } else if (targetTab === 'outbound') {
+    setTimeout(() => {
+      setFilterDateInput('#outboundDateFilter', activeDate);
+      const searchInput = document.getElementById('outboundSearchInput');
+      const typeFilter = document.getElementById('outboundTypeFilter');
+      const statusFilter = document.getElementById('outboundStatusFilter');
+      if (searchInput) searchInput.value = '';
+      if (typeFilter) typeFilter.value = 'ALL';
+      if (statusFilter) statusFilter.value = 'ALL';
+      loadOutboundHistory();
+    }, 60);
+  } else if (targetTab === 'adjust') {
+    setTimeout(() => {
+      switchAdjustSubTab('history');
+      setFilterDateInput('#adjustHistoryDateFilter', activeDate);
+      const searchInput = document.getElementById('adjustHistorySearchInput');
+      if (searchInput) searchInput.value = '';
+      loadAdjustHistory();
+    }, 60);
+  }
+}
+
+// ================= 1.1 DASHBOARD CHARTS (CHART.JS) =================
+function switchDashboardChart(mode) {
+  currentChartMode = mode;
+
+  const btnIn = document.getElementById('btnChartTabIn');
+  const btnOut = document.getElementById('btnChartTabOut');
+
+  const activeInClass = 'py-1 px-3 rounded-md bg-emerald-600 text-white shadow-2xs font-bold transition-all';
+  const activeOutClass = 'py-1 px-3 rounded-md bg-rose-600 text-white shadow-2xs font-bold transition-all';
+  const inactiveClass = 'py-1 px-3 rounded-md text-slate-600 hover:text-slate-900 font-bold transition-all';
+
+  if (btnIn) btnIn.className = mode === 'inbound' ? activeInClass : inactiveClass;
+  if (btnOut) btnOut.className = mode === 'outbound' ? activeOutClass : inactiveClass;
+
+  renderDashboardBarChart();
+}
+
+function renderDashboardCharts() {
+  renderDashboardBarChart();
+  renderDashboardCategoryChart();
+}
+
+function renderDashboardBarChart() {
+  if (typeof Chart === 'undefined') return;
+
+  const canvas = document.getElementById('dashBarChartCanvas');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (dashBarChartInstance) {
+    dashBarChartInstance.destroy();
+    dashBarChartInstance = null;
+  }
+
+  const isInc = currentChartMode === 'inbound';
+  const sourceList = isInc ? dashboardTopInbound : dashboardTopOutbound;
+
+  const labels = [];
+  const dataValues = [];
+  const bgColors = [];
+  const borderColors = [];
+
+  const baseColor = isInc ? 'rgba(5, 150, 105, 0.85)' : 'rgba(225, 29, 72, 0.85)';
+  const hoverColor = isInc ? 'rgba(4, 120, 87, 1)' : 'rgba(190, 18, 60, 1)';
+  const borderColor = isInc ? '#059669' : '#e11d48';
+
+  if (sourceList.length === 0) {
+    labels.push('Belum ada transaksi');
+    dataValues.push(0);
+    bgColors.push('rgba(203, 213, 225, 0.5)');
+    borderColors.push('#94a3b8');
+  } else {
+    sourceList.forEach((item, i) => {
+      // Full non-truncated label with smart multi-line wrapping
+      const cleanCode = String(item.code || '').trim();
+      const cleanName = String(item.name || '').trim();
+      const full = `${cleanCode} - ${cleanName}`;
+
+      if (full.length <= 26) {
+        labels.push(full);
+      } else {
+        const words = cleanName.split(' ');
+        let line1 = `${cleanCode} -`;
+        let line2 = '';
+        let switched = false;
+
+        for (const w of words) {
+          if (!w) continue;
+          if (!switched && (line1 + ' ' + w).length <= 26) {
+            line1 += ' ' + w;
+          } else {
+            switched = true;
+            line2 = line2 ? (line2 + ' ' + w) : w;
+          }
+        }
+        labels.push(line2 ? [line1, line2] : line1);
+      }
+
+      dataValues.push(parseInt(item.total_qty || 0));
+      bgColors.push(baseColor);
+      borderColors.push(borderColor);
+    });
+  }
+
+  dashBarChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: isInc ? 'Barang Masuk (Qty)' : 'Barang Keluar (Qty)',
+        data: dataValues,
+        backgroundColor: bgColors,
+        hoverBackgroundColor: hoverColor,
+        borderColor: borderColors,
+        borderWidth: 1,
+        borderRadius: 6,
+        barPercentage: 0.75,
+        categoryPercentage: 0.85
+      }]
+    },
+    options: {
+      indexAxis: 'y', // Horizontal bar chart for clean SKU reading
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            title: function(context) {
+              const item = sourceList[context[0]?.dataIndex];
+              return item ? `${item.code} - ${item.name}` : (context[0]?.label || '');
+            },
+            label: function(context) {
+              const val = context.raw || 0;
+              const unit = sourceList[context.dataIndex]?.unit || 'Pcs';
+              return ` Total ${isInc ? 'Masuk' : 'Keluar'}: ${App.formatNumber(val)} ${unit}`;
+            },
+            afterLabel: function(context) {
+              const item = sourceList[context.dataIndex];
+              if (!item) return '';
+              return ` Sisa Stok Saat Ini: ${App.formatNumber(item.current_stock || 0)} ${item.unit || 'Pcs'}\n Rak: ${item.rack_location || '-'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: {
+            color: '#f1f5f9',
+            drawBorder: false
+          },
+          ticks: {
+            font: { size: 11 },
+            color: '#64748b',
+            callback: function(value) {
+              if (value >= 1000000) return (value / 1000000) + 'M';
+              if (value >= 1000) return (value / 1000) + 'K';
+              return value;
+            }
+          }
+        },
+        y: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            font: { size: 10, weight: '600' },
+            color: '#334155',
+            autoSkip: false
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderDashboardCategoryChart() {
+  if (typeof Chart === 'undefined') return;
+
+  const canvas = document.getElementById('dashCategoryChartCanvas');
+  const legendContainer = document.getElementById('dashCategoryLegendList');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  if (dashCategoryChartInstance) {
+    dashCategoryChartInstance.destroy();
+    dashCategoryChartInstance = null;
+  }
+
+  const palette = [
+    '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', 
+    '#ec4899', '#06b6d4', '#64748b', '#14b8a6', '#f97316'
+  ];
+
+  const labels = [];
+  const dataValues = [];
+  const colors = [];
+
+  const totalStock = dashboardCategoryStats.reduce((acc, c) => acc + parseInt(c.total_stock || 0), 0);
+
+  dashboardCategoryStats.forEach((cat, idx) => {
+    labels.push(cat.category);
+    dataValues.push(parseInt(cat.total_stock || 0));
+    colors.push(palette[idx % palette.length]);
+  });
+
+  if (labels.length === 0) {
+    labels.push('Tanpa Data');
+    dataValues.push(1);
+    colors.push('#e2e8f0');
+  }
+
+  dashCategoryChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: dataValues,
+        backgroundColor: colors,
+        hoverOffset: 6,
+        borderWidth: 2,
+        borderColor: '#ffffff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: '#0f172a',
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 12 },
+          padding: 10,
+          cornerRadius: 8,
+          callbacks: {
+            label: function(context) {
+              const val = context.raw || 0;
+              const pct = totalStock > 0 ? ((val / totalStock) * 100).toFixed(1) : '0';
+              return ` ${context.label}: ${App.formatNumber(val)} Pcs (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Render Legend list
+  if (legendContainer) {
+    legendContainer.innerHTML = dashboardCategoryStats.map((cat, idx) => {
+      const color = palette[idx % palette.length];
+      const stock = parseInt(cat.total_stock || 0);
+      const pct = totalStock > 0 ? ((stock / totalStock) * 100).toFixed(1) : '0';
+      return `
+        <div class="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-100">
+          <div class="flex items-center gap-1.5 truncate">
+            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${color}"></span>
+            <span class="font-bold text-slate-700 truncate">${escapeHtml(cat.category)}</span>
+          </div>
+          <span class="font-mono text-slate-500 font-bold ml-1 shrink-0">${pct}%</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ================= 1.2 DASHBOARD TOP 10 TABLES =================
+function renderDashboardTopTables() {
+  const tbodyIn = document.getElementById('dashTopInboundTableBody');
+  const tbodyOut = document.getElementById('dashTopOutboundTableBody');
+  const badgeIn = document.getElementById('dashTopInboundBadge');
+  const badgeOut = document.getElementById('dashTopOutboundBadge');
+
+  const totalInQty = dashboardTopInbound.reduce((acc, it) => acc + parseInt(it.total_qty || 0), 0);
+  const totalOutQty = dashboardTopOutbound.reduce((acc, it) => acc + parseInt(it.total_qty || 0), 0);
+
+  if (badgeIn) badgeIn.innerText = `${dashboardTopInbound.length} SKU (+${App.formatNumber(totalInQty)})`;
+  if (badgeOut) badgeOut.innerText = `${dashboardTopOutbound.length} SKU (-${App.formatNumber(totalOutQty)})`;
+
+  // Render Top Inbound Table
+  if (tbodyIn) {
+    if (dashboardTopInbound.length === 0) {
+      tbodyIn.innerHTML = `
+        <tr>
+          <td colspan="6" class="p-6 text-center text-slate-400">
+            <span class="material-symbols-outlined text-[28px] text-slate-300">inbox</span>
+            <p class="text-xs font-semibold text-slate-500 mt-1">Belum ada transaksi barang masuk pada periode ini</p>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbodyIn.innerHTML = dashboardTopInbound.map((item, idx) => {
+        let rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black inline-flex items-center justify-center">${idx + 1}</span>`;
+        if (idx === 0) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-400 text-amber-950 text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥇</span>`;
+        else if (idx === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-300 text-slate-800 text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥈</span>`;
+        else if (idx === 2) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-700 text-amber-50 text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥉</span>`;
+
+        return `
+          <tr class="hover:bg-emerald-50/40 border-b border-slate-100 transition-colors">
+            <td class="p-2.5 text-center">${rankBadge}</td>
+            <td class="p-2.5 font-mono font-bold text-emerald-950 whitespace-nowrap">${escapeHtml(item.code)}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900 line-clamp-1" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(item.rack_location)} &bull; ${escapeHtml(item.category)}</div>
+            </td>
+            <td class="p-2.5 text-right font-mono font-black text-emerald-700 whitespace-nowrap bg-emerald-50/30">+${App.formatNumber(item.total_qty)} ${escapeHtml(item.unit)}</td>
+            <td class="p-2.5 text-center font-mono text-slate-500 font-bold">${item.tx_count || 1}x</td>
+            <td class="p-2.5 text-right font-mono font-black text-slate-800 whitespace-nowrap">${App.formatNumber(item.current_stock)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // Render Top Outbound Table
+  if (tbodyOut) {
+    if (dashboardTopOutbound.length === 0) {
+      tbodyOut.innerHTML = `
+        <tr>
+          <td colspan="6" class="p-6 text-center text-slate-400">
+            <span class="material-symbols-outlined text-[28px] text-slate-300">outbox</span>
+            <p class="text-xs font-semibold text-slate-500 mt-1">Belum ada transaksi barang keluar pada periode ini</p>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbodyOut.innerHTML = dashboardTopOutbound.map((item, idx) => {
+        let rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black inline-flex items-center justify-center">${idx + 1}</span>`;
+        if (idx === 0) rankBadge = `<span class="w-6 h-6 rounded-full bg-rose-500 text-white text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥇</span>`;
+        else if (idx === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-rose-400 text-white text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥈</span>`;
+        else if (idx === 2) rankBadge = `<span class="w-6 h-6 rounded-full bg-rose-300 text-rose-950 text-[10px] font-black inline-flex items-center justify-center shadow-xs">🥉</span>`;
+
+        return `
+          <tr class="hover:bg-rose-50/40 border-b border-slate-100 transition-colors">
+            <td class="p-2.5 text-center">${rankBadge}</td>
+            <td class="p-2.5 font-mono font-bold text-rose-950 whitespace-nowrap">${escapeHtml(item.code)}</td>
+            <td class="p-2.5">
+              <div class="font-bold text-slate-900 line-clamp-1" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(item.rack_location)} &bull; ${escapeHtml(item.category)}</div>
+            </td>
+            <td class="p-2.5 text-right font-mono font-black text-rose-700 whitespace-nowrap bg-rose-50/30">-${App.formatNumber(item.total_qty)} ${escapeHtml(item.unit)}</td>
+            <td class="p-2.5 text-center font-mono text-slate-500 font-bold">${item.tx_count || 1}x</td>
+            <td class="p-2.5 text-right font-mono font-black text-slate-800 whitespace-nowrap">${App.formatNumber(item.current_stock)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+}
+
+// ================= 1.3 DASHBOARD OPERATOR PROCESS KPIS =================
+let dashboardOperatorKpi = {};
+
+function renderDashboardOperatorKpi() {
+  const kpi = dashboardOperatorKpi || {};
+  const rateEl = document.getElementById('dashKpiOpRate');
+  const ratioEl = document.getElementById('dashKpiOpCompletedRatio');
+  const barEl = document.getElementById('dashKpiOpProgressBar');
+  const inProgEl = document.getElementById('dashKpiOpInProgress');
+  const pendEl = document.getElementById('dashKpiOpPending');
+  const avgDurEl = document.getElementById('dashKpiOpAvgDuration');
+
+  const totTasks = kpi.total_tasks || 0;
+  const compTasks = kpi.completed_tasks || 0;
+  const inProgTasks = kpi.in_progress_tasks || 0;
+  const pendTasks = kpi.pending_tasks || 0;
+  const rate = kpi.completion_rate !== undefined ? kpi.completion_rate : (totTasks > 0 ? Math.round((compTasks / totTasks) * 100) : 0);
+  const avgDurSec = kpi.avg_duration_seconds || 0;
+
+  if (rateEl) rateEl.innerText = `${rate}%`;
+  if (ratioEl) ratioEl.innerText = `(${App.formatNumber(compTasks)}/${App.formatNumber(totTasks)} Selesai)`;
+  if (barEl) barEl.style.width = `${Math.min(100, Math.max(0, rate))}%`;
+  if (inProgEl) inProgEl.innerText = `${App.formatNumber(inProgTasks)} Task`;
+  if (pendEl) pendEl.innerText = `${App.formatNumber(pendTasks)} Task`;
+  if (avgDurEl) avgDurEl.innerText = App.formatDuration(avgDurSec);
+
+  // 1. Leaderboard Table
+  const leaderboardBody = document.getElementById('dashOpLeaderboardBody');
+  const leaderboard = kpi.leaderboard || [];
+  if (leaderboardBody) {
+    if (leaderboard.length === 0) {
+      leaderboardBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="p-6 text-center text-slate-400 text-xs font-medium">
+            Belum ada data aktivitas operator pada periode ini.
+          </td>
+        </tr>
+      `;
+    } else {
+      leaderboardBody.innerHTML = leaderboard.map((op, idx) => {
+        let rankBadge = `<span class="font-bold text-slate-400 font-mono text-[11px]">#${idx + 1}</span>`;
+        if (idx === 0) rankBadge = '<span class="text-sm" title="Peringkat 1">🥇</span>';
+        else if (idx === 1) rankBadge = '<span class="text-sm" title="Peringkat 2">🥈</span>';
+        else if (idx === 2) rankBadge = '<span class="text-sm" title="Peringkat 3">🥉</span>';
+
+        const completed = parseInt(op.completed_count || 0);
+        const assigned = parseInt(op.total_assigned || 0);
+        const pickedQty = parseInt(op.total_picked_qty || 0);
+        const avgSec = parseInt(op.avg_duration_seconds || 0);
+
+        return `
+          <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+            <td class="p-2.5 text-center font-bold">${rankBadge}</td>
+            <td class="p-2.5">
+              <p class="font-bold text-slate-900 leading-tight">${escapeHtml(op.operator_name)}</p>
+              <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(op.operator_shift || 'Shift')}</span>
+            </td>
+            <td class="p-2.5 text-center">
+              <span class="px-2 py-0.5 rounded font-black text-xs ${completed > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-100 text-slate-500'}">
+                ${App.formatNumber(completed)} <span class="font-normal text-[10px] text-slate-400">/ ${App.formatNumber(assigned)}</span>
+              </span>
+            </td>
+            <td class="p-2.5 text-right font-mono font-extrabold text-slate-800">
+              ${App.formatNumber(pickedQty)} <span class="text-[10px] text-slate-400 font-normal">Pcs</span>
+            </td>
+            <td class="p-2.5 text-center font-mono font-bold text-indigo-700">
+              ${avgSec > 0 ? App.formatDuration(avgSec) : '-'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // 2. Recent Tasks Feed
+  const recentTasksBody = document.getElementById('dashOpRecentTasksBody');
+  const recentTasks = kpi.recent_tasks || [];
+  if (recentTasksBody) {
+    if (recentTasks.length === 0) {
+      recentTasksBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="p-6 text-center text-slate-400 text-xs font-medium">
+            Tidak ada task picking aktif pada periode ini.
+          </td>
+        </tr>
+      `;
+    } else {
+      recentTasksBody.innerHTML = recentTasks.map(t => {
+        let statusBadge = '';
+        if (t.status === 'COMPLETED') {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Selesai</span>';
+        } else if (t.status === 'IN_PROGRESS') {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-50 text-amber-900 border border-amber-300 inline-flex items-center gap-1 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Picking</span>';
+        } else if (t.status === 'CANCELLED') {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Batal</span>';
+        } else {
+          statusBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Pending</span>';
+        }
+
+        const isUrgent = t.priority === 'URGENT' || t.priority === 'CRITICAL';
+
+        return `
+          <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+            <td class="p-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">
+              ${escapeHtml(t.task_no)}
+              ${isUrgent ? '<span class="ml-1 px-1 py-0.2 rounded bg-rose-100 text-rose-800 font-bold text-[9px] border border-rose-200">URGENT</span>' : ''}
+            </td>
+            <td class="p-2.5">
+              <p class="font-bold text-slate-900 leading-tight">${escapeHtml(t.material_name)}</p>
+              <span class="text-[10px] text-slate-400">Rak: ${escapeHtml(t.rack_location || '-')} &bull; Ke: ${escapeHtml(t.destination || 'Line')}</span>
+            </td>
+            <td class="p-2.5 text-center font-mono font-extrabold text-indigo-900">
+              ${App.formatNumber(t.target_qty)} <span class="text-[10px] text-slate-400 font-normal">${escapeHtml(t.material_unit || 'Pcs')}</span>
+            </td>
+            <td class="p-2.5">
+              <span class="font-bold text-slate-800 block leading-tight">${escapeHtml(t.operator_name)}</span>
+              <span class="text-[10px] text-slate-400">${escapeHtml(t.operator_shift || 'Shift')}</span>
+            </td>
+            <td class="p-2.5 text-center whitespace-nowrap">${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
     }
   }
 }
@@ -4696,15 +5275,24 @@ async function loadDirectAdjustMaterials() {
     `;
   }
 
-  if (!allMaterials || allMaterials.length === 0) {
-    await loadMaterials();
+  try {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res && res.success && Array.isArray(res.data)) {
+      allMaterials = res.data;
+    }
+  } catch (e) {
+    console.error('Error fetching materials for direct adjust:', e);
   }
 
   // Preserve any existing non-zero adjustments if already typed
   const prevMap = {};
   directAdjustData.forEach(item => {
-    if (item.qty_adjust !== 0 || item.notes) {
-      prevMap[item.code] = { qty_adjust: item.qty_adjust, notes: item.notes };
+    if (item.qty_adjust !== 0 || item.notes || item.is_imported) {
+      prevMap[item.code] = {
+        qty_adjust: item.qty_adjust,
+        notes: item.notes,
+        is_imported: item.is_imported
+      };
     }
   });
 
@@ -4718,7 +5306,8 @@ async function loadDirectAdjustMaterials() {
       rack_location: m.rack_location || '-',
       current_stock: parseInt(m.current_stock || '0', 10),
       qty_adjust: prev.qty_adjust || 0,
-      notes: prev.notes || ''
+      notes: prev.notes || '',
+      is_imported: !!prev.is_imported
     };
   });
 
@@ -4773,6 +5362,8 @@ function updateDirectAdjustRowUI(code) {
       statusEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">+${App.formatNumber(qtyAdjust)}</span>`;
     } else if (qtyAdjust < 0) {
       statusEl.innerHTML = `<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold text-[10px] border border-rose-200">${App.formatNumber(qtyAdjust)}</span>`;
+    } else if (item.is_imported) {
+      statusEl.innerHTML = '<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">Import (0)</span>';
     } else {
       statusEl.innerHTML = '<span class="font-mono text-slate-400 text-[11px]">-</span>';
     }
@@ -4780,7 +5371,7 @@ function updateDirectAdjustRowUI(code) {
 
   if (qtyAdjust !== 0) {
     row.classList.add('bg-amber-50/30');
-  } else {
+  } else if (!item.is_imported) {
     row.classList.remove('bg-amber-50/30');
   }
 }
@@ -4789,13 +5380,20 @@ function updateDirectAdjustCounters() {
   const total = directAdjustData.length;
   const readyItems = directAdjustData.filter(d => d.qty_adjust !== 0);
   const readyCount = readyItems.length;
+  const importedCount = directAdjustData.filter(d => d.is_imported).length;
 
   const totalEl = document.getElementById('statAdjustTotalSku');
   const readyEl = document.getElementById('statAdjustReadyCount');
   const commitBtn = document.getElementById('btnCommitDirectAdjust');
   const commitText = document.getElementById('btnCommitDirectAdjustText');
 
-  if (totalEl) totalEl.innerText = `${total} SKU Terdaftar`;
+  if (totalEl) {
+    if (importedCount > 0) {
+      totalEl.innerHTML = `<span class="text-amber-800 font-bold">${importedCount} SKU Di-Import</span> <span class="text-slate-400 font-normal">/ ${total} Master</span>`;
+    } else {
+      totalEl.innerText = `${total} SKU Terdaftar`;
+    }
+  }
   if (readyEl) readyEl.innerText = `${readyCount} Siap Adjust`;
 
   if (commitBtn) {
@@ -4821,13 +5419,14 @@ function renderDirectAdjustTable() {
   let filtered = directAdjustData.filter(item => {
     // Search
     if (search) {
-      const matchCode = item.code.toLowerCase().includes(search);
-      const matchName = item.name.toLowerCase().includes(search);
-      const matchRack = item.rack_location.toLowerCase().includes(search);
+      const matchCode = (item.code || '').toLowerCase().includes(search);
+      const matchName = (item.name || '').toLowerCase().includes(search);
+      const matchRack = (item.rack_location || '').toLowerCase().includes(search);
       if (!matchCode && !matchName && !matchRack) return false;
     }
 
     // Filter
+    if (filter === 'IMPORTED') return item.is_imported === true;
     if (filter === 'ADJUSTED_ONLY') return item.qty_adjust !== 0;
     if (filter === 'PLUS') return item.qty_adjust > 0;
     if (filter === 'MINUS') return item.qty_adjust < 0;
@@ -4854,12 +5453,15 @@ function renderDirectAdjustTable() {
     const qtyAdjust = item.qty_adjust || 0;
     const newStock = currentStock + qtyAdjust;
     const isAdjusted = qtyAdjust !== 0;
+    const isImported = !!item.is_imported;
 
     let statusBadge = '';
     if (qtyAdjust > 0) {
       statusBadge = `<span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold text-[10px] border border-blue-200">+${App.formatNumber(qtyAdjust)}</span>`;
     } else if (qtyAdjust < 0) {
       statusBadge = `<span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 font-bold text-[10px] border border-rose-200">${App.formatNumber(qtyAdjust)}</span>`;
+    } else if (isImported) {
+      statusBadge = '<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-bold text-[10px] border border-amber-200">Import (0)</span>';
     } else {
       statusBadge = '<span class="font-mono text-slate-400 text-[11px]">-</span>';
     }
@@ -4869,10 +5471,15 @@ function renderDirectAdjustTable() {
     else if (qtyAdjust > 0) newStockBg = 'text-emerald-700 bg-emerald-50/40';
     else if (qtyAdjust < 0) newStockBg = 'text-rose-700 bg-rose-50/40';
 
+    const rowHighlight = isAdjusted ? 'bg-amber-50/30' : (isImported ? 'bg-amber-50/15' : '');
+
     return `
-      <tr id="adjust-row-${escapeHtml(item.code)}" class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors ${isAdjusted ? 'bg-amber-50/30' : ''}">
+      <tr id="adjust-row-${escapeHtml(item.code)}" class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors ${rowHighlight}">
         <td class="p-3 text-center text-slate-400 font-mono">${idx + 1}</td>
-        <td class="p-3 font-mono font-bold text-amber-800">${escapeHtml(item.code)}</td>
+        <td class="p-3">
+          <div class="font-mono font-bold text-amber-800">${escapeHtml(item.code)}</div>
+          ${isImported ? '<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold text-[9px] border border-amber-200">Di-Import</span>' : ''}
+        </td>
         <td class="p-3 font-semibold text-slate-800">${escapeHtml(item.name)}</td>
         <td class="p-3 text-center font-medium text-slate-600">${escapeHtml(item.unit)}</td>
         <td class="p-3 text-slate-600">${escapeHtml(item.rack_location)}</td>
@@ -5027,8 +5634,52 @@ async function handleDirectExcelUpload(input) {
 
   App.toast('Membaca dan memvalidasi file Excel...', 'info');
 
+  // Ensure all master materials are loaded into directAdjustData
+  if (!directAdjustData || directAdjustData.length === 0) {
+    await loadDirectAdjustMaterials();
+  }
+
   try {
-    // If SheetJS is available in browser for instantaneous parsing
+    // Reset previous is_imported flags
+    directAdjustData.forEach(d => { d.is_imported = false; });
+
+    let appliedCount = 0;
+    let matchedTotal = 0;
+    let totalParsedRows = 0;
+    const debugMissing = [];
+
+    // Helper to find / match target in directAdjustData
+    const findTarget = (code, desc) => {
+      if (!code && !desc) return null;
+      let target = null;
+      const rawCode = String(code || '').trim();
+      const rawDesc = String(desc || '').trim();
+
+      if (rawCode) {
+        // 1. Exact code
+        target = directAdjustData.find(d => String(d.code).trim() === rawCode);
+        // 2. Case-insensitive code
+        if (!target) target = directAdjustData.find(d => String(d.code).trim().toLowerCase() === rawCode.toLowerCase());
+        // 3. Clean alphanumeric code
+        const cleanCode = rawCode.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        if (!target && cleanCode) {
+          target = directAdjustData.find(d => String(d.code).replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanCode);
+        }
+        // 4. Numeric code
+        if (!target && !isNaN(rawCode)) {
+          const numCode = parseInt(rawCode, 10);
+          target = directAdjustData.find(d => parseInt(d.code, 10) === numCode);
+        }
+      }
+
+      // 5. Match by description/name if code not matched
+      if (!target && rawDesc) {
+        const cleanDesc = rawDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        target = directAdjustData.find(d => String(d.name).replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cleanDesc);
+      }
+      return target;
+    };
+
     if (window.XLSX) {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
@@ -5041,73 +5692,53 @@ async function handleDirectExcelUpload(input) {
         let headerRowIdx = -1;
         for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
           const rowStr = jsonRows[r].map(c => String(c ?? '')).join(' ').toLowerCase();
-          const hasItemCol = rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('kode material') || rowStr.includes('sku');
-          const hasAdjustCol = rowStr.includes('adjust') || rowStr.includes('selisih') || rowStr.includes('qty') || rowStr.includes('stok');
+          const hasItemCol = rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('kode material') || rowStr.includes('kode barang') || rowStr.includes('item code') || rowStr.includes('material code') || rowStr.includes('sku') || rowStr.includes('deskripsi');
+          const hasAdjustCol = rowStr.includes('adjust') || rowStr.includes('selisih') || rowStr.includes('qty') || rowStr.includes('penyesuaian') || rowStr.includes('jumlah') || rowStr.includes('stok');
           if (hasItemCol && hasAdjustCol) { headerRowIdx = r; break; }
         }
         if (headerRowIdx === -1) {
           for (let r = 0; r < Math.min(10, jsonRows.length); r++) {
             const rowStr = jsonRows[r].map(c => String(c ?? '')).join(' ').toLowerCase();
-            if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('sku')) { headerRowIdx = r; break; }
+            if (rowStr.includes('item no') || rowStr.includes('item_no') || rowStr.includes('kode item') || rowStr.includes('kode material') || rowStr.includes('sku')) { headerRowIdx = r; break; }
           }
         }
         if (headerRowIdx === -1) headerRowIdx = 0;
 
         // ====== STEP 2: Map column indices ======
         const cleanHeaders = jsonRows[headerRowIdx].map(h => String(h ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''));
-        let itemNoIdx = -1, adjustIdx = -1, notesIdx = -1;
+        let itemNoIdx = -1, descIdx = -1, adjustIdx = -1, notesIdx = -1;
         cleanHeaders.forEach((h, idx) => {
-          if (['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'material'].includes(h)) itemNoIdx = idx;
-          else if (['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik'].some(k => h.includes(k))) adjustIdx = idx;
-          else if (['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note'].some(k => h.includes(k))) notesIdx = idx;
+          if (itemNoIdx === -1 && ['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'materialcode', 'itemcode', 'kodebarang', 'kodeproduk', 'nomoritem', 'material'].includes(h)) itemNoIdx = idx;
+          else if (descIdx === -1 && ['deskripsi', 'description', 'itemdescription', 'namabarang', 'namamaterial', 'namaitem', 'nama'].includes(h)) descIdx = idx;
+          else if (adjustIdx === -1 && (['qtyadjust', 'adjustqty', 'adjust', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik', 'jumlah', 'qty', 'penyesuaian', 'koreksi'].some(k => h.includes(k)))) adjustIdx = idx;
+          else if (notesIdx === -1 && ['notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'ket'].some(k => h.includes(k))) notesIdx = idx;
         });
+
         if (itemNoIdx === -1) itemNoIdx = 0;
         if (adjustIdx === -1) {
           for (let c = 1; c < cleanHeaders.length; c++) {
-            if (cleanHeaders[c].includes('adjust') || cleanHeaders[c].includes('selisih') || cleanHeaders[c].includes('diff')) { adjustIdx = c; break; }
+            if (cleanHeaders[c].includes('adjust') || cleanHeaders[c].includes('selisih') || cleanHeaders[c].includes('qty') || cleanHeaders[c].includes('penyesuaian') || cleanHeaders[c].includes('diff')) { adjustIdx = c; break; }
           }
           if (adjustIdx === -1) adjustIdx = cleanHeaders.length >= 3 ? 2 : 1;
         }
 
-        console.log('[ADJUST IMPORT] headerRowIdx:', headerRowIdx, 'itemNoIdx:', itemNoIdx, 'adjustIdx:', adjustIdx);
-        console.log('[ADJUST IMPORT] cleanHeaders:', cleanHeaders);
-        console.log('[ADJUST IMPORT] total jsonRows:', jsonRows.length);
-        console.log('[ADJUST IMPORT] directAdjustData count:', directAdjustData.length);
-
-        // ====== STEP 3: Dump ALL data rows to console for diagnostics ======
-        const debugRows = [];
-        for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
-          const row = jsonRows[i];
-          if (!row) continue;
-          const code = row[itemNoIdx];
-          const adj = row[adjustIdx];
-          debugRows.push({ rowIdx: i, colCount: row.length, code, codeType: typeof code, adj, adjType: typeof adj, rawRow: row.slice(0, 8) });
-        }
-        console.log('[ADJUST IMPORT] ALL data rows parsed by SheetJS:', JSON.stringify(debugRows));
-
-        // ====== STEP 4: Process all data rows ======
-        let appliedCount = 0;
-        let matchedTotal = 0;
-        let skippedNoMatch = 0;
-        const debugMissing = [];
-
+        // Process all rows from the Excel
         for (let i = headerRowIdx + 1; i < jsonRows.length; i++) {
           const row = jsonRows[i];
           if (!row || row.length === 0) continue;
 
-          // Extract raw code - handle numbers, strings, mixed
+          // Extract code & desc
           let rawCodeVal = row[itemNoIdx];
-          if (rawCodeVal === null || rawCodeVal === undefined || rawCodeVal === '') continue;
-          let rawCode;
-          if (typeof rawCodeVal === 'number') {
-            rawCode = String(Math.round(rawCodeVal));
-          } else {
-            rawCode = String(rawCodeVal).trim();
+          let rawCode = '';
+          if (rawCodeVal !== null && rawCodeVal !== undefined) {
+            rawCode = (typeof rawCodeVal === 'number') ? String(Math.round(rawCodeVal)) : String(rawCodeVal).trim();
           }
-          // Skip empty, '0', or non-code-like values (e.g. just whitespace)
-          if (!rawCode || rawCode === '0' || rawCode.length < 2) continue;
+          let rawDesc = (descIdx !== -1 && row[descIdx]) ? String(row[descIdx]).trim() : '';
 
-          // Extract adjust value - handle all formats
+          if (!rawCode && !rawDesc) continue;
+          totalParsedRows++;
+
+          // Extract adjust value
           let rawAdjustVal = row[adjustIdx];
           let adjustQty = 0;
           if (typeof rawAdjustVal === 'number') {
@@ -5116,47 +5747,52 @@ async function handleDirectExcelUpload(input) {
             let rawAdjust = String(rawAdjustVal).trim();
             let sign = 1;
             if (rawAdjust.includes('-') || (rawAdjust.startsWith('(') && rawAdjust.endsWith(')'))) { sign = -1; }
-            const cleanDigits = rawAdjust.replace(/[^0-9\.]/g, '');
+            const normalized = rawAdjust.replace(',', '.');
+            const cleanDigits = normalized.replace(/[^0-9\.]/g, '');
             adjustQty = cleanDigits ? sign * parseFloat(cleanDigits) : 0;
           }
 
           // Extract notes
           const notesVal = (notesIdx !== -1 && row[notesIdx]) ? String(row[notesIdx]).trim() : 'Upload Excel Adjust';
 
-          // Match against directAdjustData
-          let target = directAdjustData.find(d => String(d.code) === rawCode);
-          if (!target) target = directAdjustData.find(d => String(d.code).toLowerCase() === rawCode.toLowerCase());
-          if (!target && !isNaN(rawCode)) {
-            target = directAdjustData.find(d => String(parseInt(d.code)) === String(parseInt(rawCode)));
-          }
-
+          let target = findTarget(rawCode, rawDesc);
           if (target) {
             target.qty_adjust = adjustQty;
             target.notes = notesVal;
+            target.is_imported = true;
             matchedTotal++;
             if (adjustQty !== 0) appliedCount++;
           } else {
-            skippedNoMatch++;
-            debugMissing.push(rawCode);
+            // Add dynamically to directAdjustData so user sees it in the table
+            directAdjustData.push({
+              id: 0,
+              code: rawCode || ('UNKNOWN-' + (matchedTotal + 1)),
+              name: rawDesc || rawCode || 'Item dari Excel',
+              unit: 'Pcs',
+              rack_location: '-',
+              current_stock: 0,
+              qty_adjust: adjustQty,
+              notes: notesVal,
+              is_imported: true,
+              is_not_found: true
+            });
+            matchedTotal++;
+            if (adjustQty !== 0) appliedCount++;
+            debugMissing.push(rawCode || rawDesc);
           }
         }
 
-        console.log(`[ADJUST IMPORT] RESULT: ${matchedTotal} total matched, ${appliedCount} non-zero adjust, ${skippedNoMatch} no-match`);
-        if (debugMissing.length > 0) console.log('[ADJUST IMPORT] Missing codes:', debugMissing);
-
         input.value = '';
         const filterSelect = document.getElementById('directAdjustFilterSelect');
-        if (filterSelect && appliedCount > 0) filterSelect.value = 'ADJUSTED_ONLY';
+        if (filterSelect) {
+          filterSelect.value = 'ALL';
+        }
         renderDirectAdjustTable();
 
-        if (appliedCount > 0) {
-          App.toast(`${appliedCount} SKU dengan penyesuaian berhasil dimuat dari Excel (total ${matchedTotal} SKU dicocokkan). Silakan periksa lalu klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
-        } else if (matchedTotal > 0) {
-          App.toast(`${matchedTotal} SKU dicocokkan tapi semua nilai Qty Adjust adalah 0. Pastikan kolom "Qty Adjust (+/-)" di Excel sudah terisi.`, 'warning', 'Tidak Ada Penyesuaian');
+        if (matchedTotal > 0) {
+          App.toast(`Semua ${matchedTotal} SKU dari file Excel berhasil dimuat ke sistem (${appliedCount} SKU memiliki nilai selisih +/-).`, 'success', 'Excel Berhasil Dimuat');
         } else {
-          const sampleExcel = debugRows.length > 0 ? String(debugRows[0].code ?? '(kosong)') : '(tidak ada data)';
-          const sampleDb = directAdjustData.length > 0 ? directAdjustData[0].code : '(kosong)';
-          App.toast(`Data Excel terbaca (${debugRows.length} baris) tapi kode item tidak cocok. Contoh Excel: "${sampleExcel}", Contoh master: "${sampleDb}".`, 'warning', 'Kode Item Tidak Cocok');
+          App.toast(`Tidak ada baris data SKU yang dapat dibaca dari file Excel.`, 'warning', 'File Kosong');
         }
         return;
       }
@@ -5170,7 +5806,7 @@ async function handleDirectExcelUpload(input) {
       body: formData
     });
     const res = await response.json();
-    input.value = ''; // Reset file picker
+    input.value = '';
 
     if (!res.success || !res.items || res.items.length === 0) {
       App.toast(res.message || 'Tidak ada baris data valid yang terdeteksi dari Excel.', 'error');
@@ -5178,26 +5814,43 @@ async function handleDirectExcelUpload(input) {
       return;
     }
 
-    let appliedCount = 0;
     res.items.forEach(excelItem => {
       const code = String(excelItem.item_no || excelItem.code || '').trim();
+      const desc = String(excelItem.item_name || excelItem.name || '').trim();
       const adjustQty = parseFloat(excelItem.qty_adjust ?? excelItem.adjust_qty ?? 0);
       const notes = excelItem.notes || excelItem.note || 'Penyesuaian Excel';
 
-      if (!code) return;
+      if (!code && !desc) return;
 
-      const target = directAdjustData.find(d => d.code.toLowerCase() === code.toLowerCase());
+      let target = findTarget(code, desc);
       if (target) {
         target.qty_adjust = adjustQty;
         if (notes) target.notes = notes;
+        target.is_imported = true;
+        matchedTotal++;
+        if (adjustQty !== 0) appliedCount++;
+      } else {
+        directAdjustData.push({
+          id: excelItem.material_id || 0,
+          code: code || ('UNKNOWN-' + (matchedTotal + 1)),
+          name: desc || code,
+          unit: excelItem.unit || 'Pcs',
+          rack_location: excelItem.rack_location || '-',
+          current_stock: excelItem.stock_before || 0,
+          qty_adjust: adjustQty,
+          notes: notes,
+          is_imported: true,
+          is_not_found: true
+        });
+        matchedTotal++;
         if (adjustQty !== 0) appliedCount++;
       }
     });
 
     const filterSelect = document.getElementById('directAdjustFilterSelect');
-    if (filterSelect) filterSelect.value = 'ADJUSTED_ONLY';
+    if (filterSelect) filterSelect.value = 'ALL';
     renderDirectAdjustTable();
-    App.toast(`${appliedCount} SKU berhasil dimuat dari file Excel ke tabel penyesuaian. Silakan periksa dan klik "Terapkan Adjust Stok".`, 'success', 'Excel Berhasil Dimuat');
+    App.toast(`Semua ${matchedTotal} SKU dari file Excel berhasil dimuat ke sistem (${appliedCount} SKU memiliki nilai selisih +/-).`, 'success', 'Excel Berhasil Dimuat');
   } catch (err) {
     input.value = '';
     App.toast('Gagal memproses file Excel: ' + err.message, 'error');
@@ -5209,6 +5862,7 @@ function resetDirectAdjustTable() {
   directAdjustData.forEach(item => {
     item.qty_adjust = 0;
     item.notes = '';
+    item.is_imported = false;
   });
   renderDirectAdjustTable();
   App.toast('Semua input penyesuaian telah dibersihkan.', 'info');
@@ -5265,32 +5919,7 @@ async function commitDirectAdjustTable() {
 }
 
 function downloadAdjustExcelTemplate() {
-  let exportList = [
-    {
-      'Item No': '4000010001',
-      'Deskripsi Material Packaging': 'Dus E-commerce Hanasui Uk. Kecil 225 x 85 x 85 cm',
-      'Satuan': 'Pcs',
-      'Lokasi Rak': 'Rak A-01',
-      'Qty Adjust (+/-)': 150,
-      'Alasan / Catatan Penyesuaian': 'Contoh: Surplus Fisik (+150 Menambah Stok)'
-    },
-    {
-      'Item No': '4000010002',
-      'Deskripsi Material Packaging': 'Dus E-commerce Hanasui Uk. Besar 250 x 200 x 85 cm',
-      'Satuan': 'Pcs',
-      'Lokasi Rak': 'Rak A-05',
-      'Qty Adjust (+/-)': -25,
-      'Alasan / Catatan Penyesuaian': 'Contoh: Rusak / Reject (-25 Memotong/Kurangi Stok)'
-    },
-    {
-      'Item No': '4000020001',
-      'Deskripsi Material Packaging': 'Plastik Hanasui Ukuran Besar 21,5 x 35 cm',
-      'Satuan': 'Pcs',
-      'Lokasi Rak': 'Rak B-01',
-      'Qty Adjust (+/-)': 0,
-      'Alasan / Catatan Penyesuaian': 'Contoh: 0 jika tidak ada penyesuaian'
-    }
-  ];
+  let exportList = [];
 
   if (allMaterials && allMaterials.length > 0) {
     exportList = allMaterials.map((m, idx) => ({
@@ -5298,9 +5927,40 @@ function downloadAdjustExcelTemplate() {
       'Deskripsi Material Packaging': m.name,
       'Satuan': m.unit || 'Pcs',
       'Lokasi Rak': m.rack_location || '-',
-      'Qty Adjust (+/-)': idx === 0 ? 100 : (idx === 1 ? -15 : 0),
-      'Alasan / Catatan Penyesuaian': idx === 0 ? 'Contoh: +100 Tambah Stok' : (idx === 1 ? 'Contoh: -15 Potong Stok' : '')
+      'Stok Sistem Saat Ini': parseInt(m.current_stock || '0', 10),
+      'Qty Adjust (+/-)': '',
+      'Alasan / Catatan Penyesuaian': ''
     }));
+  } else {
+    exportList = [
+      {
+        'Item No': '4000010001',
+        'Deskripsi Material Packaging': 'Dus E-commerce Hanasui Uk. Kecil 225 x 85 x 85 cm',
+        'Satuan': 'Pcs',
+        'Lokasi Rak': 'Rak A-01',
+        'Stok Sistem Saat Ini': 100,
+        'Qty Adjust (+/-)': '+150',
+        'Alasan / Catatan Penyesuaian': 'Contoh: Surplus Fisik (+150 Menambah Stok)'
+      },
+      {
+        'Item No': '4000010002',
+        'Deskripsi Material Packaging': 'Dus E-commerce Hanasui Uk. Besar 250 x 200 x 85 cm',
+        'Satuan': 'Pcs',
+        'Lokasi Rak': 'Rak A-05',
+        'Stok Sistem Saat Ini': 50,
+        'Qty Adjust (+/-)': '-25',
+        'Alasan / Catatan Penyesuaian': 'Contoh: Rusak / Reject (-25 Memotong Stok)'
+      },
+      {
+        'Item No': '4000020001',
+        'Deskripsi Material Packaging': 'Plastik Hanasui Ukuran Besar 21,5 x 35 cm',
+        'Satuan': 'Pcs',
+        'Lokasi Rak': 'Rak B-01',
+        'Stok Sistem Saat Ini': 500,
+        'Qty Adjust (+/-)': '+50',
+        'Alasan / Catatan Penyesuaian': 'Contoh: Koreksi Selisih Lapangan'
+      }
+    ];
   }
 
   if (window.XLSX) {
@@ -5310,7 +5970,7 @@ function downloadAdjustExcelTemplate() {
     XLSX.writeFile(wb, 'Template_Penyesuaian_Stok_Adjust.xlsx');
     App.toast('Template Excel (.xlsx) berhasil di-download!', 'success');
   } else {
-    window.location.href = '../api/adjust_stock.php?action=template';
+    window.location.href = 'export.php?type=adjust_template';
   }
 }
 

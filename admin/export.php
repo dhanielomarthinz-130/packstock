@@ -638,9 +638,6 @@ if ($type === 'adjust_template') {
 
     $no = 1;
     foreach ($materials as $idx => $m) {
-        $sampleAdjust = ($idx === 0 ? '+100' : ($idx === 1 ? '-25' : ($idx === 2 ? '+50' : 0)));
-        $sampleNote = ($idx === 0 ? 'Contoh: Surplus Fisik (+100 Nambah Stok)' : ($idx === 1 ? 'Contoh: Rusak/Reject (-25 Potong Stok)' : ($idx === 2 ? 'Contoh: Penerimaan Baru (+50 Nambah Stok)' : '')));
-        
         $rows[] = [
             $no++,
             $m['code'],
@@ -648,14 +645,15 @@ if ($type === 'adjust_template') {
             $m['unit'] ?: 'Pcs',
             $m['rack_location'] ?: '-',
             (int)$m['current_stock'],
-            $sampleAdjust,
-            $sampleNote
+            '',
+            ''
         ];
     }
 
     if (empty($rows)) {
-        $rows[] = [1, '4000010001', 'Dus E-commerce Hanasui Uk. Kecil', 'Pcs', 'Rak A-01', 100, '+150', 'Contoh: Surplus Fisik (+150 Nambah Stok)'];
-        $rows[] = [2, '4000010002', 'Dus E-commerce Hanasui Uk. Besar', 'Pcs', 'Rak A-05', 50, '-25', 'Contoh: Rusak/Reject (-25 Potong Stok)'];
+        $rows[] = [1, '4000010001', 'Dus E-commerce Hanasui Uk. Kecil', 'Pcs', 'Rak A-01', 100, '+150', 'Penyesuaian Hasil Opname (Surplus Fisik)'];
+        $rows[] = [2, '4000010002', 'Dus E-commerce Hanasui Uk. Besar', 'Pcs', 'Rak A-05', 50, '-25', 'Penyesuaian Hasil Opname (Barang Rusak/Reject)'];
+        $rows[] = [3, '4000020001', 'Plastik Hanasui Ukuran Besar', 'Pcs', 'Rak B-01', 500, '+50', 'Koreksi Selisih Lapangan'];
     }
 
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);

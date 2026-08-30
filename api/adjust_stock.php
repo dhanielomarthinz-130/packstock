@@ -129,7 +129,7 @@ if ($action === 'template') {
 if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $rows = [];
 
-    if (isset($_FILES['file']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+    if (isset($_FILES['file']) && (is_uploaded_file($_FILES['file']['tmp_name']) || file_exists($_FILES['file']['tmp_name']))) {
         $filePath = $_FILES['file']['tmp_name'];
         $origName = strtolower($_FILES['file']['name']);
 
@@ -188,12 +188,23 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Header mapping
     $headerRowIdx = 0;
-    // Look for header row in top 5 rows (in case file has titles)
-    for ($r = 0; $r < min(5, count($rows)); $r++) {
+    // Look for header row in top 10 rows (in case file has titles)
+    for ($r = 0; $r < min(10, count($rows)); $r++) {
         $lineLower = strtolower(implode(' ', $rows[$r]));
-        if (strpos($lineLower, 'item no') !== false || strpos($lineLower, 'item_no') !== false || strpos($lineLower, 'kode item') !== false || strpos($lineLower, 'sku') !== false) {
+        $hasItem = (strpos($lineLower, 'item no') !== false || strpos($lineLower, 'item_no') !== false || strpos($lineLower, 'kode item') !== false || strpos($lineLower, 'kode material') !== false || strpos($lineLower, 'kode barang') !== false || strpos($lineLower, 'sku') !== false || strpos($lineLower, 'item code') !== false || strpos($lineLower, 'material code') !== false || strpos($lineLower, 'deskripsi') !== false);
+        $hasAdjust = (strpos($lineLower, 'adjust') !== false || strpos($lineLower, 'selisih') !== false || strpos($lineLower, 'qty') !== false || strpos($lineLower, 'penyesuaian') !== false || strpos($lineLower, 'jumlah') !== false || strpos($lineLower, 'stok') !== false);
+        if ($hasItem && $hasAdjust) {
             $headerRowIdx = $r;
             break;
+        }
+    }
+    if ($headerRowIdx === 0) {
+        for ($r = 0; $r < min(10, count($rows)); $r++) {
+            $lineLower = strtolower(implode(' ', $rows[$r]));
+            if (strpos($lineLower, 'item no') !== false || strpos($lineLower, 'item_no') !== false || strpos($lineLower, 'kode item') !== false || strpos($lineLower, 'kode material') !== false || strpos($lineLower, 'sku') !== false) {
+                $headerRowIdx = $r;
+                break;
+            }
         }
     }
 
@@ -209,31 +220,44 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $notesIdx  = -1;
 
     foreach ($cleanHeaders as $idx => $clean) {
-        if (in_array($clean, ['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'materialcode'])) {
+        if (in_array($clean, ['itemno', 'itemnumber', 'kodeitem', 'kode', 'code', 'sku', 'kodematerial', 'materialcode', 'itemcode', 'kodebarang', 'kodeproduk', 'nomoritem', 'material'])) {
             if ($itemNoIdx === -1) $itemNoIdx = $idx;
         } elseif (in_array($clean, ['itemdescription', 'description', 'deskripsi', 'namabarang', 'namaitem', 'namapackaging', 'namamaterial', 'nama', 'materialname'])) {
             if ($descIdx === -1) $descIdx = $idx;
-        } elseif (in_array($clean, ['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'qty', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik']) 
-                  || strpos($clean, 'adjust') !== false || strpos($clean, 'selisih') !== false || strpos($clean, 'diff') !== false) {
+        } elseif (in_array($clean, ['qtyadjust', 'adjustqty', 'adjust', 'penyesuaian', 'qty', 'selisihadjust', 'selisih', 'diff', 'difference', 'perubahanstok', 'selisihstok', 'selisihfisik', 'jumlah', 'stokfisik', 'fisik']) 
+                  || strpos($clean, 'adjust') !== false || strpos($clean, 'selisih') !== false || strpos($clean, 'diff') !== false || strpos($clean, 'qty') !== false || strpos($clean, 'penyesuaian') !== false) {
             if ($adjustIdx === -1) $adjustIdx = $idx;
-        } elseif (in_array($clean, ['notesalasan', 'notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'keteranganselisih'])
-                  || strpos($clean, 'alasan') !== false || strpos($clean, 'catatan') !== false || strpos($clean, 'note') !== false) {
+        } elseif (in_array($clean, ['notesalasan', 'notes', 'alasan', 'keterangan', 'catatan', 'reason', 'note', 'keteranganselisih', 'ket'])
+                  || strpos($clean, 'alasan') !== false || strpos($clean, 'catatan') !== false || strpos($clean, 'note') !== false || strpos($clean, 'keterangan') !== false) {
             if ($notesIdx === -1) $notesIdx = $idx;
         }
     }
 
     if ($itemNoIdx === -1) $itemNoIdx = 0;
     if ($adjustIdx === -1) {
-        // Find first column containing numeric numbers if not detected
-        $adjustIdx = 2;
-        if (count($cleanHeaders) <= 2) $adjustIdx = 1;
+        for ($c = 1; $c < count($cleanHeaders); $c++) {
+            if (strpos($cleanHeaders[$c], 'adjust') !== false || strpos($cleanHeaders[$c], 'selisih') !== false || strpos($cleanHeaders[$c], 'qty') !== false) {
+                $adjustIdx = $c;
+                break;
+            }
+        }
+        if ($adjustIdx === -1) {
+            $adjustIdx = count($cleanHeaders) >= 3 ? 2 : 1;
+        }
     }
 
     // Load existing materials
     $stmtMat = $pdo->query("SELECT id, code, name, unit, category, rack_location, current_stock FROM materials");
     $existing = [];
+    $existingByName = [];
+    $existingByCleanCode = [];
     while ($m = $stmtMat->fetch()) {
-        $existing[strtoupper($m['code'])] = $m;
+        $upCode = strtoupper(trim($m['code']));
+        $existing[$upCode] = $m;
+        $cleanCode = preg_replace('/[^A-Za-z0-9]/', '', $upCode);
+        $existingByCleanCode[$cleanCode] = $m;
+        $cleanName = strtolower(preg_replace('/[^a-z0-9]/', '', $m['name']));
+        $existingByName[$cleanName] = $m;
     }
 
     $parsedItems = [];
@@ -247,45 +271,71 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $r = $rows[$i];
         if (empty(array_filter($r, 'strlen'))) continue;
 
-        $itemNo = strtoupper(trim($r[$itemNoIdx] ?? ''));
-        if (empty($itemNo)) continue;
+        $itemNo = strtoupper(trim((string)($r[$itemNoIdx] ?? '')));
+        $rawDesc = ($descIdx !== -1 && isset($r[$descIdx])) ? trim((string)$r[$descIdx]) : '';
+        if (empty($itemNo) && empty($rawDesc)) continue;
 
-        $rawAdjust = trim($r[$adjustIdx] ?? '0');
+        $rawAdjust = trim((string)($r[$adjustIdx] ?? '0'));
         // Clean adjust value: keep sign (+ / - / parenthesis) and digits
         $sign = 1;
         if (strpos($rawAdjust, '-') !== false || (str_starts_with($rawAdjust, '(') && str_ends_with($rawAdjust, ')'))) {
             $sign = -1;
         }
-        $digits = preg_replace('/[^0-9\.]/', '', str_replace(',', '.', $rawAdjust));
+        $normalizedAdjust = str_replace(',', '.', $rawAdjust);
+        $digits = preg_replace('/[^0-9\.]/', '', $normalizedAdjust);
         $qtyAdjust = ($digits !== '') ? $sign * (float)$digits : 0;
 
-        $notes = ($notesIdx !== -1 && isset($r[$notesIdx])) ? trim($r[$notesIdx]) : 'Penyesuaian Stok Excel';
+        $notes = ($notesIdx !== -1 && isset($r[$notesIdx]) && trim((string)$r[$notesIdx]) !== '') ? trim((string)$r[$notesIdx]) : 'Penyesuaian Stok Excel';
 
-        $isFound = isset($existing[$itemNo]);
-        if (!$isFound) {
+        // Match material
+        $mat = null;
+        if (!empty($itemNo)) {
+            if (isset($existing[$itemNo])) {
+                $mat = $existing[$itemNo];
+            } else {
+                $cleanItemNo = preg_replace('/[^A-Za-z0-9]/', '', $itemNo);
+                if (isset($existingByCleanCode[$cleanItemNo])) {
+                    $mat = $existingByCleanCode[$cleanItemNo];
+                } elseif (is_numeric($itemNo)) {
+                    $intCode = (string)(int)$itemNo;
+                    if (isset($existingByCleanCode[$intCode])) {
+                        $mat = $existingByCleanCode[$intCode];
+                    }
+                }
+            }
+        }
+
+        if (!$mat && !empty($rawDesc)) {
+            $cleanDesc = strtolower(preg_replace('/[^a-z0-9]/', '', $rawDesc));
+            if (isset($existingByName[$cleanDesc])) {
+                $mat = $existingByName[$cleanDesc];
+            }
+        }
+
+        if (!$mat) {
             $errorCount++;
             $parsedItems[] = [
                 'row_num' => $i + 1,
-                'item_no' => $itemNo,
-                'item_name' => ($descIdx !== -1 && isset($r[$descIdx])) ? trim($r[$descIdx]) : $itemNo,
-                'unit' => '-',
+                'material_id' => 0,
+                'item_no' => $itemNo ?: '-',
+                'item_name' => $rawDesc ?: $itemNo,
+                'unit' => 'Pcs',
                 'rack_location' => '-',
                 'stock_before' => 0,
                 'qty_adjust' => $qtyAdjust,
                 'stock_after' => 0,
                 'notes' => $notes,
                 'status' => 'NOT_FOUND',
-                'status_label' => 'Item Tidak Ditemukan'
+                'status_label' => 'Item Tidak Ditemukan di Master DB'
             ];
             continue;
         }
 
-        $mat = $existing[$itemNo];
         $stockBefore = (int)$mat['current_stock'];
         $stockAfter = $stockBefore + $qtyAdjust;
 
         if ($qtyAdjust > 0) $totalPlus += $qtyAdjust;
-        else $totalMinus += abs($qtyAdjust);
+        else if ($qtyAdjust < 0) $totalMinus += abs($qtyAdjust);
 
         $status = 'VALID';
         $statusLabel = 'Valid (Siap Disesuaikan)';
@@ -349,32 +399,42 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $pdo->beginTransaction();
 
-        $stmtGetMat = $pdo->prepare("SELECT id, current_stock FROM materials WHERE code = ?");
+        $stmtGetMatById = $pdo->prepare("SELECT id, code, name, current_stock FROM materials WHERE id = ?");
+        $stmtGetMatByCode = $pdo->prepare("SELECT id, code, name, current_stock FROM materials WHERE code = ?");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtMut = $pdo->prepare("
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
             VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?)
         ");
+        $now = date('Y-m-d H:i:s');
         $stmtInsertInbound = $pdo->prepare("
             INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-            VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, NOW(), NOW(), 0)
+            VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0)
         ");
         $stmtInsertOutbound = $pdo->prepare("
             INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, NOW(), NOW(), 0)
+            VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0)
         ");
 
         $appliedCount = 0;
 
         foreach ($items as $item) {
-            $code = strtoupper(trim($item['item_no']));
-            $qtyAdjust = (int)$item['qty_adjust'];
+            $matIdInput = (int)($item['material_id'] ?? 0);
+            $code = strtoupper(trim((string)($item['item_no'] ?? '')));
+            $qtyAdjust = (int)($item['qty_adjust'] ?? 0);
             $notes = trim($item['notes'] ?? $batchNotes) ?: $batchNotes;
 
-            if (empty($code) || $qtyAdjust === 0) continue;
+            if ($qtyAdjust === 0) continue;
 
-            $stmtGetMat->execute([$code]);
-            $mat = $stmtGetMat->fetch();
+            $mat = null;
+            if ($matIdInput > 0) {
+                $stmtGetMatById->execute([$matIdInput]);
+                $mat = $stmtGetMatById->fetch();
+            }
+            if (!$mat && !empty($code)) {
+                $stmtGetMatByCode->execute([$code]);
+                $mat = $stmtGetMatByCode->fetch();
+            }
 
             if (!$mat) continue;
 
@@ -401,7 +461,9 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $matId,
                     $qtyAdjust,
                     $notes,
-                    $userName
+                    $userName,
+                    $now,
+                    $now
                 ]);
             } else {
                 $stmtInsertOutbound->execute([
@@ -409,7 +471,9 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $matId,
                     abs($qtyAdjust),
                     $userName,
-                    $notes
+                    $notes,
+                    $now,
+                    $now
                 ]);
             }
 
@@ -480,29 +544,34 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtMut->execute([$materialId, $delta, $stockBefore, $stockAfter, $refNo, $fullNotes, $userId]);
 
         $userName = Auth::name() ?? 'SYSTEM';
+        $now = date('Y-m-d H:i:s');
         if ($adjustType === 'PLUS') {
             $stmtInsertInbound = $pdo->prepare("
                 INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-                VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, NOW(), NOW(), 0)
+                VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0)
             ");
             $stmtInsertInbound->execute([
                 $refNo,
                 $materialId,
                 $adjustQty,
                 $fullNotes,
-                $userName
+                $userName,
+                $now,
+                $now
             ]);
         } else {
             $stmtInsertOutbound = $pdo->prepare("
                 INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-                VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, NOW(), NOW(), 0)
+                VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0)
             ");
             $stmtInsertOutbound->execute([
                 $refNo,
                 $materialId,
                 $adjustQty,
                 $userName,
-                $fullNotes
+                $fullNotes,
+                $now,
+                $now
             ]);
         }
 
