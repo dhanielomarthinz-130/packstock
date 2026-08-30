@@ -214,7 +214,7 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">settings</span>
             </span>
-            <span class="sidebar-section-title text-slate-600 font-bold">Pengaturan Sistem</span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Settings</span>
             <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
