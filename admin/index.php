@@ -2306,7 +2306,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Items Table Container -->
-      <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+      <div class="flex-1 min-h-[220px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
         <table class="w-full text-left border-collapse text-xs">
           <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
             <tr>
@@ -2404,7 +2404,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Items Table Container -->
-      <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+      <div class="flex-1 min-h-[220px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
         <table class="w-full text-left border-collapse text-xs">
           <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
             <tr>

@@ -2820,15 +2820,34 @@ async function deleteUser(id, name) {
   }
 }
 
-// ================= CUSTOM MATERIAL SEARCHABLE DROPDOWN COMPONENT =================
+// ================= CUSTOM MATERIAL FLOATING PORTAL SEARCHABLE DROPDOWN =================
+let activeFloatingDropdown = null;
+
+function hideFloatingDropdown() {
+  if (activeFloatingDropdown) {
+    activeFloatingDropdown.remove();
+    activeFloatingDropdown = null;
+  }
+}
+
+document.addEventListener('mousedown', (e) => {
+  if (!e.target.closest('.custom-mat-search-box') && !e.target.closest('.custom-floating-mat-dropdown')) {
+    hideFloatingDropdown();
+  }
+});
+
+window.addEventListener('resize', hideFloatingDropdown);
+
 function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallback = null) {
   const searchInput = container.querySelector('.mat-search-input');
   const hiddenInput = container.querySelector('.mat-id-hidden');
-  const dropdownList = container.querySelector('.custom-mat-dropdown');
 
   let activeIndex = -1;
 
-  function renderList(query = '') {
+  function renderFloatingList(query = '') {
+    hideFloatingDropdown();
+
+    const rect = searchInput.getBoundingClientRect();
     const q = (query || '').toLowerCase().trim();
     let filtered = allMaterials || [];
     if (q) {
@@ -2839,30 +2858,44 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
       );
     }
 
+    const dropdownEl = document.createElement('div');
+    dropdownEl.className = 'custom-floating-mat-dropdown fixed bg-white border border-slate-200 rounded-xl shadow-2xl p-1.5 divide-y divide-slate-100 text-xs max-h-[260px] overflow-y-auto';
+    dropdownEl.style.zIndex = '999999';
+    dropdownEl.style.top = `${rect.bottom + 4}px`;
+    dropdownEl.style.left = `${rect.left}px`;
+    dropdownEl.style.width = `${Math.max(rect.width, 380)}px`;
+
     if (filtered.length === 0) {
-      dropdownList.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs italic">Material tidak ditemukan</div>`;
-      dropdownList.classList.remove('hidden');
-      return;
+      dropdownEl.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs italic">Material tidak ditemukan</div>`;
+    } else {
+      dropdownEl.innerHTML = filtered.slice(0, 60).map((m, idx) => {
+        const isSelected = (hiddenInput.value == m.id);
+        const stockBadge = isOutbound 
+          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${m.current_stock <= 0 ? 'bg-rose-100 text-rose-800' : (m.current_stock <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}">Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit)}</span>`
+          : `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
+        return `
+          <div class="custom-mat-dropdown-item p-2 hover:bg-emerald-50 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-emerald-100 text-emerald-900 font-bold' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
+            <div class="flex-1 truncate mr-2">
+              <span class="font-bold text-slate-800">${escapeHtml(m.name)}</span>
+              <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || '')}</span>
+            </div>
+            <div>${stockBadge}</div>
+          </div>
+        `;
+      }).join('');
     }
 
+    document.body.appendChild(dropdownEl);
+    activeFloatingDropdown = dropdownEl;
     activeIndex = -1;
-    dropdownList.innerHTML = filtered.slice(0, 60).map((m, idx) => {
-      const isSelected = (hiddenInput.value == m.id);
-      const stockBadge = isOutbound 
-        ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${m.current_stock <= 0 ? 'bg-rose-100 text-rose-800' : (m.current_stock <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}">Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit)}</span>`
-        : `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
-      return `
-        <div class="custom-mat-dropdown-item ${isSelected ? 'is-selected' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
-          <div class="flex-1 truncate mr-2">
-            <span class="font-bold text-slate-800">${escapeHtml(m.name)}</span>
-            <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || '')}</span>
-          </div>
-          <div>${stockBadge}</div>
-        </div>
-      `;
-    }).join('');
 
-    dropdownList.classList.remove('hidden');
+    dropdownEl.addEventListener('mousedown', (e) => {
+      const item = e.target.closest('.custom-mat-dropdown-item');
+      if (item) {
+        e.preventDefault();
+        selectItem(item);
+      }
+    });
   }
 
   function selectItem(itemEl) {
@@ -2876,7 +2909,7 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     hiddenInput.value = id;
     searchInput.setAttribute('data-selected-name', name);
     searchInput.value = isOutbound ? `${name} (Stok: ${App.formatNumber(stock)} ${unit})` : name;
-    dropdownList.classList.add('hidden');
+    hideFloatingDropdown();
 
     if (onSelectCallback) {
       onSelectCallback({ id: parseInt(id), name, stock: parseInt(stock), unit, rack });
@@ -2891,62 +2924,61 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
 
   searchInput.addEventListener('focus', () => {
     const currName = searchInput.getAttribute('data-selected-name') || '';
-    renderList(searchInput.value === currName ? '' : searchInput.value);
+    renderFloatingList(searchInput.value === currName ? '' : searchInput.value);
   });
 
   searchInput.addEventListener('click', () => {
-    dropdownList.classList.remove('hidden');
+    const currName = searchInput.getAttribute('data-selected-name') || '';
+    renderFloatingList(searchInput.value === currName ? '' : searchInput.value);
   });
 
   searchInput.addEventListener('input', () => {
     hiddenInput.value = '';
-    renderList(searchInput.value);
+    renderFloatingList(searchInput.value);
   });
 
   searchInput.addEventListener('keydown', (e) => {
-    const items = dropdownList.querySelectorAll('.custom-mat-dropdown-item');
+    if (!activeFloatingDropdown) {
+      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+        renderFloatingList(searchInput.value);
+        return;
+      }
+      return;
+    }
+
+    const items = activeFloatingDropdown.querySelectorAll('.custom-mat-dropdown-item');
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (dropdownList.classList.contains('hidden')) renderList('');
       if (items.length > 0) {
         activeIndex = (activeIndex + 1) % items.length;
-        items.forEach((it, i) => it.classList.toggle('is-focused', i === activeIndex));
+        items.forEach((it, i) => it.classList.toggle('bg-emerald-50', i === activeIndex));
         items[activeIndex].scrollIntoView({ block: 'nearest' });
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (items.length > 0) {
         activeIndex = (activeIndex - 1 + items.length) % items.length;
-        items.forEach((it, i) => it.classList.toggle('is-focused', i === activeIndex));
+        items.forEach((it, i) => it.classList.toggle('bg-emerald-50', i === activeIndex));
         items[activeIndex].scrollIntoView({ block: 'nearest' });
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (!dropdownList.classList.contains('hidden') && activeIndex >= 0 && items[activeIndex]) {
+      if (activeIndex >= 0 && items[activeIndex]) {
         selectItem(items[activeIndex]);
-      } else if (!dropdownList.classList.contains('hidden') && items.length > 0) {
+      } else if (items.length > 0) {
         selectItem(items[0]);
       }
     } else if (e.key === 'Escape') {
-      dropdownList.classList.add('hidden');
+      hideFloatingDropdown();
     }
   });
 
-  dropdownList.addEventListener('mousedown', (e) => {
-    const item = e.target.closest('.custom-mat-dropdown-item');
-    if (item) {
-      e.preventDefault();
-      selectItem(item);
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!container.contains(e.target)) {
-      dropdownList.classList.add('hidden');
+  searchInput.addEventListener('blur', () => {
+    setTimeout(() => {
       if (!hiddenInput.value) {
         searchInput.value = '';
       }
-    }
+    }, 200);
   });
 }
 
