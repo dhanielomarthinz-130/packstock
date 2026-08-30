@@ -2820,6 +2820,136 @@ async function deleteUser(id, name) {
   }
 }
 
+// ================= CUSTOM MATERIAL SEARCHABLE DROPDOWN COMPONENT =================
+function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallback = null) {
+  const searchInput = container.querySelector('.mat-search-input');
+  const hiddenInput = container.querySelector('.mat-id-hidden');
+  const dropdownList = container.querySelector('.custom-mat-dropdown');
+
+  let activeIndex = -1;
+
+  function renderList(query = '') {
+    const q = (query || '').toLowerCase().trim();
+    let filtered = allMaterials || [];
+    if (q) {
+      filtered = filtered.filter(m => 
+        (m.name && m.name.toLowerCase().includes(q)) || 
+        (m.item_code && m.item_code.toLowerCase().includes(q)) ||
+        (m.rack_location && m.rack_location.toLowerCase().includes(q))
+      );
+    }
+
+    if (filtered.length === 0) {
+      dropdownList.innerHTML = `<div class="p-3 text-center text-slate-400 text-xs italic">Material tidak ditemukan</div>`;
+      dropdownList.classList.remove('hidden');
+      return;
+    }
+
+    activeIndex = -1;
+    dropdownList.innerHTML = filtered.slice(0, 60).map((m, idx) => {
+      const isSelected = (hiddenInput.value == m.id);
+      const stockBadge = isOutbound 
+        ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${m.current_stock <= 0 ? 'bg-rose-100 text-rose-800' : (m.current_stock <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}">Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit)}</span>`
+        : `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
+      return `
+        <div class="custom-mat-dropdown-item ${isSelected ? 'is-selected' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
+          <div class="flex-1 truncate mr-2">
+            <span class="font-bold text-slate-800">${escapeHtml(m.name)}</span>
+            <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || '')}</span>
+          </div>
+          <div>${stockBadge}</div>
+        </div>
+      `;
+    }).join('');
+
+    dropdownList.classList.remove('hidden');
+  }
+
+  function selectItem(itemEl) {
+    if (!itemEl) return;
+    const id = itemEl.getAttribute('data-id');
+    const name = itemEl.getAttribute('data-name');
+    const stock = itemEl.getAttribute('data-stock');
+    const unit = itemEl.getAttribute('data-unit');
+    const rack = itemEl.getAttribute('data-rack');
+
+    hiddenInput.value = id;
+    searchInput.setAttribute('data-selected-name', name);
+    searchInput.value = isOutbound ? `${name} (Stok: ${App.formatNumber(stock)} ${unit})` : name;
+    dropdownList.classList.add('hidden');
+
+    if (onSelectCallback) {
+      onSelectCallback({ id: parseInt(id), name, stock: parseInt(stock), unit, rack });
+    }
+
+    const tr = container.closest('tr');
+    if (tr) {
+      const nextInput = isOutbound ? tr.querySelector('.outbound-row-qty') : tr.querySelector('.inbound-row-qty');
+      if (nextInput) nextInput.focus();
+    }
+  }
+
+  searchInput.addEventListener('focus', () => {
+    const currName = searchInput.getAttribute('data-selected-name') || '';
+    renderList(searchInput.value === currName ? '' : searchInput.value);
+  });
+
+  searchInput.addEventListener('click', () => {
+    dropdownList.classList.remove('hidden');
+  });
+
+  searchInput.addEventListener('input', () => {
+    hiddenInput.value = '';
+    renderList(searchInput.value);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    const items = dropdownList.querySelectorAll('.custom-mat-dropdown-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (dropdownList.classList.contains('hidden')) renderList('');
+      if (items.length > 0) {
+        activeIndex = (activeIndex + 1) % items.length;
+        items.forEach((it, i) => it.classList.toggle('is-focused', i === activeIndex));
+        items[activeIndex].scrollIntoView({ block: 'nearest' });
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (items.length > 0) {
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        items.forEach((it, i) => it.classList.toggle('is-focused', i === activeIndex));
+        items[activeIndex].scrollIntoView({ block: 'nearest' });
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!dropdownList.classList.contains('hidden') && activeIndex >= 0 && items[activeIndex]) {
+        selectItem(items[activeIndex]);
+      } else if (!dropdownList.classList.contains('hidden') && items.length > 0) {
+        selectItem(items[0]);
+      }
+    } else if (e.key === 'Escape') {
+      dropdownList.classList.add('hidden');
+    }
+  });
+
+  dropdownList.addEventListener('mousedown', (e) => {
+    const item = e.target.closest('.custom-mat-dropdown-item');
+    if (item) {
+      e.preventDefault();
+      selectItem(item);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!container.contains(e.target)) {
+      dropdownList.classList.add('hidden');
+      if (!hiddenInput.value) {
+        searchInput.value = '';
+      }
+    }
+  });
+}
+
 // 8. INBOUND GOODS RECEIPT (ADMIN & OPERATOR TRACKER WITH TABLE BATCH INPUT)
 let inboundModalStartTime = null;
 
@@ -2865,36 +2995,38 @@ function openAddInboundModal() {
   if (timeDisplay) timeDisplay.value = timeStr;
 
   // Add 1 default row
-  addInboundTableRow();
+  addInboundTableRow(null, false);
   recalcInboundTotalQty();
 
   App.openModal('modalAddInbound');
 }
 
-function addInboundTableRow(data = null) {
+function addInboundTableRow(data = null, autoFocus = true) {
   const tbody = document.getElementById('inboundItemsTableBody');
   if (!tbody) return;
 
   const rowCount = tbody.querySelectorAll('tr').length + 1;
-  const matOptions = renderMaterialOptionsHtml(data?.material_id || '', false);
 
   const tr = document.createElement('tr');
   tr.className = 'hover:bg-slate-50 text-xs border-b border-slate-100 transition-colors';
   tr.innerHTML = `
     <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
     <td class="p-2.5">
-      <select required class="inbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-emerald-600">
-        ${matOptions}
-      </select>
+      <div class="custom-mat-search-box relative w-full">
+        <input type="text" class="mat-search-input w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-emerald-600 truncate cursor-pointer" placeholder="Cari Kemas / Consumable..." autocomplete="off">
+        <input type="hidden" class="inbound-row-mat mat-id-hidden" required>
+        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">arrow_drop_down</span>
+        <div class="custom-mat-dropdown hidden"></div>
+      </div>
     </td>
     <td class="p-2.5">
-      <input type="text" class="inbound-row-rack w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:bg-white focus:border-emerald-600" placeholder="Rak..." value="${escapeHtml(data?.rack || '')}">
+      <input type="text" class="inbound-row-rack w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:bg-white focus:border-emerald-600" placeholder="Rak..." value="${escapeHtml(data?.rack || '')}">
     </td>
     <td class="p-2.5">
-      <input type="number" required min="1" class="inbound-row-qty w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-emerald-800 outline-none focus:bg-white focus:border-emerald-600" placeholder="0" value="${data?.qty || ''}" oninput="recalcInboundTotalQty()">
+      <input type="number" required min="1" class="inbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-emerald-800 outline-none focus:bg-white focus:border-emerald-600" placeholder="0" value="${data?.qty || ''}" oninput="recalcInboundTotalQty()">
     </td>
     <td class="p-2.5">
-      <input type="text" class="inbound-row-notes w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-emerald-600" placeholder="Catatan item..." value="${escapeHtml(data?.notes || '')}">
+      <input type="text" class="inbound-row-notes w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-emerald-600" placeholder="Catatan item..." value="${escapeHtml(data?.notes || '')}" onkeydown="handleInboundRowNotesKeyDown(event, this)">
     </td>
     <td class="p-2.5 text-center">
       <button type="button" onclick="removeInboundTableRow(this)" class="w-8 h-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center transition-colors mx-auto" title="Hapus Baris">
@@ -2904,39 +3036,39 @@ function addInboundTableRow(data = null) {
   `;
   tbody.appendChild(tr);
 
-  const selectEl = tr.querySelector('.inbound-row-mat');
-  if (typeof TomSelect !== 'undefined' && selectEl) {
-    const ts = new TomSelect(selectEl, {
-      create: false,
-      maxItems: 1,
-      allowEmptyOption: true,
-      placeholder: '-- Cari Kemas/Consumable --',
-      dropdownParent: 'body',
-      searchField: ['text'],
-      onChange: function(value) {
-        onInboundRowMaterialChange(selectEl, value);
-      }
-    });
-    tr._tomSelect = ts;
-  }
+  const searchBox = tr.querySelector('.custom-mat-search-box');
+  setupCustomMaterialSearch(searchBox, false, (mat) => {
+    const rackInput = tr.querySelector('.inbound-row-rack');
+    if (rackInput && mat.rack && mat.rack !== '-') {
+      rackInput.value = mat.rack;
+    }
+  });
 
   recalcInboundTotalQty();
+
+  if (autoFocus) {
+    setTimeout(() => {
+      tr.querySelector('.mat-search-input')?.focus();
+    }, 50);
+  }
+}
+
+function handleInboundRowNotesKeyDown(e, inputEl) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addInboundTableRow(null, true);
+  }
 }
 
 function removeInboundTableRow(btn) {
   const tbody = document.getElementById('inboundItemsTableBody');
   const tr = btn.closest('tr');
-  if (tr) {
-    if (tr._tomSelect) {
-      try { tr._tomSelect.destroy(); } catch (e) {}
-    }
-    tr.remove();
-  }
+  if (tr) tr.remove();
 
   if (tbody) {
     const rows = tbody.querySelectorAll('tr');
     if (rows.length === 0) {
-      addInboundTableRow();
+      addInboundTableRow(null, false);
     } else {
       rows.forEach((r, idx) => {
         const idxEl = r.querySelector('.row-index');
@@ -2945,19 +3077,6 @@ function removeInboundTableRow(btn) {
     }
   }
   recalcInboundTotalQty();
-}
-
-function onInboundRowMaterialChange(selectEl, val = null) {
-  const tr = selectEl.closest('tr');
-  if (!tr) return;
-  const matId = parseInt(val || selectEl.value || '0');
-  const foundMat = (allMaterials || []).find(m => m.id === matId);
-  const rackInput = tr.querySelector('.inbound-row-rack');
-  if (rackInput && foundMat) {
-    if (foundMat.rack_location && foundMat.rack_location !== '-') {
-      rackInput.value = foundMat.rack_location;
-    }
-  }
 }
 
 function recalcInboundTotalQty() {
@@ -3236,30 +3355,32 @@ function openAddOutboundModal() {
   if (timeDisplay) timeDisplay.value = timeStr;
 
   // Add 1 default row
-  addOutboundTableRow();
+  addOutboundTableRow(null, false);
   recalcOutboundTotalQty();
 
   App.openModal('modalAddOutbound');
 }
 
-function addOutboundTableRow(data = null) {
+function addOutboundTableRow(data = null, autoFocus = true) {
   const tbody = document.getElementById('outboundItemsTableBody');
   if (!tbody) return;
 
   const rowCount = tbody.querySelectorAll('tr').length + 1;
-  const matOptions = renderMaterialOptionsHtml(data?.material_id || '', true);
 
   const tr = document.createElement('tr');
   tr.className = 'hover:bg-slate-50 text-xs border-b border-slate-100 transition-colors';
   tr.innerHTML = `
     <td class="p-2.5 text-center font-bold text-slate-500 row-index">${rowCount}</td>
     <td class="p-2.5">
-      <select required class="outbound-row-mat w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
-        ${matOptions}
-      </select>
+      <div class="custom-mat-search-box relative w-full">
+        <input type="text" class="mat-search-input w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-amber-600 truncate cursor-pointer" placeholder="Cari Kemas / Consumable..." autocomplete="off">
+        <input type="hidden" class="outbound-row-mat mat-id-hidden" required>
+        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">arrow_drop_down</span>
+        <div class="custom-mat-dropdown hidden"></div>
+      </div>
     </td>
     <td class="p-2.5">
-      <select required class="outbound-row-brand w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
+      <select required class="outbound-row-brand w-full h-[36px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
         <option value="HANASUI" ${data?.destination === 'HANASUI' ? 'selected' : ''}>HANASUI</option>
         <option value="NCO" ${data?.destination === 'NCO' ? 'selected' : ''}>NCO</option>
         <option value="FYNE" ${data?.destination === 'FYNE' ? 'selected' : ''}>FYNE</option>
@@ -3267,10 +3388,10 @@ function addOutboundTableRow(data = null) {
       </select>
     </td>
     <td class="p-2.5">
-      <input type="number" required min="1" class="outbound-row-qty w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-amber-900 outline-none focus:bg-white focus:border-amber-600" placeholder="0" value="${data?.qty || ''}" oninput="validateOutboundRowQty(this); recalcOutboundTotalQty();">
+      <input type="number" required min="1" class="outbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-amber-900 outline-none focus:bg-white focus:border-amber-600" placeholder="0" value="${data?.qty || ''}" oninput="validateOutboundRowQty(this); recalcOutboundTotalQty();">
     </td>
     <td class="p-2.5">
-      <input type="text" required class="outbound-row-reason w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-600" placeholder="Contoh: Uji Kualitas / Rusak / Reject" value="${escapeHtml(data?.reason || 'Kebutuhan Produksi')}">
+      <input type="text" required class="outbound-row-reason w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-600" placeholder="Contoh: Uji Kualitas / Rusak / Reject" value="${escapeHtml(data?.reason || 'Kebutuhan Produksi')}" onkeydown="handleOutboundRowReasonKeyDown(event, this)">
     </td>
     <td class="p-2.5 text-center">
       <button type="button" onclick="removeOutboundTableRow(this)" class="w-8 h-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center transition-colors mx-auto" title="Hapus Baris">
@@ -3280,39 +3401,37 @@ function addOutboundTableRow(data = null) {
   `;
   tbody.appendChild(tr);
 
-  const selectEl = tr.querySelector('.outbound-row-mat');
-  if (typeof TomSelect !== 'undefined' && selectEl) {
-    const ts = new TomSelect(selectEl, {
-      create: false,
-      maxItems: 1,
-      allowEmptyOption: true,
-      placeholder: '-- Cari Kemas/Consumable --',
-      dropdownParent: 'body',
-      searchField: ['text'],
-      onChange: function(value) {
-        onOutboundRowMaterialChange(selectEl, value);
-      }
-    });
-    tr._tomSelect = ts;
-  }
+  const searchBox = tr.querySelector('.custom-mat-search-box');
+  setupCustomMaterialSearch(searchBox, true, (mat) => {
+    const qtyInput = tr.querySelector('.outbound-row-qty');
+    if (qtyInput) validateOutboundRowQty(qtyInput);
+  });
 
   recalcOutboundTotalQty();
+
+  if (autoFocus) {
+    setTimeout(() => {
+      tr.querySelector('.mat-search-input')?.focus();
+    }, 50);
+  }
+}
+
+function handleOutboundRowReasonKeyDown(e, inputEl) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addOutboundTableRow(null, true);
+  }
 }
 
 function removeOutboundTableRow(btn) {
   const tbody = document.getElementById('outboundItemsTableBody');
   const tr = btn.closest('tr');
-  if (tr) {
-    if (tr._tomSelect) {
-      try { tr._tomSelect.destroy(); } catch (e) {}
-    }
-    tr.remove();
-  }
+  if (tr) tr.remove();
 
   if (tbody) {
     const rows = tbody.querySelectorAll('tr');
     if (rows.length === 0) {
-      addOutboundTableRow();
+      addOutboundTableRow(null, false);
     } else {
       rows.forEach((r, idx) => {
         const idxEl = r.querySelector('.row-index');
@@ -3323,18 +3442,11 @@ function removeOutboundTableRow(btn) {
   recalcOutboundTotalQty();
 }
 
-function onOutboundRowMaterialChange(selectEl, val = null) {
-  const tr = selectEl.closest('tr');
-  if (!tr) return;
-  const qtyInput = tr.querySelector('.outbound-row-qty');
-  if (qtyInput) validateOutboundRowQty(qtyInput);
-}
-
 function validateOutboundRowQty(qtyInput) {
   const tr = qtyInput.closest('tr');
   if (!tr) return;
-  const matSelect = tr.querySelector('.outbound-row-mat');
-  const matId = parseInt(matSelect?.value || '0');
+  const matInput = tr.querySelector('.outbound-row-mat');
+  const matId = parseInt(matInput?.value || '0');
   const foundMat = (allMaterials || []).find(m => m.id === matId);
   const stock = foundMat ? parseInt(foundMat.current_stock || '0') : 0;
   const val = parseInt(qtyInput.value || '0');

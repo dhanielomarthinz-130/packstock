@@ -2254,8 +2254,8 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- ================= MODAL: INPUT INBOUND TABLE ================= -->
-<div id="modalAddInbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
+<div id="modalAddInbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-6xl w-full xl:max-w-7xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
       <div class="flex items-center gap-2.5">
@@ -2308,14 +2308,14 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- Items Table Container -->
       <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
         <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10">
+          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
             <tr>
-              <th class="p-2.5 w-10 text-center">#</th>
-              <th class="p-2.5 min-w-[240px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-32">Lokasi Rak</th>
-              <th class="p-2.5 w-28 text-center">Qty Masuk <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 min-w-[150px]">Catatan Item</th>
-              <th class="p-2.5 w-12 text-center">Aksi</th>
+              <th class="p-2.5 w-12 text-center">#</th>
+              <th class="p-2.5 min-w-[340px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-40 min-w-[140px]">Lokasi Rak</th>
+              <th class="p-2.5 w-32 min-w-[110px] text-center">Qty Masuk <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 min-w-[200px]">Catatan Item</th>
+              <th class="p-2.5 w-14 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody id="inboundItemsTableBody" class="divide-y divide-slate-100">
@@ -2326,14 +2326,14 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Bottom Bar with Add Row and Total Summary -->
       <div class="flex items-center justify-between pt-1 flex-shrink-0">
-        <button type="button" onclick="addInboundTableRow()" class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors">
+        <button type="button" onclick="addInboundTableRow()" class="px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs">
           <span class="material-symbols-outlined text-[16px]">add_circle</span>
-          <span>Tambah Baris</span>
+          <span>Tambah Baris (Enter)</span>
         </button>
 
         <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
           <span>Total Qty Masuk:</span>
-          <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-mono font-black text-sm" id="inboundTotalQtySummary">0</span>
+          <span class="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-mono font-black text-sm" id="inboundTotalQtySummary">0</span>
         </div>
       </div>
 
@@ -2352,8 +2352,8 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <!-- ================= MODAL: INPUT OUTBOUND TABLE ================= -->
-<div id="modalAddOutbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
+<div id="modalAddOutbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-6xl w-full xl:max-w-7xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
       <div class="flex items-center gap-2.5">
@@ -2406,14 +2406,14 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- Items Table Container -->
       <div class="flex-1 min-h-0 overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
         <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10">
+          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
             <tr>
-              <th class="p-2.5 w-10 text-center">#</th>
-              <th class="p-2.5 min-w-[240px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-36">Tujuan Brand <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-28 text-center">Qty Keluar <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 min-w-[180px]">Alasan Pengeluaran <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-12 text-center">Aksi</th>
+              <th class="p-2.5 w-12 text-center">#</th>
+              <th class="p-2.5 min-w-[340px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-44 min-w-[160px]">Tujuan Brand <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-32 min-w-[110px] text-center">Qty Keluar <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 min-w-[220px]">Alasan Pengeluaran <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-14 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody id="outboundItemsTableBody" class="divide-y divide-slate-100">
@@ -2424,14 +2424,14 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Bottom Bar with Add Row and Total Summary -->
       <div class="flex items-center justify-between pt-1 flex-shrink-0">
-        <button type="button" onclick="addOutboundTableRow()" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5 transition-colors">
+        <button type="button" onclick="addOutboundTableRow()" class="px-3.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs">
           <span class="material-symbols-outlined text-[16px]">add_circle</span>
-          <span>Tambah Baris</span>
+          <span>Tambah Baris (Enter)</span>
         </button>
 
         <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
           <span>Total Qty Keluar:</span>
-          <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-mono font-black text-sm" id="outboundTotalQtySummary">0</span>
+          <span class="px-3 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-mono font-black text-sm" id="outboundTotalQtySummary">0</span>
         </div>
       </div>
 
