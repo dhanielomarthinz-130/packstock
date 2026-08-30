@@ -7145,16 +7145,31 @@ async function loadCountingProgressDashboard() {
     }
 
     const kpi = res.kpi || {};
-    // Update KPI Cards
-    const overallPctEl = document.getElementById('cpKpiOverallPct');
-    if (overallPctEl) overallPctEl.innerText = `${kpi.overall_progress_pct || 0}%`;
+    const charts = res.charts || {};
+    const opChart = charts.stock_opname || {};
+    const dynChart = charts.dynamic_count || {};
 
-    const ratioEl = document.getElementById('cpKpiItemRatio');
-    if (ratioEl) ratioEl.innerText = `(${(kpi.overall_counted_items || 0).toLocaleString()} / ${(kpi.overall_total_items || 0).toLocaleString()} SKU)`;
+    // 1. Stock Opname Progress Card
+    const opPctEl = document.getElementById('cpKpiOpnamePct');
+    if (opPctEl) opPctEl.innerText = `${opChart.progress_pct || 0}%`;
 
-    const barEl = document.getElementById('cpKpiProgressBar');
-    if (barEl) barEl.style.width = `${Math.min(100, kpi.overall_progress_pct || 0)}%`;
+    const opRatioEl = document.getElementById('cpKpiOpnameRatio');
+    if (opRatioEl) opRatioEl.innerText = `(${(opChart.counted_skus || 0).toLocaleString()} / ${(opChart.total_target_db_skus || 0).toLocaleString()} DB)`;
 
+    const opBarEl = document.getElementById('cpKpiOpnameBar');
+    if (opBarEl) opBarEl.style.width = `${Math.min(100, opChart.progress_pct || 0)}%`;
+
+    // 2. Dynamic Count Progress Card
+    const dynPctEl = document.getElementById('cpKpiDynamicPct');
+    if (dynPctEl) dynPctEl.innerText = `${dynChart.progress_pct || 0}%`;
+
+    const dynRatioEl = document.getElementById('cpKpiDynamicRatio');
+    if (dynRatioEl) dynRatioEl.innerText = `(${(dynChart.done_skus || 0).toLocaleString()} / ${(dynChart.total_assigned_skus || 0).toLocaleString()} Assign)`;
+
+    const dynBarEl = document.getElementById('cpKpiDynamicBar');
+    if (dynBarEl) dynBarEl.style.width = `${Math.min(100, dynChart.progress_pct || 0)}%`;
+
+    // 3. Active Sessions
     const activeSessionsEl = document.getElementById('cpKpiActiveSessions');
     if (activeSessionsEl) activeSessionsEl.innerText = `${kpi.active_sessions || 0} Sesi`;
 
@@ -7164,14 +7179,36 @@ async function loadCountingProgressDashboard() {
     const opnameActiveEl = document.getElementById('cpKpiOpnameActive');
     if (opnameActiveEl) opnameActiveEl.innerText = `${kpi.active_stock_opname || 0} Opname`;
 
+    // 4. Total Qty
     const totalQtyEl = document.getElementById('cpKpiTotalQty');
     if (totalQtyEl) totalQtyEl.innerText = `${(kpi.overall_total_qty || 0).toLocaleString()} Pcs`;
 
+    // 5. Variance
     const varianceEl = document.getElementById('cpKpiVarianceItems');
     if (varianceEl) varianceEl.innerText = `${(kpi.total_variance_count || 0).toLocaleString()} SKU`;
 
     const countEl = document.getElementById('cpLiveSessionCount');
     if (countEl) countEl.innerText = `${(res.sessions || []).length} Dokumen Terdaftar`;
+
+    // Top KPI Cards visibility sync
+    const kpiGrid = document.getElementById('cpKpiCardsContainer');
+    const cardKpiOp = document.getElementById('kpiCardStockOpname');
+    const cardKpiDyn = document.getElementById('kpiCardDynamicCount');
+    if (kpiGrid && cardKpiOp && cardKpiDyn) {
+      if (filterType === 'DYNAMIC_COUNT') {
+        cardKpiOp.classList.add('hidden');
+        cardKpiDyn.classList.remove('hidden');
+        kpiGrid.className = 'grid grid-cols-2 lg:grid-cols-4 gap-3.5';
+      } else if (filterType === 'STOCK_OPNAME') {
+        cardKpiDyn.classList.add('hidden');
+        cardKpiOp.classList.remove('hidden');
+        kpiGrid.className = 'grid grid-cols-2 lg:grid-cols-4 gap-3.5';
+      } else {
+        cardKpiOp.classList.remove('hidden');
+        cardKpiDyn.classList.remove('hidden');
+        kpiGrid.className = 'grid grid-cols-2 lg:grid-cols-5 gap-3.5';
+      }
+    }
 
     // Render Charts
     renderCountingProgressCharts(res.charts);

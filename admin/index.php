@@ -857,38 +857,58 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- 4 Top Executive KPI Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <!-- 1. Overall Completion % -->
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <!-- Top Executive KPI Cards Row -->
+        <div id="cpKpiCardsContainer" class="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+          
+          <!-- 1. Stock Opname Progress Card -->
+          <div id="kpiCardStockOpname" class="bg-white p-4 rounded-2xl border border-teal-200/80 shadow-2xs flex flex-col justify-between transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] uppercase font-bold text-slate-400">Total Progres Fisik</span>
-              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                <span class="material-symbols-outlined text-[18px]">donut_large</span>
+              <span class="text-[10px] uppercase font-black text-teal-800 tracking-wider">Progres Stock Opname</span>
+              <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">fact_check</span>
               </div>
             </div>
             <div class="mt-2">
-              <div class="flex items-baseline gap-2">
-                <span id="cpKpiOverallPct" class="text-2xl font-black text-emerald-800">0%</span>
-                <span id="cpKpiItemRatio" class="text-xs text-slate-500 font-semibold">(0 / 0 SKU)</span>
+              <div class="flex items-baseline gap-1.5">
+                <span id="cpKpiOpnamePct" class="text-2xl font-black text-teal-900">0%</span>
+                <span id="cpKpiOpnameRatio" class="text-[11px] text-slate-500 font-bold">(0 / 0 DB)</span>
               </div>
-              <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-slate-200/60">
-                <div id="cpKpiProgressBar" class="bg-emerald-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-teal-100">
+                <div id="cpKpiOpnameBar" class="bg-teal-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
               </div>
             </div>
           </div>
 
-          <!-- 2. Active Sessions -->
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <!-- 2. Dynamic Count Progress Card -->
+          <div id="kpiCardDynamicCount" class="bg-white p-4 rounded-2xl border border-indigo-200/80 shadow-2xs flex flex-col justify-between transition-all">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-black text-indigo-800 tracking-wider">Progres Dynamic Count</span>
+              <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[18px]">checklist</span>
+              </div>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-baseline gap-1.5">
+                <span id="cpKpiDynamicPct" class="text-2xl font-black text-indigo-900">0%</span>
+                <span id="cpKpiDynamicRatio" class="text-[11px] text-slate-500 font-bold">(0 / 0 Assign)</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-2 overflow-hidden border border-indigo-100">
+                <div id="cpKpiDynamicBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Active Sessions -->
+          <div id="kpiCardActiveSessions" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between transition-all">
             <div class="flex items-center justify-between">
               <span class="text-[10px] uppercase font-bold text-slate-400">Sesi Aktif Berjalan</span>
-              <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
+              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-[18px]">sync</span>
               </div>
             </div>
             <div class="mt-2">
               <div id="cpKpiActiveSessions" class="text-2xl font-black text-blue-900">0 Sesi</div>
-              <div class="flex items-center gap-2 mt-1 text-[10px] font-semibold text-slate-500">
+              <div class="flex items-center gap-1.5 mt-1 text-[10px] font-semibold text-slate-500">
                 <span id="cpKpiDynamicActive" class="text-indigo-700 font-bold">0 Dynamic</span>
                 <span>&bull;</span>
                 <span id="cpKpiOpnameActive" class="text-teal-700 font-bold">0 Opname</span>
@@ -896,33 +916,34 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- 3. Total Physical Qty Counted -->
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <!-- 4. Total Physical Qty Counted -->
+          <div id="kpiCardTotalQty" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between transition-all">
             <div class="flex items-center justify-between">
               <span class="text-[10px] uppercase font-bold text-slate-400">Total Qty Dihitung</span>
-              <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
+              <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-[18px]">pin</span>
               </div>
             </div>
             <div class="mt-2">
               <div id="cpKpiTotalQty" class="text-2xl font-black text-purple-900">0 Pcs</div>
-              <div class="text-[10px] text-slate-500 font-medium mt-1">Akumulasi seluruh hitungan fisik</div>
+              <div class="text-[10px] text-slate-500 font-medium mt-1">Akumulasi seluruh fisik</div>
             </div>
           </div>
 
-          <!-- 4. Variance / Selisih Alerts -->
-          <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <!-- 5. Variance / Selisih Alerts -->
+          <div id="kpiCardVarianceItems" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col justify-between transition-all">
             <div class="flex items-center justify-between">
               <span class="text-[10px] uppercase font-bold text-slate-400">Item Selisih (Varians)</span>
-              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+              <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
                 <span class="material-symbols-outlined text-[18px]">warning</span>
               </div>
             </div>
             <div class="mt-2">
               <div id="cpKpiVarianceItems" class="text-2xl font-black text-amber-800">0 SKU</div>
-              <div class="text-[10px] text-slate-500 font-medium mt-1">Memerlukan recount / penyesuaian</div>
+              <div class="text-[10px] text-slate-500 font-medium mt-1">Perlu recount / adjust</div>
             </div>
           </div>
+
         </div>
 
         <!-- ================= VISUAL PROGRESS CHARTS ROW (BAR COLUMN CHARTS) ================= -->
