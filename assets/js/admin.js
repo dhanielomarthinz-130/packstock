@@ -7132,7 +7132,7 @@ async function loadCountingProgressDashboard() {
       date: dateFilter
     });
 
-    const res = await App.fetchJson(`api/opnames.php?${params.toString()}`);
+    const res = await App.fetchJson(`../api/opnames.php?${params.toString()}`);
     if (!res || !res.success) {
       if (sessionsContainer) {
         sessionsContainer.innerHTML = `
