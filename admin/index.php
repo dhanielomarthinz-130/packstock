@@ -32,12 +32,18 @@ require_once __DIR__ . '/../includes/header.php';
     <nav class="flex-1 px-3 py-3.5 space-y-3.5 overflow-y-auto">
       
       <!-- Section 1: Ringkasan & Dashboard -->
-      <div class="sidebar-section" data-section-id="utama">
-        <button type="button" onclick="toggleSidebarSection('utama')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Utama</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="utama">
+        <button type="button" onclick="toggleSidebarSection('utama')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">space_dashboard</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Utama</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-xs" title="Dashboard Overview">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">space_dashboard</span>
@@ -47,12 +53,18 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 2: Group Inventory -->
-      <div class="sidebar-section" data-section-id="inventory">
-        <button type="button" onclick="toggleSidebarSection('inventory')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Inventory</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="inventory">
+        <button type="button" onclick="toggleSidebarSection('inventory')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">shelves</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Inventory</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('inventory')" id="nav-inventory" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas">
             <div class="flex items-center gap-3">
@@ -97,12 +109,18 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 3: Group Dynamic Count -->
-      <div class="sidebar-section" data-section-id="dynamic_count">
-        <button type="button" onclick="toggleSidebarSection('dynamic_count')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Dynamic Count</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="dynamic_count">
+        <button type="button" onclick="toggleSidebarSection('dynamic_count')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">checklist</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Dynamic Count</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dynamic_count')" id="nav-dynamic_count" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Dynamic Count">
             <div class="flex items-center gap-3">
@@ -124,12 +142,18 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 4: Group Stock Opname -->
-      <div class="sidebar-section" data-section-id="opname">
-        <button type="button" onclick="toggleSidebarSection('opname')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Stock Opname</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="opname">
+        <button type="button" onclick="toggleSidebarSection('opname')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-teal-100 text-teal-800 border border-teal-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">fact_check</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Stock Opname</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('opname')" id="nav-opname" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Opname">
             <div class="flex items-center gap-3">
@@ -151,12 +175,18 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 5: Group Adjustment -->
-      <div class="sidebar-section" data-section-id="adjust">
-        <button type="button" onclick="toggleSidebarSection('adjust')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Adjustment</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="adjust">
+        <button type="button" onclick="toggleSidebarSection('adjust')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">tune</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Adjustment</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('adjust')" id="nav-adjust" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Adjustment Stok Packaging (+ / -)">
             <div class="flex items-center gap-3">
@@ -169,12 +199,18 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 6: Administrasi & Otorisasi -->
-      <div class="sidebar-section" data-section-id="pengaturan">
-        <button type="button" onclick="toggleSidebarSection('pengaturan')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Pengaturan Sistem</span>
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="pengaturan">
+        <button type="button" onclick="toggleSidebarSection('pengaturan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">settings</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Pengaturan Sistem</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content space-y-1">
+        <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('users')" id="nav-users" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Manajemen User & Role">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">group</span>
@@ -204,12 +240,17 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 7: Akses Lapangan (Field Access Card) -->
-      <div id="sidebarFieldAccessContainer" class="sidebar-section hidden pt-1" data-section-id="lapangan">
-        <button type="button" onclick="toggleSidebarSection('lapangan')" class="sidebar-section-header w-full flex items-center justify-between px-3 pb-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-slate-700 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
-          <span class="sidebar-section-title">Akses Lapangan</span>
+      <div id="sidebarFieldAccessContainer" class="sidebar-section hidden pt-1 p-1 rounded-2xl transition-all" data-section-id="lapangan">
+        <button type="button" onclick="toggleSidebarSection('lapangan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
+              <span class="material-symbols-outlined text-[13px]">smartphone</span>
+            </span>
+            <span class="sidebar-section-title text-slate-600 font-bold">Akses Lapangan</span>
+          </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
-        <div class="sidebar-section-content">
+        <div class="sidebar-section-content mt-1">
           <a href="../operator/" target="_blank" 
             class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel PIC">
             <div class="flex items-center gap-2.5">

@@ -254,9 +254,14 @@ function switchAdminTab(tabName, updateUrl = true) {
     activeNav.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
     activeNav.classList.add('bg-emerald-600', 'text-white', 'shadow-xs', 'font-bold');
 
-    // Auto-expand section if active tab's group is currently collapsed
+    // Update active section highlight and auto-expand if collapsed
+    document.querySelectorAll('.sidebar-section').forEach(sec => {
+      sec.classList.remove('is-active-section');
+    });
+
     const parentSection = activeNav.closest('.sidebar-section');
     if (parentSection) {
+      parentSection.classList.add('is-active-section');
       const sectionId = parentSection.getAttribute('data-section-id');
       if (sectionId) toggleSidebarSection(sectionId, true);
     }

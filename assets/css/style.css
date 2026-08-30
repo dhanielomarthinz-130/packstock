@@ -115,6 +115,11 @@ body {
 }
 
 /* Sidebar Collapsible Section Group Styles */
+.sidebar-section {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+}
+
 .sidebar-section-header {
   user-select: none;
   cursor: pointer;
@@ -130,6 +135,21 @@ body {
 
 .sidebar-section.is-collapsed .sidebar-section-content {
   display: none !important;
+}
+
+.sidebar-section.is-active-section {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-section.is-active-section .sidebar-section-title {
+  color: #0f172a !important;
+  font-weight: 900 !important;
+}
+
+.sidebar-section.is-active-section .section-active-badge {
+  display: inline-block !important;
 }
 
 #adminSidebar.collapsed .sidebar-section-header {
