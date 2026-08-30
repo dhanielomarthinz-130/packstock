@@ -1098,7 +1098,7 @@ if ($type === 'dashboard_summary' || $type === 'dashboard_stock_summary') {
         'Stok Awal',
         'Barang Masuk (+)',
         'Barang Keluar (-)',
-        'Penyesuaian (+/-)',
+        'Adjustment (+/-)',
         'Stok Akhir',
         'Min Safety Stock',
         'Status Stok'
