@@ -2974,75 +2974,104 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: BUAT SESI DYNAMIC COUNTING (SKU PILIHAN) ================= -->
+<!-- ================= MODAL: BUAT SESI DYNAMIC COUNTING (DATA TABLE SKU SELECTION) ================= -->
 <div id="modalCreateDynamicCount" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-  <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200 max-h-[90vh] overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200 max-h-[92vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
-          <span class="material-symbols-outlined text-[20px]">checklist</span>
+        <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold shadow-xs">
+          <span class="material-symbols-outlined text-[22px]">checklist</span>
         </div>
         <div>
-          <h3 class="font-extrabold text-slate-900 text-sm">Buat Sesi Dynamic Counting Baru</h3>
-          <p class="text-xs text-slate-500">Pilih SKU produk tertentu untuk dihitung oleh PIC</p>
+          <h3 class="font-extrabold text-slate-900 text-base">Buat Sesi Dynamic Counting Baru</h3>
+          <p class="text-xs text-slate-500">Pilih SKU produk tertentu dari tabel untuk ditugaskan ke operator hitung</p>
         </div>
       </div>
-      <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="text-slate-400 hover:text-slate-600 p-1">
-        <span class="material-symbols-outlined text-[20px]">close</span>
+      <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+        <span class="material-symbols-outlined text-[22px]">close</span>
       </button>
     </div>
 
     <form id="formCreateDynamicCount" onsubmit="handleCreateDynamicCountSubmit(event)" class="space-y-4 text-xs">
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Nomor Dokumen Sesi (Otomatis)</label>
-        <input type="text" id="createDynamicTitle" readonly 
-          class="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-lg outline-none font-mono font-bold text-indigo-700 text-xs cursor-default">
-      </div>
-
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke PIC <span class="text-rose-500">*</span></label>
-        <select id="createDynamicOperator" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-600 font-medium text-xs">
-          <option value="">-- Pilih PIC --</option>
-        </select>
-        <p class="text-[10px] text-slate-400 mt-0.5">Operator ini akan menerima task counting khusus SKU yang dipilih.</p>
-      </div>
-
-      <!-- DYNAMIC COUNTING: INTERACTIVE MULTI-SELECT SKU PICKER -->
-      <div class="space-y-2.5 p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-200">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-indigo-700 text-[18px]">rule</span>
-            <span class="font-bold text-slate-900 text-xs">Pilih SKU Packaging yang Akan Dihitung:</span>
-            <span id="dynamicSkuSelectedCountBadge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-600 text-white">0 SKU Terpilih</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <button type="button" onclick="toggleSelectAllDynamicSku(true)" class="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded text-[11px] font-semibold">Pilih Semua</button>
-            <button type="button" onclick="toggleSelectAllDynamicSku(false)" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] font-semibold">Reset</button>
-          </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nomor Dokumen Sesi (Otomatis)</label>
+          <input type="text" id="createDynamicTitle" readonly 
+            class="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-lg outline-none font-mono font-bold text-indigo-700 text-xs cursor-default">
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input type="text" id="dynamicSkuSearchInput" oninput="filterDynamicSkuChecklist()" placeholder="Cari kode/nama SKU..." 
-            class="w-full p-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600">
-          <select id="dynamicSkuCategoryFilter" onchange="filterDynamicSkuChecklist()" class="w-full p-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none">
-            <option value="ALL">Semua Kategori</option>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke PIC Operator <span class="text-rose-500">*</span></label>
+          <select id="createDynamicOperator" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-600 font-bold text-slate-800 text-xs">
+            <option value="">-- Pilih PIC --</option>
           </select>
+          <p class="text-[10px] text-slate-400 mt-0.5">Operator ini akan menerima task counting khusus SKU yang dipilih.</p>
+        </div>
+      </div>
+
+      <!-- DYNAMIC COUNTING: INTERACTIVE DATA TABLE SKU PICKER -->
+      <div class="space-y-2.5 p-4 bg-indigo-50/40 rounded-xl border border-indigo-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-indigo-700 text-[18px]">rule</span>
+              <span class="font-bold text-slate-900 text-xs">Pilih Material Packaging yang Akan Dihitung:</span>
+              <span id="dynamicSkuSelectedCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-600 text-white shadow-2xs">0 SKU Terpilih</span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Centang baris produk yang ingin dihitung secara spesifik pada sesi counting ini.</p>
+          </div>
+          <div class="flex items-center gap-1.5 text-xs">
+            <button type="button" onclick="toggleSelectAllDynamicSku(true)" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg font-bold transition-colors border border-indigo-200 shadow-2xs">Pilih Semua (Hasil Filter)</button>
+            <button type="button" onclick="toggleSelectAllDynamicSku(false)" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors shadow-2xs">Reset Pilihan</button>
+          </div>
         </div>
 
-        <!-- Scrollable SKU Checklist -->
-        <div id="dynamicSkuChecklistContainer" class="max-h-52 overflow-y-auto space-y-1 bg-white p-2 rounded-lg border border-indigo-200/80 divide-y divide-slate-100">
-          <!-- Rendered dynamically -->
+        <!-- Filter & Search Toolbar -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-slate-400">search</span>
+            <input type="text" id="dynamicSkuSearchInput" oninput="filterDynamicSkuChecklist()" placeholder="Cari kode SKU, nama material, atau lokasi rak..." 
+              class="w-full pl-8 pr-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600 shadow-2xs">
+          </div>
+          <div>
+            <select id="dynamicSkuCategoryFilter" onchange="filterDynamicSkuChecklist()" class="w-full py-2 px-3 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600 shadow-2xs font-medium">
+              <option value="ALL">Semua Kategori</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Interactive SKU Data Table -->
+        <div class="overflow-x-auto rounded-xl border border-indigo-200 bg-white shadow-2xs max-h-64 overflow-y-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead class="sticky top-0 bg-indigo-100/90 backdrop-blur-xs text-indigo-950 font-extrabold border-b border-indigo-200 text-[11px] z-10">
+              <tr>
+                <th class="p-2.5 text-center w-12">
+                  <input type="checkbox" id="selectAllDynamicSkuCheckbox" onchange="toggleSelectAllDynamicSku(this.checked)" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                </th>
+                <th class="p-2.5 text-center w-10">No</th>
+                <th class="p-2.5 whitespace-nowrap">Item No / SKU</th>
+                <th class="p-2.5 min-w-[220px]">Deskripsi Material Packaging</th>
+                <th class="p-2.5 whitespace-nowrap">Kategori</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Lokasi Rak</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Stok Sistem</th>
+                <th class="p-2.5 text-center whitespace-nowrap">Satuan</th>
+              </tr>
+            </thead>
+            <tbody id="dynamicSkuTableBody" class="divide-y divide-slate-100">
+              <!-- Injected by JavaScript -->
+            </tbody>
+          </table>
         </div>
       </div>
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Catatan / Instruksi Khusus (Opsional)</label>
-        <textarea id="createDynamicNotes" rows="2" placeholder="Contoh: Tolong hitung dan scan ulang rak simpan..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-600 text-xs"></textarea>
+        <textarea id="createDynamicNotes" rows="2" placeholder="Contoh: Tolong hitung dan scan ulang rak simpan..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-indigo-600 text-xs shadow-2xs"></textarea>
       </div>
 
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitCreateDynamic" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1.5">
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnSubmitCreateDynamic" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">send</span>
           <span>Buat & Assign ke Operator</span>
         </button>

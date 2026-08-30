@@ -4808,11 +4808,28 @@ function loadDynamicSessions() {
   loadDynamicMatrix();
 }
 
-function openCreateDynamicCountModal() {
+let _currentFilteredDynamicSkus = [];
+
+async function openCreateDynamicCountModal() {
   const form = document.getElementById('formCreateDynamicCount');
   if (form) form.reset();
   selectedDynamicSkuIds.clear();
   updateDynamicSkuSelectedBadge();
+
+  // Ensure materials and operators are loaded
+  if (!allMaterials || allMaterials.length === 0) {
+    const resMat = await App.fetchJson('../api/materials.php?action=list');
+    if (resMat && resMat.success && resMat.data) {
+      allMaterials = resMat.data;
+    }
+  }
+
+  if (!allOperators || allOperators.length === 0) {
+    const resOp = await App.fetchJson('../api/users.php?action=operators');
+    if (resOp && resOp.success && resOp.data) {
+      allOperators = resOp.data;
+    }
+  }
 
   const titleInput = document.getElementById('createDynamicTitle');
   if (titleInput) {
@@ -4827,7 +4844,7 @@ function openCreateDynamicCountModal() {
   const opSelect = document.getElementById('createDynamicOperator');
   if (opSelect) {
     opSelect.innerHTML = '<option value="">-- Pilih PIC --</option>' +
-      allOperators.map(op => `
+      (allOperators || []).map(op => `
         <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift Aktif')})</option>
       `).join('');
   }
@@ -4839,20 +4856,22 @@ function openCreateDynamicCountModal() {
 function populateDynamicSkuChecklist() {
   const catFilter = document.getElementById('dynamicSkuCategoryFilter');
   if (catFilter) {
-    const cats = [...new Set(allMaterials.map(m => m.category).filter(Boolean))];
+    const cats = [...new Set((allMaterials || []).map(m => m.category).filter(Boolean))];
     catFilter.innerHTML = '<option value="ALL">Semua Kategori</option>' +
       cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   }
+  const searchInput = document.getElementById('dynamicSkuSearchInput');
+  if (searchInput) searchInput.value = '';
   filterDynamicSkuChecklist();
 }
 
 function filterDynamicSkuChecklist() {
   const search = (document.getElementById('dynamicSkuSearchInput')?.value || '').toLowerCase().trim();
   const cat = document.getElementById('dynamicSkuCategoryFilter')?.value || 'ALL';
-  const container = document.getElementById('dynamicSkuChecklistContainer');
-  if (!container) return;
+  const tbody = document.getElementById('dynamicSkuTableBody');
+  if (!tbody) return;
 
-  const filtered = allMaterials.filter(m => {
+  const filtered = (allMaterials || []).filter(m => {
     const matchSearch = !search || 
       (m.code && m.code.toLowerCase().includes(search)) ||
       (m.name && m.name.toLowerCase().includes(search)) ||
@@ -4862,58 +4881,79 @@ function filterDynamicSkuChecklist() {
     return matchSearch && matchCat;
   });
 
+  _currentFilteredDynamicSkus = filtered;
+
   if (filtered.length === 0) {
-    container.innerHTML = '<p class="p-3 text-center text-slate-400 text-xs">Tidak ada SKU yang cocok</p>';
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-8 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[28px] text-slate-300 mb-1">inventory_2</span>
+          <p class="font-bold text-slate-700">Tidak ada material packaging yang cocok</p>
+          <p class="text-[11px] text-slate-400">Silakan ubah kata kunci pencarian atau filter kategori.</p>
+        </td>
+      </tr>
+    `;
+    updateDynamicSkuSelectedBadge();
     return;
   }
 
-  container.innerHTML = filtered.map(m => {
+  tbody.innerHTML = filtered.map((m, idx) => {
     const isChecked = selectedDynamicSkuIds.has(m.id);
+    const rowBg = isChecked ? 'bg-indigo-50/70' : 'hover:bg-slate-50';
     return `
-      <label class="flex items-center justify-between p-2 rounded-lg hover:bg-indigo-50/50 cursor-pointer text-xs">
-        <div class="flex items-center gap-2.5">
+      <tr class="border-b border-slate-100 text-xs transition-colors cursor-pointer select-none ${rowBg}" onclick="toggleDynamicSkuRowClick(event, ${m.id})">
+        <td class="p-2.5 text-center">
           <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''} 
             onchange="toggleDynamicSkuCheck(${m.id}, this.checked)"
-            class="rounded text-indigo-600 focus:ring-indigo-500 dynamic-sku-cb">
-          <div>
-            <p class="font-bold text-slate-900">${escapeHtml(m.name)}</p>
-            <div class="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
-              <span class="font-mono font-bold text-indigo-700">${escapeHtml(m.code)}</span>
-              <span>&bull; Rak: ${escapeHtml(m.rack_location || '-')}</span>
-              <span>&bull; UOM: ${escapeHtml(m.unit || 'Pcs')}</span>
-            </div>
-          </div>
-        </div>
-        <div class="text-right">
-          <span class="font-mono font-bold text-slate-700">${App.formatNumber(m.current_stock)}</span>
-          <span class="text-[10px] text-slate-400 block">Stok Sistem</span>
-        </div>
-      </label>
+            onclick="event.stopPropagation()"
+            class="rounded text-indigo-600 focus:ring-indigo-500 dynamic-sku-cb w-4 h-4 cursor-pointer">
+        </td>
+        <td class="p-2.5 text-center text-slate-400 font-mono">${idx + 1}</td>
+        <td class="p-2.5 font-mono font-bold text-amber-800 whitespace-nowrap">${escapeHtml(m.code)}</td>
+        <td class="p-2.5 font-bold text-slate-900">${escapeHtml(m.name)}</td>
+        <td class="p-2.5 whitespace-nowrap">
+          <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px] border border-slate-200">${escapeHtml(m.category || '-')}</span>
+        </td>
+        <td class="p-2.5 text-center text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(m.rack_location || '-')}</td>
+        <td class="p-2.5 text-center font-mono font-bold text-slate-800 whitespace-nowrap bg-slate-50/80">${App.formatNumber(m.current_stock)}</td>
+        <td class="p-2.5 text-center font-mono text-slate-600 text-[11px] whitespace-nowrap">${escapeHtml(m.unit || 'Pcs')}</td>
+      </tr>
     `;
   }).join('');
+
+  updateDynamicSkuSelectedBadge();
+}
+
+function toggleDynamicSkuRowClick(event, materialId) {
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
+  const isChecked = selectedDynamicSkuIds.has(materialId);
+  toggleDynamicSkuCheck(materialId, !isChecked);
 }
 
 function toggleDynamicSkuCheck(materialId, checked) {
   if (checked) selectedDynamicSkuIds.add(materialId);
   else selectedDynamicSkuIds.delete(materialId);
-  updateDynamicSkuSelectedBadge();
+  filterDynamicSkuChecklist();
 }
 
 function toggleSelectAllDynamicSku(selectBool) {
-  const cbs = document.querySelectorAll('.dynamic-sku-cb');
-  cbs.forEach(cb => {
-    cb.checked = selectBool;
-    const id = parseInt(cb.value);
-    if (selectBool) selectedDynamicSkuIds.add(id);
-    else selectedDynamicSkuIds.delete(id);
+  const targetSkus = _currentFilteredDynamicSkus.length > 0 ? _currentFilteredDynamicSkus : (allMaterials || []);
+  targetSkus.forEach(m => {
+    if (selectBool) selectedDynamicSkuIds.add(m.id);
+    else selectedDynamicSkuIds.delete(m.id);
   });
-  updateDynamicSkuSelectedBadge();
+  filterDynamicSkuChecklist();
 }
 
 function updateDynamicSkuSelectedBadge() {
   const badge = document.getElementById('dynamicSkuSelectedCountBadge');
   if (badge) {
     badge.innerText = `${selectedDynamicSkuIds.size} SKU Terpilih`;
+  }
+  const masterCb = document.getElementById('selectAllDynamicSkuCheckbox');
+  if (masterCb && _currentFilteredDynamicSkus.length > 0) {
+    const allFilteredSelected = _currentFilteredDynamicSkus.every(m => selectedDynamicSkuIds.has(m.id));
+    masterCb.checked = allFilteredSelected;
   }
 }
 
