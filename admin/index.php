@@ -820,8 +820,8 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-emerald-600 text-[19px] shrink-0">filter_alt</span>
               <select id="cpFilterType" onchange="loadCountingProgressDashboard()" class="w-full h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-600 focus:bg-white cursor-pointer transition-colors">
                 <option value="ALL">Semua Tipe (Dynamic & Opname)</option>
-                <option value="DYNAMIC_COUNT">Hanya Dynamic Count</option>
-                <option value="STOCK_OPNAME">Hanya Stock Opname</option>
+                <option value="DYNAMIC_COUNT">Dynamic Count</option>
+                <option value="STOCK_OPNAME">Stock Opname</option>
               </select>
             </div>
 
@@ -829,7 +829,7 @@ require_once __DIR__ . '/../includes/header.php';
             <select id="cpFilterStatus" onchange="loadCountingProgressDashboard()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600">
               <option value="ACTIVE">Sesi Aktif (Berjalan / Recount)</option>
               <option value="ALL">Semua Status (Aktif & Selesai)</option>
-              <option value="COMPLETED">Hanya Selesai (Completed)</option>
+              <option value="COMPLETED">Selesai (Completed)</option>
             </select>
 
             <!-- Date Filter -->

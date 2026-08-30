@@ -702,39 +702,63 @@ if ($action === 'counting_progress_summary') {
     $stmtLeaderboard->execute($lbParams);
     $leaderboard = $stmtLeaderboard->fetchAll();
 
-    // Stock Opname Progress: Counted SKUs vs Total Database SKUs with current_stock > 0
-    $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0");
-    $totalDbSkusPositive = (int)$stmtDbPos->fetchColumn();
+    // Separate Stock Opname and Dynamic Count sessions from the filtered $sessions
+    $soSessions = array_filter($sessions, function($s) { return $s['counting_type'] === 'STOCK_OPNAME'; });
+    $dynSessions = array_filter($sessions, function($s) { return $s['counting_type'] === 'DYNAMIC_COUNT'; });
 
-    $stmtOpCounted = $pdo->query("
-        SELECT COUNT(DISTINCT soi.material_id) 
-        FROM stock_opname_item_stages st 
-        JOIN stock_opnames so ON st.opname_id = so.id 
-        JOIN stock_opname_items soi ON st.item_id = soi.id 
-        WHERE so.counting_type = 'STOCK_OPNAME' AND st.status = 'COUNTED' AND st.stage_number = 1
-    ");
-    $opnameCountedSkus = (int)$stmtOpCounted->fetchColumn();
-    $opnameUncountedSkus = max(0, $totalDbSkusPositive - $opnameCountedSkus);
-    $opnameProgressPct = $totalDbSkusPositive > 0 ? round(($opnameCountedSkus / $totalDbSkusPositive) * 100, 1) : 0;
+    $soSessionIds = array_column($soSessions, 'id');
+    $dynSessionIds = array_column($dynSessions, 'id');
 
-    // Dynamic Count Progress: Done SKUs vs Assigned SKUs in Dynamic Count
-    $stmtDynAssign = $pdo->query("
-        SELECT COUNT(*) 
-        FROM stock_opname_items soi 
-        JOIN stock_opnames so ON soi.opname_id = so.id 
-        WHERE so.counting_type = 'DYNAMIC_COUNT'
-    ");
-    $dynamicAssignedSkus = (int)$stmtDynAssign->fetchColumn();
+    // 1. Stock Opname Progress
+    $opnameCountedSkus = 0;
+    $totalDbSkusPositive = 0;
+    $opnameUncountedSkus = 0;
+    $opnameProgressPct = 0;
 
-    $stmtDynDone = $pdo->query("
-        SELECT COUNT(DISTINCT st.item_id) 
-        FROM stock_opname_item_stages st 
-        JOIN stock_opnames so ON st.opname_id = so.id 
-        WHERE so.counting_type = 'DYNAMIC_COUNT' AND st.status = 'COUNTED' AND st.stage_number = 1
-    ");
-    $dynamicDoneSkus = (int)$stmtDynDone->fetchColumn();
-    $dynamicPendingSkus = max(0, $dynamicAssignedSkus - $dynamicDoneSkus);
-    $dynamicProgressPct = $dynamicAssignedSkus > 0 ? round(($dynamicDoneSkus / $dynamicAssignedSkus) * 100, 1) : 0;
+    $soTotalItems = array_sum(array_column($soSessions, 'total_items'));
+
+    if (!empty($soSessionIds) && $soTotalItems > 0) {
+        $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0");
+        $totalDbSkusPositive = (int)$stmtDbPos->fetchColumn();
+
+        $inClause = implode(',', array_map('intval', $soSessionIds));
+        $stmtOpCounted = $pdo->query("
+            SELECT COUNT(DISTINCT soi.material_id) 
+            FROM stock_opname_item_stages st 
+            JOIN stock_opname_items soi ON st.item_id = soi.id 
+            WHERE st.opname_id IN ({$inClause}) AND st.status = 'COUNTED' AND st.stage_number = 1
+        ");
+        $opnameCountedSkus = (int)$stmtOpCounted->fetchColumn();
+        $opnameUncountedSkus = max(0, $totalDbSkusPositive - $opnameCountedSkus);
+        $opnameProgressPct = $totalDbSkusPositive > 0 ? round(($opnameCountedSkus / $totalDbSkusPositive) * 100, 1) : 0;
+    }
+
+    // 2. Dynamic Count Progress
+    $dynamicAssignedSkus = 0;
+    $dynamicDoneSkus = 0;
+    $dynamicPendingSkus = 0;
+    $dynamicProgressPct = 0;
+
+    $dynTotalItems = array_sum(array_column($dynSessions, 'total_items'));
+
+    if (!empty($dynSessionIds) && $dynTotalItems > 0) {
+        $inClauseDyn = implode(',', array_map('intval', $dynSessionIds));
+        $stmtDynAssign = $pdo->query("
+            SELECT COUNT(*) 
+            FROM stock_opname_items soi 
+            WHERE soi.opname_id IN ({$inClauseDyn})
+        ");
+        $dynamicAssignedSkus = (int)$stmtDynAssign->fetchColumn();
+
+        $stmtDynDone = $pdo->query("
+            SELECT COUNT(DISTINCT st.item_id) 
+            FROM stock_opname_item_stages st 
+            WHERE st.opname_id IN ({$inClauseDyn}) AND st.status = 'COUNTED' AND st.stage_number = 1
+        ");
+        $dynamicDoneSkus = (int)$stmtDynDone->fetchColumn();
+        $dynamicPendingSkus = max(0, $dynamicAssignedSkus - $dynamicDoneSkus);
+        $dynamicProgressPct = $dynamicAssignedSkus > 0 ? round(($dynamicDoneSkus / $dynamicAssignedSkus) * 100, 1) : 0;
+    }
 
     echo json_encode([
         'success' => true,
