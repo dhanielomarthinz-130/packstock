@@ -3060,10 +3060,118 @@ async function handleInboundFormSubmit(e) {
 // 9. OUTBOUND MANUAL GOODS DISPATCH & OPERATOR PICKING TRACKER (WITH DURATION & TAKT TIME)
 let outboundModalStartTime = null;
 
+function onOutboundMaterialChange(selectEl) {
+  const selectedOpt = selectEl.options[selectEl.selectedIndex];
+  const stockBadge = document.getElementById('outboundAvailableStockBadge');
+  const stockVal = document.getElementById('outboundAvailableStockVal');
+  const infoBox = document.getElementById('outboundMaterialInfoBox');
+  const rackEl = document.getElementById('outboundMatRack');
+  const unitEl = document.getElementById('outboundMatUnit');
+  const catEl = document.getElementById('outboundMatCat');
+  const qtyUnitTag = document.getElementById('outboundQtyUnitTag');
+  const qtyInput = document.getElementById('outboundQty');
+
+  if (!selectedOpt || !selectedOpt.value) {
+    if (stockBadge) stockBadge.classList.add('hidden');
+    if (infoBox) infoBox.classList.add('hidden');
+    if (qtyUnitTag) qtyUnitTag.innerText = 'Pcs';
+    return;
+  }
+
+  const stock = parseInt(selectedOpt.getAttribute('data-stock') || '0');
+  const unit = selectedOpt.getAttribute('data-unit') || 'Pcs';
+  const rack = selectedOpt.getAttribute('data-rack') || '-';
+  const matId = parseInt(selectedOpt.value);
+  const foundMat = (allMaterials || []).find(m => m.id === matId);
+  const category = foundMat?.category || selectedOpt.getAttribute('data-cat') || '-';
+
+  if (stockBadge && stockVal) {
+    stockVal.innerText = App.formatNumber(stock);
+    stockBadge.className = `text-[11px] font-black font-mono px-2 py-0.5 rounded border ${stock <= 0 ? 'text-rose-700 bg-rose-50 border-rose-200' : (stock <= 50 ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-emerald-800 bg-emerald-50 border-emerald-200')}`;
+    stockBadge.classList.remove('hidden');
+  }
+
+  if (infoBox) {
+    if (rackEl) rackEl.innerText = rack;
+    if (unitEl) unitEl.innerText = unit;
+    if (catEl) catEl.innerText = category;
+    infoBox.classList.remove('hidden');
+  }
+
+  if (qtyUnitTag) qtyUnitTag.innerText = unit;
+  validateOutboundQtyInput(qtyInput);
+}
+
+function validateOutboundQtyInput(inputEl) {
+  if (!inputEl) return;
+  const matSelect = document.getElementById('outboundMaterialSelect');
+  const selectedOpt = matSelect?.options[matSelect.selectedIndex];
+  const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
+  const warningEl = document.getElementById('outboundQtyWarning');
+  const val = parseInt(inputEl.value || '0');
+
+  if (selectedOpt && selectedOpt.value && val > stock) {
+    if (warningEl) warningEl.classList.remove('hidden');
+  } else {
+    if (warningEl) warningEl.classList.add('hidden');
+  }
+}
+
+function syncOutboundDestinationField() {
+  const brand = document.getElementById('outboundBrandSelect')?.value?.trim() || '';
+  const line = document.getElementById('outboundDestinationLine')?.value?.trim() || '';
+  const mergedInput = document.getElementById('outboundDestination');
+  if (mergedInput) {
+    if (brand && line) {
+      mergedInput.value = `[${brand}] ${line}`;
+    } else if (brand) {
+      mergedInput.value = `[${brand}]`;
+    } else {
+      mergedInput.value = line;
+    }
+  }
+}
+
+function setOutboundLinePreset(lineText) {
+  const lineInput = document.getElementById('outboundDestinationLine');
+  if (lineInput) {
+    lineInput.value = lineText;
+    syncOutboundDestinationField();
+    lineInput.focus();
+  }
+}
+
+function onOutboundReasonSelectChange(selectEl) {
+  const reasonInput = document.getElementById('outboundReason');
+  if (!reasonInput) return;
+  if (selectEl.value === 'custom') {
+    reasonInput.value = '';
+    reasonInput.placeholder = 'Tuliskan alasan pengeluaran khusus...';
+    reasonInput.focus();
+  } else {
+    reasonInput.value = selectEl.value;
+  }
+}
+
 function openAddOutboundModal() {
   outboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
-  document.getElementById('outboundForm')?.reset();
+  
+  const form = document.getElementById('outboundForm');
+  if (form) form.reset();
+
+  const stockBadge = document.getElementById('outboundAvailableStockBadge');
+  const infoBox = document.getElementById('outboundMaterialInfoBox');
+  const warningEl = document.getElementById('outboundQtyWarning');
+  if (stockBadge) stockBadge.classList.add('hidden');
+  if (infoBox) infoBox.classList.add('hidden');
+  if (warningEl) warningEl.classList.add('hidden');
+
+  const reasonSelect = document.getElementById('outboundReasonSelect');
+  const reasonInput = document.getElementById('outboundReason');
+  if (reasonSelect) reasonSelect.value = 'Kebutuhan Produksi Harian';
+  if (reasonInput) reasonInput.value = 'Kebutuhan Produksi Harian';
+
   const dateInput = document.getElementById('outboundFormDate');
   const timeInput = document.getElementById('outboundFormTime');
   const now = new Date();
@@ -3078,6 +3186,7 @@ function openAddOutboundModal() {
     const mi = String(now.getMinutes()).padStart(2, '0');
     timeInput.value = `${hh}:${mi}`;
   }
+  
   initPremiumPickers();
   App.openModal('modalAddOutbound');
 }
@@ -3430,24 +3539,63 @@ async function cancelOutboundTask(taskId) {
 
 async function handleOutboundFormSubmit(e) {
   e.preventDefault();
-  const material_id = document.getElementById('outboundMaterialSelect').value;
-  const qty         = document.getElementById('outboundQty').value;
-  const destination = document.getElementById('outboundDestination').value.trim();
-  const reason      = document.getElementById('outboundReason').value.trim();
-  const notes       = document.getElementById('outboundNotes').value.trim();
+  syncOutboundDestinationField();
+
+  const material_id = document.getElementById('outboundMaterialSelect')?.value;
+  const qty         = parseInt(document.getElementById('outboundQty')?.value || '0');
+  const brand       = document.getElementById('outboundBrandSelect')?.value?.trim();
+  const line        = document.getElementById('outboundDestinationLine')?.value?.trim();
+  const destination = document.getElementById('outboundDestination')?.value?.trim();
+  const reason      = document.getElementById('outboundReason')?.value?.trim();
+  const notes       = document.getElementById('outboundNotes')?.value?.trim() || '';
   const formDate    = document.getElementById('outboundFormDate')?.value;
   const formTime    = document.getElementById('outboundFormTime')?.value;
   const started_at  = (formDate && formTime) ? `${formDate} ${formTime}:00` : (outboundModalStartTime || new Date().toISOString());
+
+  if (!material_id) {
+    App.toast('Silakan pilih Kemas/Consumable terlebih dahulu', 'warning');
+    return;
+  }
+  if (!qty || qty <= 0) {
+    App.toast('Jumlah keluar (Qty) harus lebih dari 0', 'warning');
+    return;
+  }
+  if (!brand) {
+    App.toast('Silakan pilih Brand / Lini Produk tujuan pengeluaran', 'warning');
+    document.getElementById('outboundBrandSelect')?.focus();
+    return;
+  }
+  if (!line) {
+    App.toast('Silakan isi Line / Area tujuan pengeluaran', 'warning');
+    document.getElementById('outboundDestinationLine')?.focus();
+    return;
+  }
+  if (!reason) {
+    App.toast('Silakan isi alasan pengeluaran barang', 'warning');
+    document.getElementById('outboundReason')?.focus();
+    return;
+  }
+
+  const btnSubmit = document.getElementById('btnSubmitOutbound');
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+  }
 
   const res = await App.fetchJson('../api/outbound.php?action=create', {
     method: 'POST',
     body: JSON.stringify({ material_id, qty, destination, reason, notes, started_at })
   });
 
+  if (btnSubmit) {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Catat & Potong Stok</span>';
+  }
+
   if (res.success) {
     App.toast(res.message, 'success', 'Pengeluaran Disimpan');
     App.closeModal('modalAddOutbound');
-    document.getElementById('outboundForm').reset();
+    document.getElementById('outboundForm')?.reset();
     loadOutboundHistory();
     loadStats();
     loadMaterials();

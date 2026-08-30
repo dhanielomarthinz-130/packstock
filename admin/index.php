@@ -2327,72 +2327,160 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- ================= MODAL: INPUT OUTBOUND MANUAL ================= -->
 <div id="modalAddOutbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+    <!-- Header -->
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-amber-700 text-[22px]">outbox</span>
-        <h3 class="font-bold text-slate-900 text-sm">Input Pengeluaran Barang Manual</h3>
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 shadow-2xs">
+          <span class="material-symbols-outlined text-[22px]">outbox</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Pengeluaran Kemas/Consumable</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Catat pengeluaran barang keluar manual secara langsung</p>
+        </div>
       </div>
-      <button onclick="App.closeModal('modalAddOutbound')" class="text-slate-400 hover:text-slate-700">
+      <button onclick="App.closeModal('modalAddOutbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
     </div>
 
-    <form id="outboundForm" onsubmit="handleOutboundFormSubmit(event)" class="space-y-3 text-xs">
-      <div class="grid grid-cols-2 gap-2.5">
+    <form id="outboundForm" onsubmit="handleOutboundFormSubmit(event)" class="space-y-3.5 text-xs">
+      
+      <!-- Tanggal & Waktu -->
+      <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+          <label class="block font-bold text-slate-700 mb-1 flex items-center gap-1">
             <span class="material-symbols-outlined text-[15px] text-amber-600">calendar_month</span>
             <span>Tanggal Keluar <span class="text-rose-500">*</span></span>
           </label>
           <div class="premium-datepicker-wrapper w-full">
             <span class="material-symbols-outlined picker-icon text-amber-600">calendar_month</span>
-            <input type="text" id="outboundFormDate" value="<?= date('Y-m-d') ?>" required placeholder="YYYY-MM-DD" class="premium-datepicker-input w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
+            <input type="text" id="outboundFormDate" value="<?= date('Y-m-d') ?>" required placeholder="YYYY-MM-DD" class="premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
           </div>
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+          <label class="block font-bold text-slate-700 mb-1 flex items-center gap-1">
             <span class="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
             <span>Jam / Waktu <span class="text-rose-500">*</span></span>
           </label>
           <div class="premium-datepicker-wrapper w-full">
             <span class="material-symbols-outlined picker-icon text-amber-600">schedule</span>
-            <input type="text" id="outboundFormTime" value="<?= date('H:i') ?>" required placeholder="HH:MM" class="premium-datepicker-input w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
+            <input type="text" id="outboundFormTime" value="<?= date('H:i') ?>" required placeholder="HH:MM" class="premium-datepicker-input w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:bg-white focus:border-amber-600">
           </div>
         </div>
       </div>
 
+      <!-- Pilih Material -->
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Pilih Material Packaging <span class="text-rose-500">*</span></label>
-        <select id="outboundMaterialSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600">
-          <option value="">-- Pilih Material --</option>
+        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+          <span class="flex items-center gap-1">
+            <span class="material-symbols-outlined text-[15px] text-amber-600">inventory_2</span>
+            <span>Pilih Kemas/Consumable <span class="text-rose-500">*</span></span>
+          </span>
+          <span id="outboundAvailableStockBadge" class="hidden text-[11px] font-black font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+            Sisa Stok: <span id="outboundAvailableStockVal">0</span> Pcs
+          </span>
+        </label>
+        <select id="outboundMaterialSelect" required onchange="onOutboundMaterialChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium">
+          <option value="">-- Pilih Kemas/Consumable --</option>
         </select>
+        <div id="outboundMaterialInfoBox" class="hidden mt-1.5 p-2 bg-slate-50 rounded-lg border border-slate-200 text-[11px] flex items-center justify-between text-slate-600">
+          <span>Rak: <strong id="outboundMatRack" class="text-slate-800">-</strong></span>
+          <span>Satuan: <strong id="outboundMatUnit" class="text-slate-800">Pcs</strong></span>
+          <span>Kategori: <strong id="outboundMatCat" class="text-slate-800">-</strong></span>
+        </div>
       </div>
 
+      <!-- Jumlah Keluar (Qty) -->
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Jumlah Keluar (Qty) <span class="text-rose-500">*</span></label>
-        <input type="number" id="outboundQty" required min="1" placeholder="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-sm text-amber-800 outline-none focus:bg-white focus:border-amber-600">
+        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+          <span>Jumlah Keluar (Qty) <span class="text-rose-500">*</span></span>
+          <span class="text-[10px] text-slate-400 font-normal">Pastikan qty tidak melebihi sisa stok</span>
+        </label>
+        <div class="relative">
+          <input type="number" id="outboundQty" required min="1" placeholder="0" oninput="validateOutboundQtyInput(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg font-black text-sm text-amber-900 outline-none focus:bg-white focus:border-amber-600">
+          <span id="outboundQtyUnitTag" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Pcs</span>
+        </div>
+        <p id="outboundQtyWarning" class="hidden text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px]">warning</span>
+          <span>Jumlah melebihi stok yang tersedia di gudang!</span>
+        </p>
       </div>
 
+      <!-- Tujuan Pengeluaran (Dropdown Brand & Lokasi/Line Tujuan) -->
+      <div class="p-3 bg-amber-50/40 rounded-xl border border-amber-200/70 space-y-2.5">
+        <label class="block font-extrabold text-amber-950 flex items-center gap-1 text-xs">
+          <span class="material-symbols-outlined text-[16px] text-amber-700">fmd_good</span>
+          <span>Tujuan Pengeluaran & Brand Produk <span class="text-rose-500">*</span></span>
+        </label>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <!-- Dropdown Brand -->
+          <div>
+            <label class="block font-bold text-slate-600 mb-1 text-[11px]">Brand / Lini Produk <span class="text-rose-500">*</span></label>
+            <select id="outboundBrandSelect" required onchange="syncOutboundDestinationField()" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-600 text-xs font-bold text-slate-800">
+              <option value="">-- Pilih Brand --</option>
+              <option value="HANASUI">HANASUI</option>
+              <option value="NCO">NCO</option>
+              <option value="FYNE">FYNE</option>
+              <option value="EOMMA">EOMMA</option>
+              <option value="ALL BRAND">ALL BRAND / UMUM</option>
+              <option value="LAINNYA">LAINNYA</option>
+            </select>
+          </div>
+
+          <!-- Detail Line / Lokasi Tujuan -->
+          <div>
+            <label class="block font-bold text-slate-600 mb-1 text-[11px]">Line / Area Tujuan <span class="text-rose-500">*</span></label>
+            <input type="text" id="outboundDestinationLine" required placeholder="Contoh: Line Packing 1 / QC Lab" oninput="syncOutboundDestinationField()" class="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-600 text-xs font-semibold text-slate-800">
+          </div>
+        </div>
+
+        <!-- Quick Select Chips for Destination -->
+        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
+          <span class="text-[10px] text-slate-400 font-medium">Pilihan cepat:</span>
+          <button type="button" onclick="setOutboundLinePreset('Line Packing 1')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Packing 1</button>
+          <button type="button" onclick="setOutboundLinePreset('Line Packing 2')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Packing 2</button>
+          <button type="button" onclick="setOutboundLinePreset('Line Filling Botol')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Line Filling</button>
+          <button type="button" onclick="setOutboundLinePreset('QC Lab / Sampling')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">QC Lab</button>
+          <button type="button" onclick="setOutboundLinePreset('Rework / Repacking')" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-slate-200 text-[10px] font-semibold transition-colors">Rework</button>
+        </div>
+
+        <!-- Hidden merged destination input for backward compatibility -->
+        <input type="hidden" id="outboundDestination" required>
+      </div>
+
+      <!-- Alasan Pengeluaran -->
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Tujuan Pengeluaran <span class="text-rose-500">*</span></label>
-        <input type="text" id="outboundDestination" required placeholder="Contoh: QC Lab / Line Produksi 1" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600">
+        <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+          <span>Alasan Pengeluaran <span class="text-rose-500">*</span></span>
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <select id="outboundReasonSelect" onchange="onOutboundReasonSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-semibold text-slate-700">
+            <option value="Kebutuhan Produksi Harian">Kebutuhan Produksi Harian</option>
+            <option value="Uji Kualitas (QC Lab / Sampling)">Uji Kualitas (QC Lab / Sampling)</option>
+            <option value="Sampel R&D / Promosi">Sampel R&D / Promosi</option>
+            <option value="Pengemasan Ulang (Rework)">Pengemasan Ulang (Rework)</option>
+            <option value="Material Rusak / Afkir / Reject">Material Rusak / Afkir / Reject</option>
+            <option value="custom">Alasan Lainnya (Ketik Manual)...</option>
+          </select>
+          <input type="text" id="outboundReason" required value="Kebutuhan Produksi Harian" placeholder="Tuliskan alasan pengeluaran..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs font-medium text-slate-800">
+        </div>
       </div>
 
+      <!-- Catatan Tambahan -->
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Alasan Pengeluaran <span class="text-rose-500">*</span></label>
-        <input type="text" id="outboundReason" required placeholder="Contoh: Uji Kualitas / Rusak / Reject" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-600">
+        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+        <input type="text" id="outboundNotes" placeholder="No. SPK / Keterangan tambahan..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600 text-xs">
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Catatan Tambahan</label>
-        <input type="text" id="outboundNotes" placeholder="Keterangan..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:bg-white focus:border-amber-600">
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalAddOutbound')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg shadow-sm text-xs flex items-center gap-1.5 transition-colors">
-          <span class="material-symbols-outlined text-[16px]">save</span>
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalAddOutbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+          Batal
+        </button>
+        <button type="submit" id="btnSubmitOutbound" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
+          <span class="material-symbols-outlined text-[17px]">save</span>
           <span>Catat & Potong Stok</span>
         </button>
       </div>
