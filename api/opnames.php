@@ -665,7 +665,21 @@ if ($action === 'counting_progress_summary') {
 
     $overallPct = $overallTotalItems > 0 ? round(($overallCountedItems / $overallTotalItems) * 100, 1) : 0;
 
-    // Leaderboard of operators
+    // Leaderboard of operators (Filtered by selected Counting Type & Date)
+    $lbWhere = ["st.status = 'COUNTED'"];
+    $lbParams = [];
+
+    if ($type !== 'ALL') {
+        $lbWhere[] = "so.counting_type = ?";
+        $lbParams[] = $type;
+    }
+    if (!empty($date)) {
+        $lbWhere[] = "DATE(COALESCE(st.counted_at, st.created_at)) = ?";
+        $lbParams[] = $date;
+    }
+
+    $lbWhereSql = implode(" AND ", $lbWhere);
+
     $stmtLeaderboard = $pdo->prepare("
         SELECT u.id as operator_id,
                u.name as operator_name,
@@ -674,15 +688,18 @@ if ($action === 'counting_progress_summary') {
                COUNT(DISTINCT st.item_id) as total_items_counted,
                SUM(st.count_qty) as total_qty_counted,
                COUNT(st.id) as total_scan_actions,
-               MAX(COALESCE(st.counted_at, st.created_at)) as last_active
+               MAX(COALESCE(st.counted_at, st.created_at)) as last_active,
+               SUM(CASE WHEN so.counting_type = 'DYNAMIC_COUNT' THEN 1 ELSE 0 END) as dynamic_count_items,
+               SUM(CASE WHEN so.counting_type = 'STOCK_OPNAME' THEN 1 ELSE 0 END) as opname_items
         FROM stock_opname_item_stages st
+        JOIN stock_opnames so ON st.opname_id = so.id
         JOIN users u ON st.assigned_to = u.id
-        WHERE st.status = 'COUNTED'
+        WHERE {$lbWhereSql}
         GROUP BY u.id, u.name, u.username, u.shift
         ORDER BY total_items_counted DESC, total_qty_counted DESC
         LIMIT 10
     ");
-    $stmtLeaderboard->execute();
+    $stmtLeaderboard->execute($lbParams);
     $leaderboard = $stmtLeaderboard->fetchAll();
 
     // Stock Opname Progress: Counted SKUs vs Total Database SKUs with current_stock > 0

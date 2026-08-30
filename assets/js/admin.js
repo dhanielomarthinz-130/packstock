@@ -7311,10 +7311,10 @@ function renderCountingProgressCards(sessions) {
 
   if (!sessions.length) {
     container.innerHTML = `
-      <div class="p-10 bg-white rounded-xl border border-slate-200 text-center space-y-2">
-        <span class="material-symbols-outlined text-slate-300 text-[40px]">check_circle</span>
-        <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tidak Ada Sesi Terpilih</h4>
-        <p class="text-[11px] text-slate-400">Tidak ada sesi Dynamic Count atau Stock Opname yang cocok dengan filter aktif.</p>
+      <div class="p-10 bg-white rounded-2xl border border-slate-200 text-center space-y-2">
+        <span class="material-symbols-outlined text-slate-300 text-[40px]">fact_check</span>
+        <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tidak Ada Dokumen Sesi</h4>
+        <p class="text-[11px] text-slate-400">Tidak ada sesi yang cocok dengan filter aktif.</p>
       </div>
     `;
     return;
@@ -7323,86 +7323,85 @@ function renderCountingProgressCards(sessions) {
   container.innerHTML = sessions.map(s => {
     const isDynamic = s.counting_type === 'DYNAMIC_COUNT';
     const typeBadge = isDynamic
-      ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">Dynamic Count</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-teal-50 text-teal-700 border border-teal-200">Stock Opname</span>`;
+      ? `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs">Dynamic Count</span>`
+      : `<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200/80 shadow-2xs">Stock Opname</span>`;
 
     let statusBadge = '';
     if (s.status === 'COMPLETED') {
-      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200">Selesai</span>`;
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200">Selesai</span>`;
     } else if (s.status === 'RECOUNTING') {
-      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">Recounting</span>`;
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-purple-100 text-purple-800 border border-purple-200 animate-pulse">Recounting</span>`;
     } else if (s.status === 'COUNTING') {
-      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">Sedang Berjalan</span>`;
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-200 animate-pulse">Sedang Berjalan</span>`;
     } else {
-      statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">Open</span>`;
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-blue-100 text-blue-800 border border-blue-200">Open</span>`;
     }
 
     const pct = s.progress_pct || 0;
     const progressColor = pct >= 100 ? 'bg-emerald-600' : (pct >= 50 ? 'bg-blue-600' : 'bg-amber-500');
 
     return `
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md transition-all p-4 space-y-3">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-md transition-all p-4 sm:p-5 space-y-3.5">
         <!-- Top Info Header -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-          <div class="flex items-center gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div class="flex flex-wrap items-center gap-2">
             ${typeBadge}
-            <span class="font-mono font-extrabold text-xs text-slate-900">${escapeHtml(s.opname_no)}</span>
-            <span class="text-slate-300">&bull;</span>
-            <span class="font-bold text-xs text-slate-700 truncate max-w-[200px] sm:max-w-[280px]">${escapeHtml(s.title || '')}</span>
+            <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2 py-0.5 rounded-md">${escapeHtml(s.opname_no)}</span>
+            <span class="font-bold text-xs text-slate-800 truncate max-w-[260px] sm:max-w-[320px]">${escapeHtml(s.title || '')}</span>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 shrink-0">
             ${statusBadge}
-            <span class="text-[10px] text-slate-400">${escapeHtml(s.created_at ? s.created_at.substring(0, 10) : '')}</span>
+            <span class="text-[11px] font-medium text-slate-400">${escapeHtml(s.created_at ? s.created_at.substring(0, 10) : '')}</span>
           </div>
         </div>
 
         <!-- Progress Bar & Stages -->
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between text-xs font-bold">
-            <span class="text-slate-600 flex items-center gap-1.5">
+        <div class="space-y-1.5 bg-slate-50/70 p-3 rounded-xl border border-slate-200/60">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-semibold flex items-center gap-1.5">
               <span>Progres 1st Count:</span>
-              <span class="text-slate-900">${(s.stage_1_counted || 0)} / ${(s.total_items || 0)} SKU</span>
+              <span class="font-bold text-slate-900 font-mono">${(s.stage_1_counted || 0)} / ${(s.total_items || 0)} SKU</span>
             </span>
-            <span class="font-mono ${pct >= 100 ? 'text-emerald-700' : 'text-slate-800'}">${pct}%</span>
+            <span class="font-mono font-black text-sm ${pct >= 100 ? 'text-emerald-700' : 'text-slate-900'}">${pct}%</span>
           </div>
-          <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/70">
+          <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
             <div class="${progressColor} h-2.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
           </div>
         </div>
 
         <!-- Metric Details & Action Buttons -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5 text-xs">
           <!-- Mini Badges -->
-          <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-600">
-            <span class="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200">
-              Total Qty: <b class="font-mono text-slate-900">${(s.total_counted_qty || 0).toLocaleString()} Pcs</b>
+          <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-slate-600">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-800">
+              Total Qty: <b class="font-mono text-slate-900 font-bold">${(s.total_counted_qty || 0).toLocaleString()} Pcs</b>
             </span>
             ${s.variance_items_count > 0 ? `
-              <span class="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 font-bold flex items-center gap-1">
-                <span class="material-symbols-outlined text-[13px]">warning</span>
+              <span class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-bold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">warning</span>
                 <span>${s.variance_items_count} SKU Selisih</span>
               </span>
             ` : `
-              <span class="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1">
-                <span class="material-symbols-outlined text-[13px]">verified</span>
+              <span class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">verified</span>
                 <span>0 Selisih</span>
               </span>
             `}
             ${s.creator_name ? `
-              <span class="text-slate-400">Oleh: <b>${escapeHtml(s.creator_name)}</b></span>
+              <span class="text-slate-400 text-[11px]">Oleh: <b class="text-slate-700">${escapeHtml(s.creator_name)}</b></span>
             ` : ''}
           </div>
 
           <!-- Direct Links -->
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-2 shrink-0">
             <button type="button" onclick="openMatrixFromProgress(${s.id}, '${s.counting_type}')" 
-              class="px-2.5 py-1.5 rounded-xl ${isDynamic ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-700 hover:bg-teal-800'} text-white text-[11px] font-bold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer">
-              <span class="material-symbols-outlined text-[15px]">table_chart</span>
+              class="px-3.5 py-2 rounded-xl ${isDynamic ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-700 hover:bg-teal-800'} active:scale-95 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">table_chart</span>
               <span>Buka Matriks</span>
             </button>
             <button type="button" onclick="openDetailLogFromProgress(${s.id}, '${s.counting_type}')" 
-              class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold border border-slate-300 transition-colors flex items-center gap-1 cursor-pointer">
-              <span class="material-symbols-outlined text-[15px]">read_more</span>
+              class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-bold border border-slate-300 transition-all flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">read_more</span>
               <span>Detail Log</span>
             </button>
           </div>
@@ -7414,32 +7413,62 @@ function renderCountingProgressCards(sessions) {
 
 function renderCountingLeaderboard(leaderboard) {
   const tbody = document.getElementById('cpLeaderboardTableBody');
+  const badgeEl = document.getElementById('cpLeaderboardFilterLabel');
   if (!tbody) return;
+
+  const currentType = document.getElementById('cpFilterType')?.value || 'ALL';
+  if (badgeEl) {
+    if (currentType === 'DYNAMIC_COUNT') badgeEl.innerText = 'Mode Dynamic Count';
+    else if (currentType === 'STOCK_OPNAME') badgeEl.innerText = 'Mode Stock Opname';
+    else badgeEl.innerText = 'Semua Mode';
+  }
 
   if (!leaderboard.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="4" class="p-4 text-center text-slate-400 text-xs">Belum ada data rekaman operator.</td>
+        <td colspan="4" class="p-6 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[28px] text-slate-300">group_off</span>
+          <p class="mt-1 font-medium">Belum ada rekaman hitung operator untuk filter ini.</p>
+        </td>
       </tr>
     `;
     return;
   }
 
   tbody.innerHTML = leaderboard.map((item, idx) => {
-    let rankBadge = `<span class="font-bold text-slate-400 font-mono">${idx + 1}</span>`;
-    if (idx === 0) rankBadge = `<span class="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-black text-[10px] shadow-2xs">🥇</span>`;
-    else if (idx === 1) rankBadge = `<span class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-black text-[10px] shadow-2xs">🥈</span>`;
-    else if (idx === 2) rankBadge = `<span class="w-5 h-5 rounded-full bg-amber-700/20 text-amber-900 flex items-center justify-center font-black text-[10px] shadow-2xs">🥉</span>`;
+    let rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs font-mono">${idx + 1}</span>`;
+    if (idx === 0) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-black text-xs shadow-2xs">🥇</span>`;
+    else if (idx === 1) rankBadge = `<span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-black text-xs shadow-2xs">🥈</span>`;
+    else if (idx === 2) rankBadge = `<span class="w-6 h-6 rounded-full bg-amber-700/20 text-amber-900 flex items-center justify-center font-black text-xs shadow-2xs">🥉</span>`;
+
+    let breakdownBadges = '';
+    if (currentType === 'ALL') {
+      const dynCnt = item.dynamic_count_items || 0;
+      const opCnt = item.opname_items || 0;
+      breakdownBadges = `
+        <div class="flex items-center gap-1 mt-0.5 text-[9px] font-bold">
+          ${dynCnt > 0 ? `<span class="text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">${dynCnt} Dynamic</span>` : ''}
+          ${opCnt > 0 ? `<span class="text-teal-700 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-100">${opCnt} Opname</span>` : ''}
+        </div>
+      `;
+    }
 
     return `
-      <tr class="hover:bg-slate-50/70 transition-colors">
-        <td class="py-2.5 pl-1">${rankBadge}</td>
-        <td class="py-2.5">
-          <p class="font-bold text-slate-900 leading-tight">${escapeHtml(item.operator_name || item.operator_username || 'Operator')}</p>
-          <p class="text-[10px] text-slate-400">${escapeHtml(item.operator_shift || 'Shift Standard')}</p>
+      <tr class="hover:bg-slate-50/80 transition-colors">
+        <td class="py-3 pl-2">${rankBadge}</td>
+        <td class="py-3">
+          <p class="font-extrabold text-slate-900 text-xs leading-tight">${escapeHtml(item.operator_name || item.operator_username || 'Operator')}</p>
+          <p class="text-[10px] text-slate-400 font-medium">${escapeHtml(item.operator_shift || 'Shift Standard')}</p>
+          ${breakdownBadges}
         </td>
-        <td class="py-2.5 text-right font-mono font-bold text-indigo-700">${(item.total_items_counted || 0).toLocaleString()}</td>
-        <td class="py-2.5 text-right font-mono font-bold text-slate-800">${(item.total_qty_counted || 0).toLocaleString()}</td>
+        <td class="py-3 text-right">
+          <span class="font-mono font-black text-indigo-700 text-xs">${(item.total_items_counted || 0).toLocaleString()}</span>
+          <span class="text-[10px] text-slate-400 font-semibold block">SKU</span>
+        </td>
+        <td class="py-3 text-right pr-2">
+          <span class="font-mono font-black text-slate-900 text-xs">${(item.total_qty_counted || 0).toLocaleString()}</span>
+          <span class="text-[10px] text-slate-400 font-semibold block">Pcs</span>
+        </td>
       </tr>
     `;
   }).join('');

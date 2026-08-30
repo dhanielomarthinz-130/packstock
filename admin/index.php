@@ -1054,17 +1054,18 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="material-symbols-outlined text-amber-500 text-[18px]">military_tech</span>
                 <span>Top PIC Operator Hitung</span>
               </h3>
+              <span id="cpLeaderboardFilterLabel" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200">Semua Mode</span>
             </div>
 
-            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-3 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs p-3.5 overflow-hidden">
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
-                  <thead class="text-[10px] font-extrabold uppercase text-slate-400 border-b border-slate-100 pb-2">
+                  <thead class="text-[10px] font-extrabold uppercase text-slate-400 bg-slate-50 border-b border-slate-200">
                     <tr>
-                      <th class="py-2 pl-1 w-8">#</th>
-                      <th class="py-2">Operator</th>
-                      <th class="py-2 text-right font-mono">SKU</th>
-                      <th class="py-2 text-right font-mono">Qty (Pcs)</th>
+                      <th class="py-2.5 pl-2 w-8">#</th>
+                      <th class="py-2.5">Operator</th>
+                      <th class="py-2.5 text-right font-mono">SKU</th>
+                      <th class="py-2.5 text-right font-mono pr-2">Qty (Pcs)</th>
                     </tr>
                   </thead>
                   <tbody id="cpLeaderboardTableBody" class="divide-y divide-slate-100 font-medium">
