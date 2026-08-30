@@ -1171,117 +1171,39 @@ function renderDashboardTable() {
   }).join('');
 }
 
-async function exportDashboardSummaryExcel() {
-  const btn = document.querySelector('button[onclick="exportDashboardSummaryExcel()"]');
-  const originalHtml = btn ? btn.innerHTML : '';
-  
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Mengekspor...</span>';
+function exportDashboardSummaryExcel() {
+  const queryParams = new URLSearchParams({
+    type: 'dashboard_summary',
+    filter_type: currentDashFilterType || 'date'
+  });
+
+  if (currentDashFilterType === 'date') {
+    const dateVal = document.getElementById('dashInputDate')?.value || '';
+    if (dateVal) queryParams.append('date', dateVal);
+  } else if (currentDashFilterType === 'week') {
+    const yearVal = document.getElementById('dashSelectYear')?.value || '2026';
+    const monthVal = document.getElementById('dashSelectMonth')?.value || '8';
+    const weekVal = document.getElementById('dashSelectWeek')?.value || '4';
+    queryParams.append('year', yearVal);
+    queryParams.append('month', monthVal);
+    queryParams.append('week', weekVal);
+  } else if (currentDashFilterType === 'month') {
+    const yearVal = document.getElementById('dashSelectYearOnly')?.value || '2026';
+    const monthVal = document.getElementById('dashSelectMonthOnly')?.value || '8';
+    queryParams.append('year', yearVal);
+    queryParams.append('month', monthVal);
   }
 
-  try {
-    // If dashboardStockData is not yet loaded or empty, fetch it immediately
-    if (!dashboardStockData || dashboardStockData.length === 0) {
-      const queryParams = new URLSearchParams({
-        action: 'stock_summary',
-        filter_type: currentDashFilterType || 'date'
-      });
+  const search = document.getElementById('dashSearchInput')?.value.trim() || '';
+  const catFilter = document.getElementById('dashCategoryFilter')?.value || 'all';
+  const statusFilter = document.getElementById('dashStatusFilter')?.value || 'all';
 
-      if (currentDashFilterType === 'date') {
-        const dateVal = document.getElementById('dashInputDate')?.value || '';
-        if (dateVal) queryParams.append('date', dateVal);
-      } else if (currentDashFilterType === 'week') {
-        const yearVal = document.getElementById('dashSelectYear')?.value || '2026';
-        const monthVal = document.getElementById('dashSelectMonth')?.value || '8';
-        const weekVal = document.getElementById('dashSelectWeek')?.value || '4';
-        queryParams.append('year', yearVal);
-        queryParams.append('month', monthVal);
-        queryParams.append('week', weekVal);
-      } else if (currentDashFilterType === 'month') {
-        const yearVal = document.getElementById('dashSelectYearOnly')?.value || '2026';
-        const monthVal = document.getElementById('dashSelectMonthOnly')?.value || '8';
-        queryParams.append('year', yearVal);
-        queryParams.append('month', monthVal);
-      }
+  if (search) queryParams.append('search', search);
+  if (catFilter !== 'all') queryParams.append('category', catFilter);
+  if (statusFilter !== 'all') queryParams.append('status', statusFilter);
 
-      const res = await App.fetchJson(`../api/stats.php?${queryParams.toString()}`);
-      if (res && res.success && res.data && res.data.length > 0) {
-        dashboardStockData = res.data;
-        dashboardPeriodInfo = res.period || {};
-      }
-    }
-
-    // Fallback: If still empty, fetch materials master list directly
-    let dataToExport = dashboardStockData;
-    if (!dataToExport || dataToExport.length === 0) {
-      const matRes = await App.fetchJson('../api/materials.php?action=list');
-      if (matRes && matRes.success && matRes.data && matRes.data.length > 0) {
-        dataToExport = matRes.data.map(m => ({
-          code: m.code,
-          name: m.name,
-          unit: m.unit || 'Pcs',
-          rack_location: m.rack_location || '-',
-          category: m.category || 'Umum',
-          beginning_stock: m.current_stock || 0,
-          inbound: 0,
-          outbound: 0,
-          adjustment: 0,
-          ending_stock: m.current_stock || 0,
-          min_stock: m.min_stock || 0,
-          status: (m.current_stock <= 0) ? 'empty' : ((m.current_stock <= (m.min_stock || 0)) ? 'low' : 'safe')
-        }));
-      }
-    }
-
-    if (!dataToExport || dataToExport.length === 0) {
-      App.toast('Data master stok belum tersedia untuk diekspor.', 'warning');
-      return;
-    }
-
-    // Ensure XLSX library is loaded
-    if (typeof XLSX === 'undefined') {
-      await new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-      });
-    }
-
-    const periodLabel = (dashboardPeriodInfo && dashboardPeriodInfo.label) ? dashboardPeriodInfo.label : 'Laporan Ringkasan Stok';
-    const exportRows = dataToExport.map((d, idx) => ({
-      'No': idx + 1,
-      'Item No': d.code,
-      'Deskripsi Material Packaging': d.name,
-      'Satuan': d.unit || 'Pcs',
-      'Lokasi Rak': d.rack_location || '-',
-      'Kategori': d.category || 'Umum',
-      'Stok Awal': d.beginning_stock || 0,
-      'Barang Masuk (+)': d.inbound || 0,
-      'Barang Keluar (-)': d.outbound || 0,
-      'Adjustment (+/-)': d.adjustment || 0,
-      'Stok Akhir': d.ending_stock !== undefined ? d.ending_stock : (d.current_stock || 0),
-      'Min Stock': d.min_stock || 0,
-      'Status': d.status === 'safe' ? 'Aman' : (d.status === 'low' ? 'Menipis' : 'Habis')
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Ringkasan Stok');
-    const safePeriod = periodLabel.replace(/[^a-zA-Z0-9_\-]/g, '_');
-    XLSX.writeFile(wb, `Ringkasan_Stok_${safePeriod}.xlsx`);
-    App.toast('File Excel (.xlsx) berhasil di-download!', 'success', 'Download Selesai');
-  } catch (err) {
-    console.error('Export error:', err);
-    App.toast('Gagal mengekspor data Excel.', 'error');
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-    }
-  }
+  App.toast('Menyiapkan file Excel resmi dengan format rapi...', 'info', 'Mengunduh Excel');
+  window.location.href = `export.php?${queryParams.toString()}`;
 }
 
 // 1. STATS LOADER

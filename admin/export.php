@@ -986,6 +986,172 @@ if ($type === 'inventory_template') {
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
 }
 
+// =========================================================================
+// 12. EXPORT REKAP RINGKASAN STOK DASHBOARD DENGAN FORMAT EXCEL RESMI (.xlsx)
+// =========================================================================
+if ($type === 'dashboard_summary' || $type === 'dashboard_stock_summary') {
+    $filterType = $_GET['filter_type'] ?? 'date';
+    $search     = trim($_GET['search'] ?? '');
+    $category   = trim($_GET['category'] ?? 'all');
+    $status     = trim($_GET['status'] ?? 'all');
+
+    $now = new DateTime();
+    $startDateStr = $now->format('Y-m-d');
+    $endDateStr   = $now->format('Y-m-d');
+    $periodLabel  = $now->format('d M Y');
+
+    if ($filterType === 'all') {
+        $startDateStr = '2000-01-01';
+        $endDateStr   = '2099-12-31';
+        $periodLabel  = 'Semua Waktu (All-Time)';
+    } elseif ($filterType === 'date') {
+        $d = trim($_GET['date'] ?? '');
+        if ($d && preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+            $startDateStr = $d;
+            $endDateStr   = $d;
+            $dt = new DateTime($d);
+            $periodLabel = 'Tanggal ' . $dt->format('d M Y');
+        } else {
+            $periodLabel = 'Tanggal Hari Ini (' . $now->format('d M Y') . ')';
+        }
+    } elseif ($filterType === 'week') {
+        $year  = (int)($_GET['year'] ?? $now->format('Y'));
+        $month = (int)($_GET['month'] ?? $now->format('n'));
+        $week  = (int)($_GET['week'] ?? 1);
+        $lastDayOfMonth = (int)(new DateTime("$year-$month-01"))->format('t');
+        $startDay = 1;
+        $endDay = 7;
+        if ($week === 1) { $startDay = 1; $endDay = min(7, $lastDayOfMonth); }
+        elseif ($week === 2) { $startDay = 8; $endDay = min(14, $lastDayOfMonth); }
+        elseif ($week === 3) { $startDay = 15; $endDay = min(21, $lastDayOfMonth); }
+        elseif ($week === 4) { $startDay = 22; $endDay = min(28, $lastDayOfMonth); }
+        elseif ($week >= 5) { $startDay = 29; $endDay = $lastDayOfMonth; }
+
+        $startDateStr = sprintf('%04d-%02d-%02d', $year, $month, $startDay);
+        $endDateStr   = sprintf('%04d-%02d-%02d', $year, $month, $endDay);
+        $monthNames = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+        $mName = $monthNames[$month] ?? "Bulan $month";
+        $periodLabel = "Week $week - $mName $year (" . date('d M', strtotime($startDateStr)) . " - " . date('d M Y', strtotime($endDateStr)) . ")";
+    } elseif ($filterType === 'month') {
+        $year  = (int)($_GET['year'] ?? $now->format('Y'));
+        $month = (int)($_GET['month'] ?? $now->format('n'));
+        $lastDayOfMonth = (int)(new DateTime("$year-$month-01"))->format('t');
+        $startDateStr = sprintf('%04d-%02d-01', $year, $month);
+        $endDateStr   = sprintf('%04d-%02d-%02d', $year, $month, $lastDayOfMonth);
+        $monthNames = [1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'];
+        $mName = $monthNames[$month] ?? "Bulan $month";
+        $periodLabel = "Bulan $mName $year";
+    }
+
+    $startDateTime = $startDateStr . ' 00:00:00';
+    $endDateTime   = $endDateStr . ' 23:59:59';
+
+    $sql = "
+        SELECT 
+            m.id,
+            m.code,
+            m.name,
+            m.unit,
+            m.rack_location,
+            m.category,
+            m.min_stock,
+            m.current_stock,
+            COALESCE(SUM(CASE WHEN sm.type = 'INBOUND' AND sm.created_at BETWEEN ? AND ? THEN sm.qty_change ELSE 0 END), 0) AS total_inbound,
+            COALESCE(SUM(CASE WHEN sm.type IN ('OUTBOUND', 'TASK_PICKING') AND sm.created_at BETWEEN ? AND ? THEN ABS(sm.qty_change) ELSE 0 END), 0) AS total_outbound,
+            COALESCE(SUM(CASE WHEN sm.type = 'ADJUSTMENT' AND sm.created_at BETWEEN ? AND ? THEN sm.qty_change ELSE 0 END), 0) AS total_adjustment,
+            COALESCE(SUM(CASE WHEN sm.created_at >= ? THEN sm.qty_change ELSE 0 END), 0) AS change_since_start,
+            COALESCE(SUM(CASE WHEN sm.created_at > ? THEN sm.qty_change ELSE 0 END), 0) AS change_after_end
+        FROM materials m
+        LEFT JOIN stock_mutations sm ON m.id = sm.material_id
+        WHERE 1=1
+    ";
+    $params = [$startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime];
+
+    if (!empty($search)) {
+        $sql .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.rack_location LIKE ?)";
+        $term = "%{$search}%";
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
+    }
+    if (!empty($category) && $category !== 'all') {
+        $sql .= " AND m.category = ?";
+        $params[] = $category;
+    }
+    $sql .= " GROUP BY m.id ORDER BY m.code ASC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rowsRaw = $stmt->fetchAll();
+
+    $cleanPeriod = preg_replace('/[^A-Za-z0-9_-]/', '_', $periodLabel);
+    $filename = "Rekap_Stok_Dashboard_{$cleanPeriod}_" . date('Ymd_His') . ".xlsx";
+    $title = "REKAP RINGKASAN MUTASI & STOK AKHIR DASHBOARD ({$periodLabel})";
+
+    $headers = [
+        'No',
+        'Item No',
+        'Deskripsi Material Packaging / Consumable',
+        'Satuan',
+        'Lokasi Rak',
+        'Kategori',
+        'Stok Awal',
+        'Barang Masuk (+)',
+        'Barang Keluar (-)',
+        'Penyesuaian (+/-)',
+        'Stok Akhir',
+        'Min Safety Stock',
+        'Status Stok'
+    ];
+
+    $colWidths = [6, 16, 42, 10, 15, 20, 14, 16, 16, 16, 15, 16, 14];
+    $rows = [];
+    $no = 1;
+
+    foreach ($rowsRaw as $r) {
+        $current = (int)$r['current_stock'];
+        $changeSinceStart = (int)$r['change_since_start'];
+        $changeAfterEnd = (int)$r['change_after_end'];
+        
+        $beginningStock = $current - $changeSinceStart;
+        $endingStock = $current - $changeAfterEnd;
+        $inbound = (int)$r['total_inbound'];
+        $outbound = (int)$r['total_outbound'];
+        $adjustment = (int)$r['total_adjustment'];
+        $minStock = (int)$r['min_stock'];
+
+        $hasActivity = ($inbound !== 0 || $outbound !== 0 || $adjustment !== 0);
+
+        if ($status === 'activity_only' && !$hasActivity) continue;
+        if ($status === 'low' && ($endingStock > $minStock || $endingStock <= 0)) continue;
+        if ($status === 'empty' && $endingStock > 0) continue;
+        if ($status === 'safe' && $endingStock <= $minStock) continue;
+        if ($status === 'adjusted_only' && $adjustment === 0) continue;
+
+        $stockStatus = 'AMAN';
+        if ($endingStock <= 0) $stockStatus = 'HABIS';
+        elseif ($endingStock <= $minStock) $stockStatus = 'MENIPIS';
+
+        $rows[] = [
+            $no++,
+            $r['code'],
+            $r['name'],
+            $r['unit'] ?: 'Pcs',
+            $r['rack_location'] ?: '-',
+            $r['category'] ?: 'Umum',
+            $beginningStock,
+            $inbound,
+            $outbound,
+            $adjustment,
+            $endingStock,
+            $minStock,
+            $stockStatus
+        ];
+    }
+
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+}
+
 http_response_code(400);
 echo "Format ekspor tidak didukung";
 
