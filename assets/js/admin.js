@@ -7208,10 +7208,7 @@ function renderCountingProgressCharts(charts) {
   const opPct = opData.progress_pct || 0;
 
   const opPctBadge = document.getElementById('chartOpnamePctBadge');
-  if (opPctBadge) opPctBadge.innerText = `${opPct}%`;
-
-  const opCenterPct = document.getElementById('chartOpnameCenterPct');
-  if (opCenterPct) opCenterPct.innerText = `${opPct}%`;
+  if (opPctBadge) opPctBadge.innerText = `${opPct}% Selesai`;
 
   const opCountedEl = document.getElementById('chartOpnameCounted');
   if (opCountedEl) opCountedEl.innerText = `${opCounted.toLocaleString()} SKU`;
@@ -7226,25 +7223,48 @@ function renderCountingProgressCharts(charts) {
   if (ctxOp && typeof Chart !== 'undefined') {
     if (stockOpnameProgressChartInstance) stockOpnameProgressChartInstance.destroy();
     stockOpnameProgressChartInstance = new Chart(ctxOp, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
-        labels: ['Selesai Dihitung', 'Belum Selesai'],
+        labels: ['Selesai Dihitung', 'Belum Dihitung', 'Target DB (>0)'],
         datasets: [{
-          data: [opCounted, Math.max(0, opUncounted)],
-          backgroundColor: ['#0d9488', '#e2e8f0'],
-          borderWidth: 0,
-          hoverOffset: 3
+          label: 'Jumlah SKU',
+          data: [opCounted, Math.max(0, opUncounted), opTotalDb],
+          backgroundColor: ['#0d9488', '#94a3b8', '#2563eb'],
+          borderRadius: 8,
+          borderSkipped: false,
+          barThickness: 34,
+          maxBarThickness: 42
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '76%',
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ` ${ctx.label}: ${ctx.raw} SKU`
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()} SKU`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, weight: '600' },
+              color: '#475569'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: '#f1f5f9',
+              drawBorder: false
+            },
+            ticks: {
+              precision: 0,
+              font: { size: 10, weight: '500' },
+              color: '#94a3b8'
             }
           }
         }
@@ -7260,10 +7280,7 @@ function renderCountingProgressCharts(charts) {
   const dynPct = dynData.progress_pct || 0;
 
   const dynPctBadge = document.getElementById('chartDynamicPctBadge');
-  if (dynPctBadge) dynPctBadge.innerText = `${dynPct}%`;
-
-  const dynCenterPct = document.getElementById('chartDynamicCenterPct');
-  if (dynCenterPct) dynCenterPct.innerText = `${dynPct}%`;
+  if (dynPctBadge) dynPctBadge.innerText = `${dynPct}% Selesai`;
 
   const dynDoneEl = document.getElementById('chartDynamicDone');
   if (dynDoneEl) dynDoneEl.innerText = `${dynDone.toLocaleString()} SKU`;
@@ -7278,25 +7295,48 @@ function renderCountingProgressCharts(charts) {
   if (ctxDyn && typeof Chart !== 'undefined') {
     if (dynamicCountProgressChartInstance) dynamicCountProgressChartInstance.destroy();
     dynamicCountProgressChartInstance = new Chart(ctxDyn, {
-      type: 'doughnut',
+      type: 'bar',
       data: {
-        labels: ['Selesai (Done)', 'Belum Selesai'],
+        labels: ['Selesai (Done)', 'Belum Selesai', 'Total Ditugaskan'],
         datasets: [{
-          data: [dynDone, Math.max(0, dynPending)],
-          backgroundColor: ['#4f46e5', '#e2e8f0'],
-          borderWidth: 0,
-          hoverOffset: 3
+          label: 'Jumlah SKU',
+          data: [dynDone, Math.max(0, dynPending), dynTotalAssigned],
+          backgroundColor: ['#4f46e5', '#94a3b8', '#9333ea'],
+          borderRadius: 8,
+          borderSkipped: false,
+          barThickness: 34,
+          maxBarThickness: 42
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '76%',
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ` ${ctx.label}: ${ctx.raw} SKU`
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString()} SKU`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, weight: '600' },
+              color: '#475569'
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: '#f1f5f9',
+              drawBorder: false
+            },
+            ticks: {
+              precision: 0,
+              font: { size: 10, weight: '500' },
+              color: '#94a3b8'
             }
           }
         }

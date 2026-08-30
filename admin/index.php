@@ -925,103 +925,79 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- ================= VISUAL PROGRESS CHARTS ROW ================= -->
+        <!-- ================= VISUAL PROGRESS CHARTS ROW (BAR COLUMN CHARTS) ================= -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           
-          <!-- Chart 1: Stock Opname Progress (Counted vs DB Stock > 0) -->
+          <!-- Chart 1: Stock Opname Progress Column Bar Chart -->
           <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div class="flex items-center gap-2">
                 <span class="w-7 h-7 rounded-lg bg-teal-100 text-teal-800 flex items-center justify-center font-bold">
-                  <span class="material-symbols-outlined text-[17px]">fact_check</span>
+                  <span class="material-symbols-outlined text-[17px]">bar_chart</span>
                 </span>
                 <div>
                   <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider">Progress Stock Opname</h4>
-                  <p class="text-[10px] text-slate-500 font-semibold">SKU Selesai Dihitung vs Total SKU Database (Qty &gt; 0)</p>
+                  <p class="text-[10px] text-slate-500 font-semibold">SKU Selesai Dihitung vs Target Database (Qty &gt; 0)</p>
                 </div>
               </div>
-              <span id="chartOpnamePctBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-teal-50 text-teal-800 border border-teal-200">0%</span>
+              <span id="chartOpnamePctBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-teal-50 text-teal-800 border border-teal-200">0% Selesai</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-              <div class="sm:col-span-5 flex items-center justify-center relative min-h-[140px]">
-                <canvas id="chartStockOpnameProgress" class="max-h-[140px] max-w-[140px]"></canvas>
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span id="chartOpnameCenterPct" class="text-xl font-black text-teal-900">0%</span>
-                  <span class="text-[9px] font-bold text-slate-400 uppercase">Selesai</span>
-                </div>
+            <!-- Canvas Container for Column Chart -->
+            <div class="relative h-[165px] w-full">
+              <canvas id="chartStockOpnameProgress"></canvas>
+            </div>
+
+            <!-- Metric Summary Footer -->
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+              <div class="p-2.5 rounded-xl bg-teal-50/70 border border-teal-200">
+                <p class="text-[10px] font-bold text-teal-700">Selesai Dihitung</p>
+                <p id="chartOpnameCounted" class="font-mono font-black text-teal-900 text-sm mt-0.5">0 SKU</p>
               </div>
-
-              <div class="sm:col-span-7 space-y-2 text-xs">
-                <div class="p-2.5 rounded-xl bg-teal-50/60 border border-teal-200/80 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-teal-600"></span>
-                    <span class="text-slate-700 font-bold text-[11px]">SKU Selesai Dihitung</span>
-                  </div>
-                  <span id="chartOpnameCounted" class="font-mono font-black text-teal-900 text-xs">0 SKU</span>
-                </div>
-
-                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-                    <span class="text-slate-600 font-medium text-[11px]">SKU Belum Selesai</span>
-                  </div>
-                  <span id="chartOpnameUncounted" class="font-mono font-bold text-slate-700 text-xs">0 SKU</span>
-                </div>
-
-                <div class="pt-1 flex items-center justify-between text-[11px] font-bold text-slate-500 border-t border-slate-100">
-                  <span>Target Database (Qty &gt; 0):</span>
-                  <span id="chartOpnameTargetDb" class="font-mono font-black text-slate-900">0 SKU</span>
-                </div>
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="text-[10px] font-bold text-slate-600">Belum Dihitung</p>
+                <p id="chartOpnameUncounted" class="font-mono font-black text-slate-700 text-sm mt-0.5">0 SKU</p>
+              </div>
+              <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200">
+                <p class="text-[10px] font-bold text-blue-700">Target DB (Qty &gt; 0)</p>
+                <p id="chartOpnameTargetDb" class="font-mono font-black text-blue-900 text-sm mt-0.5">0 SKU</p>
               </div>
             </div>
           </div>
 
-          <!-- Chart 2: Dynamic Count Progress (Done vs Assigned) -->
+          <!-- Chart 2: Dynamic Count Progress Column Bar Chart -->
           <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div class="flex items-center gap-2">
                 <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-800 flex items-center justify-center font-bold">
-                  <span class="material-symbols-outlined text-[17px]">checklist</span>
+                  <span class="material-symbols-outlined text-[17px]">bar_chart</span>
                 </span>
                 <div>
                   <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider">Progress Dynamic Count</h4>
-                  <p class="text-[10px] text-slate-500 font-semibold">SKU Selesai (Done) vs Total SKU Ditugaskan (Assign)</p>
+                  <p class="text-[10px] text-slate-500 font-semibold">SKU Selesai (Done) vs Total Ditugaskan (Assign)</p>
                 </div>
               </div>
-              <span id="chartDynamicPctBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-800 border border-indigo-200">0%</span>
+              <span id="chartDynamicPctBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-indigo-50 text-indigo-800 border border-indigo-200">0% Selesai</span>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-              <div class="sm:col-span-5 flex items-center justify-center relative min-h-[140px]">
-                <canvas id="chartDynamicCountProgress" class="max-h-[140px] max-w-[140px]"></canvas>
-                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span id="chartDynamicCenterPct" class="text-xl font-black text-indigo-900">0%</span>
-                  <span class="text-[9px] font-bold text-slate-400 uppercase">Selesai</span>
-                </div>
+            <!-- Canvas Container for Column Chart -->
+            <div class="relative h-[165px] w-full">
+              <canvas id="chartDynamicCountProgress"></canvas>
+            </div>
+
+            <!-- Metric Summary Footer -->
+            <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+              <div class="p-2.5 rounded-xl bg-indigo-50/70 border border-indigo-200">
+                <p class="text-[10px] font-bold text-indigo-700">Selesai (Done)</p>
+                <p id="chartDynamicDone" class="font-mono font-black text-indigo-900 text-sm mt-0.5">0 SKU</p>
               </div>
-
-              <div class="sm:col-span-7 space-y-2 text-xs">
-                <div class="p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-200/80 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
-                    <span class="text-slate-700 font-bold text-[11px]">SKU Selesai (Done)</span>
-                  </div>
-                  <span id="chartDynamicDone" class="font-mono font-black text-indigo-900 text-xs">0 SKU</span>
-                </div>
-
-                <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-                    <span class="text-slate-600 font-medium text-[11px]">SKU Belum Selesai</span>
-                  </div>
-                  <span id="chartDynamicPending" class="font-mono font-bold text-slate-700 text-xs">0 SKU</span>
-                </div>
-
-                <div class="pt-1 flex items-center justify-between text-[11px] font-bold text-slate-500 border-t border-slate-100">
-                  <span>Total SKU Ditugaskan:</span>
-                  <span id="chartDynamicTotalAssigned" class="font-mono font-black text-slate-900">0 SKU</span>
-                </div>
+              <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                <p class="text-[10px] font-bold text-slate-600">Belum Selesai</p>
+                <p id="chartDynamicPending" class="font-mono font-black text-slate-700 text-sm mt-0.5">0 SKU</p>
+              </div>
+              <div class="p-2.5 rounded-xl bg-purple-50/70 border border-purple-200">
+                <p class="text-[10px] font-bold text-purple-700">Total Ditugaskan</p>
+                <p id="chartDynamicTotalAssigned" class="font-mono font-black text-purple-900 text-sm mt-0.5">0 SKU</p>
               </div>
             </div>
           </div>
