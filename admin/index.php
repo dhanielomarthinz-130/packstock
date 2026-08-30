@@ -1474,7 +1474,8 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty In</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Lokasi Rak</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Petugas Penerima</th>
-                  <th class="py-3.5 px-3.5">Catatan</th>
+                  <th class="py-3.5 px-3.5 border-r border-white/20">Catatan</th>
+                  <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody id="inboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>

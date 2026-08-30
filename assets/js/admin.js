@@ -3145,7 +3145,7 @@ async function loadInboundHistory() {
     if (res.data.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="p-8 text-center text-slate-400 text-xs font-medium">
+          <td colspan="8" class="p-8 text-center text-slate-400 text-xs font-medium">
             <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">move_to_inbox</span>
             <p>Tidak ada riwayat penerimaan barang masuk.</p>
           </td>
@@ -3156,28 +3156,49 @@ async function loadInboundHistory() {
 
     tbody.innerHTML = res.data.map((i, idx) => `
       <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+        <!-- 1. Tanggal -->
         <td class="p-3 whitespace-nowrap">
           <span class="font-extrabold text-slate-800">${App.formatDate(i.completed_at || i.created_at)}</span>
         </td>
+
+        <!-- 2. No. Inbound -->
         <td class="p-3 font-mono font-bold text-emerald-800 whitespace-nowrap">
-          <button type="button" onclick="openInboundDetailModal(${idx})" class="hover:underline inline-flex items-center gap-1 font-mono text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs" title="Klik untuk lihat detail transaksi">
-            <span class="material-symbols-outlined text-[13px] text-emerald-600">visibility</span>
+          <button type="button" onclick="openInboundDetailModal(${idx})" class="hover:underline inline-flex items-center gap-1 font-mono text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs cursor-pointer group" title="Klik untuk lihat detail transaksi">
+            <span class="material-symbols-outlined text-[13px] text-emerald-600 group-hover:text-emerald-900">visibility</span>
             <span>${escapeHtml(i.inbound_no)}</span>
           </button>
         </td>
+
+        <!-- 3. Kemas -->
         <td class="p-3">
           <div class="font-bold text-slate-900">${escapeHtml(i.material_name)}</div>
-          <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(i.material_code)} &bull; Rak: ${escapeHtml(i.rack_location || '-')}</div>
+          <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(i.material_code)}</div>
         </td>
+
+        <!-- 4. Qty In -->
         <td class="p-3 text-center whitespace-nowrap">
           <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-black text-xs font-mono">
             +${App.formatNumber(i.qty)} <span class="text-[10px] text-emerald-700 font-normal">${escapeHtml(i.material_unit || 'Pcs')}</span>
           </span>
         </td>
+
+        <!-- 5. Lokasi Rak -->
+        <td class="p-3 whitespace-nowrap font-mono text-slate-700">
+          <span class="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-xs font-bold">${escapeHtml(i.rack_location || '-')}</span>
+        </td>
+
+        <!-- 6. Petugas Penerima -->
         <td class="p-3 whitespace-nowrap text-slate-700">
           <span class="font-semibold text-slate-800">${escapeHtml(i.receiver_name || i.received_by || 'Admin')}</span>
         </td>
-        <td class="p-3 text-right whitespace-nowrap">
+
+        <!-- 7. Catatan -->
+        <td class="p-3 text-slate-600 max-w-xs">
+          <span class="truncate block text-xs" title="${escapeHtml(i.notes || '-')}">${escapeHtml(i.notes || '-')}</span>
+        </td>
+
+        <!-- 8. Aksi -->
+        <td class="p-3 text-center whitespace-nowrap">
           <button onclick="openInboundDetailModal(${idx})" title="Lihat Rincian Detail" class="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs">
             <span class="material-symbols-outlined text-[16px]">visibility</span>
           </button>
