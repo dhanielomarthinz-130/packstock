@@ -4183,7 +4183,7 @@ async function applyMyPermissions() {
       users: 'nav-users',
       permissions: 'nav-permissions',
       maintenance: 'nav-maintenance',
-      field_access: 'sidebarFieldAccessContainer'
+      field_access: 'sidebarFieldAccessBtn'
     };
 
     Object.keys(menuNavMap).forEach(key => {

@@ -260,7 +260,7 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content mt-1">
-          <a href="../operator/" target="_blank" 
+          <a id="sidebarFieldAccessBtn" href="../operator/" target="_blank" 
             class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel PIC">
             <div class="flex items-center gap-2.5">
               <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0">
