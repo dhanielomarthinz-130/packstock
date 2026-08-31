@@ -8,6 +8,9 @@ $pdo = Database::getConnection();
 $id = (int)($_GET['id'] ?? 0);
 $code = trim($_GET['code'] ?? '');
 
+// Ensure database is reconciled
+Database::autoReconcileStockMutations($pdo);
+
 if ($id > 0) {
     $stmtMat = $pdo->prepare("
         SELECT m.*,
@@ -29,7 +32,7 @@ if ($id > 0) {
                    FROM stock_mutations 
                    WHERE material_id = m.id 
                      AND type = 'INITIAL_IMPORT' 
-                   ORDER BY id ASC LIMIT 1
+                   ORDER BY id DESC LIMIT 1
                ), (
                    m.current_stock - 
                    COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -59,7 +62,7 @@ if ($id > 0) {
                    FROM stock_mutations 
                    WHERE material_id = m.id 
                      AND type = 'INITIAL_IMPORT' 
-                   ORDER BY id ASC LIMIT 1
+                   ORDER BY id DESC LIMIT 1
                ), (
                    m.current_stock - 
                    COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -77,19 +80,19 @@ if (!$material) {
     exit;
 }
 
-$material['initial_upload_stock'] = (int)$material['initial_upload_stock'];
-$material['total_inbound'] = (int)$material['total_inbound'];
-$material['total_outbound'] = (int)$material['total_outbound'];
-$material['current_stock'] = (int)$material['current_stock'];
-$material['min_stock'] = (int)$material['min_stock'];
+$material['initial_upload_stock'] = (float)$material['initial_upload_stock'];
+$material['total_inbound'] = (float)$material['total_inbound'];
+$material['total_outbound'] = (float)$material['total_outbound'];
+$material['current_stock'] = (float)$material['current_stock'];
+$material['min_stock'] = (float)$material['min_stock'];
 
-// Fetch all mutations (earliest first)
+// Fetch all mutations (INITIAL_IMPORT first, then chronological)
 $stmtMut = $pdo->prepare("
     SELECT sm.*, u.name as user_name, u.role as user_role, u.shift as user_shift
     FROM stock_mutations sm
     LEFT JOIN users u ON sm.user_id = u.id
     WHERE sm.material_id = ?
-    ORDER BY sm.created_at ASC, sm.id ASC
+    ORDER BY (CASE WHEN sm.type = 'INITIAL_IMPORT' THEN 0 ELSE 1 END), sm.created_at ASC, sm.id ASC
 ");
 $stmtMut->execute([$material['id']]);
 $mutations = $stmtMut->fetchAll();

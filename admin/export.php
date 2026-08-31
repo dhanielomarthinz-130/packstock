@@ -49,7 +49,7 @@ if ($type === 'material_history') {
                        FROM stock_mutations 
                        WHERE material_id = m.id 
                          AND type = 'INITIAL_IMPORT' 
-                       ORDER BY id ASC LIMIT 1
+                       ORDER BY id DESC LIMIT 1
                    ), (
                        m.current_stock - 
                        COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -79,7 +79,7 @@ if ($type === 'material_history') {
                        FROM stock_mutations 
                        WHERE material_id = m.id 
                          AND type = 'INITIAL_IMPORT' 
-                       ORDER BY id ASC LIMIT 1
+                       ORDER BY id DESC LIMIT 1
                    ), (
                        m.current_stock - 
                        COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -120,7 +120,7 @@ if ($type === 'material_history') {
         FROM stock_mutations sm
         LEFT JOIN users u ON sm.user_id = u.id
         WHERE sm.material_id = ?
-        ORDER BY sm.created_at ASC, sm.id ASC
+        ORDER BY (CASE WHEN sm.type = 'INITIAL_IMPORT' THEN 0 ELSE 1 END), sm.created_at ASC, sm.id ASC
     ");
     $stmtMut->execute([$mat['id']]);
     $no = 1;

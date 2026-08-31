@@ -473,46 +473,45 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($existing) {
                 $matId = (int)$existing['id'];
-                $oldStock = (float)$existing['current_stock'];
-                $diff = $stock - $oldStock;
-
                 $stmtUpdate->execute([$name, $cat, $unit, $rack, $minStock, $stock, $matId]);
                 $updated++;
 
-                if (abs($diff) > 0.0001) {
-                    $stmtMut->execute([
-                        $matId,
-                        $diff,
-                        $oldStock,
-                        $stock,
-                        'EXCEL-IMPORT-UPDATE',
-                        "Penyesuaian Stok dari Upload Excel (Item No: {$code})",
-                        $userId
-                    ]);
-                }
+                // Replace old INITIAL_IMPORT with new uploaded base stock
+                $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND type = 'INITIAL_IMPORT'")->execute([$matId]);
+
+                $stmtMut->execute([
+                    $matId,
+                    $stock,
+                    0,
+                    $stock,
+                    'EXCEL-IMPORT-NEW',
+                    "Stok Awal dari Upload Excel (Item No: {$code})",
+                    $userId
+                ]);
             } else {
                 $stmtInsert->execute([$code, $name, $cat, $unit, $rack, $minStock, $stock, $name]);
                 $matId = (int)$pdo->lastInsertId();
                 $inserted++;
 
-                if ($stock > 0) {
-                    $stmtMut->execute([
-                        $matId,
-                        $stock,
-                        0,
-                        $stock,
-                        'EXCEL-IMPORT-NEW',
-                        "Stok Awal dari Upload Excel (Item No: {$code})",
-                        $userId
-                    ]);
-                }
+                $stmtMut->execute([
+                    $matId,
+                    $stock,
+                    0,
+                    $stock,
+                    'EXCEL-IMPORT-NEW',
+                    "Stok Awal dari Upload Excel (Item No: {$code})",
+                    $userId
+                ]);
             }
         }
+
+        // Auto reconcile running stock across all transactions
+        Database::autoReconcileStockMutations($pdo);
 
         $pdo->commit();
         echo json_encode([
             'success' => true,
-            'message' => "Import Berhasil! {$inserted} material packaging berhasil ditambahkan ke database.",
+            'message' => "Import Berhasil! {$inserted} item baru ditambahkan, {$updated} item diperbarui. Saldo stok telah otomatis disinkronkan dengan riwayat transaksi yang ada.",
             'inserted' => $inserted,
             'updated' => $updated
         ]);

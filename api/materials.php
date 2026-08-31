@@ -22,6 +22,9 @@ if ($action === 'list') {
     $category = trim($_GET['category'] ?? '');
     $stockStatus = trim($_GET['status'] ?? ''); // all, low, safe, empty
 
+    // Reconcile and calculate real stock before listing
+    reconcileMaterialStock($pdo);
+
     $query = "
         SELECT m.*,
                COALESCE((
@@ -42,7 +45,7 @@ if ($action === 'list') {
                    FROM stock_mutations 
                    WHERE material_id = m.id 
                      AND type = 'INITIAL_IMPORT' 
-                   ORDER BY id ASC LIMIT 1
+                   ORDER BY id DESC LIMIT 1
                ), (
                    m.current_stock - 
                    COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -153,9 +156,9 @@ function reconcileMaterialStock(PDO $pdo, int $targetMaterialId = 0) {
             }
         }
 
-        // 3. Remove duplicate INITIAL_IMPORT mutations (keep oldest)
+        // 3. Remove older duplicate INITIAL_IMPORT mutations (keep latest uploaded stock)
         $stmtDupInit = $pdo->query("
-            SELECT material_id, COUNT(*) as cnt, MIN(id) as min_id
+            SELECT material_id, COUNT(*) as cnt, MAX(id) as max_id
             FROM stock_mutations
             WHERE type = 'INITIAL_IMPORT' {$matWhere}
             GROUP BY material_id
@@ -165,16 +168,24 @@ function reconcileMaterialStock(PDO $pdo, int $targetMaterialId = 0) {
             $dupInit = $stmtDupInit->fetchAll();
             foreach ($dupInit as $d) {
                 $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND type = 'INITIAL_IMPORT' AND id != ?");
-                $stmtDel->execute([$d['material_id'], $d['min_id']]);
+                $stmtDel->execute([$d['material_id'], $d['max_id']]);
             }
         }
+
+        // Set INITIAL_IMPORT created_at to earliest anchor timestamp
+        $pdo->exec("UPDATE stock_mutations SET created_at = '2026-08-01 00:00:00' WHERE type = 'INITIAL_IMPORT'");
 
         // 4. Recalculate running balance and update master current_stock
         $matQuery = $targetMaterialId > 0 ? "SELECT id FROM materials WHERE id = " . (int)$targetMaterialId : "SELECT id FROM materials";
         $materials = $pdo->query($matQuery)->fetchAll(PDO::FETCH_COLUMN);
 
         foreach ($materials as $matId) {
-            $stmtMut = $pdo->prepare("SELECT id, type, qty_change FROM stock_mutations WHERE material_id = ? ORDER BY created_at ASC, id ASC");
+            $stmtMut = $pdo->prepare("
+                SELECT id, type, qty_change 
+                FROM stock_mutations 
+                WHERE material_id = ? 
+                ORDER BY (CASE WHEN type = 'INITIAL_IMPORT' THEN 0 ELSE 1 END), created_at ASC, id ASC
+            ");
             $stmtMut->execute([$matId]);
             $mutations = $stmtMut->fetchAll();
 
@@ -246,7 +257,7 @@ if ($action === 'history') {
                        FROM stock_mutations 
                        WHERE material_id = m.id 
                          AND type = 'INITIAL_IMPORT' 
-                       ORDER BY id ASC LIMIT 1
+                       ORDER BY id DESC LIMIT 1
                    ), (
                        m.current_stock - 
                        COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -276,7 +287,7 @@ if ($action === 'history') {
                        FROM stock_mutations 
                        WHERE material_id = m.id 
                          AND type = 'INITIAL_IMPORT' 
-                       ORDER BY id ASC LIMIT 1
+                       ORDER BY id DESC LIMIT 1
                    ), (
                        m.current_stock - 
                        COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
@@ -300,13 +311,13 @@ if ($action === 'history') {
     $material['total_outbound'] = (float)$material['total_outbound'];
     $material['current_stock'] = (float)$material['current_stock'];
 
-    // Fetch chronological mutations for this item (earliest date first)
+    // Fetch chronological mutations for this item (INITIAL_IMPORT always first, then chronological)
     $stmtMut = $pdo->prepare("
         SELECT sm.*, u.name as user_name, u.role as user_role
         FROM stock_mutations sm
         LEFT JOIN users u ON sm.user_id = u.id
         WHERE sm.material_id = ?
-        ORDER BY sm.created_at ASC, sm.id ASC
+        ORDER BY (CASE WHEN sm.type = 'INITIAL_IMPORT' THEN 0 ELSE 1 END), sm.created_at ASC, sm.id ASC
     ");
     $stmtMut->execute([$material['id']]);
     $history = $stmtMut->fetchAll();

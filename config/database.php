@@ -631,10 +631,34 @@ class Database {
                 }
             }
 
-            // 3. Recalculate running balance and update master current_stock
+            // 3. Remove older duplicate INITIAL_IMPORT mutations (keep latest uploaded stock)
+            $stmtDupInit = $pdo->query("
+                SELECT material_id, COUNT(*) as cnt, MAX(id) as max_id
+                FROM stock_mutations
+                WHERE type = 'INITIAL_IMPORT'
+                GROUP BY material_id
+                HAVING cnt > 1
+            ");
+            if ($stmtDupInit) {
+                $dupInit = $stmtDupInit->fetchAll();
+                foreach ($dupInit as $d) {
+                    $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND type = 'INITIAL_IMPORT' AND id != ?");
+                    $stmtDel->execute([$d['material_id'], $d['max_id']]);
+                }
+            }
+
+            // Set INITIAL_IMPORT created_at to earliest anchor timestamp
+            $pdo->exec("UPDATE stock_mutations SET created_at = '2026-08-01 00:00:00' WHERE type = 'INITIAL_IMPORT'");
+
+            // 4. Recalculate running balance and update master current_stock
             $materials = $pdo->query("SELECT id FROM materials")->fetchAll(PDO::FETCH_COLUMN);
             foreach ($materials as $matId) {
-                $stmtMut = $pdo->prepare("SELECT id, type, qty_change FROM stock_mutations WHERE material_id = ? ORDER BY created_at ASC, id ASC");
+                $stmtMut = $pdo->prepare("
+                    SELECT id, type, qty_change 
+                    FROM stock_mutations 
+                    WHERE material_id = ? 
+                    ORDER BY (CASE WHEN type = 'INITIAL_IMPORT' THEN 0 ELSE 1 END), created_at ASC, id ASC
+                ");
                 $stmtMut->execute([$matId]);
                 $mutations = $stmtMut->fetchAll();
 
