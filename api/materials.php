@@ -226,8 +226,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $category = trim($input['category'] ?? 'Karton Box');
     $unit = trim($input['unit'] ?? 'Pcs');
     $rackLocation = trim($input['rack_location'] ?? 'Gudang Utama');
-    $minStock = max(0, (int)($input['min_stock'] ?? 20));
-    $initialStock = max(0, (int)($input['initial_stock'] ?? 0));
+    $minStock = max(0, (float)($input['min_stock'] ?? 20));
+    $initialStock = max(0, (float)($input['initial_stock'] ?? 0));
     $description = trim($input['description'] ?? '');
 
     if (empty($code) || empty($name)) {
@@ -277,7 +277,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $category = trim($input['category'] ?? 'Karton Box');
     $unit = trim($input['unit'] ?? 'Pcs');
     $rackLocation = trim($input['rack_location'] ?? 'Gudang Utama');
-    $minStock = max(0, (int)($input['min_stock'] ?? 20));
+    $minStock = max(0, (float)($input['min_stock'] ?? 20));
     $description = trim($input['description'] ?? '');
 
     if ($id <= 0 || empty($code) || empty($name)) {

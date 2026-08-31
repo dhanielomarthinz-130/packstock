@@ -3416,12 +3416,12 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Min Safety Stock</label>
-        <input type="number" id="materialMinStockInput" min="0" placeholder="20" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
+        <input type="number" step="any" id="materialMinStockInput" min="0" placeholder="20" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
       </div>
 
       <div id="materialInitialStockGroup">
         <label class="block font-semibold text-slate-700 mb-1">Ending Stock / Stok Awal</label>
-        <input type="number" id="materialInitialStockInput" min="0" placeholder="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-emerald-700 outline-none focus:border-emerald-600 focus:bg-white">
+        <input type="number" step="any" id="materialInitialStockInput" min="0" placeholder="0" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-emerald-700 outline-none focus:border-emerald-600 focus:bg-white">
       </div>
 
       <div>

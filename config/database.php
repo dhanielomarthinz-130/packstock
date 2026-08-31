@@ -347,7 +347,17 @@ class Database {
             "ALTER TABLE `handovers` ADD COLUMN `is_shared` TINYINT(1) DEFAULT 0",
             "ALTER TABLE `handovers` ADD COLUMN `from_shift` VARCHAR(100) NULL",
             "ALTER TABLE `handovers` ADD COLUMN `receiver_shift` VARCHAR(100) NULL",
-            "ALTER TABLE `consumable_requests` ADD COLUMN `photos` TEXT NULL"
+            "ALTER TABLE `consumable_requests` ADD COLUMN `photos` TEXT NULL",
+            "ALTER TABLE `materials` MODIFY COLUMN `current_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+            "ALTER TABLE `materials` MODIFY COLUMN `min_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+            "ALTER TABLE `inbound_transactions` MODIFY COLUMN `qty` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `outbound_transactions` MODIFY COLUMN `qty` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `tasks` MODIFY COLUMN `target_qty` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `tasks` MODIFY COLUMN `actual_qty` DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+            "ALTER TABLE `stock_mutations` MODIFY COLUMN `qty_change` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `stock_mutations` MODIFY COLUMN `stock_before` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `stock_mutations` MODIFY COLUMN `stock_after` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `consumable_request_items` MODIFY COLUMN `qty` DECIMAL(12,2) NOT NULL"
         ];
 
         foreach ($migrations as $sql) {
