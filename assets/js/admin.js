@@ -1470,7 +1470,10 @@ function renderMaterialsTable(materials) {
 }
 
 // 2.1 EMBEDDED MATERIAL STOCK CARD & IN/OUT HISTORY VIEW (INSIDE INDEX WITH SIDEBAR)
+let currentStockCardMaterialId = null;
+
 async function openMaterialHistoryView(materialId, updateUrl = true) {
+  currentStockCardMaterialId = materialId;
   const res = await App.fetchJson(`../api/materials.php?action=history&id=${materialId}`);
   if (!res.success || !res.material) {
     App.toast(res.message || 'Gagal memuat data riwayat material', 'error');
@@ -1591,6 +1594,23 @@ async function openMaterialHistoryView(materialId, updateUrl = true) {
 
 function printStockCard() {
   window.print();
+}
+
+async function reconcileAndRefreshStockCard() {
+  if (!currentStockCardMaterialId) return;
+
+  const res = await App.fetchJson(`../api/materials.php?action=reconcile&id=${currentStockCardMaterialId}`, {
+    method: 'POST'
+  });
+
+  if (res && res.success) {
+    App.toast('Kartu stok berhasil disinkronkan & mutasi ganda telah dibersihkan!', 'success', 'Stok Disinkronkan');
+    openMaterialHistoryView(currentStockCardMaterialId, false);
+    if (typeof loadMaterials === 'function') loadMaterials();
+    if (typeof loadDashboardStockSummary === 'function') loadDashboardStockSummary();
+  } else {
+    App.toast(res?.message || 'Gagal sinkronisasi stok', 'error');
+  }
 }
 
 // ================= 2.2 EXCEL / CSV MASTER STOCK IMPORT HANDLERS =================

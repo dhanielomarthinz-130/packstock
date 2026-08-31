@@ -1163,8 +1163,13 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- History Action Buttons (Download & Print) -->
+          <!-- History Action Buttons (Download, Sync & Print) -->
           <div class="flex items-center gap-2 no-print">
+            <button type="button" onclick="reconcileAndRefreshStockCard()" class="h-[38px] px-3.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5 cursor-pointer" title="Sinkronkan & Rekonsiliasi Kartu Stok">
+              <span class="material-symbols-outlined text-[18px] text-amber-700">sync</span>
+              <span>Sinkronkan Stok</span>
+            </button>
+
             <a id="viewHistDownloadBtn" href="#" target="_blank" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Export Riwayat ke Excel (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export History Excel</span>

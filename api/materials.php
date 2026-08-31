@@ -101,10 +101,129 @@ if ($action === 'list') {
     exit;
 }
 
-// 2. GET MATERIAL TRANSACTION HISTORY (KARTU STOK / RIWAYAT KELUAR MASUK)
+/**
+ * Helper: Automatic Stock Reconciliation (cleans orphaned/duplicate mutations and corrects running balance)
+ */
+function reconcileMaterialStock(PDO $pdo, int $targetMaterialId = 0) {
+    try {
+        $matWhere = $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
+
+        // 1. Remove duplicate INBOUND mutations for the same (material_id, reference_no)
+        $stmtDupIn = $pdo->query("
+            SELECT material_id, reference_no, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id
+            FROM stock_mutations
+            WHERE type = 'INBOUND' AND reference_no LIKE 'INB-%' {$matWhere}
+            GROUP BY material_id, reference_no
+            HAVING cnt > 1
+        ");
+        if ($stmtDupIn) {
+            $dupIn = $stmtDupIn->fetchAll();
+            foreach ($dupIn as $d) {
+                $stmtIn = $pdo->prepare("SELECT id, qty FROM inbound_transactions WHERE inbound_no = ? AND material_id = ?");
+                $stmtIn->execute([$d['reference_no'], $d['material_id']]);
+                $inbounds = $stmtIn->fetchAll();
+
+                // If only 1 inbound transaction exists, delete redundant duplicate mutation rows
+                if (count($inbounds) <= 1) {
+                    $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND reference_no = ? AND type = 'INBOUND' AND id != ?");
+                    $stmtDel->execute([$d['material_id'], $d['reference_no'], $d['max_id']]);
+                }
+            }
+        }
+
+        // 2. Remove duplicate OUTBOUND mutations for the same (material_id, reference_no)
+        $stmtDupOut = $pdo->query("
+            SELECT material_id, reference_no, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id
+            FROM stock_mutations
+            WHERE type = 'OUTBOUND' AND reference_no LIKE 'OUT-%' {$matWhere}
+            GROUP BY material_id, reference_no
+            HAVING cnt > 1
+        ");
+        if ($stmtDupOut) {
+            $dupOut = $stmtDupOut->fetchAll();
+            foreach ($dupOut as $d) {
+                $stmtOut = $pdo->prepare("SELECT id, qty FROM outbound_transactions WHERE outbound_no = ? AND material_id = ?");
+                $stmtOut->execute([$d['reference_no'], $d['material_id']]);
+                $outbounds = $stmtOut->fetchAll();
+
+                if (count($outbounds) <= 1) {
+                    $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND reference_no = ? AND type = 'OUTBOUND' AND id != ?");
+                    $stmtDel->execute([$d['material_id'], $d['reference_no'], $d['max_id']]);
+                }
+            }
+        }
+
+        // 3. Remove duplicate INITIAL_IMPORT mutations (keep oldest)
+        $stmtDupInit = $pdo->query("
+            SELECT material_id, COUNT(*) as cnt, MIN(id) as min_id
+            FROM stock_mutations
+            WHERE type = 'INITIAL_IMPORT' {$matWhere}
+            GROUP BY material_id
+            HAVING cnt > 1
+        ");
+        if ($stmtDupInit) {
+            $dupInit = $stmtDupInit->fetchAll();
+            foreach ($dupInit as $d) {
+                $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND type = 'INITIAL_IMPORT' AND id != ?");
+                $stmtDel->execute([$d['material_id'], $d['min_id']]);
+            }
+        }
+
+        // 4. Recalculate running balance and update master current_stock
+        $matQuery = $targetMaterialId > 0 ? "SELECT id FROM materials WHERE id = " . (int)$targetMaterialId : "SELECT id FROM materials";
+        $materials = $pdo->query($matQuery)->fetchAll(PDO::FETCH_COLUMN);
+
+        foreach ($materials as $matId) {
+            $stmtMut = $pdo->prepare("SELECT id, type, qty_change FROM stock_mutations WHERE material_id = ? ORDER BY created_at ASC, id ASC");
+            $stmtMut->execute([$matId]);
+            $mutations = $stmtMut->fetchAll();
+
+            $runningStock = 0;
+            foreach ($mutations as $m) {
+                $qtyChange = (float)$m['qty_change'];
+                if ($m['type'] === 'INITIAL_IMPORT') {
+                    $stockBefore = 0;
+                    $stockAfter = $qtyChange;
+                    $runningStock = $stockAfter;
+                } else {
+                    $stockBefore = $runningStock;
+                    $stockAfter = $runningStock + $qtyChange;
+                    $runningStock = $stockAfter;
+                }
+
+                $stmtUpMut = $pdo->prepare("UPDATE stock_mutations SET stock_before = ?, stock_after = ? WHERE id = ?");
+                $stmtUpMut->execute([$stockBefore, $stockAfter, $m['id']]);
+            }
+
+            if (!empty($mutations)) {
+                $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+                $stmtUpMat->execute([$runningStock, $matId]);
+            }
+        }
+    } catch (Throwable $e) {
+        // Quietly catch
+    }
+}
+
+// 2. RECONCILE MATERIAL STOCK (ADMIN / TEKNISI)
+if ($action === 'reconcile') {
+    Auth::requireAdmin();
+    $id = (int)($_POST['id'] ?? ($_GET['id'] ?? 0));
+    reconcileMaterialStock($pdo, $id);
+    echo json_encode([
+        'success' => true,
+        'message' => 'Rekonsiliasi kartu stok dan saldo mutasi berhasil disinkronkan!'
+    ]);
+    exit;
+}
+
+// 3. GET MATERIAL TRANSACTION HISTORY (KARTU STOK / RIWAYAT KELUAR MASUK)
 if ($action === 'history') {
     $id = (int)($_GET['id'] ?? 0);
     $code = trim($_GET['code'] ?? '');
+
+    // Auto reconcile before fetching history
+    reconcileMaterialStock($pdo, $id);
 
     if ($id > 0) {
         $stmtMat = $pdo->prepare("

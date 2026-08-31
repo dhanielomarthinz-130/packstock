@@ -376,6 +376,7 @@ class Database {
         }
 
         self::seedDefaultData($pdo);
+        self::autoReconcileStockMutations($pdo);
     }
 
     private static function initSQLiteTables(PDO $pdo): void {
@@ -581,6 +582,87 @@ class Database {
         }
 
         self::seedDefaultData($pdo);
+        self::autoReconcileStockMutations($pdo);
+    }
+
+    public static function autoReconcileStockMutations(PDO $pdo): void {
+        try {
+            // 1. Remove duplicate INBOUND mutations for the same (material_id, reference_no)
+            $stmtDupIn = $pdo->query("
+                SELECT material_id, reference_no, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id
+                FROM stock_mutations
+                WHERE type = 'INBOUND' AND reference_no LIKE 'INB-%'
+                GROUP BY material_id, reference_no
+                HAVING cnt > 1
+            ");
+            if ($stmtDupIn) {
+                $dupIn = $stmtDupIn->fetchAll();
+                foreach ($dupIn as $d) {
+                    $stmtIn = $pdo->prepare("SELECT id, qty FROM inbound_transactions WHERE inbound_no = ? AND material_id = ?");
+                    $stmtIn->execute([$d['reference_no'], $d['material_id']]);
+                    $inbounds = $stmtIn->fetchAll();
+
+                    if (count($inbounds) <= 1) {
+                        $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND reference_no = ? AND type = 'INBOUND' AND id != ?");
+                        $stmtDel->execute([$d['material_id'], $d['reference_no'], $d['max_id']]);
+                    }
+                }
+            }
+
+            // 2. Remove duplicate OUTBOUND mutations for the same (material_id, reference_no)
+            $stmtDupOut = $pdo->query("
+                SELECT material_id, reference_no, COUNT(*) as cnt, MIN(id) as min_id, MAX(id) as max_id
+                FROM stock_mutations
+                WHERE type = 'OUTBOUND' AND reference_no LIKE 'OUT-%'
+                GROUP BY material_id, reference_no
+                HAVING cnt > 1
+            ");
+            if ($stmtDupOut) {
+                $dupOut = $stmtDupOut->fetchAll();
+                foreach ($dupOut as $d) {
+                    $stmtOut = $pdo->prepare("SELECT id, qty FROM outbound_transactions WHERE outbound_no = ? AND material_id = ?");
+                    $stmtOut->execute([$d['reference_no'], $d['material_id']]);
+                    $outbounds = $stmtOut->fetchAll();
+
+                    if (count($outbounds) <= 1) {
+                        $stmtDel = $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND reference_no = ? AND type = 'OUTBOUND' AND id != ?");
+                        $stmtDel->execute([$d['material_id'], $d['reference_no'], $d['max_id']]);
+                    }
+                }
+            }
+
+            // 3. Recalculate running balance and update master current_stock
+            $materials = $pdo->query("SELECT id FROM materials")->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($materials as $matId) {
+                $stmtMut = $pdo->prepare("SELECT id, type, qty_change FROM stock_mutations WHERE material_id = ? ORDER BY created_at ASC, id ASC");
+                $stmtMut->execute([$matId]);
+                $mutations = $stmtMut->fetchAll();
+
+                $runningStock = 0;
+                foreach ($mutations as $m) {
+                    $qtyChange = (float)$m['qty_change'];
+                    if ($m['type'] === 'INITIAL_IMPORT') {
+                        $stockBefore = 0;
+                        $stockAfter = $qtyChange;
+                        $runningStock = $stockAfter;
+                    } else {
+                        $stockBefore = $runningStock;
+                        $stockAfter = $runningStock + $qtyChange;
+                        $runningStock = $stockAfter;
+                    }
+
+                    $stmtUpMut = $pdo->prepare("UPDATE stock_mutations SET stock_before = ?, stock_after = ? WHERE id = ?");
+                    $stmtUpMut->execute([$stockBefore, $stockAfter, $m['id']]);
+                }
+
+                if (!empty($mutations)) {
+                    $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+                    $stmtUpMat->execute([$runningStock, $matId]);
+                }
+            }
+        } catch (Throwable $e) {
+            // Ignore if tables not yet populated
+        }
     }
 
     private static function seedDefaultData(PDO $pdo): void {
