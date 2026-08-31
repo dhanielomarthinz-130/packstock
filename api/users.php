@@ -82,7 +82,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = trim($input['password'] ?? '');
     $name     = trim($input['name'] ?? '');
     $role     = trim($input['role'] ?? 'operator');
-    $shift    = trim($input['shift'] ?? 'Shift Reguler');
+    $shift    = trim($input['shift'] ?? 'Gudang & Logistik');
 
     if (empty($username) || empty($password) || empty($name)) {
         http_response_code(400);
@@ -138,7 +138,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($input['username'] ?? '');
     $name     = trim($input['name'] ?? '');
     $role     = trim($input['role'] ?? 'operator');
-    $shift    = trim($input['shift'] ?? 'Shift Reguler');
+    $shift    = trim($input['shift'] ?? 'Gudang & Logistik');
     $password = trim($input['password'] ?? '');
 
     if ($id <= 0 || empty($username) || empty($name)) {

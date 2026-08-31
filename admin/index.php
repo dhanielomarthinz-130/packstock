@@ -2578,7 +2578,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                 <span class="material-symbols-outlined text-[18px]">search</span>
               </span>
-              <input type="text" id="userSearchInput" oninput="loadUsers()" placeholder="Cari username, nama, atau shift..." 
+              <input type="text" id="userSearchInput" oninput="loadUsers()" placeholder="Cari username, nama, atau divisi..." 
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white">
             </div>
 
@@ -2612,7 +2612,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="p-3 border-r border-white/10">Username</th>
                   <th class="p-3 border-r border-white/10">Nama Lengkap</th>
                   <th class="p-3 border-r border-white/10">Role Pengguna</th>
-                  <th class="p-3 border-r border-white/10">Shift / Divisi</th>
+                  <th class="p-3 border-r border-white/10">Divisi</th>
                   <th class="p-3 border-r border-white/10">Tanggal Dibuat</th>
                   <th class="p-3 text-right">Aksi</th>
                 </tr>
@@ -3504,14 +3504,15 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Shift / Divisi Penugasan</label>
-        <select id="userShiftInput" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
-          <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
-          <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
-          <option value="Shift 3 (Malam 00:00 - 08:00)">Shift 3 (Malam 00:00 - 08:00)</option>
-          <option value="Non-Shift / Normal (08:00 - 17:00)">Non-Shift / Normal (08:00 - 17:00)</option>
-          <option value="Teknisi Utama">Teknisi Utama</option>
-          <option value="Teknisi Gudang">Teknisi Gudang</option>
+        <label class="block font-semibold text-slate-700 mb-1">Divisi / Departemen</label>
+        <select id="userShiftInput" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium text-xs">
+          <option value="Gudang & Logistik">Gudang & Logistik</option>
+          <option value="Fulfillment">Fulfillment</option>
+          <option value="Produksi & Line Packing">Produksi & Line Packing</option>
+          <option value="Quality Control (QC)">Quality Control (QC)</option>
+          <option value="Teknisi & Maintenance">Teknisi & Maintenance</option>
+          <option value="Purchasing & PPIC">Purchasing & PPIC</option>
+          <option value="Head Office / Manajemen">Head Office / Manajemen</option>
         </select>
       </div>
 
