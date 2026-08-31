@@ -1075,7 +1075,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                 <span class="material-symbols-outlined text-[18px]">search</span>
               </span>
-              <input type="text" id="inventorySearch" oninput="loadMaterials()" placeholder="Cari Item No, nama material, lokasi rak..." 
+              <input type="text" id="inventorySearch" oninput="loadMaterials()" placeholder="Cari Item No, nama / item description, kategori, lokasi rak..." 
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
             </div>
 

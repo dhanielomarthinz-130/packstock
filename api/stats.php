@@ -99,8 +99,9 @@ try {
         $params = [$startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime];
 
         if (!empty($search)) {
-            $sql .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.rack_location LIKE ?)";
+            $sql .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.description LIKE ? OR m.rack_location LIKE ?)";
             $term = "%{$search}%";
+            $params[] = $term;
             $params[] = $term;
             $params[] = $term;
             $params[] = $term;

@@ -53,9 +53,9 @@ if ($action === 'list') {
     $params = [];
 
     if (!empty($search)) {
-        $query .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.rack_location LIKE ? OR m.category LIKE ?)";
+        $query .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.description LIKE ? OR m.rack_location LIKE ? OR m.category LIKE ?)";
         $term = "%{$search}%";
-        $params = array_merge($params, [$term, $term, $term, $term]);
+        $params = array_merge($params, [$term, $term, $term, $term, $term]);
     }
 
     if (!empty($category) && $category !== 'all') {
