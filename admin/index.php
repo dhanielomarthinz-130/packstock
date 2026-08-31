@@ -3506,8 +3506,10 @@ require_once __DIR__ . '/../includes/header.php';
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Divisi / Departemen</label>
         <select id="userShiftInput" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium text-xs">
-          <option value="Gudang & Logistik">Gudang & Logistik</option>
+          <option value="Inventory">Inventory</option>
           <option value="Fulfillment">Fulfillment</option>
+          <option value="Admin">Admin</option>
+          <option value="Gudang & Logistik">Gudang & Logistik</option>
           <option value="Produksi & Line Packing">Produksi & Line Packing</option>
           <option value="Quality Control (QC)">Quality Control (QC)</option>
           <option value="Teknisi & Maintenance">Teknisi & Maintenance</option>

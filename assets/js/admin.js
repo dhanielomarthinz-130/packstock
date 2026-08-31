@@ -2975,7 +2975,18 @@ async function openEditUserModal(id) {
     document.getElementById('userUsernameInput').value = u.username;
     document.getElementById('userNameInput').value = u.name;
     document.getElementById('userRoleSelect').value = u.role;
-    document.getElementById('userShiftInput').value = u.shift || '';
+    
+    const shiftSel = document.getElementById('userShiftInput');
+    if (shiftSel) {
+      const targetVal = u.shift || 'Gudang & Logistik';
+      if (targetVal && !Array.from(shiftSel.options).some(o => o.value === targetVal)) {
+        const customOpt = document.createElement('option');
+        customOpt.value = targetVal;
+        customOpt.innerText = targetVal;
+        shiftSel.appendChild(customOpt);
+      }
+      shiftSel.value = targetVal;
+    }
     
     // Password optional on edit
     const passInput = document.getElementById('userPasswordInput');
