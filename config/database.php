@@ -82,15 +82,15 @@ class Database {
                 `username` VARCHAR(50) NOT NULL UNIQUE,
                 `password` VARCHAR(255) NOT NULL,
                 `name` VARCHAR(100) NOT NULL,
-                `role` ENUM('superadmin', 'admin', 'operator', 'teknisi') NOT NULL DEFAULT 'operator',
+                `role` VARCHAR(50) NOT NULL DEFAULT 'operator',
                 `shift` VARCHAR(50) DEFAULT 'Shift A (Pagi)',
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
-        // Ensure role column enum includes 'superadmin' if table existed prior
+        // Ensure role column can store all roles (superadmin, admin, operator, operator_fulfillment, teknisi)
         try {
-            $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('superadmin', 'admin', 'operator', 'teknisi') NOT NULL DEFAULT 'operator'");
+            $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'");
         } catch (Throwable $e) {
             // Ignored if SQLite or already modified
         }
@@ -363,7 +363,8 @@ class Database {
             "ALTER TABLE `stock_mutations` MODIFY COLUMN `qty_change` DECIMAL(12,2) NOT NULL",
             "ALTER TABLE `stock_mutations` MODIFY COLUMN `stock_before` DECIMAL(12,2) NOT NULL",
             "ALTER TABLE `stock_mutations` MODIFY COLUMN `stock_after` DECIMAL(12,2) NOT NULL",
-            "ALTER TABLE `consumable_request_items` MODIFY COLUMN `qty` DECIMAL(12,2) NOT NULL"
+            "ALTER TABLE `consumable_request_items` MODIFY COLUMN `qty` DECIMAL(12,2) NOT NULL",
+            "ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'"
         ];
 
         foreach ($migrations as $sql) {
