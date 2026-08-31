@@ -4571,18 +4571,18 @@ async function handleOutboundTableSubmit(e) {
   let hasStockError = false;
 
   rows.forEach(r => {
-    const matSelect = r.querySelector('.outbound-row-mat');
+    const matInput = r.querySelector('.outbound-row-mat');
     const brandSelect = r.querySelector('.outbound-row-brand');
     const qtyInput = r.querySelector('.outbound-row-qty');
     const reasonInput = r.querySelector('.outbound-row-reason');
 
-    const material_id = parseInt(matSelect?.value || '0');
+    const material_id = parseInt(matInput?.value || '0');
     const destination = brandSelect?.value?.trim() || 'HANASUI';
     const qty = App.parseNumber(qtyInput?.value);
     const reason = reasonInput?.value?.trim() || 'Kebutuhan Produksi';
 
-    const selectedOpt = matSelect?.options[matSelect?.selectedIndex];
-    const stock = parseFloat(selectedOpt?.getAttribute('data-stock') || '0');
+    const foundMat = (allMaterials || []).find(m => m.id === material_id);
+    const stock = foundMat ? parseFloat(foundMat.current_stock || '0') : 0;
 
     if (material_id > 0 && qty > 0) {
       if (qty > stock) {
