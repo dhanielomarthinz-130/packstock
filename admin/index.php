@@ -2043,10 +2043,16 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
             </div>
 
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-amber-600">calendar_today</span>
-              <input type="text" id="adminConsumableDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Filter Tanggal..." 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
+            <div class="flex items-center gap-1.5">
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-amber-600">calendar_today</span>
+                <input type="text" id="adminConsumableDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Filter Tanggal..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 cursor-pointer" title="Filter Tanggal Pengajuan">
+              </div>
+              <button type="button" onclick="clearConsumableDateFilter()" class="h-[38px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer" title="Hapus Filter Tanggal">
+                <span class="material-symbols-outlined text-[16px]">restart_alt</span>
+                <span class="hidden sm:inline">Reset</span>
+              </button>
             </div>
 
             <select id="adminConsumableStatusFilter" onchange="loadAdminConsumableRequests()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">

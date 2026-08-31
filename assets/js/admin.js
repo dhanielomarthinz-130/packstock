@@ -134,6 +134,18 @@ function initPremiumPickers() {
 
   // 12. Handover Shift Toolbar Filter
   initDate('#adminHandoverDateFilter', () => filterAdminHandovers());
+
+  // 13. Request Consumable Toolbar Filter
+  initDate('#adminConsumableDateFilter', () => loadAdminConsumableRequests());
+}
+
+function clearConsumableDateFilter() {
+  const el = document.getElementById('adminConsumableDateFilter');
+  if (el) {
+    if (el._flatpickr) el._flatpickr.clear();
+    else el.value = '';
+  }
+  loadAdminConsumableRequests();
 }
 
 // ================= 0.2 SIDEBAR MINIMIZE / MAXIMIZE TOGGLE =================
