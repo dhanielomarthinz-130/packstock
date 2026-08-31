@@ -126,8 +126,8 @@ if ($type === 'material_history') {
     $no = 1;
     while ($m = $stmtMut->fetch()) {
         $isPositive = $m['qty_change'] > 0;
-        $inQty  = $isPositive ? (int)$m['qty_change'] : 0;
-        $outQty = !$isPositive ? (int)abs($m['qty_change']) : 0;
+        $inQty  = $isPositive ? (float)$m['qty_change'] : 0;
+        $outQty = !$isPositive ? (float)abs($m['qty_change']) : 0;
 
         $typeLabel = $m['type'];
         if ($m['type'] === 'INBOUND') $typeLabel = 'BARANG MASUK';
@@ -573,7 +573,7 @@ if ($type === 'stock_opname' || $type === 'opname') {
     $no = 1;
 
     foreach ($items as $item) {
-        $systemStock = (int)$item['system_stock'];
+        $systemStock = (float)$item['system_stock'];
         $itemId = $item['id'];
         $itemStages = $stagesMap[$itemId] ?? [];
 
@@ -585,8 +585,8 @@ if ($type === 'stock_opname' || $type === 'opname') {
         for ($s = 1; $s <= $maxStage; $s++) {
             $st = $itemStages[$s] ?? null;
             if ($st && $st['count_qty'] !== null) {
-                $stageValues[] = (int)$st['count_qty'];
-                $cascadeFinalQty = (int)$st['count_qty'];
+                $stageValues[] = (float)$st['count_qty'];
+                $cascadeFinalQty = (float)$st['count_qty'];
                 $lastCountedAt = $st['counted_at'];
             } elseif ($st) {
                 $stageValues[] = 'Belum Hitung';
@@ -596,7 +596,7 @@ if ($type === 'stock_opname' || $type === 'opname') {
         }
 
         $dateFormatted = $lastCountedAt ?: ($item['updated_at'] ?: $item['created_at']);
-        $finalQty = ($cascadeFinalQty !== null) ? $cascadeFinalQty : (($item['final_qty'] !== null) ? (int)$item['final_qty'] : $systemStock);
+        $finalQty = ($cascadeFinalQty !== null) ? $cascadeFinalQty : (($item['final_qty'] !== null) ? (float)$item['final_qty'] : $systemStock);
         $diff = $finalQty - $systemStock;
 
         $diffFormatted = ($diff > 0 ? "+{$diff}" : "{$diff}");
@@ -660,7 +660,7 @@ if ($type === 'adjust_template') {
             $m['name'],
             $m['unit'] ?: 'Pcs',
             $m['rack_location'] ?: '-',
-            (int)$m['current_stock'],
+            (float)$m['current_stock'],
             '',
             ''
         ];
@@ -1125,16 +1125,16 @@ if ($type === 'dashboard_summary' || $type === 'dashboard_stock_summary') {
     $no = 1;
 
     foreach ($rowsRaw as $r) {
-        $current = (int)$r['current_stock'];
-        $changeSinceStart = (int)$r['change_since_start'];
-        $changeAfterEnd = (int)$r['change_after_end'];
+        $current = (float)$r['current_stock'];
+        $changeSinceStart = (float)$r['change_since_start'];
+        $changeAfterEnd = (float)$r['change_after_end'];
         
         $beginningStock = $current - $changeSinceStart;
         $endingStock = $current - $changeAfterEnd;
-        $inbound = (int)$r['total_inbound'];
-        $outbound = (int)$r['total_outbound'];
-        $adjustment = (int)$r['total_adjustment'];
-        $minStock = (int)$r['min_stock'];
+        $inbound = (float)$r['total_inbound'];
+        $outbound = (float)$r['total_outbound'];
+        $adjustment = (float)$r['total_adjustment'];
+        $minStock = (float)$r['min_stock'];
 
         $hasActivity = ($inbound !== 0 || $outbound !== 0 || $adjustment !== 0);
 

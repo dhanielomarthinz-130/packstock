@@ -402,7 +402,7 @@ try {
 
     // 2. Total physical stock sum
     $stmt = $pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials");
-    $totalStockUnits = (int)$stmt->fetchColumn();
+    $totalStockUnits = (float)$stmt->fetchColumn();
 
     // 3. Low stock count (<= min_stock and > 0)
     $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock <= min_stock AND current_stock > 0");
@@ -423,12 +423,12 @@ try {
     // 7. Today Inbound Qty
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(qty), 0) FROM inbound_transactions WHERE DATE(created_at) = ?");
     $stmt->execute([$today]);
-    $todayInboundQty = (int)$stmt->fetchColumn();
+    $todayInboundQty = (float)$stmt->fetchColumn();
 
     // 8. Today Outbound Qty
     $stmt = $pdo->prepare("SELECT COALESCE(SUM(qty), 0) FROM outbound_transactions WHERE DATE(created_at) = ?");
     $stmt->execute([$today]);
-    $todayOutboundQty = (int)$stmt->fetchColumn();
+    $todayOutboundQty = (float)$stmt->fetchColumn();
 
     // Operator specific stats
     $myActiveTasks = 0;

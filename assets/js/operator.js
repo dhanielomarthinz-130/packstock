@@ -237,8 +237,8 @@ function adjustNumericInput(inputId, delta, isReset = false) {
   if (isReset) {
     input.value = 0;
   } else {
-    const current = parseInt(input.value) || 0;
-    input.value = Math.max(0, current + delta);
+    const current = App.parseNumber(input.value) || 0;
+    input.value = Math.max(0, +(current + delta).toFixed(3));
   }
 }
 
@@ -497,7 +497,7 @@ async function handleFinalTaskSubmit(e) {
   if (!activeSubmittingTask) return;
 
   const task_id = document.getElementById('submitTaskId').value;
-  const actual_qty = parseInt(document.getElementById('submitActualQty').value);
+  const actual_qty = App.parseNumber(document.getElementById('submitActualQty').value);
   const completion_notes = document.getElementById('submitNotes').value.trim();
 
   if (actual_qty <= 0) {
@@ -708,7 +708,7 @@ function addInboundDraftItem() {
   if (!select || !qtyInp) return;
 
   const materialId = parseInt(select.value);
-  const qty = parseInt(qtyInp.value);
+  const qty = App.parseNumber(qtyInp.value);
   const notes = notesInp ? notesInp.value.trim() : '';
 
   const poInp = document.getElementById('opInboundPoNumber');
@@ -741,7 +741,7 @@ function addInboundDraftItem() {
 
   const existingIdx = opInboundDraft.findIndex(i => i.material_id === materialId && i.rack === itemRack);
   if (existingIdx >= 0) {
-    opInboundDraft[existingIdx].qty += qty;
+    opInboundDraft[existingIdx].qty = +(opInboundDraft[existingIdx].qty + qty).toFixed(3);
     if (notes) opInboundDraft[existingIdx].notes = notes;
   } else {
     opInboundDraft.push({
@@ -2483,7 +2483,7 @@ function addConsumableDraftItem() {
   if (!sel || !qtyInp) return;
 
   const materialId = parseInt(sel.value);
-  const qty = parseFloat(qtyInp.value || 0);
+  const qty = App.parseNumber(qtyInp.value);
   const notes = notesInp ? notesInp.value.trim() : '';
 
   if (!materialId || materialId <= 0) {
@@ -2521,7 +2521,7 @@ function addConsumableDraftItem() {
   }
 
   if (existingIdx >= 0) {
-    opConsumableDraft[existingIdx].qty += qty;
+    opConsumableDraft[existingIdx].qty = +(opConsumableDraft[existingIdx].qty + qty).toFixed(3);
     if (notes) opConsumableDraft[existingIdx].notes = notes;
   } else {
     opConsumableDraft.push({

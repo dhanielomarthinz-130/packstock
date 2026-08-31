@@ -922,11 +922,11 @@ function renderDashboardCategoryChart() {
   const dataValues = [];
   const colors = [];
 
-  const totalStock = dashboardCategoryStats.reduce((acc, c) => acc + parseInt(c.total_stock || 0), 0);
+  const totalStock = dashboardCategoryStats.reduce((acc, c) => acc + parseFloat(c.total_stock || 0), 0);
 
   dashboardCategoryStats.forEach((cat, idx) => {
     labels.push(cat.category);
-    dataValues.push(parseInt(cat.total_stock || 0));
+    dataValues.push(parseFloat(cat.total_stock || 0));
     colors.push(palette[idx % palette.length]);
   });
 
@@ -978,7 +978,7 @@ function renderDashboardCategoryChart() {
   if (legendContainer) {
     legendContainer.innerHTML = dashboardCategoryStats.map((cat, idx) => {
       const color = palette[idx % palette.length];
-      const stock = parseInt(cat.total_stock || 0);
+      const stock = parseFloat(cat.total_stock || 0);
       const pct = totalStock > 0 ? ((stock / totalStock) * 100).toFixed(1) : '0';
       return `
         <div class="flex items-center justify-between p-1.5 rounded-lg bg-slate-50 border border-slate-100">
@@ -1000,8 +1000,8 @@ function renderDashboardTopTables() {
   const badgeIn = document.getElementById('dashTopInboundBadge');
   const badgeOut = document.getElementById('dashTopOutboundBadge');
 
-  const totalInQty = dashboardTopInbound.reduce((acc, it) => acc + parseInt(it.total_qty || 0), 0);
-  const totalOutQty = dashboardTopOutbound.reduce((acc, it) => acc + parseInt(it.total_qty || 0), 0);
+  const totalInQty = dashboardTopInbound.reduce((acc, it) => acc + parseFloat(it.total_qty || 0), 0);
+  const totalOutQty = dashboardTopOutbound.reduce((acc, it) => acc + parseFloat(it.total_qty || 0), 0);
 
   if (badgeIn) badgeIn.innerText = `${dashboardTopInbound.length} SKU (+${App.formatNumber(totalInQty)})`;
   if (badgeOut) badgeOut.innerText = `${dashboardTopOutbound.length} SKU (-${App.formatNumber(totalOutQty)})`;
@@ -1124,7 +1124,7 @@ function renderDashboardOperatorKpi() {
 
         const completed = parseInt(op.completed_count || 0);
         const assigned = parseInt(op.total_assigned || 0);
-        const pickedQty = parseInt(op.total_picked_qty || 0);
+        const pickedQty = parseFloat(op.total_picked_qty || 0);
         const avgSec = parseInt(op.avg_duration_seconds || 0);
 
         return `
@@ -2205,7 +2205,7 @@ function addBulkTaskRow(prefillMatId = null, prefillQty = 0) {
       <span class="bulk-unit-label font-extrabold text-xs px-2.5 py-1.5 rounded-lg bg-indigo-50 text-indigo-900 border border-indigo-200 inline-block font-mono min-w-[55px] shadow-2xs">${escapeHtml(initialUnit)}</span>
     </td>
     <td class="p-2.5">
-      <input type="number" class="bulk-qty-input w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-extrabold text-emerald-700 outline-none focus:border-emerald-600 text-center shadow-2xs" min="1" value="${displayQty}" placeholder="0" oninput="validateBulkQtyStock(this)" required>
+      <input type="number" step="any" class="bulk-qty-input w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-extrabold text-emerald-700 outline-none focus:border-emerald-600 text-center shadow-2xs" min="0.001" value="${displayQty}" placeholder="0" oninput="validateBulkQtyStock(this)" required>
     </td>
     <td class="p-2.5">
       <select class="bulk-dest-input w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-emerald-600 text-slate-800 shadow-2xs" data-no-search>
@@ -2420,7 +2420,7 @@ async function handleBulkTaskSubmit() {
 
     const opt = matSelect?.options[matSelect.selectedIndex];
     const material_id = parseInt(matSelect?.value || 0);
-    const target_qty  = parseFloat(qtyInput?.value) || 0;
+    const target_qty  = App.parseNumber(qtyInput?.value);
     const destination = destInput?.value.trim() || 'Line Packing';
     const priority    = priSelect?.value || 'NORMAL';
     const notes       = notesInput?.value.trim() || '';
@@ -3154,7 +3154,7 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     hideFloatingDropdown();
 
     if (onSelectCallback) {
-      onSelectCallback({ id: parseInt(id), name, category, stock: parseInt(stock), unit, rack });
+      onSelectCallback({ id: parseInt(id), name, category, stock: parseFloat(stock), unit, rack });
     }
 
     const tr = container.closest('tr');
@@ -3403,7 +3403,7 @@ function addInboundTableRow(data = null, autoFocus = true) {
       <input type="text" class="inbound-row-rack w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 outline-none focus:bg-white focus:border-emerald-600" placeholder="Rak..." value="${escapeHtml(data?.rack || '')}">
     </td>
     <td class="p-2.5">
-      <input type="number" required min="1" class="inbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-emerald-800 outline-none focus:bg-white focus:border-emerald-600" placeholder="0" value="${data?.qty || ''}" oninput="recalcInboundTotalQty()">
+      <input type="number" step="any" required min="0.001" class="inbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-emerald-800 outline-none focus:bg-white focus:border-emerald-600" placeholder="0" value="${data?.qty || ''}" oninput="recalcInboundTotalQty()">
     </td>
     <td class="p-2.5">
       <input type="text" class="inbound-row-notes w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-emerald-600" placeholder="Catatan item..." value="${escapeHtml(data?.notes || '')}" onkeydown="handleInboundRowNotesKeyDown(event, this)">
@@ -3463,7 +3463,7 @@ function recalcInboundTotalQty() {
   const qtyInputs = document.querySelectorAll('.inbound-row-qty');
   let total = 0;
   qtyInputs.forEach(input => {
-    const val = parseInt(input.value || '0');
+    const val = App.parseNumber(input.value);
     if (val > 0) total += val;
   });
   const summaryEl = document.getElementById('inboundTotalQtySummary');
@@ -3934,7 +3934,7 @@ async function handleInboundTableSubmit(e) {
     const notesInput = r.querySelector('.inbound-row-notes');
 
     const material_id = parseInt(matSelect?.value || '0');
-    const qty = parseInt(qtyInput?.value || '0');
+    const qty = App.parseNumber(qtyInput?.value);
     const rack = rackInput?.value?.trim() || '';
     const notes = notesInput?.value?.trim() || '';
 
@@ -4079,7 +4079,7 @@ function addOutboundTableRow(data = null, autoFocus = true) {
       </select>
     </td>
     <td class="p-2.5">
-      <input type="number" required min="1" class="outbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-amber-900 outline-none focus:bg-white focus:border-amber-600" placeholder="0" value="${data?.qty || ''}" oninput="validateOutboundRowQty(this); recalcOutboundTotalQty();">
+      <input type="number" step="any" required min="0.001" class="outbound-row-qty w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-black text-center text-amber-900 outline-none focus:bg-white focus:border-amber-600" placeholder="0" value="${data?.qty || ''}" oninput="validateOutboundRowQty(this); recalcOutboundTotalQty();">
     </td>
     <td class="p-2.5">
       <input type="text" required class="outbound-row-reason w-full h-[36px] px-3 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 outline-none focus:bg-white focus:border-amber-600" placeholder="Contoh: Uji Kualitas / Rusak / Reject" value="${escapeHtml(data?.reason || 'Kebutuhan Produksi')}" onkeydown="handleOutboundRowReasonKeyDown(event, this)">
@@ -4139,8 +4139,8 @@ function validateOutboundRowQty(qtyInput) {
   const matInput = tr.querySelector('.outbound-row-mat');
   const matId = parseInt(matInput?.value || '0');
   const foundMat = (allMaterials || []).find(m => m.id === matId);
-  const stock = foundMat ? parseInt(foundMat.current_stock || '0') : 0;
-  const val = parseInt(qtyInput.value || '0');
+  const stock = foundMat ? parseFloat(foundMat.current_stock || '0') : 0;
+  const val = App.parseNumber(qtyInput.value);
 
   if (matId > 0 && val > stock) {
     qtyInput.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-700');
@@ -4155,7 +4155,7 @@ function recalcOutboundTotalQty() {
   const qtyInputs = document.querySelectorAll('.outbound-row-qty');
   let total = 0;
   qtyInputs.forEach(input => {
-    const val = parseInt(input.value || '0');
+    const val = App.parseNumber(input.value);
     if (val > 0) total += val;
   });
   const summaryEl = document.getElementById('outboundTotalQtySummary');
@@ -4578,11 +4578,11 @@ async function handleOutboundTableSubmit(e) {
 
     const material_id = parseInt(matSelect?.value || '0');
     const destination = brandSelect?.value?.trim() || 'HANASUI';
-    const qty = parseInt(qtyInput?.value || '0');
+    const qty = App.parseNumber(qtyInput?.value);
     const reason = reasonInput?.value?.trim() || 'Kebutuhan Produksi';
 
     const selectedOpt = matSelect?.options[matSelect?.selectedIndex];
-    const stock = parseInt(selectedOpt?.getAttribute('data-stock') || '0');
+    const stock = parseFloat(selectedOpt?.getAttribute('data-stock') || '0');
 
     if (material_id > 0 && qty > 0) {
       if (qty > stock) {
@@ -6892,7 +6892,7 @@ async function loadDirectAdjustMaterials() {
       name: m.name,
       unit: m.unit || 'Pcs',
       rack_location: m.rack_location || '-',
-      current_stock: parseInt(m.current_stock || '0', 10),
+      current_stock: parseFloat(m.current_stock || '0'),
       qty_adjust: prev.qty_adjust || 0,
       notes: prev.notes || '',
       is_imported: !!prev.is_imported
@@ -7518,7 +7518,7 @@ function downloadAdjustExcelTemplate() {
       'Deskripsi Material Packaging': m.name,
       'Satuan': m.unit || 'Pcs',
       'Lokasi Rak': m.rack_location || '-',
-      'Stok Sistem Saat Ini': parseInt(m.current_stock || '0', 10),
+      'Stok Sistem Saat Ini': parseFloat(m.current_stock || '0'),
       'Qty Adjust (+/-)': '',
       'Alasan / Catatan Penyesuaian': ''
     }));

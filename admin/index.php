@@ -4247,7 +4247,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-bold text-slate-800 mb-1 text-xs">Jumlah Fisik Final Disetujui (<span id="editOpnameUnitLabel">Pcs</span>) <span class="text-rose-500">*</span></label>
-        <input type="number" id="editOpnameFinalQty" required min="0" 
+        <input type="number" step="any" id="editOpnameFinalQty" required min="0" 
           class="w-full p-2.5 bg-emerald-50 border-2 border-emerald-500 rounded-lg font-black text-lg text-emerald-800 text-center outline-none">
       </div>
 

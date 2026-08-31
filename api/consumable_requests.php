@@ -240,7 +240,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($items as $it) {
             $matId = (int)($it['material_id'] ?? 0);
-            $qty   = max(0, (float)($it['qty'] ?? 0));
+            $qty   = max(0, parseNumberDecimal($it['qty'] ?? 0));
             $itemNotes = trim($it['notes'] ?? '');
 
             if ($matId <= 0 || $qty <= 0) continue;

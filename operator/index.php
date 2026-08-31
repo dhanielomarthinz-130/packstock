@@ -485,7 +485,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div>
                   <label class="block font-bold text-slate-700 mb-1 text-[11px]">Jumlah Fisik (<span id="blankUnitLabel">Pcs</span>) <span class="text-rose-500">*</span></label>
-                  <input type="number" id="blankCountQty" required min="0" placeholder="0" 
+                  <input type="number" step="any" id="blankCountQty" required min="0" placeholder="0" 
                     class="w-full p-2.5 bg-emerald-50/60 border-2 border-emerald-500 rounded-xl font-black text-base text-emerald-900 text-center outline-none">
                 </div>
               </div>
@@ -624,7 +624,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- C. Jumlah Masuk (Qty) -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-[11px]">Jumlah Masuk (Qty) <span class="text-rose-500">*</span></label>
-              <input type="number" id="opInboundQty" min="1" placeholder="0" 
+              <input type="number" step="any" id="opInboundQty" min="0.001" placeholder="0" 
                 class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-black text-base text-emerald-800 outline-none focus:border-emerald-600 text-center">
             </div>
 
@@ -1502,7 +1502,7 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="block font-bold text-slate-800 mb-1 text-xs">
           Jumlah Fisik Real di Rak (<span id="dynModalUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
         </label>
-        <input type="number" id="dynModalCountQty" required min="0" 
+        <input type="number" step="any" id="dynModalCountQty" required min="0" 
           placeholder="0"
           class="w-full p-2.5 bg-indigo-50/70 border-2 border-indigo-500 rounded-xl font-black text-xl text-indigo-900 text-center outline-none">
         
@@ -1576,7 +1576,7 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="block font-bold text-slate-800 mb-1 text-xs">
           Jumlah Fisik Hasil Recount (<span id="recountModalUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
         </label>
-        <input type="number" id="recountModalCountQty" required min="0" 
+        <input type="number" step="any" id="recountModalCountQty" required min="0" 
           placeholder="0"
           class="w-full p-2.5 bg-purple-50/70 border-2 border-purple-500 rounded-xl font-black text-xl text-purple-900 text-center outline-none">
         

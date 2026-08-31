@@ -206,3 +206,37 @@ class Auth {
         return '';
     }
 }
+
+/**
+ * Universal decimal numeric parser supporting both standard (84.2) and Indonesian/European (84,2 or 90,01) formats.
+ */
+if (!function_exists('parseNumberDecimal')) {
+    function parseNumberDecimal($val): float {
+        if (is_float($val) || is_int($val)) return (float)$val;
+        $val = trim((string)$val);
+        if ($val === '') return 0.0;
+
+        $val = preg_replace('/[^\d.,\-+]/u', '', $val);
+
+        if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+            $lastComma = strrpos($val, ',');
+            $lastDot   = strrpos($val, '.');
+            if ($lastComma > $lastDot) {
+                $val = str_replace('.', '', $val);
+                $val = str_replace(',', '.', $val);
+            } else {
+                $val = str_replace(',', '', $val);
+            }
+        } elseif (strpos($val, ',') !== false) {
+            $val = str_replace(',', '.', $val);
+        } elseif (strpos($val, '.') !== false) {
+            $parts = explode('.', $val);
+            if (count($parts) > 2) {
+                $val = str_replace('.', '', $val);
+            }
+        }
+
+        $clean = preg_replace('/[^0-9.\-+]/', '', $val);
+        return is_numeric($clean) ? (float)$clean : 0.0;
+    }
+}

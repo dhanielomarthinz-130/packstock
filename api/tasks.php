@@ -125,7 +125,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
     $materialId  = (int)($input['material_id'] ?? 0);
-    $targetQty   = max(0, (float)($input['target_qty'] ?? 0));
+    $targetQty   = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
     $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
     $destination = trim($input['destination'] ?? 'Line Packing');
     $assignedTo  = (int)($input['assigned_to'] ?? 0);
@@ -217,7 +217,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $taskId      = (int)($input['task_id'] ?? 0);
     $materialId  = (int)($input['material_id'] ?? 0);
-    $targetQty   = max(0, (float)($input['target_qty'] ?? 0));
+    $targetQty   = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
     $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
     $destination = trim($input['destination'] ?? '');
     $assignedTo  = (int)($input['assigned_to'] ?? 0);
@@ -300,7 +300,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($tasksList as $idx => $t) {
             $materialId  = (int)($t['material_id'] ?? 0);
-            $targetQty   = max(0, (float)($t['target_qty'] ?? 0));
+            $targetQty   = max(0, parseNumberDecimal($t['target_qty'] ?? 0));
             $priority    = strtoupper(trim($t['priority'] ?? 'NORMAL'));
             if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) $priority = 'NORMAL';
             $destination = trim($t['destination'] ?? 'Line Packing');
@@ -611,7 +611,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $taskId          = (int)($input['task_id'] ?? 0);
-    $actualQty       = max(0, (float)($input['actual_qty'] ?? 0));
+    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? 0));
     $completionNotes = trim($input['completion_notes'] ?? '');
     $photoPathValue  = handleUploadedTaskPhotos();
 

@@ -203,7 +203,41 @@ const App = {
     }
   },
 
-  // Number & Date formatters
+  // Number & Date formatters & Parsers
+  parseNumber(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    let str = String(val).trim();
+    if (str === '') return 0;
+
+    // Remove any letters or currency symbols except digits, comma, dot, minus, plus
+    str = str.replace(/[^\d.,\-+]/g, '');
+
+    // Handle thousand vs decimal separators
+    if (str.includes(',') && str.includes('.')) {
+      const lastComma = str.lastIndexOf(',');
+      const lastDot = str.lastIndexOf('.');
+      if (lastComma > lastDot) {
+        // e.g. "1.250,50" -> thousand dot, decimal comma
+        str = str.replace(/\./g, '').replace(',', '.');
+      } else {
+        // e.g. "1,250.50" -> thousand comma, decimal dot
+        str = str.replace(/,/g, '');
+      }
+    } else if (str.includes(',')) {
+      // e.g. "84,2" or "90,01"
+      str = str.replace(',', '.');
+    } else if (str.includes('.')) {
+      const parts = str.split('.');
+      if (parts.length > 2) {
+        // Multiple dots e.g. "1.000.000"
+        str = str.replace(/\./g, '');
+      }
+    }
+    const n = parseFloat(str);
+    return isNaN(n) ? 0 : n;
+  },
+
   formatNumber(num) {
     if (num === null || num === undefined || num === '') return '0';
     const n = Number(num);

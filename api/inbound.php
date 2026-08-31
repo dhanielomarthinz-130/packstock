@@ -60,7 +60,8 @@ if ($action === 'list') {
     $validDurationCount = 0;
 
     foreach ($rows as &$r) {
-        $qty = max(1, (int)$r['qty']);
+        $r['qty'] = (float)$r['qty'];
+        $qty = max(0.001, (float)$r['qty']);
         $dur = max(0, (int)$r['duration_seconds']);
         // If duration was 0 (instant legacy entry), assign baseline estimate 60s for meaningful takt time display
         if ($dur <= 0) {
@@ -68,7 +69,7 @@ if ($action === 'list') {
             $r['duration_seconds'] = 60;
         }
         $r['takt_time_seconds'] = round($dur / $qty, 2);
-        $totalQty += (int)$r['qty'];
+        $totalQty += (float)$r['qty'];
         $totalDuration += $dur;
         $validDurationCount++;
     }
@@ -136,7 +137,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier   = trim($input['supplier'] ?? '-');
     if (empty($supplier)) $supplier = '-';
     $materialId = (int)($input['material_id'] ?? 0);
-    $qty        = max(0, (float)($input['qty'] ?? 0));
+    $qty        = max(0, parseNumberDecimal($input['qty'] ?? 0));
     $notes      = trim($input['notes'] ?? '');
     $startedAt  = trim($input['started_at'] ?? '');
     $photoPathValue = handleUploadedInboundPhotos();
@@ -274,7 +275,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($items as $item) {
             $materialId = (int)($item['material_id'] ?? 0);
-            $qty        = max(0, (float)($item['qty'] ?? 0));
+            $qty        = max(0, parseNumberDecimal($item['qty'] ?? 0));
             $itemNotes  = trim($item['notes'] ?? '');
 
             if ($materialId <= 0 || $qty <= 0) continue;
@@ -369,7 +370,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $id         = (int)($input['id'] ?? 0);
     $materialId = (int)($input['material_id'] ?? 0);
-    $qty        = max(0, (float)($input['qty'] ?? 0));
+    $qty        = max(0, parseNumberDecimal($input['qty'] ?? 0));
     $poNumber   = trim($input['po_number'] ?? '-');
     if (empty($poNumber)) $poNumber = '-';
     $supplier   = trim($input['supplier'] ?? '-');
@@ -416,7 +417,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $currentStock = (float)$mat['current_stock'];
-            $qtyDiff      = $qty - $oldQty; // positive means increased stock, negative means decreased
+            $qtyDiff      = $qty - $oldQty;
             $newStock     = $currentStock + $qtyDiff;
 
             if ($newStock < 0) {
