@@ -301,12 +301,12 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $combinedNotes = '-';
             }
 
-            $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $combinedNotes, $photoPathValue, $authId, $startTime, $now, $itemDuration]);
+            $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $combinedNotes, $photoPathValue, $authId, $startTime, $now, $itemDuration, $now]);
             $stmtUpMat->execute([$stockAfter, $materialId]);
 
             $mutNotes = "Barang Masuk (Diterima oleh {$authName})";
             if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";
-            $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $authId]);
+            $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $authId, $now]);
 
             $processedItems++;
             $totalQtyProcessed += $qty;

@@ -360,12 +360,12 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
             $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
-            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration]);
+            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration, $now]);
             $stmtUpdateMat->execute([$stockAfter, $materialId]);
 
             $mutNotes = "Pengeluaran ke: {$destination} ({$reason})";
             if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";
-            $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id()]);
+            $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id(), $now]);
 
             $processedItems++;
             $totalQtyProcessed += $qty;
