@@ -245,10 +245,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert Outbound record
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $photoPathValue, $startTime, $now, $durationSeconds]);
+        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $photoPathValue, $startTime, $now, $durationSeconds, $now]);
 
         // Update Material Stock
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -256,13 +256,13 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert Stock Mutation
         $stmtMut = $pdo->prepare("
-            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
-            VALUES (?, 'OUTBOUND', ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'OUTBOUND', ?, ?, ?, ?, ?, ?, ?)
         ");
         $mutNotes = "Pengeluaran ke: {$destination} ({$reason})";
         if (!empty($notes)) $mutNotes .= " - " . $notes;
 
-        $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id()]);
+        $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id(), $now]);
 
         $pdo->commit();
 
@@ -321,13 +321,13 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemDuration = max(1, (int)round($totalDuration / max(1, $itemCount)));
 
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtMut = $pdo->prepare("
-            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
-            VALUES (?, 'OUTBOUND', ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'OUTBOUND', ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $processedItems = 0;

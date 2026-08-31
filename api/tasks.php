@@ -131,13 +131,14 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmtCount->execute([$prefix . '%']);
     $nextNum = (int)$stmtCount->fetchColumn() + 1;
     $taskNo = $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+    $now = date('Y-m-d H:i:s');
 
     try {
         $stmt = $pdo->prepare("
-            INSERT INTO tasks (task_no, material_id, target_qty, priority, destination, assigned_to, assigned_by, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+            INSERT INTO tasks (task_no, material_id, target_qty, priority, destination, assigned_to, assigned_by, status, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)
         ");
-        $stmt->execute([$taskNo, $materialId, $targetQty, $priority, $destination, $assignedTo, Auth::id(), $notes]);
+        $stmt->execute([$taskNo, $materialId, $targetQty, $priority, $destination, $assignedTo, Auth::id(), $notes, $now]);
 
         echo json_encode([
             'success' => true,
@@ -254,9 +255,10 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtCount->execute([$prefix . '%']);
         $nextNum = (int)$stmtCount->fetchColumn() + 1;
 
+        $now = date('Y-m-d H:i:s');
         $stmtInsert = $pdo->prepare("
-            INSERT INTO tasks (task_no, material_id, target_qty, priority, destination, assigned_to, assigned_by, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?)
+            INSERT INTO tasks (task_no, material_id, target_qty, priority, destination, assigned_to, assigned_by, status, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, ?)
         ");
 
         $createdCount = 0;
@@ -298,7 +300,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $taskNo = $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
             $nextNum++;
 
-            $stmtInsert->execute([$taskNo, $materialId, $targetQty, $priority, $destination, $assignedTo, $authId, $notes]);
+            $stmtInsert->execute([$taskNo, $materialId, $targetQty, $priority, $destination, $assignedTo, $authId, $notes, $now]);
             $createdCount++;
             $createdTaskNumbers[] = $taskNo;
         }
@@ -517,13 +519,14 @@ if ($action === 'start' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $pdo->prepare("UPDATE tasks SET status = 'IN_PROGRESS', started_at = IFNULL(started_at, CURRENT_TIMESTAMP) WHERE id = ? AND status = 'PENDING'");
-    $stmt->execute([$taskId]);
+    $now = date('Y-m-d H:i:s');
+    $stmt = $pdo->prepare("UPDATE tasks SET status = 'IN_PROGRESS', started_at = IFNULL(started_at, ?) WHERE id = ? AND status = 'PENDING'");
+    $stmt->execute([$now, $taskId]);
 
     echo json_encode([
         'success' => true, 
         'message' => 'Tugas sedang dikerjakan (In Progress)',
-        'started_at' => date('Y-m-d H:i:s')
+        'started_at' => $now
     ]);
     exit;
 }
@@ -619,13 +622,14 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stockBefore = (int)$mat['current_stock'];
+        $stockBefore = (float)$mat['current_stock'];
         $stockAfter = $stockBefore - $actualQty;
 
         // Calculate Duration & Takt Time
+        $now = date('Y-m-d H:i:s');
         $startedAtStr = $task['started_at'] ?? $task['created_at'];
         $startedAtTime = strtotime($startedAtStr);
-        $completedAtTime = time();
+        $completedAtTime = strtotime($now);
         $durationSeconds = max(1, $completedAtTime - $startedAtTime);
 
         // Update Task with duration and completion timestamp
@@ -636,11 +640,11 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 completion_notes = ?, 
                 photo_path = IFNULL(?, photo_path),
                 started_at = IFNULL(started_at, ?),
-                completed_at = CURRENT_TIMESTAMP,
+                completed_at = ?,
                 duration_seconds = ?
             WHERE id = ?
         ");
-        $stmtUpdateTask->execute([$actualQty, $completionNotes, $photoPathValue, date('Y-m-d H:i:s', $startedAtTime), $durationSeconds, $taskId]);
+        $stmtUpdateTask->execute([$actualQty, $completionNotes, $photoPathValue, date('Y-m-d H:i:s', $startedAtTime), $now, $durationSeconds, $taskId]);
 
         // Update Material Stock
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -648,13 +652,13 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Write Stock Mutation
         $stmtMut = $pdo->prepare("
-            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
-            VALUES (?, 'TASK_PICKING', ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'TASK_PICKING', ?, ?, ?, ?, ?, ?, ?)
         ");
         $mutNotes = "Pengambilan Tugas #{$task['task_no']} ke {$task['destination']} oleh Operator " . (Auth::name() ?? '');
         if (!empty($completionNotes)) $mutNotes .= " (Catatan: {$completionNotes})";
 
-        $stmtMut->execute([$materialId, -$actualQty, $stockBefore, $stockAfter, $task['task_no'], $mutNotes, Auth::id()]);
+        $stmtMut->execute([$materialId, -$actualQty, $stockBefore, $stockAfter, $task['task_no'], $mutNotes, Auth::id(), $now]);
 
         $pdo->commit();
 

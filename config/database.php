@@ -1,5 +1,6 @@
 <?php
 // config/database.php - Dual MySQL / SQLite Database Manager with Auto-Migration
+date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
@@ -46,6 +47,11 @@ class Database {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false
             ]);
+
+            try {
+                self::$pdo->exec("SET time_zone = '+07:00';");
+                self::$pdo->exec("SET NAMES utf8mb4;");
+            } catch (Throwable $e) {}
 
             self::initMySQLTables(self::$pdo);
             return self::$pdo;
