@@ -198,6 +198,48 @@ if ($action === 'template') {
     exit;
 }
 
+/**
+ * Helper: Parse Excel localized numbers (e.g. 1.712,36 or 1,712.36 or 1712,36 or 1712.36)
+ */
+function parseExcelNumeric($val) {
+    if (is_numeric($val)) {
+        return (float)$val;
+    }
+    $val = trim((string)$val);
+    if ($val === '') return 0.0;
+
+    // Remove any currency symbols, non-numeric characters except digits, dot, comma, minus, plus
+    $val = preg_replace('/[^\d.,\-+]/u', '', $val);
+
+    // Both dot and comma present:
+    // e.g. "1.712,36" (Indonesian/EU: dot=thousand, comma=decimal)
+    // e.g. "1,712.36" (US/Standard: comma=thousand, dot=decimal)
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        $lastComma = strrpos($val, ',');
+        $lastDot   = strrpos($val, '.');
+        if ($lastComma > $lastDot) {
+            // "1.712,36" -> comma is decimal
+            $val = str_replace('.', '', $val);
+            $val = str_replace(',', '.', $val);
+        } else {
+            // "1,712.36" -> dot is decimal
+            $val = str_replace(',', '', $val);
+        }
+    } elseif (strpos($val, ',') !== false) {
+        // Only comma exists e.g. "1712,36" or "0,5" or "1,250"
+        $val = str_replace(',', '.', $val);
+    } elseif (strpos($val, '.') !== false) {
+        // Only dot exists e.g. "1.000.000" or "1712.36"
+        $parts = explode('.', $val);
+        if (count($parts) > 2) {
+            $val = str_replace('.', '', $val);
+        }
+    }
+
+    $clean = preg_replace('/[^0-9.\-+]/', '', $val);
+    return is_numeric($clean) ? (float)$clean : 0.0;
+}
+
 // 3. PARSE / PREVIEW UPLOAD (Support XLSX, CSV, Local File, and Paste)
 if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $rows = [];
@@ -346,21 +388,19 @@ if ($action === 'preview' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $meta = inferPackagingMetadata($itemNo, $desc);
         $stockRaw = trim($r[$stockIdx] ?? '0');
-        $stockClean = preg_replace('/[^0-9]/', '', $stockRaw);
-        $endingStock = ($stockClean !== '') ? (int)$stockClean : 0;
+        $endingStock = parseExcelNumeric($stockRaw);
         $category = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim($r[$catIdx]) : $meta['category'];
         $unit     = ($unitIdx !== -1 && !empty($r[$unitIdx])) ? trim($r[$unitIdx]) : $meta['unit'];
         $rack     = ($rackIdx !== -1 && !empty($r[$rackIdx])) ? trim($r[$rackIdx]) : $meta['rack'];
         
         $minStockRaw = ($minStockIdx !== -1 && isset($r[$minStockIdx])) ? trim($r[$minStockIdx]) : '';
-        $minStockClean = preg_replace('/[^0-9]/', '', $minStockRaw);
-        $minStock = ($minStockClean !== '') ? (int)$minStockClean : 50;
+        $minStock = ($minStockRaw !== '') ? parseExcelNumeric($minStockRaw) : 50;
 
         $isExisting = isset($existing[$itemNo]);
         if ($isExisting) {
             $updateCount++;
             $statusType = 'UPDATE';
-            $oldStock = $existing[$itemNo]['current_stock'];
+            $oldStock = (float)$existing[$itemNo]['current_stock'];
         } else {
             $newCount++;
             $statusType = 'NEW';
@@ -420,11 +460,11 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($items as $item) {
             $code = strtoupper(trim($item['item_no']));
             $name = trim($item['item_description']);
-            $stock = max(0, (int)$item['ending_stock']);
+            $stock = max(0, parseExcelNumeric($item['ending_stock'] ?? 0));
             $cat = trim($item['category'] ?? 'Packaging Material');
             $unit = trim($item['unit'] ?? 'Pcs');
             $rack = trim($item['rack_location'] ?? 'Gudang Utama');
-            $minStock = max(0, (int)($item['min_stock'] ?? 50));
+            $minStock = max(0, parseExcelNumeric($item['min_stock'] ?? 50));
 
             if (empty($code)) continue;
 
@@ -433,13 +473,13 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($existing) {
                 $matId = (int)$existing['id'];
-                $oldStock = (int)$existing['current_stock'];
+                $oldStock = (float)$existing['current_stock'];
                 $diff = $stock - $oldStock;
 
                 $stmtUpdate->execute([$name, $cat, $unit, $rack, $minStock, $stock, $matId]);
                 $updated++;
 
-                if ($diff !== 0) {
+                if (abs($diff) > 0.0001) {
                     $stmtMut->execute([
                         $matId,
                         $diff,
@@ -451,7 +491,7 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     ]);
                 }
             } else {
-                $stmtInsert->execute([$code, $name, $cat, $unit, $rack, $minStock, $stock, 'Diimpor dari file Excel']);
+                $stmtInsert->execute([$code, $name, $cat, $unit, $rack, $minStock, $stock, $name]);
                 $matId = (int)$pdo->lastInsertId();
                 $inserted++;
 
@@ -461,8 +501,8 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stock,
                         0,
                         $stock,
-                        'EXCEL-INITIAL-IMPORT',
-                        "Stok Awal Upload Excel (Item No: {$code})",
+                        'EXCEL-IMPORT-NEW',
+                        "Stok Awal dari Upload Excel (Item No: {$code})",
                         $userId
                     ]);
                 }

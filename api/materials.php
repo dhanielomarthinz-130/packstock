@@ -79,11 +79,11 @@ if ($action === 'list') {
 
     // Attach status label to each
     foreach ($materials as &$mat) {
-        $mat['initial_upload_stock'] = (int)$mat['initial_upload_stock'];
-        $mat['total_inbound'] = (int)$mat['total_inbound'];
-        $mat['total_outbound'] = (int)$mat['total_outbound'];
-        $mat['current_stock'] = (int)$mat['current_stock'];
-        $mat['min_stock'] = (int)$mat['min_stock'];
+        $mat['initial_upload_stock'] = (float)$mat['initial_upload_stock'];
+        $mat['total_inbound'] = (float)$mat['total_inbound'];
+        $mat['total_outbound'] = (float)$mat['total_outbound'];
+        $mat['current_stock'] = (float)$mat['current_stock'];
+        $mat['min_stock'] = (float)$mat['min_stock'];
 
         if ($mat['current_stock'] <= 0) {
             $mat['stock_badge'] = 'empty';
@@ -176,10 +176,10 @@ if ($action === 'history') {
         exit;
     }
 
-    $material['initial_upload_stock'] = (int)$material['initial_upload_stock'];
-    $material['total_inbound'] = (int)$material['total_inbound'];
-    $material['total_outbound'] = (int)$material['total_outbound'];
-    $material['current_stock'] = (int)$material['current_stock'];
+    $material['initial_upload_stock'] = (float)$material['initial_upload_stock'];
+    $material['total_inbound'] = (float)$material['total_inbound'];
+    $material['total_outbound'] = (float)$material['total_outbound'];
+    $material['current_stock'] = (float)$material['current_stock'];
 
     // Fetch chronological mutations for this item (earliest date first)
     $stmtMut = $pdo->prepare("

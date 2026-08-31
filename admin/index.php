@@ -95,6 +95,15 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="sidebar-text truncate">Barang Keluar</span>
           </button>
 
+          <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Consumable Operator & Approval ACC">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-amber-600">shopping_cart_checkout</span>
+              <span class="sidebar-text truncate">Request Consumable</span>
+            </div>
+            <span id="sidebarConsumableReqBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">0</span>
+          </button>
+
           <button onclick="switchAdminTab('tasks')" id="nav-tasks" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Penugasan Operator (Task Dispatch)">
             <div class="flex items-center gap-3">
@@ -1941,7 +1950,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty In</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Lokasi Rak</th>
                   <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Petugas Penerima</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">Catatan</th>
+                  <th class="py-3.5 px-3.5 border-r border-white/20">No. Ref / Catatan</th>
                   <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
@@ -2026,6 +2035,64 @@ require_once __DIR__ . '/../includes/header.php';
                 </tr>
               </thead>
               <tbody id="outboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 4.1 TAB: REQUEST CONSUMABLE & APPROVAL ACC ADMIN ================= -->
+      <div id="tab-consumable_requests" class="hidden space-y-4">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 flex-1">
+            <div class="relative flex-1 min-w-[200px] max-w-md">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[18px]">search</span>
+              </span>
+              <input type="text" id="adminConsumableSearchInput" oninput="loadAdminConsumableRequests()" placeholder="Cari no request, pemohon, brand/tujuan, material..." 
+                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
+            </div>
+
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-amber-600">calendar_today</span>
+              <input type="text" id="adminConsumableDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Filter Tanggal..." 
+                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
+            </div>
+
+            <select id="adminConsumableStatusFilter" onchange="loadAdminConsumableRequests()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
+              <option value="ALL">Semua Status</option>
+              <option value="PENDING" selected>Menunggu ACC (Pending)</option>
+              <option value="APPROVED">Disetujui (Approved)</option>
+              <option value="REJECTED">Ditolak (Rejected)</option>
+              <option value="CANCELLED">Dibatalkan</option>
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" onclick="loadAdminConsumableRequests()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Pengajuan">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- DataTable Container -->
+        <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-gradient-to-r from-amber-700 to-orange-700 text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-amber-800">
+                <tr>
+                  <th class="py-3.5 px-3 whitespace-nowrap border-r border-white/20">Tanggal</th>
+                  <th class="py-3.5 px-3 whitespace-nowrap border-r border-white/20">No. Request</th>
+                  <th class="py-3.5 px-3 whitespace-nowrap border-r border-white/20">Pemohon (PIC)</th>
+                  <th class="py-3.5 px-3 whitespace-nowrap border-r border-white/20">Tujuan Line</th>
+                  <th class="py-3.5 px-3 min-w-[220px] border-r border-white/20">Item Consumable yang Diajukan</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Total Qty</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Status ACC</th>
+                  <th class="py-3.5 px-3 border-r border-white/20">Catatan / Respon Admin</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="adminConsumableTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
             </table>
           </div>
         </div>
@@ -2520,7 +2587,9 @@ require_once __DIR__ . '/../includes/header.php';
             <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Role</option>
               <option value="teknisi">Teknisi</option>
-              <option value="operator">PIC</option>
+              <option value="admin">Admin</option>
+              <option value="operator">Operator Gudang (PIC)</option>
+              <option value="operator_fulfillment">Operator Fulfillment</option>
             </select>
           </div>
 
@@ -2868,7 +2937,7 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form id="inboundForm" onsubmit="handleInboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
       <!-- Meta Information Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
         <div>
           <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
             <span>Tanggal Masuk</span>
@@ -2894,9 +2963,38 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div>
+          <label class="block font-bold text-slate-700 mb-1">No. Referensi / PO / Batch <span class="text-rose-500 font-bold">*</span></label>
+          <input type="text" id="inboundPoNumber" required placeholder="Contoh: PO-2026/08/001 atau No. SJ..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold outline-none focus:border-emerald-600">
+        </div>
+
+        <div>
           <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
           <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
         </div>
+      </div>
+
+      <!-- Photo Upload & Multi-Image Preview -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 flex-shrink-0">
+        <div class="flex items-center justify-between">
+          <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-emerald-600">photo_camera</span>
+            <span>Foto Bukti / Surat Jalan / Kondisi Barang (Bisa > 1 Foto)</span>
+          </label>
+          <span id="inboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="file" id="inboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleInboundPhotosSelect(event)">
+          <button type="button" onclick="document.getElementById('inboundPhotosInput').click()" class="px-3 py-1.5 bg-white hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 font-bold rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs cursor-pointer">
+            <span class="material-symbols-outlined text-[16px] text-emerald-600">add_photo_alternate</span>
+            <span>Pilih / Ambil Foto</span>
+          </button>
+          <button type="button" id="btnClearInboundPhotos" onclick="clearInboundPhotos()" class="hidden px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">delete</span>
+            <span>Hapus Semua</span>
+          </button>
+        </div>
+        <!-- Thumbnail preview container -->
+        <div id="inboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-28 overflow-y-auto"></div>
       </div>
 
       <!-- Items Table Container -->
@@ -2995,6 +3093,30 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
           <input type="text" id="outboundGlobalNotes" placeholder="Keterangan / No SPK (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-amber-600">
         </div>
+      </div>
+
+      <!-- Photo Upload & Multi-Image Preview -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 flex-shrink-0">
+        <div class="flex items-center justify-between">
+          <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
+            <span>Foto Bukti Pengeluaran / Serah Terima (Bisa > 1 Foto)</span>
+          </label>
+          <span id="outboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="file" id="outboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleOutboundPhotosSelect(event)">
+          <button type="button" onclick="document.getElementById('outboundPhotosInput').click()" class="px-3 py-1.5 bg-white hover:bg-amber-50 hover:text-amber-800 text-slate-700 font-bold rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs cursor-pointer">
+            <span class="material-symbols-outlined text-[16px] text-amber-600">add_photo_alternate</span>
+            <span>Pilih / Ambil Foto</span>
+          </button>
+          <button type="button" id="btnClearOutboundPhotos" onclick="clearOutboundPhotos()" class="hidden px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">delete</span>
+            <span>Hapus Semua</span>
+          </button>
+        </div>
+        <!-- Thumbnail preview container -->
+        <div id="outboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-28 overflow-y-auto"></div>
       </div>
 
       <!-- Items Table Container -->
@@ -3346,8 +3468,10 @@ require_once __DIR__ . '/../includes/header.php';
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Role / Hak Akses <span class="text-rose-500">*</span></label>
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
-          <option value="operator">PIC (Panel Mobile)</option>
+          <option value="operator">Operator Gudang (Panel Mobile Lengkap)</option>
+          <option value="operator_fulfillment">Operator Fulfillment (Khusus Form Request Consumable)</option>
           <option value="teknisi">Teknisi (Panel Admin)</option>
+          <option value="admin">Administrator (Panel Admin)</option>
         </select>
       </div>
 
@@ -3673,6 +3797,100 @@ require_once __DIR__ . '/../includes/header.php';
         <button type="submit" id="btnSubmitCreateDynamic" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">send</span>
           <span>Buat & Assign ke Operator</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: APPROVE (ACC) CONSUMABLE REQUEST ================= -->
+<div id="modalApproveConsumableRequest" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[20px]">check_circle</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-sm">ACC Permintaan Consumable</h3>
+          <p class="text-[11px] text-slate-500" id="approveReqNoSubtitle">No. Request: -</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalApproveConsumableRequest')" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formApproveConsumableRequest" onsubmit="handleAdminApproveConsumableSubmit(event)" class="space-y-3.5 text-xs">
+      <input type="hidden" id="approveReqIdInput">
+
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5" id="approveReqSummaryBox">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- Penugasan Operator PIC Picking -->
+      <div class="space-y-1.5 p-3.5 bg-amber-50/60 rounded-xl border border-amber-200">
+        <label class="block font-bold text-slate-900 text-xs flex items-center justify-between">
+          <span class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[18px] text-amber-600">person_add</span>
+            <span>Tugaskan ke Operator PIC Picking <span class="text-rose-500">*</span></span>
+          </span>
+          <span class="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded-full">Otomatis Terbit Tugas</span>
+        </label>
+        <select id="approveAssignedOperator" required class="w-full p-2.5 bg-white border border-slate-300 rounded-xl outline-none focus:border-amber-600 text-xs font-semibold text-slate-800">
+          <option value="">-- Pilih Operator PIC --</option>
+        </select>
+        <p class="text-[10px] text-slate-500">Tugas pengambilan barang akan langsung muncul di panel mobile operator yang ditugaskan.</p>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1 text-xs">Catatan Persetujuan Admin (Opsional)</label>
+        <input type="text" id="approveAdminNotes" placeholder="Contoh: Disetujui, segera ambil di Rak A-01..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-emerald-600 text-xs">
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalApproveConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnSubmitApproveConsumable" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[17px]">verified</span>
+          <span>Setujui (ACC Sekarang)</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: REJECT CONSUMABLE REQUEST ================= -->
+<div id="modalRejectConsumableRequest" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[20px]">cancel</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-sm">Tolak Pengajuan Consumable</h3>
+          <p class="text-[11px] text-slate-500" id="rejectReqNoSubtitle">No. Request: -</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalRejectConsumableRequest')" class="text-slate-400 hover:text-slate-600">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formRejectConsumableRequest" onsubmit="handleAdminRejectConsumableSubmit(event)" class="space-y-3.5 text-xs">
+      <input type="hidden" id="rejectReqIdInput">
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Alasan Penolakan <span class="text-rose-500">*</span></label>
+        <textarea id="rejectReasonInput" required rows="3" placeholder="Contoh: Stok material sedang dibooking untuk produksi line 1 / kuota shift ini telah tercapai..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-rose-600 text-xs font-medium"></textarea>
+        <p class="text-[10px] text-slate-400 mt-0.5">Alasan ini akan tampil di layar operator pemohon.</p>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalRejectConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnSubmitRejectConsumable" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[17px]">close</span>
+          <span>Tolak Pengajuan</span>
         </button>
       </div>
     </form>

@@ -97,7 +97,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'teknisi'])) {
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_fulfillment', 'teknisi'])) {
         $role = 'operator';
     }
 
@@ -165,7 +165,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'teknisi'])) {
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_fulfillment', 'teknisi'])) {
         $role = 'operator';
     }
 

@@ -75,6 +75,12 @@ $MENUS_CATALOG = [
         'description' => 'Pencatatan barang keluar manual dan monitoring pengeluaran material.'
     ],
     [
+        'key' => 'consumable_requests',
+        'label' => 'Request Consumable',
+        'icon' => 'shopping_cart_checkout',
+        'description' => 'Monitoring pengajuan barang consumable dari operator dan proses persetujuan (ACC).'
+    ],
+    [
         'key' => 'tasks',
         'label' => 'Assign Task Operator',
         'icon' => 'assignment',

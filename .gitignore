@@ -12,5 +12,6 @@ scratch/
 Thumbs.db
 
 # User Uploaded Photos
-uploads/handovers/*
-!uploads/handovers/.gitkeep
+uploads/*/*
+!uploads/*/.gitkeep
+!uploads/.gitkeep

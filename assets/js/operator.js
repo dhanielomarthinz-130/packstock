@@ -9,6 +9,21 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateLiveClock, 1000);
   updateGreeting();
 
+  if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+    loadFulfillmentStats();
+    loadOperatorConsumableRequests();
+    loadOperatorStock();
+    initMandatoryShiftGate();
+
+    setInterval(() => {
+      loadFulfillmentStats();
+      if (currentOpTab === 'request_consumable' && currentOpReqSubTab === 'history') {
+        loadOperatorConsumableRequests();
+      }
+    }, 15000);
+    return;
+  }
+
   loadOperatorStats();
   loadOperatorTasks(true);
   loadOperatorDynamicTasks(true);
@@ -56,25 +71,41 @@ async function refreshOperatorData() {
   const icon = document.getElementById('btnSyncIcon');
   if (icon) icon.classList.add('animate-spin');
 
-  await Promise.all([
-    loadOperatorStats(true),
-    loadOperatorTasks(true),
-    loadOperatorDynamicTasks(true),
-    loadOperatorBlankCounts(true),
-    loadOperatorRecountTasks(true),
-    loadOperatorStock(true)
-  ]);
+  if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+    await Promise.all([
+      loadFulfillmentStats(),
+      loadOperatorConsumableRequests(),
+      loadOperatorStock()
+    ]);
+  } else {
+    await Promise.all([
+      loadOperatorStats(true),
+      loadOperatorTasks(true),
+      loadOperatorDynamicTasks(true),
+      loadOperatorBlankCounts(true),
+      loadOperatorRecountTasks(true),
+      loadOperatorStock(true),
+      loadHandovers(true)
+    ]);
+  }
 
   if (icon) {
     setTimeout(() => icon.classList.remove('animate-spin'), 600);
   }
-  App.toast('Data & penugasan berhasil diperbarui', 'info');
+  App.toast('Data berhasil disinkronkan', 'info');
 }
 
 // Mobile Screen / Tab Switcher
 function switchOpTab(tabName) {
+  // Strict 1-menu access for operator_fulfillment
+  if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+    if (tabName !== 'home' && tabName !== 'request_consumable') {
+      tabName = 'request_consumable';
+    }
+  }
+
   currentOpTab = tabName;
-  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'history', 'handover'];
+  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover'];
 
   allTabs.forEach(t => {
     const el = document.getElementById('op-tab-' + t);
@@ -89,21 +120,27 @@ function switchOpTab(tabName) {
   }
 
   // Update bottom navigation bar active states
-  const bottomNavs = ['home', 'tasks', 'dynamic_count', 'opname'];
+  const bottomNavs = ['home', 'tasks', 'dynamic_count', 'opname', 'req-form', 'req-hist'];
   bottomNavs.forEach(nav => {
     const navBtn = document.getElementById('bottom-nav-' + nav);
     if (navBtn) {
-      if (nav === tabName) {
+      const isMatch = (nav === tabName) || 
+                      (nav === 'req-form' && tabName === 'request_consumable' && currentOpReqSubTab === 'form') ||
+                      (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history');
+      if (isMatch) {
         navBtn.classList.remove('text-slate-400', 'font-semibold');
-        navBtn.classList.add('text-emerald-700', 'font-bold');
+        navBtn.classList.add('text-amber-700', 'text-emerald-700', 'font-bold');
       } else {
-        navBtn.classList.remove('text-emerald-700', 'font-bold');
+        navBtn.classList.remove('text-amber-700', 'text-emerald-700', 'font-bold');
         navBtn.classList.add('text-slate-400', 'font-semibold');
       }
     }
   });
 
   // Trigger sub-view data loading
+  if (tabName === 'home' && typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+    loadFulfillmentStats();
+  }
   if (tabName === 'tasks') loadOperatorTasks();
   if (tabName === 'dynamic_count') loadOperatorDynamicTasks();
   if (tabName === 'opname') { 
@@ -113,7 +150,7 @@ function switchOpTab(tabName) {
     switchOpnameSubTab(currentOpnameSubTab || '1st');
   }
   if (tabName === 'inbound') populateOpInboundMaterials();
-  if (tabName === 'stock') loadOperatorStock();
+  if (tabName === 'request_consumable') initConsumableRequestView();
   if (tabName === 'history') renderCompletedHistory();
   if (tabName === 'handover') loadHandovers();
 }
@@ -377,12 +414,67 @@ async function startOperatorTask(taskId) {
   }
 }
 
+// Task Completion Multi-Photo State
+let taskCompleteSelectedFiles = [];
+
+function previewTaskCompletePhoto(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(files);
+  renderTaskCompletePreviews();
+}
+
+function renderTaskCompletePreviews() {
+  const container = document.getElementById('taskPhotoPreviewContainer');
+  const badge = document.getElementById('taskPhotoCountBadge');
+  const clearBtn = document.getElementById('btnTaskClearPhotos');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${taskCompleteSelectedFiles.length} Foto`;
+
+  if (taskCompleteSelectedFiles.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  container.innerHTML = taskCompleteSelectedFiles.map((file, idx) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="relative group w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="${url}" alt="Preview" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedTaskCompleteFile(${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity" title="Hapus foto ini">
+          <span class="material-symbols-outlined text-[11px]">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSelectedTaskCompleteFile(index) {
+  taskCompleteSelectedFiles.splice(index, 1);
+  renderTaskCompletePreviews();
+}
+
+function clearTaskCompletePhotos() {
+  const input = document.getElementById('taskCompletePhoto');
+  if (input) input.value = '';
+  taskCompleteSelectedFiles = [];
+  renderTaskCompletePreviews();
+}
+
 // 4. SUBMIT TASK MODAL & EXECUTION
 function openSubmitModal(taskId) {
   const task = myTasks.find(t => t.id == taskId);
   if (!task) return;
 
   activeSubmittingTask = task;
+  clearTaskCompletePhotos();
+
   document.getElementById('submitTaskId').value = task.id;
   document.getElementById('submitMaterialTitle').innerText = task.material_name;
   document.getElementById('submitTargetQtyLabel').innerText = `${App.formatNumber(task.target_qty)} ${escapeHtml(task.material_unit || 'Pcs')}`;
@@ -415,27 +507,41 @@ async function handleFinalTaskSubmit(e) {
 
   const btn = document.getElementById('btnFinalSubmit');
   btn.disabled = true;
-  btn.innerText = 'Menyimpan...';
+  btn.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span> Menyimpan...';
 
-  const res = await App.fetchJson('../api/tasks.php?action=submit_complete', {
-    method: 'POST',
-    body: JSON.stringify({
-      task_id,
-      actual_qty,
-      completion_notes
-    })
-  });
+  const formData = new FormData();
+  formData.append('task_id', task_id);
+  formData.append('actual_qty', actual_qty);
+  formData.append('completion_notes', completion_notes);
 
-  btn.disabled = false;
-  btn.innerText = 'Konfirmasi Selesai & Kirim';
+  for (let i = 0; i < taskCompleteSelectedFiles.length; i++) {
+    formData.append('photos[]', taskCompleteSelectedFiles[i]);
+  }
 
-  if (res.success) {
-    App.toast(res.message, 'success', 'Tugas Selesai');
-    App.closeModal('modalSubmitTask');
-    loadOperatorTasks();
-    loadOperatorStock();
-  } else {
-    App.toast(res.message, 'error');
+  try {
+    const response = await fetch('../api/tasks.php?action=submit_complete', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
+
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Potong Stok</span>';
+
+    if (res.success) {
+      App.toast(res.message, 'success', 'Tugas Selesai');
+      App.closeModal('modalSubmitTask');
+      clearTaskCompletePhotos();
+      loadOperatorTasks();
+      loadOperatorStock();
+      loadOperatorStats();
+    } else {
+      App.toast(res.message || 'Gagal menyelesaikan tugas', 'error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Potong Stok</span>';
+    App.toast('Terjadi kesalahan koneksi saat submit tugas', 'error');
   }
 }
 
@@ -505,7 +611,30 @@ function renderCompletedHistory() {
     return;
   }
 
-  container.innerHTML = completed.map(t => `
+  container.innerHTML = completed.map(t => {
+    let photos = [];
+    if (t.photo_path) {
+      if (t.photo_path.startsWith('[')) {
+        try { photos = JSON.parse(t.photo_path); } catch(e) { photos = [t.photo_path]; }
+      } else {
+        photos = [t.photo_path];
+      }
+    }
+
+    const photosHtml = (photos.length > 0)
+      ? `
+        <div class="flex items-center gap-1.5 pt-1 overflow-x-auto">
+          ${photos.map((p, pIdx) => `
+            <div class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-900 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-2xs" onclick="openPhotoViewer('${escapeHtml(p)}', '${escapeHtml(t.task_no)}', '${escapeHtml(t.completed_at || t.created_at)}', 'Operator', 'TASK PICKING')">
+              <img src="../${escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
+            </div>
+          `).join('')}
+          <span class="text-[9px] text-slate-400 font-semibold">${photos.length} Foto</span>
+        </div>
+      `
+      : '';
+
+    return `
     <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-2 text-xs">
       <div class="flex items-center justify-between">
         <span class="font-mono font-black text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">${escapeHtml(t.task_no)}</span>
@@ -520,9 +649,11 @@ function renderCompletedHistory() {
         <span>Diambil: <b class="text-emerald-700 font-black text-xs">${App.formatNumber(t.actual_qty)}</b></span>
       </div>
       ${t.completion_notes ? `<p class="text-[11px] text-slate-500 italic bg-slate-50/50 p-2 rounded-lg border border-slate-100">Catatan: ${escapeHtml(t.completion_notes)}</p>` : ''}
+      ${photosHtml}
       <p class="text-[10px] text-slate-400 text-right font-mono">${App.formatDate(t.completed_at)}</p>
     </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 // 5. INBOUND GOODS RECEIPT DRAFT (MULTI-PRODUCT)
@@ -572,11 +703,22 @@ function addInboundDraftItem() {
   const select = document.getElementById('opInboundMaterialSelect');
   const qtyInp = document.getElementById('opInboundQty');
   const locInp = document.getElementById('opInboundLocation');
+  const notesInp = document.getElementById('opInboundNotes');
 
   if (!select || !qtyInp) return;
 
   const materialId = parseInt(select.value);
   const qty = parseInt(qtyInp.value);
+  const notes = notesInp ? notesInp.value.trim() : '';
+
+  const poInp = document.getElementById('opInboundPoNumber');
+  const po_number = poInp ? poInp.value.trim() : '';
+
+  if (!po_number) {
+    App.toast('Nomor Referensi / PO / Surat Jalan (Batch) wajib diisi terlebih dahulu!', 'warning');
+    poInp?.focus();
+    return;
+  }
 
   if (!materialId || materialId <= 0) {
     App.toast('Silakan pilih material packaging terlebih dahulu.', 'warning');
@@ -597,21 +739,24 @@ function addInboundDraftItem() {
     opInboundDraftStartTime = new Date().toISOString();
   }
 
-  const existingIdx = opInboundDraft.findIndex(i => i.material_id === materialId);
+  const existingIdx = opInboundDraft.findIndex(i => i.material_id === materialId && i.rack === itemRack);
   if (existingIdx >= 0) {
     opInboundDraft[existingIdx].qty += qty;
-    opInboundDraft[existingIdx].rack = itemRack;
+    if (notes) opInboundDraft[existingIdx].notes = notes;
   } else {
     opInboundDraft.push({
       material_id: materialId,
       code: itemCode,
       name: itemName,
       rack: itemRack,
-      qty: qty
+      qty: qty,
+      notes: notes
     });
   }
 
   qtyInp.value = '';
+  if (locInp) locInp.value = '';
+  if (notesInp) notesInp.value = '';
   select.value = '';
   App.syncSearchableSelect(select);
   updateOpInboundStockBadge();
@@ -660,19 +805,20 @@ function renderInboundDraftList() {
     totalQty += item.qty;
 
     return `
-      <div class="p-2.5 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-between gap-2 text-xs">
+      <div class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center justify-between gap-2 text-xs">
         <div class="space-y-0.5 flex-1 min-w-0">
-          <div class="flex items-center gap-1.5">
-            <span class="text-[10px] text-slate-500 font-medium">Lokasi: <b class="text-slate-800">${escapeHtml(item.rack)}</b></span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-600 font-bold bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">Rak: ${escapeHtml(item.rack)}</span>
+            ${item.notes ? `<span class="text-[10px] text-slate-500 italic truncate max-w-[150px]">"${escapeHtml(item.notes)}"</span>` : ''}
           </div>
-          <p class="font-bold text-slate-900 leading-snug">${escapeHtml(item.name)}</p>
+          <p class="font-extrabold text-slate-900 leading-snug truncate">${escapeHtml(item.name)}</p>
         </div>
 
         <div class="flex items-center gap-2 flex-shrink-0">
           <div class="text-right">
-            <span class="font-extrabold text-sm text-emerald-800">+${App.formatNumber(item.qty)}</span>
+            <span class="font-black text-sm text-emerald-800 font-mono">+${App.formatNumber(item.qty)}</span>
           </div>
-          <button type="button" onclick="removeInboundDraftItem(${idx})" title="Hapus dari draft" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+          <button type="button" onclick="removeInboundDraftItem(${idx})" title="Hapus dari draft" class="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors">
             <span class="material-symbols-outlined text-[18px]">delete</span>
           </button>
         </div>
@@ -686,7 +832,67 @@ function renderInboundDraftList() {
   }
 }
 
+// Operator Inbound Multi-Photo State
+let opInboundSelectedFiles = [];
+
+function previewOpInboundPhoto(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  opInboundSelectedFiles = opInboundSelectedFiles.concat(files);
+  renderOpInboundPhotoPreviews();
+}
+
+function renderOpInboundPhotoPreviews() {
+  const container = document.getElementById('opInboundPhotoPreviewContainer');
+  const badge = document.getElementById('opInboundPhotoCountBadge');
+  const clearBtn = document.getElementById('btnOpClearInboundPhotos');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${opInboundSelectedFiles.length} Foto`;
+
+  if (opInboundSelectedFiles.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  container.innerHTML = opInboundSelectedFiles.map((file, idx) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="relative group w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="${url}" alt="Preview" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedOpInboundFile(${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity" title="Hapus foto ini">
+          <span class="material-symbols-outlined text-[11px]">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSelectedOpInboundFile(index) {
+  opInboundSelectedFiles.splice(index, 1);
+  renderOpInboundPhotoPreviews();
+}
+
+function clearOpInboundPhotos() {
+  const input = document.getElementById('opInboundPhoto');
+  if (input) input.value = '';
+  opInboundSelectedFiles = [];
+  renderOpInboundPhotoPreviews();
+}
+
 async function handleInboundDraftSubmit() {
+  const po_number = document.getElementById('opInboundPoNumber')?.value.trim() || '';
+  if (!po_number) {
+    App.toast('Nomor Referensi / PO / Surat Jalan (Batch) wajib diisi!', 'warning');
+    document.getElementById('opInboundPoNumber')?.focus();
+    return;
+  }
+
   const notes = document.getElementById('opInboundNotes')?.value.trim() || 'Penerimaan Lapangan Operator';
 
   if (opInboundDraft.length === 0) {
@@ -700,39 +906,55 @@ async function handleInboundDraftSubmit() {
 
   const started_at = opInboundDraftStartTime || new Date().toISOString();
 
-  const res = await App.fetchJson('../api/inbound.php?action=batch_create', {
-    method: 'POST',
-    body: JSON.stringify({
-      po_number: '-',
-      supplier: '-',
-      started_at,
-      notes,
-      items: opInboundDraft.map(d => ({
-        material_id: d.material_id,
-        qty: d.qty,
-        notes: d.notes
-      }))
-    })
-  });
+  const formData = new FormData();
+  formData.append('po_number', po_number);
+  formData.append('supplier', '-');
+  formData.append('started_at', started_at);
+  formData.append('notes', notes);
+  formData.append('items', JSON.stringify(opInboundDraft.map(d => ({
+    material_id: d.material_id,
+    qty: d.qty,
+    rack_location: d.rack,
+    notes: d.notes || '-'
+  }))));
 
-  btn.disabled = false;
-  btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Submit & Update Stok Gudang</span>';
+  for (let i = 0; i < opInboundSelectedFiles.length; i++) {
+    formData.append('photos[]', opInboundSelectedFiles[i]);
+  }
 
-  if (res.success) {
-    App.toast(res.message, 'success', 'Penerimaan Berhasil');
-    
-    // Clear form & draft
-    const notesEl = document.getElementById('opInboundNotes');
-    if (notesEl) notesEl.value = '';
-    opInboundDraft = [];
-    opInboundDraftStartTime = null;
-    renderInboundDraftList();
+  try {
+    const response = await fetch('../api/inbound.php?action=batch_create', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
 
-    // Reload operator stock and stats
-    loadOperatorStock();
-    loadOperatorStats();
-  } else {
-    App.toast(res.message || 'Gagal menyimpan penerimaan draft', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Submit & Update Stok Gudang</span>';
+
+    if (res.success) {
+      App.toast(res.message, 'success', 'Penerimaan Berhasil');
+      
+      // Clear form & draft
+      const poEl = document.getElementById('opInboundPoNumber');
+      if (poEl) poEl.value = '';
+      const notesEl = document.getElementById('opInboundNotes');
+      if (notesEl) notesEl.value = '';
+      opInboundDraft = [];
+      opInboundDraftStartTime = null;
+      clearOpInboundPhotos();
+      renderInboundDraftList();
+
+      // Reload operator stock and stats
+      loadOperatorStock();
+      loadOperatorStats();
+    } else {
+      App.toast(res.message || 'Gagal menyimpan penerimaan draft', 'error');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Submit & Update Stok Gudang</span>';
+    App.toast('Terjadi kesalahan koneksi saat menyimpan draft penerimaan', 'error');
   }
 }
 
@@ -1674,20 +1896,22 @@ function openHandoverDetail(id) {
   App.openModal('modalHandoverDetail');
 }
 
-function openPhotoViewer(photoPath, handoverNo, date, creator) {
+function openPhotoViewer(photoPath, docNo, date, creator, docType = 'HANDOVER') {
   const viewerImage = document.getElementById('viewerImage');
   const viewerDesc = document.getElementById('viewerImageDesc');
   const wmTopLeft = document.getElementById('wmTopLeft');
+  const wmTopRight = document.getElementById('wmTopRight');
   const wmBottomLeft = document.getElementById('wmBottomLeft');
   const wmBottomRight = document.getElementById('wmBottomRight');
 
   if (viewerImage) viewerImage.src = `../${photoPath}`;
-  if (viewerDesc) viewerDesc.innerText = `Foto lampiran untuk berkas ${handoverNo} oleh ${creator}`;
+  if (viewerDesc) viewerDesc.innerText = `Dokumentasi Foto ${docType} #${docNo} (${creator || 'Operator'})`;
 
   // Apply Watermark content dynamically
-  if (wmTopLeft) wmTopLeft.innerText = `IMS - BY ${creator.toUpperCase()}`;
-  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${handoverNo}`;
-  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date.substring(0, 10)}`;
+  if (wmTopLeft) wmTopLeft.innerText = `IMS - ${docType.toUpperCase()}`;
+  if (wmTopRight) wmTopRight.innerText = `BY ${creator ? creator.toUpperCase() : 'OPERATOR'}`;
+  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${docNo}`;
+  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date ? date.substring(0, 10) : ''}`;
 
   App.openModal('modalHandoverPhotoViewer');
 }
@@ -2019,5 +2243,532 @@ async function submitMandatoryShiftGate(e) {
     App.toast('Terjadi kesalahan jaringan.', 'error');
   }
 }
+
+// =========================================================================
+// 8. FORM REQUEST CONSUMABLE (OPERATOR & OPERATOR_FULFILLMENT)
+// =========================================================================
+let opConsumableDraft = [];
+let opConsumablePhotos = [];
+let currentOpReqSubTab = 'form';
+
+async function initConsumableRequestView() {
+  await populateOpReqMaterialSelect();
+  if (currentOpReqSubTab === 'history') {
+    loadOperatorConsumableRequests();
+  }
+}
+
+function handleOpReqPhotosSelected(input) {
+  if (!input || !input.files || input.files.length === 0) return;
+
+  const files = Array.from(input.files);
+  const maxPhotos = 10;
+  const remainingSlots = maxPhotos - opConsumablePhotos.length;
+
+  if (remainingSlots <= 0) {
+    App.toast(`Maksimal ${maxPhotos} foto per pengajuan.`, 'warning');
+    input.value = '';
+    return;
+  }
+
+  const allowedFiles = files.slice(0, remainingSlots);
+  let loadedCount = 0;
+
+  allowedFiles.forEach(file => {
+    if (!file.type.startsWith('image/')) {
+      loadedCount++;
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      opConsumablePhotos.push({
+        name: file.name,
+        data: e.target.result
+      });
+      loadedCount++;
+      if (loadedCount >= allowedFiles.length) {
+        renderOpReqPhotoPreviews();
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  input.value = '';
+}
+
+function renderOpReqPhotoPreviews() {
+  const container = document.getElementById('opReqPhotoPreviewGrid');
+  const countBadge = document.getElementById('opReqPhotoCountBadge');
+  if (!container) return;
+
+  if (countBadge) {
+    countBadge.innerText = `${opConsumablePhotos.length} Foto dipilih`;
+  }
+
+  if (opConsumablePhotos.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = opConsumablePhotos.map((photo, idx) => `
+    <div class="relative group rounded-xl overflow-hidden border border-amber-300 aspect-square bg-slate-100 shadow-2xs">
+      <img src="${photo.data}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+      <button type="button" onclick="removeOpReqPhoto(${idx})" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-md hover:bg-rose-700 active:scale-90 transition-all" title="Hapus foto">
+        <span class="material-symbols-outlined text-[14px]">close</span>
+      </button>
+      <span class="absolute bottom-1 left-1 px-1.5 py-0.2 rounded bg-black/60 text-white text-[9px] font-mono">#${idx + 1}</span>
+    </div>
+  `).join('');
+}
+
+function removeOpReqPhoto(index) {
+  opConsumablePhotos.splice(index, 1);
+  renderOpReqPhotoPreviews();
+}
+
+function switchOpReqSubTab(subTab) {
+  currentOpReqSubTab = subTab;
+  const formView = document.getElementById('opReqSubViewForm');
+  const histView = document.getElementById('opReqSubViewHistory');
+  const btnForm = document.getElementById('btnOpReqSubTabForm');
+  const btnHist = document.getElementById('btnOpReqSubTabHistory');
+
+  if (subTab === 'form') {
+    formView?.classList.remove('hidden');
+    histView?.classList.add('hidden');
+    btnForm?.classList.add('bg-white', 'text-amber-900', 'shadow-xs');
+    btnForm?.classList.remove('text-slate-600');
+    btnHist?.classList.remove('bg-white', 'text-amber-900', 'shadow-xs');
+    btnHist?.classList.add('text-slate-600');
+    populateOpReqMaterialSelect();
+  } else {
+    formView?.classList.add('hidden');
+    histView?.classList.remove('hidden');
+    btnHist?.classList.add('bg-white', 'text-amber-900', 'shadow-xs');
+    btnHist?.classList.remove('text-slate-600');
+    btnForm?.classList.remove('bg-white', 'text-amber-900', 'shadow-xs');
+    btnForm?.classList.add('text-slate-600');
+    loadOperatorConsumableRequests();
+  }
+}
+
+async function populateOpReqMaterialSelect() {
+  const sel = document.getElementById('opReqMaterialSelect');
+  if (!sel) return;
+
+  let materials = (typeof allStock !== 'undefined' && allStock.length > 0) ? allStock : [];
+  if (materials.length === 0) {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res && res.success && res.data) {
+      allStock = res.data;
+      materials = res.data;
+    }
+  }
+
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' + (materials || []).map(m => {
+    const code = App.escapeHtml(m.code || '');
+    const name = App.escapeHtml(m.name || '');
+    const unit = App.escapeHtml(m.unit || 'Pcs');
+    const rack = App.escapeHtml(m.rack_location || '-');
+    const stock = Number(m.current_stock || 0);
+    return `<option value="${m.id}" data-code="${code}" data-name="${name}" data-stock="${stock}" data-unit="${unit}" data-rack="${rack}">${name} (Stok: ${App.formatNumber(stock)} ${unit})</option>`;
+  }).join('');
+
+  if (currentVal) sel.value = currentVal;
+  if (typeof App.syncSearchableSelect === 'function') {
+    App.syncSearchableSelect(sel);
+  }
+}
+
+function handleOpReqMaterialSelectChange(sel) {
+  const badge = document.getElementById('opReqStockInfoBadge');
+  const stockVal = document.getElementById('opReqStockVal');
+  if (!sel || !sel.value) {
+    if (badge) badge.classList.add('hidden');
+    return;
+  }
+
+  const opt = sel.options[sel.selectedIndex];
+  const stock = opt.getAttribute('data-stock') || 0;
+  const unit = opt.getAttribute('data-unit') || 'Pcs';
+  const rack = opt.getAttribute('data-rack') || '-';
+
+  if (badge && stockVal) {
+    stockVal.innerText = `${App.formatNumber(stock)} ${unit} (Rak: ${rack})`;
+    badge.classList.remove('hidden');
+  }
+}
+
+function addConsumableDraftItem() {
+  const sel = document.getElementById('opReqMaterialSelect');
+  const qtyInp = document.getElementById('opReqQty');
+  const notesInp = document.getElementById('opReqItemNotes');
+
+  if (!sel || !qtyInp) return;
+
+  const materialId = parseInt(sel.value);
+  const qty = parseInt(qtyInp.value);
+  const notes = notesInp ? notesInp.value.trim() : '';
+
+  if (!materialId || materialId <= 0) {
+    App.toast('Silakan pilih material packaging terlebih dahulu.', 'warning');
+    sel.focus();
+    return;
+  }
+
+  if (!qty || qty <= 0) {
+    App.toast('Jumlah permintaan harus lebih dari 0.', 'warning');
+    qtyInp.focus();
+    return;
+  }
+
+  const opt = sel.options[sel.selectedIndex];
+  const itemCode = opt.getAttribute('data-code') || '';
+  const itemName = opt.getAttribute('data-name') || '';
+  const itemStock = parseInt(opt.getAttribute('data-stock') || 0);
+  const itemUnit = opt.getAttribute('data-unit') || 'Pcs';
+
+  const existingIdx = opConsumableDraft.findIndex(i => i.material_id === materialId);
+  if (existingIdx >= 0) {
+    opConsumableDraft[existingIdx].qty += qty;
+    if (notes) opConsumableDraft[existingIdx].notes = notes;
+  } else {
+    opConsumableDraft.push({
+      material_id: materialId,
+      code: itemCode,
+      name: itemName,
+      stock: itemStock,
+      unit: itemUnit,
+      qty: qty,
+      notes: notes
+    });
+  }
+
+  // Reset input fields and clear material selection
+  qtyInp.value = '';
+  if (notesInp) notesInp.value = '';
+  sel.value = '';
+  sel.selectedIndex = 0;
+  
+  const stockBadge = document.getElementById('opReqStockInfoBadge');
+  if (stockBadge) stockBadge.classList.add('hidden');
+  
+  handleOpReqMaterialSelectChange(sel);
+  sel.dispatchEvent(new Event('change'));
+  if (typeof App.syncSearchableSelect === 'function') {
+    App.syncSearchableSelect(sel);
+  }
+
+  renderConsumableDraftList();
+  App.toast(`${itemName} (+${qty} ${itemUnit}) ditambahkan ke draft!`, 'success');
+}
+
+function renderConsumableDraftList() {
+  const container = document.getElementById('opReqDraftListContainer');
+  const badge = document.getElementById('opReqDraftCountBadge');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${opConsumableDraft.length} Item`;
+
+  if (opConsumableDraft.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 text-center text-slate-400 text-xs">
+        <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">shopping_cart</span>
+        <p>Belum ada material yang ditambahkan ke draft.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const totalQty = opConsumableDraft.reduce((acc, i) => acc + i.qty, 0);
+
+  container.innerHTML = `
+    <div class="space-y-2">
+      ${opConsumableDraft.map((item, idx) => `
+        <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200/80 flex items-center justify-between gap-2 shadow-2xs">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-slate-900 text-xs truncate">${App.escapeHtml(item.name)}</span>
+              <span class="text-[10px] text-amber-800 font-mono font-bold bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-300">${App.escapeHtml(item.code)}</span>
+            </div>
+            <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-500 flex-wrap">
+              <span>Qty Minta: <b class="font-mono font-black text-amber-900 text-xs">${App.formatNumber(item.qty)} ${App.escapeHtml(item.unit)}</b></span>
+              <span>&bull;</span>
+              <span>Stok Gudang: <b class="font-mono text-slate-700">${App.formatNumber(item.stock)} ${App.escapeHtml(item.unit)}</b></span>
+            </div>
+            ${item.notes ? `<p class="text-[10px] text-slate-600 italic mt-0.5">&ldquo;${App.escapeHtml(item.notes)}&rdquo;</p>` : ''}
+          </div>
+          <button type="button" onclick="removeConsumableDraftItem(${idx})" class="w-8 h-8 rounded-lg bg-rose-100 hover:bg-rose-600 text-rose-700 hover:text-white flex items-center justify-center transition-colors shrink-0" title="Hapus item">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+          </button>
+        </div>
+      `).join('')}
+
+      <div class="p-2.5 bg-amber-100/80 rounded-xl border border-amber-300 flex items-center justify-between text-xs font-bold text-amber-950">
+        <span>Total Barang yang Diajukan:</span>
+        <span class="font-mono font-black text-sm">${App.formatNumber(totalQty)} Pcs (${opConsumableDraft.length} SKU)</span>
+      </div>
+    </div>
+  `;
+}
+
+function removeConsumableDraftItem(idx) {
+  opConsumableDraft.splice(idx, 1);
+  renderConsumableDraftList();
+}
+
+async function handleConsumableRequestSubmit() {
+  const destSelect = document.getElementById('opReqDestinationSelect');
+  const destination = destSelect ? destSelect.value.trim() : '';
+
+  if (!destination) {
+    App.toast('Silakan pilih Tujuan Brand / Line Produksi (HANASUI, NCO, FYNE, EOMMA)!', 'warning');
+    destSelect?.focus();
+    return;
+  }
+
+  if (opConsumableDraft.length === 0) {
+    App.toast('Draft permintaan masih kosong! Tambahkan minimal 1 material consumable.', 'warning');
+    return;
+  }
+
+  const priorityEl = document.querySelector('input[name="opReqPriority"]:checked');
+  const priority = priorityEl ? priorityEl.value : 'NORMAL';
+  const notes = document.getElementById('opReqGlobalNotes')?.value.trim() || '';
+
+  const photoPayload = opConsumablePhotos.map(p => p.data);
+
+  const btn = document.getElementById('btnSubmitConsumableRequest');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Mengirim Permintaan ke Admin...</span>';
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=create', {
+    method: 'POST',
+    body: JSON.stringify({
+      destination,
+      priority,
+      notes,
+      items: opConsumableDraft,
+      photos: photoPayload
+    })
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span><span>Kirim Permintaan ke Admin (Minta ACC)</span>';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Terkirim');
+    opConsumableDraft = [];
+    opConsumablePhotos = [];
+    renderConsumableDraftList();
+    renderOpReqPhotoPreviews();
+    if (destSelect) destSelect.value = '';
+    const globalNotesInp = document.getElementById('opReqGlobalNotes');
+    if (globalNotesInp) globalNotesInp.value = '';
+
+    if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+      loadFulfillmentStats();
+    }
+
+    // Switch to history tab to view real-time status
+    switchOpReqSubTab('history');
+  } else {
+    App.toast(res.message || 'Gagal mengirim pengajuan', 'error');
+  }
+}
+
+async function loadOperatorConsumableRequests() {
+  const container = document.getElementById('opReqHistoryContainer');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="p-8 text-center text-slate-400 text-xs">
+      <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
+      <p>Memuat riwayat pengajuan consumable...</p>
+    </div>
+  `;
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=list');
+  if (!res.success || !res.data || res.data.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200 shadow-xs">
+        <span class="material-symbols-outlined text-[36px] text-slate-300 mb-1">inbox</span>
+        <p class="font-bold text-slate-600">Belum ada riwayat pengajuan.</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Buat pengajuan baru melalui tab "Buat Request Baru".</p>
+      </div>
+    `;
+    return;
+  }
+
+  const pendingList = res.data.filter(r => r.status === 'PENDING');
+  const myPendingBadge = document.getElementById('badgeOpReqMyPending');
+  if (myPendingBadge) {
+    if (pendingList.length > 0) {
+      myPendingBadge.innerText = pendingList.length;
+      myPendingBadge.classList.remove('hidden');
+    } else {
+      myPendingBadge.classList.add('hidden');
+    }
+  }
+
+  const homeBadge = document.getElementById('homeBadgeConsumableReq');
+  if (homeBadge) {
+    if (pendingList.length > 0) {
+      homeBadge.innerText = pendingList.length;
+      homeBadge.classList.remove('hidden');
+    } else {
+      homeBadge.classList.add('hidden');
+    }
+  }
+
+  container.innerHTML = res.data.map(req => {
+    let statusBadge = '';
+    if (req.status === 'PENDING') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC Admin</span>';
+    } else if (req.status === 'APPROVED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Disetujui (ACC)</span>';
+    } else if (req.status === 'REJECTED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-rose-600">cancel</span>Ditolak Admin</span>';
+    } else {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${req.status}</span>`;
+    }
+
+    const isUrgent = req.priority === 'URGENT';
+
+    return `
+      <div class="p-3.5 bg-white rounded-2xl border ${isUrgent ? 'border-rose-300' : 'border-slate-200'} shadow-xs space-y-2.5 transition-all">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono font-black text-amber-900 text-xs">${escapeHtml(req.request_no)}</span>
+              ${isUrgent ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-extrabold text-[9px] border border-rose-300">URGENT</span>' : ''}
+            </div>
+            <p class="text-[10px] text-slate-400 mt-0.5">${App.formatDate(req.created_at)}</p>
+          </div>
+          <div class="text-right">${statusBadge}</div>
+        </div>
+
+        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-500 font-medium">Tujuan:</span>
+            <span class="font-bold text-slate-900">${escapeHtml(req.destination)}</span>
+          </div>
+          ${req.notes ? `
+            <div class="pt-1 border-t border-slate-200/60 text-[10px] text-slate-600">
+              <span class="font-semibold text-slate-500">Catatan:</span> &ldquo;${escapeHtml(req.notes)}&rdquo;
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- Items Table in Card -->
+        <div class="space-y-1.5 pt-1">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Daftar Material (${req.items ? req.items.length : 0} Item)</span>
+          <div class="divide-y divide-slate-100 bg-slate-50/70 rounded-xl border border-slate-200/60 p-2 text-xs">
+            ${(req.items || []).map(it => `
+              <div class="py-1.5 flex items-center justify-between gap-2 first:pt-0 last:pb-0">
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold text-slate-800 text-[11px] truncate">${escapeHtml(it.material_name)}</p>
+                  <p class="font-mono text-[9px] text-slate-400">${escapeHtml(it.material_code)}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="font-mono font-black text-amber-900 text-xs">${App.formatNumber(it.qty)}</span>
+                  <span class="text-[10px] text-slate-500">${escapeHtml(it.material_unit || 'Pcs')}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Attached Photos Preview in History -->
+        ${(req.photos_list && req.photos_list.length > 0) ? `
+          <div class="pt-1.5 border-t border-slate-100 space-y-1">
+            <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-amber-600">photo_library</span>
+              <span>Foto Terlampir (${req.photos_list.length}):</span>
+            </span>
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+              ${req.photos_list.map((ph, pIdx) => `
+                <a href="../${ph}" target="_blank" class="block shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-amber-500 transition-colors">
+                  <img src="../${ph}" alt="Foto ${pIdx + 1}" class="w-full h-full object-cover">
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${req.admin_notes ? `
+          <div class="p-2.5 rounded-xl border ${req.status === 'REJECTED' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'} text-xs">
+            <p class="font-extrabold text-[10px] flex items-center gap-1 uppercase tracking-wider mb-0.5">
+              <span class="material-symbols-outlined text-[13px]">${req.status === 'REJECTED' ? 'info' : 'verified'}</span>
+              <span>Respon Admin (${escapeHtml(req.approver_name || 'Admin')}):</span>
+            </p>
+            <p class="text-[11px] font-semibold">${escapeHtml(req.admin_notes)}</p>
+          </div>
+        ` : ''}
+
+        ${req.status === 'PENDING' ? `
+          <div class="pt-1 text-right">
+            <button type="button" onclick="cancelOperatorConsumableRequest(${req.id})" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-[11px] font-bold transition-colors inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">close</span>
+              <span>Batalkan Pengajuan</span>
+            </button>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+async function cancelOperatorConsumableRequest(id) {
+  if (!confirm('Apakah Anda yakin ingin membatalkan pengajuan consumable ini?')) return;
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=cancel', {
+    method: 'POST',
+    body: JSON.stringify({ request_id: id })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success');
+    loadOperatorConsumableRequests();
+    if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+      loadFulfillmentStats();
+    }
+  } else {
+    App.toast(res.message || 'Gagal membatalkan pengajuan', 'error');
+  }
+}
+
+async function loadFulfillmentStats() {
+  const res = await App.fetchJson('../api/consumable_requests.php?action=list');
+  if (res.success && res.data) {
+    const total = res.data.length;
+    const pending = res.data.filter(r => r.status === 'PENDING').length;
+    const approved = res.data.filter(r => r.status === 'APPROVED').length;
+
+    const totalEl = document.getElementById('homeStatFulfillmentTotal');
+    const pendingEl = document.getElementById('homeStatFulfillmentPending');
+    const approvedEl = document.getElementById('homeStatFulfillmentApproved');
+    const badgeEl = document.getElementById('homeBadgeConsumableReq');
+
+    if (totalEl) totalEl.innerText = App.formatNumber(total);
+    if (pendingEl) pendingEl.innerText = App.formatNumber(pending);
+    if (approvedEl) approvedEl.innerText = App.formatNumber(approved);
+
+    if (badgeEl) {
+      if (pending > 0) {
+        badgeEl.innerText = pending;
+        badgeEl.classList.remove('hidden');
+      } else {
+        badgeEl.classList.add('hidden');
+      }
+    }
+  }
+}
+
+
 
 

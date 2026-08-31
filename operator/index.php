@@ -77,11 +77,104 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ========================================================================= -->
       <!-- 0. SCREEN: HOME LAUNCHER / APP MENU GRID (DEFAULT VIEW) -->
       <!-- ========================================================================= -->
+      <?php $isFulfillmentOnly = Auth::isOperatorFulfillment(); ?>
       <div id="op-tab-home" class="space-y-4 animate-fade-in">
         
-        <!-- Welcome Hero Banner Card -->
+        <?php if ($isFulfillmentOnly): ?>
+        <!-- Welcome Hero Banner Card (Fulfillment Role) -->
+        <div class="bg-gradient-to-br from-amber-800 via-amber-700 to-orange-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-amber-600/30 relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-amber-400/20 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute right-3 top-3 opacity-15 pointer-events-none">
+            <span class="material-symbols-outlined text-[76px]">shopping_cart_checkout</span>
+          </div>
+
+          <div class="relative z-10 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase tracking-wider font-black text-amber-200 flex items-center gap-1">
+                <span>Fulfillment & Permintaan Consumable</span>
+              </span>
+              <span class="px-2.5 py-0.5 bg-amber-950/70 rounded-full text-[10px] font-extrabold text-amber-200 border border-amber-600/40 flex items-center gap-1 shadow-2xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span>Online</span>
+              </span>
+            </div>
+            <h3 class="text-lg font-black tracking-tight leading-snug">
+              Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
+            </h3>
+
+            <!-- Quick Shift Indicator & Switcher Strip -->
+            <div class="flex items-center justify-between pt-2 border-t border-amber-600/40">
+              <div class="flex items-center gap-1.5 text-xs text-amber-100 font-medium truncate">
+                <span class="material-symbols-outlined text-[16px] text-amber-300 shrink-0">schedule</span>
+                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></b></span>
+              </div>
+              <button type="button" onclick="openShiftSwitcherModal()" class="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-[10px] font-black transition-all flex items-center gap-1 border border-white/25 shadow-xs shrink-0 cursor-pointer">
+                <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
+                <span>Ganti Shift</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick KPI Summary Strip (Fulfillment Mode) -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div onclick="switchOpTab('request_consumable'); switchOpReqSubTab('history');" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-amber-700">Total Pengajuan</span>
+            <span id="homeStatFulfillmentTotal" class="font-mono font-black text-slate-800 text-lg leading-tight block">0</span>
+            <span class="text-[9px] text-slate-500 font-semibold block">Dokumen</span>
+          </div>
+
+          <div onclick="switchOpTab('request_consumable'); switchOpReqSubTab('history');" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-amber-700">Menunggu ACC</span>
+            <span id="homeStatFulfillmentPending" class="font-mono font-black text-amber-600 text-lg leading-tight block">0</span>
+            <span class="text-[9px] text-amber-700 font-bold block">Pending</span>
+          </div>
+
+          <div onclick="switchOpTab('request_consumable'); switchOpReqSubTab('history');" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-emerald-700">Disetujui</span>
+            <span id="homeStatFulfillmentApproved" class="font-mono font-black text-emerald-700 text-lg leading-tight block">0</span>
+            <span class="text-[9px] text-emerald-700 font-bold block">ACC Selesai</span>
+          </div>
+        </div>
+
+        <!-- Section Title: Menu Aplikasi (Fulfillment Only: 1 Menu) -->
+        <div class="flex items-center justify-between px-1 pt-1">
+          <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-amber-700 text-[18px]">shopping_cart_checkout</span>
+            <span>Menu Operator Fulfillment</span>
+          </h4>
+          <span class="text-[11px] text-amber-700 font-extrabold bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">1 Modul Akses</span>
+        </div>
+
+        <!-- APP LAUNCHER: SINGLE CARD FOR REQ CONSUMABLE -->
+        <div class="space-y-3">
+          <div onclick="switchOpTab('request_consumable')" 
+            class="p-5 bg-gradient-to-br from-amber-500 via-amber-600 to-orange-600 rounded-3xl text-white shadow-xl shadow-amber-500/25 active:scale-98 transition-all cursor-pointer relative overflow-hidden group border border-amber-400/40">
+            <div class="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform"></div>
+            <div class="flex items-center justify-between relative z-10">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white shadow-inner shrink-0 group-hover:scale-110 transition-transform">
+                  <span class="material-symbols-outlined text-[34px]">shopping_cart_checkout</span>
+                </div>
+                <div>
+                  <h5 class="font-black text-base tracking-tight leading-tight">Request Consumable</h5>
+                  <p class="text-xs text-amber-100 mt-0.5">Form Pengajuan Material & Monitoring ACC</p>
+                  <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-950/40 text-[10px] font-bold text-amber-200 border border-amber-300/30">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>
+                    <span>Buka Form Pengajuan</span>
+                  </div>
+                </div>
+              </div>
+              <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shrink-0">
+                <span class="material-symbols-outlined text-[22px]">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <?php else: ?>
+        <!-- Welcome Hero Banner Card (Standard Operator) -->
         <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-emerald-600/30 relative overflow-hidden">
-          <!-- Background Ambient Pattern -->
           <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
           <div class="absolute right-3 top-3 opacity-15 pointer-events-none">
             <span class="material-symbols-outlined text-[76px]">warehouse</span>
@@ -209,16 +302,19 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- APP 5: CEK STOK & RAK -->
-          <div onclick="switchOpTab('stock')" 
+          <!-- APP 5: FORM REQUEST CONSUMABLE (BARU) -->
+          <div onclick="switchOpTab('request_consumable')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 text-white flex items-center justify-center shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">shelves</span>
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">shopping_cart_checkout</span>
               </div>
+              <span id="homeBadgeConsumableReq" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-amber-600 text-white font-black text-[9px] shadow-xs leading-none">
+                0
+              </span>
             </div>
             <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-sky-700 transition-colors">Stock</h5>
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Req Consumable</h5>
             </div>
           </div>
 
@@ -268,6 +364,7 @@ require_once __DIR__ . '/../includes/header.php';
             Buka &rarr;
           </button>
         </div>
+        <?php endif; ?>
       </div>
 
       <!-- ========================================================================= -->
@@ -485,33 +582,24 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3.5">
-          <!-- Inbound Header Details: Lokasi Rak / Simpan & Catatan -->
-          <div class="grid grid-cols-1 gap-2.5 text-xs">
-            <div>
-              <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px] text-emerald-600">grid_view</span>
-                <span>Lokasi Rak Simpan (Location)</span>
-              </label>
-              <input type="text" id="opInboundLocation" placeholder="Lokasi Rak otomatis terisi dari material, atau ketik lokasi baru..." 
-                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-emerald-600 transition-colors">
-            </div>
-            <div>
-              <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px] text-slate-400">notes</span>
-                <span>Catatan / Keterangan Penerimaan (Opsional)</span>
-              </label>
-              <input type="text" id="opInboundNotes" placeholder="Contoh: Penerimaan dari Vendor / Surat Jalan #..." 
-                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-emerald-600">
-            </div>
+          <!-- 1. Nomor Referensi / PO / Surat Jalan Header -->
+          <div>
+            <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">tag</span>
+              <span>No. Referensi / PO / Surat Jalan (Batch) <span class="text-rose-500 font-bold">*</span></span>
+            </label>
+            <input type="text" id="opInboundPoNumber" required placeholder="Contoh: PO-2026/001 atau No. Surat Jalan..." 
+              class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-emerald-600 transition-colors">
           </div>
 
-          <!-- Add Product to Draft Section -->
-          <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-2.5">
+          <!-- 2. Box Tambah Packaging ke Keranjang Draft (Sequential Flow) -->
+          <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
             <p class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px]">add_circle</span>
               <span>Tambah Packaging ke Keranjang Draft:</span>
             </p>
 
+            <!-- A. Pilih Material Packaging -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-[11px]">Pilih Material Packaging <span class="text-rose-500">*</span></label>
               <select id="opInboundMaterialSelect" onchange="updateOpInboundStockBadge()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600">
@@ -520,14 +608,39 @@ require_once __DIR__ . '/../includes/header.php';
               <div id="opInboundStockBadge" class="text-[10px] text-slate-500 mt-1"></div>
             </div>
 
+            <!-- B. Input Lokasi Rak (Autofill dari Material atau Edit Manual) -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-emerald-600">grid_view</span>
+                  <span>Lokasi Rak Simpan</span>
+                </span>
+                <span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.2 rounded">Autofill / Edit</span>
+              </label>
+              <input type="text" id="opInboundLocation" placeholder="Lokasi Rak otomatis terisi dari material, atau ketik lokasi baru..." 
+                class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600 transition-colors">
+            </div>
+
+            <!-- C. Jumlah Masuk (Qty) -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-[11px]">Jumlah Masuk (Qty) <span class="text-rose-500">*</span></label>
               <input type="number" id="opInboundQty" min="1" placeholder="0" 
                 class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-black text-base text-emerald-800 outline-none focus:border-emerald-600 text-center">
             </div>
 
+            <!-- D. Catatan Item / Penerimaan -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-slate-400">notes</span>
+                <span>Catatan Item (Opsional)</span>
+              </label>
+              <input type="text" id="opInboundNotes" placeholder="Keterangan tambahan untuk item ini..." 
+                class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600">
+            </div>
+
+            <!-- E. Tombol Masukkan ke Draft -->
             <button type="button" onclick="addInboundDraftItem()" 
-              class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5">
+              class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[17px]">add_shopping_cart</span>
               <span>+ Masukkan ke Draft Penerimaan</span>
             </button>
@@ -552,6 +665,31 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
+          <!-- Inbound Multi-Photo Upload Section -->
+          <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-emerald-600">photo_camera</span>
+                <span>Foto Bukti / Surat Jalan (Bisa > 1 Foto)</span>
+              </label>
+              <span id="opInboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="file" id="opInboundPhoto" accept="image/*" class="hidden" multiple onchange="previewOpInboundPhoto(event)">
+              <button type="button" onclick="document.getElementById('opInboundPhoto').click()" 
+                class="px-3 py-2 bg-white hover:bg-emerald-50 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1 text-xs shadow-2xs">
+                <span class="material-symbols-outlined text-[17px] text-emerald-600">add_photo_alternate</span>
+                <span>Pilih / Ambil Foto</span>
+              </button>
+              <button type="button" id="btnOpClearInboundPhotos" onclick="clearOpInboundPhotos()" 
+                class="hidden px-2.5 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 transition-colors text-xs flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">delete</span>
+                <span>Hapus</span>
+              </button>
+            </div>
+            <div id="opInboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto"></div>
+          </div>
+
           <!-- Submit Button -->
           <div class="pt-2 border-t border-slate-100">
             <button type="button" id="btnSubmitInboundDraft" onclick="handleInboundDraftSubmit()" 
@@ -564,32 +702,180 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- ========================================================================= -->
-      <!-- 4. SCREEN: CEK SISA STOK & LOKASI RAK (SEARCH MODULE) -->
+      <!-- SCREEN: FORM REQUEST CONSUMABLE (OPERATOR / FULFILLMENT) -->
       <!-- ========================================================================= -->
-      <div id="op-tab-stock" class="hidden space-y-3.5 animate-fade-in">
+      <div id="op-tab-request_consumable" class="hidden space-y-3.5 animate-fade-in">
         
-        <!-- Screen Back Bar -->
-        <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-sky-800 bg-slate-100 hover:bg-sky-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Menu Utama</span>
-          </button>
+        <!-- Screen Header & Sub-Tab Switcher -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+          <div class="flex items-center justify-between">
+            <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-amber-800 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span>Menu Utama</span>
+            </button>
 
-          <div class="text-right">
-            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Cek Stok & Rak</h3>
-            <span class="text-[10px] text-sky-700 font-semibold">Pencarian Gudang</span>
+            <div class="text-right">
+              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Request Consumable</h3>
+              <span class="text-[10px] text-amber-700 font-bold">Form Permintaan Barang</span>
+            </div>
+          </div>
+
+          <!-- Sub-Tab Switch Buttons -->
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <button type="button" id="btnOpReqSubTabForm" onclick="switchOpReqSubTab('form')" class="py-2 rounded-lg font-bold text-xs bg-white text-amber-900 shadow-xs transition-all flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-amber-600">edit_note</span>
+              <span>Buat Request Baru</span>
+            </button>
+            <button type="button" id="btnOpReqSubTabHistory" onclick="switchOpReqSubTab('history')" class="py-2 rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-slate-500">history</span>
+              <span>Riwayat Pengajuan</span>
+              <span id="badgeOpReqMyPending" class="hidden px-1.5 py-0.2 rounded-full bg-amber-500 text-white font-mono text-[10px] leading-none">0</span>
+            </button>
           </div>
         </div>
 
-        <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
-            <span class="material-symbols-outlined text-[18px]">search</span>
-          </span>
-          <input type="text" id="opStockSearch" oninput="loadOperatorStock()" placeholder="Cari SKU, nama packaging, rak simpan..." 
-            class="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-300 rounded-2xl text-xs font-semibold text-slate-900 outline-none focus:border-sky-600 focus:ring-2 focus:ring-sky-500/20 shadow-xs transition-all">
+        <!-- 1. SUB-VIEW: FORM REQUEST BARU -->
+        <div id="opReqSubViewForm" class="space-y-3">
+          
+          <!-- Unified Card: Form Permintaan -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
+            
+            <!-- 1. Tujuan Brand / Line -->
+            <div>
+              <label class="block font-bold text-slate-800 mb-1 text-xs flex items-center justify-between">
+                <span>Tujuan Brand / Line <span class="text-rose-500">*</span></span>
+                <span class="text-[10px] text-amber-700 font-bold">4 Brand Utama</span>
+              </label>
+              <select id="opReqDestinationSelect" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors" data-no-search>
+                <option value="">-- Pilih Brand (HANASUI / NCO / FYNE / EOMMA) --</option>
+                <option value="HANASUI">HANASUI</option>
+                <option value="NCO">NCO</option>
+                <option value="FYNE">FYNE</option>
+                <option value="EOMMA">EOMMA</option>
+              </select>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-slate-100 pt-3 space-y-2.5">
+              <!-- 2. Pilih Material -->
+              <div>
+                <label class="block font-bold text-slate-800 mb-1 text-xs">
+                  Pilih Material Packaging <span class="text-rose-500">*</span>
+                </label>
+                <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-amber-600">
+                  <option value="">-- Pilih Material Packaging --</option>
+                </select>
+                <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-amber-50/80 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
+                  <span class="text-slate-600 font-medium">Stok di Gudang:</span>
+                  <span id="opReqStockVal" class="font-mono font-black text-amber-950">0 Pcs</span>
+                </div>
+              </div>
+
+              <!-- 3. Qty & Tombol Tambah -->
+              <div class="flex items-end gap-2">
+                <div class="w-1/3">
+                  <label class="block font-bold text-slate-800 mb-1 text-xs">
+                    Qty <span class="text-rose-500">*</span>
+                  </label>
+                  <input type="number" id="opReqQty" min="1" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-amber-600">
+                </div>
+                <div class="w-2/3">
+                  <button type="button" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                    <span>+ Masukkan Draft</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Daftar Draft Barang -->
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="font-extrabold text-xs text-slate-900 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px] text-amber-600">shopping_cart</span>
+                  <span>Daftar Barang Permintaan</span>
+                </span>
+                <span id="opReqDraftCountBadge" class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono font-bold text-[10px]">0 Item</span>
+              </div>
+
+              <div id="opReqDraftListContainer" class="space-y-2">
+                <div class="p-4 text-center text-slate-400 text-xs bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <p>Belum ada material yang ditambahkan.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 5. Urgensi, Catatan & Foto (Ringkas) -->
+            <div class="border-t border-slate-100 pt-3 space-y-3">
+              
+              <!-- Prioritas Simple Pills -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-xs">Urgensi Permintaan</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer has-[:checked]:bg-amber-100 has-[:checked]:border-amber-500 has-[:checked]:text-amber-950 font-bold text-xs text-slate-600 transition-all">
+                    <input type="radio" name="opReqPriority" value="NORMAL" checked class="hidden">
+                    <span class="material-symbols-outlined text-[16px]">schedule</span>
+                    <span>Normal (Reguler)</span>
+                  </label>
+                  <label class="p-2 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer has-[:checked]:bg-rose-100 has-[:checked]:border-rose-500 has-[:checked]:text-rose-950 font-bold text-xs text-slate-600 transition-all">
+                    <input type="radio" name="opReqPriority" value="URGENT" class="hidden">
+                    <span class="material-symbols-outlined text-[16px] text-rose-600">priority_high</span>
+                    <span>Mendesak (Urgent)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Catatan -->
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-xs">Catatan (Opsional)</label>
+                <input type="text" id="opReqGlobalNotes" placeholder="Ketik catatan jika ada..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:bg-white focus:border-amber-600">
+              </div>
+
+              <!-- Foto Upload -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="font-bold text-slate-700 text-xs">Foto Dokumen Request</label>
+                  <span id="opReqPhotoCountBadge" class="text-[10px] text-slate-400 font-normal">0 Foto dipilih</span>
+                </div>
+
+                <input type="file" id="opReqPhotoInput" accept="image/*" multiple class="hidden" onchange="handleOpReqPhotosSelected(this)">
+                <div onclick="document.getElementById('opReqPhotoInput').click()" 
+                  class="p-2.5 bg-slate-50 hover:bg-amber-50 border border-dashed border-slate-300 hover:border-amber-400 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-amber-900 active:scale-98">
+                  <span class="material-symbols-outlined text-[18px] text-amber-600">add_a_photo</span>
+                  <span class="text-xs font-bold">+ Ambil / Pilih Foto Dokumen</span>
+                </div>
+
+                <div id="opReqPhotoPreviewGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2 hidden"></div>
+              </div>
+
+            </div>
+
+            <!-- 6. Submit Button -->
+            <div class="pt-2 border-t border-slate-100">
+              <button type="button" id="btnSubmitConsumableRequest" onclick="handleConsumableRequestSubmit()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">send</span>
+                <span>Kirim Permintaan ke Admin (Minta ACC)</span>
+              </button>
+            </div>
+
+          </div>
         </div>
 
-        <div id="opStockListContainer" class="space-y-2.5"></div>
+        <!-- 2. SUB-VIEW: RIWAYAT REQUEST SAYA -->
+        <div id="opReqSubViewHistory" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700">Daftar Pengajuan Saya</span>
+            <button type="button" onclick="loadOperatorConsumableRequests()" class="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+
+          <div id="opReqHistoryContainer" class="space-y-2.5">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+
       </div>
 
       <!-- ========================================================================= -->
@@ -721,26 +1007,42 @@ require_once __DIR__ . '/../includes/header.php';
         <span class="text-[9px] tracking-tight">Beranda</span>
       </button>
 
-      <!-- Picking Button -->
-      <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
-        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[20px] leading-none">assignment</span>
-        <span class="text-[9px] tracking-tight">Picking</span>
-      </button>
+      <?php if ($isFulfillmentOnly): ?>
+        <!-- Form Request Button -->
+        <button onclick="switchOpTab('request_consumable'); switchOpReqSubTab('form');" id="bottom-nav-req-form" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">add_shopping_cart</span>
+          <span class="text-[9px] tracking-tight">Buat Req</span>
+        </button>
 
-      <!-- Counting Button -->
-      <button onclick="switchOpTab('dynamic_count')" id="bottom-nav-dynamic_count" 
-        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[20px] leading-none">checklist</span>
-        <span class="text-[9px] tracking-tight">Counting</span>
-      </button>
+        <!-- Riwayat ACC Button -->
+        <button onclick="switchOpTab('request_consumable'); switchOpReqSubTab('history');" id="bottom-nav-req-hist" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">fact_check</span>
+          <span class="text-[9px] tracking-tight">Riwayat ACC</span>
+        </button>
+      <?php else: ?>
+        <!-- Picking Button -->
+        <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">assignment</span>
+          <span class="text-[9px] tracking-tight">Picking</span>
+        </button>
 
-      <!-- Opname Button -->
-      <button onclick="switchOpTab('opname')" id="bottom-nav-opname" 
-        class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[20px] leading-none">inventory_2</span>
-        <span class="text-[9px] tracking-tight">Opname</span>
-      </button>
+        <!-- Counting Button -->
+        <button onclick="switchOpTab('dynamic_count')" id="bottom-nav-dynamic_count" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">checklist</span>
+          <span class="text-[9px] tracking-tight">Counting</span>
+        </button>
+
+        <!-- Opname Button -->
+        <button onclick="switchOpTab('opname')" id="bottom-nav-opname" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">inventory_2</span>
+          <span class="text-[9px] tracking-tight">Opname</span>
+        </button>
+      <?php endif; ?>
 
       <!-- Logout Button -->
       <a href="../logout" 
@@ -804,6 +1106,11 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
             <span class="material-symbols-outlined text-emerald-400 text-[20px]">home</span>
             <span>Home</span>
+          </button>
+
+          <button onclick="closeOperatorDrawer(); switchOpTab('request_consumable');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-amber-400 text-[20px]">shopping_cart_checkout</span>
+            <span>Request Consumable</span>
           </button>
 
           <!-- SETTING MENU ITEM (OPENS PROFILE VIEW) -->
@@ -1101,6 +1408,31 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="block font-bold text-slate-700 mb-1">Catatan Penerima di Line / PIC</label>
         <input type="text" id="submitNotes" placeholder="Contoh: Diterima Pak Joko di Line Packing 1" 
           class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white">
+      </div>
+
+      <!-- Task Picking Photo Proof Section -->
+      <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-200 space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
+            <span>Foto Bukti Penyerahan ke Line (Bisa > 1 Foto)</span>
+          </label>
+          <span id="taskPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-amber-100 px-2 py-0.5 rounded-full">0 Foto</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="file" id="taskCompletePhoto" accept="image/*" class="hidden" multiple onchange="previewTaskCompletePhoto(event)">
+          <button type="button" onclick="document.getElementById('taskCompletePhoto').click()" 
+            class="px-3 py-2 bg-white hover:bg-amber-100 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1 text-xs shadow-2xs">
+            <span class="material-symbols-outlined text-[17px] text-amber-600">photo_camera</span>
+            <span>Pilih / Ambil Foto</span>
+          </button>
+          <button type="button" id="btnTaskClearPhotos" onclick="clearTaskCompletePhotos()" 
+            class="hidden px-2.5 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 transition-colors text-xs flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">delete</span>
+            <span>Hapus</span>
+          </button>
+        </div>
+        <div id="taskPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto"></div>
       </div>
 
       <div class="pt-1">
@@ -1493,6 +1825,8 @@ require_once __DIR__ . '/../includes/header.php';
 <!-- Scripts with Cache Buster -->
 <script>
   let CURRENT_USER_SHIFT = <?= json_encode($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)') ?>;
+  let CURRENT_USER_ROLE = <?= json_encode($user['role'] ?? 'operator') ?>;
+  let IS_FULFILLMENT_ONLY = <?= $isFulfillmentOnly ? 'true' : 'false' ?>;
 </script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/operator.js?v=<?= time() ?>"></script>

@@ -1,2 +1,3 @@
-Import Adjusment Stock  10 SKU yang Masuk Ke system Untuk di Adjust hanya 3 SKU Harusnya Semua SKU yang di import Masuk Ke system dari Tamplate Berrti Stock Barang Itu Ingin Di Adjusmnet Stocknya
-Bukan Upload dari Tamplate 10 Item Yang Terbaca Hanya 3 Item Saja Di Halaman Table Adjust Stock Dan 7 Item yang lain Nya masih Tidak Muncul
+Hide Menu Stock di panel Opeerator
+Tambhkan 1 Menu Untuk form request Consumable di panel Operator operator Hanya bisa membuat form request untuk pengambilan Barang Nanti nya admin yang akan ACC untuk mengambil barangnya dari request consumable operator
+1 Menu dan 1 role Baru untuk role operator_fullfilment  (Form Request Consumbale)

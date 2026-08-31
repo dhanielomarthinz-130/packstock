@@ -117,6 +117,7 @@ class Database {
                 `qty` INT NOT NULL,
                 `received_by` VARCHAR(100) NOT NULL,
                 `notes` TEXT,
+                `photo_path` TEXT NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 INDEX (`material_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -133,6 +134,7 @@ class Database {
                 `issued_by` VARCHAR(100) NOT NULL,
                 `reason` VARCHAR(255) NOT NULL,
                 `notes` TEXT,
+                `photo_path` TEXT NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 INDEX (`material_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -153,6 +155,7 @@ class Database {
                 `status` ENUM('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') DEFAULT 'PENDING',
                 `notes` TEXT,
                 `completion_notes` TEXT,
+                `photo_path` TEXT NULL,
                 `completed_at` DATETIME NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 INDEX (`assigned_to`),
@@ -254,6 +257,58 @@ class Database {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
+        // Handover Logs (Pencatatan Riwayat Serah Terima Pekerjaan per Shift)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `handover_logs` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `handover_id` INT NOT NULL,
+                `action` ENUM('CREATED', 'SHARED', 'CONFIRMED', 'CANCELLED') NOT NULL,
+                `actor_id` INT NOT NULL,
+                `notes` TEXT,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`handover_id`),
+                INDEX (`actor_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // Consumable Requests (Pengajuan Barang Consumable dari Operator)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `consumable_requests` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `request_no` VARCHAR(60) NOT NULL UNIQUE,
+                `user_id` INT NOT NULL,
+                `destination` VARCHAR(150) NOT NULL,
+                `priority` ENUM('NORMAL', 'URGENT', 'CRITICAL') DEFAULT 'NORMAL',
+                `notes` TEXT,
+                `photos` TEXT NULL,
+                `status` ENUM('PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'COMPLETED') DEFAULT 'PENDING',
+                `approved_by` INT NULL,
+                `admin_notes` TEXT,
+                `approved_at` DATETIME NULL,
+                `task_id` INT NULL,
+                `outbound_id` INT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`user_id`),
+                INDEX (`status`),
+                INDEX (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // Consumable Request Items (Rincian Item dalam Pengajuan Consumable)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `consumable_request_items` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `request_id` INT NOT NULL,
+                `material_id` INT NOT NULL,
+                `qty` INT NOT NULL,
+                `notes` TEXT,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`request_id`),
+                INDEX (`material_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
         // Handovers (Serah Terima Pekerjaan Shift)
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `handovers` (
@@ -277,18 +332,22 @@ class Database {
         $migrations = [
             "ALTER TABLE `tasks` ADD COLUMN `started_at` DATETIME NULL",
             "ALTER TABLE `tasks` ADD COLUMN `duration_seconds` INT DEFAULT 0",
+            "ALTER TABLE `tasks` ADD COLUMN `photo_path` TEXT NULL",
             "ALTER TABLE `inbound_transactions` ADD COLUMN `started_at` DATETIME NULL",
             "ALTER TABLE `inbound_transactions` ADD COLUMN `completed_at` DATETIME DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE `inbound_transactions` ADD COLUMN `duration_seconds` INT DEFAULT 0",
+            "ALTER TABLE `inbound_transactions` ADD COLUMN `photo_path` TEXT NULL",
             "ALTER TABLE `outbound_transactions` ADD COLUMN `started_at` DATETIME NULL",
             "ALTER TABLE `outbound_transactions` ADD COLUMN `completed_at` DATETIME DEFAULT CURRENT_TIMESTAMP",
             "ALTER TABLE `outbound_transactions` ADD COLUMN `duration_seconds` INT DEFAULT 0",
+            "ALTER TABLE `outbound_transactions` ADD COLUMN `photo_path` TEXT NULL",
             "ALTER TABLE `stock_opnames` ADD COLUMN `counting_type` ENUM('STOCK_OPNAME', 'DYNAMIC_COUNT') NOT NULL DEFAULT 'STOCK_OPNAME'",
             "ALTER TABLE `stock_opnames` ADD COLUMN `max_stage` INT NOT NULL DEFAULT 1",
             "ALTER TABLE `stock_opname_item_stages` ADD COLUMN `scanned_rack` VARCHAR(100) NULL",
             "ALTER TABLE `handovers` ADD COLUMN `is_shared` TINYINT(1) DEFAULT 0",
             "ALTER TABLE `handovers` ADD COLUMN `from_shift` VARCHAR(100) NULL",
-            "ALTER TABLE `handovers` ADD COLUMN `receiver_shift` VARCHAR(100) NULL"
+            "ALTER TABLE `handovers` ADD COLUMN `receiver_shift` VARCHAR(100) NULL",
+            "ALTER TABLE `consumable_requests` ADD COLUMN `photos` TEXT NULL"
         ];
 
         foreach ($migrations as $sql) {
@@ -335,6 +394,7 @@ class Database {
                 qty INTEGER NOT NULL,
                 received_by TEXT NOT NULL,
                 notes TEXT,
+                photo_path TEXT,
                 started_at DATETIME NULL,
                 completed_at DATETIME NULL,
                 duration_seconds INTEGER DEFAULT 0,
@@ -349,6 +409,7 @@ class Database {
                 issued_by TEXT NOT NULL,
                 reason TEXT NOT NULL,
                 notes TEXT,
+                photo_path TEXT,
                 started_at DATETIME NULL,
                 completed_at DATETIME NULL,
                 duration_seconds INTEGER DEFAULT 0,
@@ -367,6 +428,7 @@ class Database {
                 status TEXT DEFAULT 'PENDING',
                 notes TEXT,
                 completion_notes TEXT,
+                photo_path TEXT,
                 started_at DATETIME NULL,
                 completed_at DATETIME NULL,
                 duration_seconds INTEGER DEFAULT 0,
@@ -444,24 +506,53 @@ class Database {
                 is_shared INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS consumable_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_no TEXT NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
+                destination TEXT NOT NULL,
+                priority TEXT DEFAULT 'NORMAL',
+                notes TEXT,
+                photos TEXT NULL,
+                status TEXT DEFAULT 'PENDING',
+                approved_by INTEGER NULL,
+                admin_notes TEXT,
+                approved_at DATETIME NULL,
+                task_id INTEGER NULL,
+                outbound_id INTEGER NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS consumable_request_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_id INTEGER NOT NULL,
+                material_id INTEGER NOT NULL,
+                qty INTEGER NOT NULL,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         ");
 
         // Schema migrations for SQLite
         $sqliteMigrations = [
             "ALTER TABLE tasks ADD COLUMN started_at DATETIME NULL",
             "ALTER TABLE tasks ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE tasks ADD COLUMN photo_path TEXT NULL",
             "ALTER TABLE inbound_transactions ADD COLUMN started_at DATETIME NULL",
             "ALTER TABLE inbound_transactions ADD COLUMN completed_at DATETIME NULL",
             "ALTER TABLE inbound_transactions ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE inbound_transactions ADD COLUMN photo_path TEXT NULL",
             "ALTER TABLE outbound_transactions ADD COLUMN started_at DATETIME NULL",
             "ALTER TABLE outbound_transactions ADD COLUMN completed_at DATETIME NULL",
             "ALTER TABLE outbound_transactions ADD COLUMN duration_seconds INTEGER DEFAULT 0",
+            "ALTER TABLE outbound_transactions ADD COLUMN photo_path TEXT NULL",
             "ALTER TABLE stock_opnames ADD COLUMN counting_type TEXT DEFAULT 'STOCK_OPNAME'",
             "ALTER TABLE stock_opnames ADD COLUMN max_stage INTEGER DEFAULT 1",
             "ALTER TABLE stock_opname_item_stages ADD COLUMN scanned_rack TEXT NULL",
             "ALTER TABLE handovers ADD COLUMN is_shared INTEGER DEFAULT 0",
             "ALTER TABLE handovers ADD COLUMN from_shift TEXT NULL",
-            "ALTER TABLE handovers ADD COLUMN receiver_shift TEXT NULL"
+            "ALTER TABLE handovers ADD COLUMN receiver_shift TEXT NULL",
+            "ALTER TABLE consumable_requests ADD COLUMN photos TEXT NULL"
         ];
 
         foreach ($sqliteMigrations as $sql) {
@@ -510,22 +601,23 @@ class Database {
 
         // Seed default menu permissions
         $defaultMenus = [
-            'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'counting_progress'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'counting_detail'         => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0],
-            'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0],
-            'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1],
-            'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1],
+            'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'counting_progress'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'counting_detail'         => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+            'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
+            'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
+            'consumable_requests'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 1],
         ];
 
         $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);

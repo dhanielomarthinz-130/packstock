@@ -32,6 +32,7 @@ if ($action === 'list') {
                 u_by.username as assigned_by_username,
                 'Pengambilan Line (Operator Task)' as reason,
                 COALESCE(t.completion_notes, t.notes) as notes,
+                t.photo_path,
                 t.status,
                 t.priority,
                 COALESCE(t.started_at, t.created_at) as started_at,
@@ -62,6 +63,7 @@ if ($action === 'list') {
                 o.issued_by as assigned_by_username,
                 o.reason,
                 o.notes,
+                o.photo_path,
                 'COMPLETED' as status,
                 'NORMAL' as priority,
                 COALESCE(o.started_at, o.created_at) as started_at,
@@ -147,6 +149,44 @@ if ($action === 'list') {
     exit;
 }
 
+// Helper to process uploaded photos
+function handleUploadedOutboundPhotos(): ?string {
+    if (!isset($_FILES['photos'])) {
+        return null;
+    }
+    $files = $_FILES['photos'];
+    $fileCount = is_array($files['name']) ? count($files['name']) : 0;
+    if ($fileCount === 0) {
+        return null;
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/outbound/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $photoPaths = [];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $files['tmp_name'][$i];
+            $fileName = $files['name'][$i];
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if (in_array($ext, $allowedExtensions)) {
+                $newFileName = 'outbound_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
+                $destPath = $uploadDir . $newFileName;
+                if (move_uploaded_file($fileTmpPath, $destPath)) {
+                    $photoPaths[] = 'uploads/outbound/' . $newFileName;
+                }
+            }
+        }
+    }
+
+    return !empty($photoPaths) ? json_encode($photoPaths) : null;
+}
+
 // 2. CREATE OUTBOUND (Barang Keluar Manual)
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
@@ -158,6 +198,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $reason      = trim($input['reason'] ?? 'Pemakaian Reguler');
     $notes       = trim($input['notes'] ?? '');
     $startedAt   = trim($input['started_at'] ?? '');
+    $photoPathValue = handleUploadedOutboundPhotos();
     $issuedBy    = Auth::name() ?? 'Admin Gudang';
 
     if ($materialId <= 0 || $qty <= 0 || empty($destination) || empty($reason)) {
@@ -204,10 +245,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert Outbound record
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $startTime, $now, $durationSeconds]);
+        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $photoPathValue, $startTime, $now, $durationSeconds]);
 
         // Update Material Stock
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -242,9 +283,17 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 3. BATCH CREATE OUTBOUND (Multi-item Table Input)
 if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
-    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $rawInput = file_get_contents('php://input');
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    if (empty($input) && !empty($_POST)) {
+        $input = $_POST;
+    }
 
     $items       = $input['items'] ?? [];
+    if (is_string($items)) {
+        $items = json_decode($items, true) ?? [];
+    }
+
     $globalNotes = trim($input['notes'] ?? '');
     $startedAt   = trim($input['started_at'] ?? '');
     $issuedBy    = Auth::name() ?? 'Admin Gudang';
@@ -254,6 +303,8 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Daftar item pengeluaran tidak boleh kosong!']);
         exit;
     }
+
+    $photoPathValue = handleUploadedOutboundPhotos();
 
     try {
         $pdo->beginTransaction();
@@ -270,8 +321,8 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemDuration = max(1, (int)round($totalDuration / max(1, $itemCount)));
 
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtMut = $pdo->prepare("
@@ -309,11 +360,11 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
             $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
-            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $startTime, $now, $itemDuration]);
+            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration]);
             $stmtUpdateMat->execute([$stockAfter, $materialId]);
 
             $mutNotes = "Pengeluaran ke: {$destination} ({$reason})";
-            if (!empty($combinedNotes)) $mutNotes .= " - " . $combinedNotes;
+            if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";
             $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $outboundNo, $mutNotes, Auth::id()]);
 
             $processedItems++;

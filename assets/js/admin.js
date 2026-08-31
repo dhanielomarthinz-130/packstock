@@ -214,7 +214,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -241,7 +241,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
   
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
   
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -287,6 +287,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     history: 'History Movement Stock',
     inbound: 'Penerimaan Barang Masuk (Inbound)',
     outbound: 'Pengeluaran Barang Keluar (Outbound)',
+    consumable_requests: 'Persetujuan & Permintaan Consumable (Fulfillment)',
     tasks: 'Manajemen Penugasan Operator (Task Dispatch)',
     handover: 'Monitoring Serah Terima Tugas & Handover Shift',
     mutations: 'Buku Mutasi & Audit Trail Stok',
@@ -307,6 +308,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'adjust') { loadDirectAdjustMaterials(); }
   if (tabName === 'counting_detail') { loadCountingDetails(); }
   if (tabName === 'handover') { loadAdminHandovers(); }
+  if (tabName === 'consumable_requests') { loadAdminConsumableRequests(); }
   if (tabName === 'inbound') { 
     const inDateEl = document.getElementById('inboundDateFilter');
     if (inDateEl && !inDateEl.value) {
@@ -2795,13 +2797,17 @@ function renderUsersTable(users) {
 
   tbody.innerHTML = users.map(u => {
     const isSuperAdmin = u.username.toLowerCase() === 'daniel';
-    const isTeknisi = u.role === 'teknisi' || u.role === 'superadmin' || u.role === 'admin';
-
     let roleBadge = '';
-    if (isTeknisi) {
+    if (u.role === 'superadmin' || isSuperAdmin) {
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Super Admin</span>';
+    } else if (u.role === 'teknisi') {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-800 border border-purple-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">engineering</span>Teknisi</span>';
+    } else if (u.role === 'admin') {
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">admin_panel_settings</span>Admin</span>';
+    } else if (u.role === 'operator_fulfillment') {
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">shopping_cart_checkout</span>Operator Fulfillment</span>';
     } else {
-      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">account_circle</span>Operator</span>';
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">account_circle</span>Operator Gudang</span>';
     }
 
     return `
@@ -3082,9 +3088,115 @@ function renderMaterialOptionsHtml(selectedId = '', showStock = false) {
   return html;
 }
 
+// Multi-Photo State for Inbound & Outbound
+let inboundSelectedFiles = [];
+let outboundSelectedFiles = [];
+
+function handleInboundPhotosSelect(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  inboundSelectedFiles = inboundSelectedFiles.concat(files);
+  renderInboundPhotoPreviews();
+}
+
+function renderInboundPhotoPreviews() {
+  const container = document.getElementById('inboundPhotoPreviewContainer');
+  const badge = document.getElementById('inboundPhotoCountBadge');
+  const clearBtn = document.getElementById('btnClearInboundPhotos');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${inboundSelectedFiles.length} Foto Dipilih`;
+
+  if (inboundSelectedFiles.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  container.innerHTML = inboundSelectedFiles.map((file, idx) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="relative group w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-2xs bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="${url}" alt="Preview" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedInboundFile(${idx})" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity" title="Hapus foto ini">
+          <span class="material-symbols-outlined text-[13px]">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSelectedInboundFile(index) {
+  inboundSelectedFiles.splice(index, 1);
+  renderInboundPhotoPreviews();
+}
+
+function clearInboundPhotos() {
+  const input = document.getElementById('inboundPhotosInput');
+  if (input) input.value = '';
+  inboundSelectedFiles = [];
+  renderInboundPhotoPreviews();
+}
+
+// Outbound Photo Handlers
+function handleOutboundPhotosSelect(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  outboundSelectedFiles = outboundSelectedFiles.concat(files);
+  renderOutboundPhotoPreviews();
+}
+
+function renderOutboundPhotoPreviews() {
+  const container = document.getElementById('outboundPhotoPreviewContainer');
+  const badge = document.getElementById('outboundPhotoCountBadge');
+  const clearBtn = document.getElementById('btnClearOutboundPhotos');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${outboundSelectedFiles.length} Foto Dipilih`;
+
+  if (outboundSelectedFiles.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  container.innerHTML = outboundSelectedFiles.map((file, idx) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="relative group w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-2xs bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="${url}" alt="Preview" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedOutboundFile(${idx})" class="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity" title="Hapus foto ini">
+          <span class="material-symbols-outlined text-[13px]">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSelectedOutboundFile(index) {
+  outboundSelectedFiles.splice(index, 1);
+  renderOutboundPhotoPreviews();
+}
+
+function clearOutboundPhotos() {
+  const input = document.getElementById('outboundPhotosInput');
+  if (input) input.value = '';
+  outboundSelectedFiles = [];
+  renderOutboundPhotoPreviews();
+}
+
 function openAddInboundModal() {
   inboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
+  clearInboundPhotos();
   
   const form = document.getElementById('inboundForm');
   if (form) form.reset();
@@ -3241,7 +3353,21 @@ async function loadInboundHistory() {
       return;
     }
 
-    tbody.innerHTML = res.data.map((i, idx) => `
+    tbody.innerHTML = res.data.map((i, idx) => {
+      let photos = [];
+      if (i.photo_path) {
+        if (i.photo_path.startsWith('[')) {
+          try { photos = JSON.parse(i.photo_path); } catch(e) { photos = [i.photo_path]; }
+        } else {
+          photos = [i.photo_path];
+        }
+      }
+
+      const photoBadge = (photos.length > 0)
+        ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(i.inbound_no)}', '${App.escapeHtml(i.created_at)}', '${App.escapeHtml(i.receiver_name || 'Admin')}', 'INBOUND')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100/80 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-emerald-700">photo_library</span><span>${photos.length} Foto</span></button>`
+        : '';
+
+      return `
       <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
         <!-- 1. Tanggal -->
         <td class="p-3 whitespace-nowrap">
@@ -3250,10 +3376,13 @@ async function loadInboundHistory() {
 
         <!-- 2. No. Inbound -->
         <td class="p-3 font-mono font-bold text-emerald-800 whitespace-nowrap">
-          <button type="button" onclick="openInboundDetailModal(${idx})" class="hover:underline inline-flex items-center gap-1 font-mono text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs cursor-pointer group" title="Klik untuk lihat detail transaksi">
-            <span class="material-symbols-outlined text-[13px] text-emerald-600 group-hover:text-emerald-900">visibility</span>
-            <span>${escapeHtml(i.inbound_no)}</span>
-          </button>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" onclick="openInboundDetailModal(${idx})" class="hover:underline inline-flex items-center gap-1 font-mono text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 shadow-2xs cursor-pointer group" title="Klik untuk lihat detail transaksi">
+              <span class="material-symbols-outlined text-[13px] text-emerald-600 group-hover:text-emerald-900">visibility</span>
+              <span>${escapeHtml(i.inbound_no)}</span>
+            </button>
+            ${photoBadge}
+          </div>
         </td>
 
         <!-- 3. Kemas -->
@@ -3274,14 +3403,34 @@ async function loadInboundHistory() {
           <span class="bg-slate-100 px-2 py-0.5 rounded border border-slate-200 text-xs font-bold">${escapeHtml(i.rack_location || '-')}</span>
         </td>
 
-        <!-- 6. Petugas Penerima -->
-        <td class="p-3 whitespace-nowrap text-slate-700">
-          <span class="font-semibold text-slate-800">${escapeHtml(i.receiver_name || i.received_by || 'Admin')}</span>
+        <!-- 6. Petugas Penerima / User yang Memproses -->
+        <td class="p-3 whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <div class="w-6 h-6 rounded-full ${i.receiver_role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-emerald-100 text-emerald-800'} border border-slate-200 flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+              <span class="material-symbols-outlined text-[14px]">${i.receiver_role === 'admin' ? 'admin_panel_settings' : 'person'}</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="font-extrabold text-slate-900 text-xs">${escapeHtml(i.receiver_name || i.received_by || 'Admin')}</span>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold ${i.receiver_role === 'admin' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}">${(i.receiver_role || 'operator').toUpperCase()}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                <span>@${escapeHtml(i.receiver_username || 'user')}</span>
+                ${i.receiver_shift && i.receiver_shift !== 'Head Office' ? `<span>&bull; ${escapeHtml(i.receiver_shift)}</span>` : ''}
+              </div>
+            </div>
+          </div>
         </td>
 
-        <!-- 7. Catatan -->
+        <!-- 7. No. Referensi & Catatan -->
         <td class="p-3 text-slate-600 max-w-xs">
-          <span class="truncate block text-xs" title="${escapeHtml(i.notes || '-')}">${escapeHtml(i.notes || '-')}</span>
+          ${i.po_number && i.po_number !== '-' ? `
+            <div class="inline-flex items-center gap-1 font-mono font-black text-amber-900 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded text-[11px] mb-1 shadow-2xs">
+              <span class="material-symbols-outlined text-[13px] text-amber-700">tag</span>
+              <span>${escapeHtml(i.po_number)}</span>
+            </div>
+          ` : ''}
+          <div class="truncate text-xs ${i.po_number && i.po_number !== '-' ? 'text-slate-600' : 'text-slate-700'}" title="${escapeHtml(i.notes || '-')}">${escapeHtml(i.notes || '-')}</div>
         </td>
 
         <!-- 8. Aksi -->
@@ -3291,7 +3440,8 @@ async function loadInboundHistory() {
           </button>
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
   }
 }
 
@@ -3304,6 +3454,39 @@ function openInboundDetailModal(idx) {
   const dateEl = document.getElementById('detailInboundDate');
   if (noEl) noEl.innerText = i.inbound_no;
   if (dateEl) dateEl.innerText = 'Tanggal Penerimaan: ' + App.formatDate(i.completed_at || i.created_at);
+
+  // Parse photos
+  let photos = [];
+  if (i.photo_path) {
+    if (i.photo_path.startsWith('[')) {
+      try { photos = JSON.parse(i.photo_path); } catch(e) { photos = [i.photo_path]; }
+    } else {
+      photos = [i.photo_path];
+    }
+  }
+
+  let photosGalleryHtml = '';
+  if (photos.length > 0) {
+    photosGalleryHtml = `
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+        <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px] text-emerald-600">photo_library</span>
+          <span>Foto Dokumentasi & Surat Jalan (${photos.length} Foto)</span>
+        </span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          ${photos.map((p, pIdx) => `
+            <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(i.inbound_no)}', '${App.escapeHtml(i.created_at)}', '${App.escapeHtml(i.receiver_name || 'Admin')}', 'INBOUND')">
+              <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-24 w-full object-cover">
+              <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-[20px]">zoom_in</span>
+              </div>
+              <div class="absolute bottom-1 right-1 bg-black/60 text-white/80 text-[8px] px-1 rounded font-mono">Foto ${pIdx + 1}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
 
   const content = `
     <div class="p-3 bg-emerald-50/70 rounded-xl border border-emerald-200 flex items-center justify-between">
@@ -3350,10 +3533,13 @@ function openInboundDetailModal(idx) {
       <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
           <span class="material-symbols-outlined text-[13px] text-blue-600">how_to_reg</span>
-          <span>Petugas Penerima</span>
+          <span>Petugas Penerima (User)</span>
         </span>
-        <p class="font-bold text-slate-900 mt-1">${escapeHtml(i.receiver_name || 'Admin')}</p>
-        <span class="text-[10px] text-slate-400 font-medium">${escapeHtml(i.receiver_shift || 'Shift')}</span>
+        <div class="flex items-center gap-1.5 mt-1">
+          <span class="font-extrabold text-slate-900 text-xs">${escapeHtml(i.receiver_name || 'Admin')}</span>
+          <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold ${i.receiver_role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}">${(i.receiver_role || 'operator').toUpperCase()}</span>
+        </div>
+        <p class="text-[10px] text-slate-500 font-mono mt-0.5">@${escapeHtml(i.receiver_username || 'admin')}${i.receiver_shift ? ` &bull; ${escapeHtml(i.receiver_shift)}` : ''}</p>
       </div>
 
       <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80">
@@ -3371,6 +3557,8 @@ function openInboundDetailModal(idx) {
         <p class="text-slate-700 italic mt-0.5">"${escapeHtml(i.notes)}"</p>
       </div>
     ` : ''}
+
+    ${photosGalleryHtml}
 
     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
       <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block mb-1.5">Timeline & Metrik Pengerjaan</span>
@@ -3425,7 +3613,13 @@ async function handleInboundTableSubmit(e) {
     return;
   }
 
-  const po_number = document.getElementById('inboundPoNumber')?.value?.trim() || '-';
+  const po_number = document.getElementById('inboundPoNumber')?.value?.trim() || '';
+  if (!po_number) {
+    App.toast('Nomor Referensi / PO / Batch wajib diisi!', 'warning');
+    document.getElementById('inboundPoNumber')?.focus();
+    return;
+  }
+
   const notes = document.getElementById('inboundGlobalNotes')?.value?.trim() || '';
   const formDate = document.getElementById('inboundFormDate')?.value;
   const formTime = document.getElementById('inboundFormTime')?.value;
@@ -3437,25 +3631,46 @@ async function handleInboundTableSubmit(e) {
     btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
   }
 
-  const res = await App.fetchJson('../api/inbound.php?action=batch_create', {
-    method: 'POST',
-    body: JSON.stringify({ po_number, supplier: '-', items, notes, started_at })
-  });
+  const formData = new FormData();
+  formData.append('po_number', po_number);
+  formData.append('supplier', '-');
+  formData.append('notes', notes);
+  formData.append('started_at', started_at);
+  formData.append('items', JSON.stringify(items));
 
-  if (btnSubmit) {
-    btnSubmit.disabled = false;
-    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Simpan & Tambah Stok</span>';
+  for (let i = 0; i < inboundSelectedFiles.length; i++) {
+    formData.append('photos[]', inboundSelectedFiles[i]);
   }
 
-  if (res.success) {
-    App.toast(res.message, 'success', 'Barang Masuk Disimpan');
-    App.closeModal('modalAddInbound');
-    document.getElementById('inboundForm')?.reset();
-    loadInboundHistory();
-    loadStats();
-    loadMaterials();
-  } else {
-    App.toast(res.message || 'Gagal menyimpan barang masuk', 'error');
+  try {
+    const response = await fetch('../api/inbound.php?action=batch_create', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
+
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Simpan & Tambah Stok</span>';
+    }
+
+    if (res.success) {
+      App.toast(res.message, 'success', 'Barang Masuk Disimpan');
+      App.closeModal('modalAddInbound');
+      document.getElementById('inboundForm')?.reset();
+      clearInboundPhotos();
+      loadInboundHistory();
+      loadStats();
+      loadMaterials();
+    } else {
+      App.toast(res.message || 'Gagal menyimpan barang masuk', 'error');
+    }
+  } catch (err) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Simpan & Tambah Stok</span>';
+    }
+    App.toast('Terjadi kesalahan koneksi saat menyimpan barang masuk', 'error');
   }
 }
 
@@ -3466,6 +3681,7 @@ let outboundModalStartTime = null;
 function openAddOutboundModal() {
   outboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
+  clearOutboundPhotos();
   
   const form = document.getElementById('outboundForm');
   if (form) form.reset();
@@ -3649,6 +3865,19 @@ async function loadOutboundHistory() {
     tbody.innerHTML = res.data.map((o, idx) => {
       const isTask = o.outbound_type === 'TASK_PICKING';
 
+      let photos = [];
+      if (o.photo_path) {
+        if (o.photo_path.startsWith('[')) {
+          try { photos = JSON.parse(o.photo_path); } catch(e) { photos = [o.photo_path]; }
+        } else {
+          photos = [o.photo_path];
+        }
+      }
+
+      const photoBadge = (photos.length > 0)
+        ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(o.outbound_no)}', '${App.escapeHtml(o.created_at)}', '${App.escapeHtml(o.issued_by || 'Admin')}', '${isTask ? 'TASK PICKING' : 'OUTBOUND'}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100/80 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-amber-700">photo_library</span><span>${photos.length} Foto</span></button>`
+        : '';
+
       let statusBadge = '';
       if (o.status === 'COMPLETED') {
         statusBadge = '<span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Selesai</span>';
@@ -3671,10 +3900,13 @@ async function loadOutboundHistory() {
 
           <!-- 2. No Referensi / Task (Klik untuk Detail) -->
           <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
-            <button type="button" onclick="openOutboundDetailModal(${idx})" class="inline-flex items-center gap-1 font-mono font-bold text-xs text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs transition-colors cursor-pointer group text-left" title="Klik untuk melihat rincian detail dokumen">
-              <span class="material-symbols-outlined text-[13px] text-amber-700 group-hover:text-amber-900">${isTask ? 'task_alt' : 'outbox'}</span>
-              <span class="group-hover:underline underline-offset-2">${escapeHtml(o.outbound_no)}</span>
-            </button>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="openOutboundDetailModal(${idx})" class="inline-flex items-center gap-1 font-mono font-bold text-xs text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs transition-colors cursor-pointer group text-left" title="Klik untuk melihat rincian detail dokumen">
+                <span class="material-symbols-outlined text-[13px] text-amber-700 group-hover:text-amber-900">${isTask ? 'task_alt' : 'outbox'}</span>
+                <span class="group-hover:underline underline-offset-2">${escapeHtml(o.outbound_no)}</span>
+              </button>
+              ${photoBadge}
+            </div>
           </td>
 
           <!-- 3. Status -->
@@ -3777,6 +4009,39 @@ function openOutboundDetailModal(idx) {
   const adminUser = o.assigned_by_name || o.assigned_by_username || 'admin';
   const operatorUser = o.issued_by || 'Operator';
 
+  // Parse photos
+  let photos = [];
+  if (o.photo_path) {
+    if (o.photo_path.startsWith('[')) {
+      try { photos = JSON.parse(o.photo_path); } catch(e) { photos = [o.photo_path]; }
+    } else {
+      photos = [o.photo_path];
+    }
+  }
+
+  let photosGalleryHtml = '';
+  if (photos.length > 0) {
+    photosGalleryHtml = `
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+        <span class="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[15px] text-amber-600">photo_library</span>
+          <span>Foto Bukti & Dokumentasi (${photos.length} Foto)</span>
+        </span>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          ${photos.map((p, pIdx) => `
+            <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(o.outbound_no)}', '${App.escapeHtml(o.created_at)}', '${App.escapeHtml(o.issued_by || 'Admin')}', '${isTask ? 'TASK PICKING' : 'OUTBOUND'}')">
+              <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-24 w-full object-cover">
+              <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-[20px]">zoom_in</span>
+              </div>
+              <div class="absolute bottom-1 right-1 bg-black/60 text-white/80 text-[8px] px-1 rounded font-mono">Foto ${pIdx + 1}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   const content = `
     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between">
       <div>${typeBadge}</div>
@@ -3843,6 +4108,8 @@ function openOutboundDetailModal(idx) {
         <p class="text-slate-700 italic mt-0.5">"${escapeHtml(o.notes)}"</p>
       </div>
     ` : ''}
+
+    ${photosGalleryHtml}
 
     <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-200/70">
       <span class="text-[10px] font-extrabold text-blue-900 uppercase tracking-wider block mb-1.5">Timeline & Metrik Pengerjaan</span>
@@ -4012,25 +4279,44 @@ async function handleOutboundTableSubmit(e) {
     btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
   }
 
-  const res = await App.fetchJson('../api/outbound.php?action=batch_create', {
-    method: 'POST',
-    body: JSON.stringify({ items, notes, started_at })
-  });
+  const formData = new FormData();
+  formData.append('notes', notes);
+  formData.append('started_at', started_at);
+  formData.append('items', JSON.stringify(items));
 
-  if (btnSubmit) {
-    btnSubmit.disabled = false;
-    btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Catat & Potong Stok</span>';
+  for (let i = 0; i < outboundSelectedFiles.length; i++) {
+    formData.append('photos[]', outboundSelectedFiles[i]);
   }
 
-  if (res.success) {
-    App.toast(res.message, 'success', 'Pengeluaran Disimpan');
-    App.closeModal('modalAddOutbound');
-    document.getElementById('outboundForm')?.reset();
-    loadOutboundHistory();
-    loadStats();
-    loadMaterials();
-  } else {
-    App.toast(res.message || 'Gagal memproses pengeluaran barang', 'error');
+  try {
+    const response = await fetch('../api/outbound.php?action=batch_create', {
+      method: 'POST',
+      body: formData
+    });
+    const res = await response.json();
+
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Catat & Potong Stok</span>';
+    }
+
+    if (res.success) {
+      App.toast(res.message, 'success', 'Pengeluaran Disimpan');
+      App.closeModal('modalAddOutbound');
+      document.getElementById('outboundForm')?.reset();
+      clearOutboundPhotos();
+      loadOutboundHistory();
+      loadStats();
+      loadMaterials();
+    } else {
+      App.toast(res.message || 'Gagal memproses pengeluaran barang', 'error');
+    }
+  } catch (err) {
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Catat & Potong Stok</span>';
+    }
+    App.toast('Terjadi kesalahan koneksi saat memproses pengeluaran barang', 'error');
   }
 }
 
@@ -4183,6 +4469,7 @@ async function applyMyPermissions() {
       adjust: 'nav-adjust',
       inbound: 'nav-inbound',
       outbound: 'nav-outbound',
+      consumable_requests: 'nav-consumable_requests',
       tasks: 'nav-tasks',
       handover: 'nav-handover',
       mutations: 'nav-mutations',
@@ -7904,22 +8191,372 @@ function openAdminHandoverDetail(id) {
   App.openModal('modalAdminHandoverDetail');
 }
 
-function openAdminPhotoViewer(photoPath, handoverNo, date, creator) {
+function openAdminPhotoViewer(photoPath, docNo, date, creator, docType = 'HANDOVER') {
   const viewerImage = document.getElementById('adminViewerImage');
   const viewerDesc = document.getElementById('adminViewerImageDesc');
   const wmTopLeft = document.getElementById('admWmTopLeft');
+  const wmTopRight = document.getElementById('admWmTopRight');
   const wmBottomLeft = document.getElementById('admWmBottomLeft');
   const wmBottomRight = document.getElementById('admWmBottomRight');
 
   if (viewerImage) viewerImage.src = `../${photoPath}`;
-  if (viewerDesc) viewerDesc.innerText = `Foto Lampiran Handover ${handoverNo} oleh ${creator}`;
+  if (viewerDesc) viewerDesc.innerText = `Dokumentasi Foto ${docType} #${docNo} (${creator || 'Petugas'})`;
 
-  if (wmTopLeft) wmTopLeft.innerText = `IMS - BY ${creator.toUpperCase()}`;
-  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${handoverNo}`;
-  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date.substring(0, 10)}`;
+  if (wmTopLeft) wmTopLeft.innerText = `IMS - ${docType.toUpperCase()}`;
+  if (wmTopRight) wmTopRight.innerText = `BY ${creator ? creator.toUpperCase() : 'PETUGAS'}`;
+  if (wmBottomLeft) wmBottomLeft.innerText = `NO: ${docNo}`;
+  if (wmBottomRight) wmBottomRight.innerText = `DATE: ${date ? date.substring(0, 10) : ''}`;
 
   App.openModal('modalAdminPhotoViewer');
 }
+
+// =========================================================================
+// 14. CONSUMABLE REQUESTS & APPROVAL (ADMIN)
+// =========================================================================
+let allAdminConsumableRequests = [];
+
+async function loadAdminConsumableRequests() {
+  const tbody = document.getElementById('adminConsumableTableBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
+          <p class="text-xs font-semibold text-slate-600">Memuat data pengajuan consumable...</p>
+        </td>
+      </tr>
+    `;
+  }
+
+  const search = document.getElementById('adminConsumableSearchInput')?.value.trim() || '';
+  const date = document.getElementById('adminConsumableDateFilter')?.value.trim() || '';
+  const status = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
+
+  const query = new URLSearchParams({
+    action: 'list',
+    search,
+    date,
+    status
+  });
+
+  const res = await App.fetchJson(`../api/consumable_requests.php?${query.toString()}`);
+  if (res.success && res.data) {
+    allAdminConsumableRequests = res.data;
+    renderAdminConsumableTable(res.data);
+    updateAdminConsumableBadge(res.data);
+  } else {
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" class="p-8 text-center text-rose-500 text-xs">
+            <p>Gagal memuat data pengajuan consumable.</p>
+          </td>
+        </tr>
+      `;
+    }
+  }
+}
+
+function updateAdminConsumableBadge(list) {
+  const pendingCount = (list || []).filter(r => r.status === 'PENDING').length;
+  const badgeEl = document.getElementById('sidebarConsumableReqBadge');
+  if (badgeEl) {
+    if (pendingCount > 0) {
+      badgeEl.innerText = pendingCount;
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+}
+
+function renderAdminConsumableTable(requests) {
+  const tbody = document.getElementById('adminConsumableTableBody');
+  if (!tbody) return;
+
+  if (requests.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="9" class="p-8 text-center text-slate-400 text-xs font-medium">
+          <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">shopping_bag</span>
+          <p>Tidak ada data pengajuan consumable yang sesuai filter.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = requests.map((r, idx) => {
+    let statusBadge = '';
+    if (r.status === 'PENDING') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC</span>';
+    } else if (r.status === 'APPROVED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Disetujui (ACC)</span>';
+    } else if (r.status === 'REJECTED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-rose-600">cancel</span>Ditolak</span>';
+    } else {
+      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(r.status)}</span>`;
+    }
+
+    const isUrgent = r.priority === 'URGENT';
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+        <!-- 1. Tanggal -->
+        <td class="p-3 whitespace-nowrap">
+          <span class="font-extrabold text-slate-800">${App.formatDate(r.created_at)}</span>
+        </td>
+
+        <!-- 2. No. Request -->
+        <td class="p-3 font-mono font-bold text-amber-900 whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <span class="bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${escapeHtml(r.request_no)}</span>
+            ${isUrgent ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-extrabold text-[9px] border border-rose-300">URGENT</span>' : ''}
+          </div>
+        </td>
+
+        <!-- 3. Pemohon (PIC) -->
+        <td class="p-3 whitespace-nowrap">
+          <div class="font-bold text-slate-900">${escapeHtml(r.requester_name || 'Operator')}</div>
+          <div class="text-[10px] text-slate-400 font-mono">@${escapeHtml(r.requester_username || 'user')} &bull; ${escapeHtml(r.requester_shift || '-')}</div>
+        </td>
+
+        <!-- 4. Tujuan Line -->
+        <td class="p-3 whitespace-nowrap">
+          <span class="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-extrabold text-slate-800 text-xs">${escapeHtml(r.destination)}</span>
+        </td>
+
+        <!-- 5. Items Requested -->
+        <td class="p-3 max-w-sm">
+          <div class="space-y-1">
+            ${(r.items || []).map(it => `
+              <div class="flex items-center justify-between gap-2 p-1.5 bg-slate-50 rounded-lg border border-slate-200/70 text-[11px]">
+                <div class="min-w-0 flex-1 truncate">
+                  <span class="font-bold text-slate-900">${escapeHtml(it.material_name)}</span>
+                  <span class="text-slate-400 font-mono text-[9px]">(${escapeHtml(it.material_code)})</span>
+                </div>
+                <div class="text-right whitespace-nowrap">
+                  <span class="font-mono font-black text-amber-900">${App.formatNumber(it.qty)} ${escapeHtml(it.material_unit || 'Pcs')}</span>
+                  <span class="text-[9px] text-slate-400 block">Stok: ${App.formatNumber(it.current_stock)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </td>
+
+        <!-- 6. Total Qty -->
+        <td class="p-3 text-center whitespace-nowrap">
+          <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-black font-mono text-xs">
+            ${App.formatNumber(r.total_qty || 0)} Pcs
+          </span>
+        </td>
+
+        <!-- 7. Status ACC -->
+        <td class="p-3 text-center whitespace-nowrap">
+          ${statusBadge}
+        </td>
+
+        <!-- 8. Catatan / Foto / Respon Admin -->
+        <td class="p-3 max-w-xs text-slate-600">
+          ${r.admin_notes ? `
+            <div class="p-1.5 bg-slate-50 rounded border border-slate-200 text-[11px] mb-1">
+              <span class="font-bold text-slate-800 block">Admin (${App.escapeHtml(r.approver_name || 'Admin')}):</span>
+              <span class="italic">${App.escapeHtml(r.admin_notes)}</span>
+            </div>
+          ` : ''}
+          ${r.notes ? `<p class="text-[10px] text-slate-500 truncate mb-1" title="${App.escapeHtml(r.notes)}">Req: "${App.escapeHtml(r.notes)}"</p>` : ''}
+          ${(r.photos_list && r.photos_list.length > 0) ? `
+            <div class="flex items-center gap-1.5 flex-wrap mt-1">
+              ${r.photos_list.map((ph, pIdx) => `
+                <a href="../${ph}" target="_blank" class="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform block shrink-0" title="Klik untuk lihat foto ${pIdx + 1}">
+                  <img src="../${ph}" alt="Foto ${pIdx + 1}" class="w-full h-full object-cover">
+                </a>
+              `).join('')}
+              <span class="text-[9px] text-slate-400 font-mono">(${r.photos_list.length} foto)</span>
+            </div>
+          ` : ''}
+        </td>
+
+        <!-- 9. Aksi -->
+        <td class="p-3 text-center whitespace-nowrap">
+          ${r.status === 'PENDING' ? `
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-lg shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
+                <span class="material-symbols-outlined text-[15px]">check</span>
+                <span>ACC</span>
+              </button>
+              <button onclick="openAdminRejectConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 font-bold rounded-lg transition-all flex items-center gap-1 text-xs cursor-pointer" title="Tolak Permintaan">
+                <span class="material-symbols-outlined text-[15px]">close</span>
+                <span>Tolak</span>
+              </button>
+            </div>
+          ` : `
+            <span class="text-[10px] text-slate-400 font-medium">Selesai</span>
+          `}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function openAdminApproveConsumableModal(id) {
+  const req = allAdminConsumableRequests.find(r => r.id === id);
+  if (!req) return;
+
+  document.getElementById('approveReqIdInput').value = req.id;
+  document.getElementById('approveReqNoSubtitle').innerText = `No. Request: #${req.request_no} - Pemohon: ${req.requester_name || 'Operator'}`;
+
+  const summaryBox = document.getElementById('approveReqSummaryBox');
+  if (summaryBox) {
+    summaryBox.innerHTML = `
+      <div class="flex items-center justify-between text-slate-700">
+        <span>Tujuan Brand / Line:</span>
+        <b class="text-slate-900">${App.escapeHtml(req.destination)}</b>
+      </div>
+      <div class="flex items-center justify-between text-slate-700">
+        <span>Tingkat Prioritas:</span>
+        <b class="${req.priority === 'URGENT' ? 'text-rose-600 font-black' : 'text-slate-800'}">${App.escapeHtml(req.priority)}</b>
+      </div>
+      <div class="pt-1.5 border-t border-slate-200 space-y-1">
+        <span class="font-bold text-slate-800 block text-[11px]">Material yang Diminta:</span>
+        ${(req.items || []).map(it => `
+          <div class="flex items-center justify-between text-[11px] bg-white p-1.5 rounded border border-slate-200">
+            <span>${App.escapeHtml(it.material_name)}</span>
+            <b class="font-mono text-amber-900">${App.formatNumber(it.qty)} ${App.escapeHtml(it.material_unit || 'Pcs')} (Stok: ${App.formatNumber(it.current_stock)})</b>
+          </div>
+        `).join('')}
+      </div>
+      ${(req.photos_list && req.photos_list.length > 0) ? `
+        <div class="pt-1.5 border-t border-slate-200 space-y-1">
+          <span class="font-bold text-slate-800 block text-[11px] flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px] text-amber-600">photo_library</span>
+            <span>Foto Dokumentasi Pemohon (${req.photos_list.length}):</span>
+          </span>
+          <div class="flex items-center gap-2 overflow-x-auto pb-1">
+            ${req.photos_list.map((ph, idx) => `
+              <a href="../${ph}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-amber-500 block shrink-0">
+                <img src="../${ph}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+              </a>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // Populate operator dropdown dynamically
+  const opSelect = document.getElementById('approveAssignedOperator');
+  if (opSelect) {
+    opSelect.innerHTML = '<option value="">-- Memuat Operator... --</option>';
+    if (!allOperators || allOperators.length === 0) {
+      const resOp = await App.fetchJson('../api/users.php?action=operators');
+      if (resOp && resOp.success && resOp.data) {
+        allOperators = resOp.data;
+      }
+    }
+
+    opSelect.innerHTML = '<option value="">-- Pilih Operator PIC --</option>' + (allOperators || []).map(op => {
+      return `<option value="${op.id}">${App.escapeHtml(op.name)} (${App.escapeHtml(op.shift || 'Shift')})</option>`;
+    }).join('');
+
+    if (typeof App.syncSearchableSelect === 'function') {
+      App.syncSearchableSelect(opSelect);
+    }
+  }
+
+  const notesInp = document.getElementById('approveAdminNotes');
+  if (notesInp) notesInp.value = '';
+
+  App.openModal('modalApproveConsumableRequest');
+}
+
+async function handleAdminApproveConsumableSubmit(e) {
+  e.preventDefault();
+  const requestId = parseInt(document.getElementById('approveReqIdInput').value);
+  const assignedTo = parseInt(document.getElementById('approveAssignedOperator')?.value || 0);
+  const adminNotes = document.getElementById('approveAdminNotes')?.value.trim() || '';
+
+  if (!assignedTo || assignedTo <= 0) {
+    App.toast('Silakan pilih operator PIC yang ditugaskan!', 'warning');
+    document.getElementById('approveAssignedOperator')?.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitApproveConsumable');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menerbitkan Tugas Picking...</span>';
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=approve', {
+    method: 'POST',
+    body: JSON.stringify({
+      request_id: requestId,
+      approval_type: 'CREATE_TASK',
+      assigned_to: assignedTo,
+      admin_notes: adminNotes
+    })
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[17px]">verified</span><span>Setujui (ACC Sekarang)</span>';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Berhasil Di-ACC');
+    App.closeModal('modalApproveConsumableRequest');
+    loadAdminConsumableRequests();
+    if (typeof loadTasks === 'function') loadTasks();
+  } else {
+    App.toast(res.message || 'Gagal memproses ACC', 'error');
+  }
+}
+
+function openAdminRejectConsumableModal(id) {
+  const req = allAdminConsumableRequests.find(r => r.id === id);
+  if (!req) return;
+
+  document.getElementById('rejectReqIdInput').value = req.id;
+  document.getElementById('rejectReqNoSubtitle').innerText = `No. Request: #${req.request_no} (${req.destination}) - Pemohon: ${req.requester_name || 'Operator'}`;
+  
+  const reasonInp = document.getElementById('rejectReasonInput');
+  if (reasonInp) reasonInp.value = '';
+
+  App.openModal('modalRejectConsumableRequest');
+}
+
+async function handleAdminRejectConsumableSubmit(e) {
+  e.preventDefault();
+  const requestId = parseInt(document.getElementById('rejectReqIdInput').value);
+  const reason = document.getElementById('rejectReasonInput')?.value.trim() || '';
+
+  if (!reason) {
+    App.toast('Alasan penolakan pengajuan wajib diisi!', 'warning');
+    document.getElementById('rejectReasonInput')?.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitRejectConsumable');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Memproses Penolakan...</span>';
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=reject', {
+    method: 'POST',
+    body: JSON.stringify({
+      request_id: requestId,
+      reason: reason
+    })
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[17px]">close</span><span>Tolak Pengajuan</span>';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Telah Ditolak');
+    App.closeModal('modalRejectConsumableRequest');
+    loadAdminConsumableRequests();
+  } else {
+    App.toast(res.message || 'Gagal menolak pengajuan', 'error');
+  }
+}
+
 
 
 

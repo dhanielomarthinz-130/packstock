@@ -89,6 +89,44 @@ if ($action === 'list') {
     exit;
 }
 
+// Helper to process uploaded photos
+function handleUploadedInboundPhotos(): ?string {
+    if (!isset($_FILES['photos'])) {
+        return null;
+    }
+    $files = $_FILES['photos'];
+    $fileCount = is_array($files['name']) ? count($files['name']) : 0;
+    if ($fileCount === 0) {
+        return null;
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/inbound/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $photoPaths = [];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $files['tmp_name'][$i];
+            $fileName = $files['name'][$i];
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if (in_array($ext, $allowedExtensions)) {
+                $newFileName = 'inbound_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
+                $destPath = $uploadDir . $newFileName;
+                if (move_uploaded_file($fileTmpPath, $destPath)) {
+                    $photoPaths[] = 'uploads/inbound/' . $newFileName;
+                }
+            }
+        }
+    }
+
+    return !empty($photoPaths) ? json_encode($photoPaths) : null;
+}
+
 // 2. CREATE SINGLE INBOUND (Admin or Operator)
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
@@ -101,6 +139,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $qty        = (int)($input['qty'] ?? 0);
     $notes      = trim($input['notes'] ?? '');
     $startedAt  = trim($input['started_at'] ?? '');
+    $photoPathValue = handleUploadedInboundPhotos();
 
     if ($materialId <= 0 || $qty <= 0) {
         http_response_code(400);
@@ -137,10 +176,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Insert inbound record
         $stmtIn = $pdo->prepare("
-            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, photo_path, received_by, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $notes, Auth::id(), $startTime, $now, $durationSeconds]);
+        $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $notes, $photoPathValue, Auth::id(), $startTime, $now, $durationSeconds]);
 
         // Update Material Stock in Master Product
         $stmtUp = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -175,7 +214,11 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 3. BATCH CREATE INBOUND (MULTI-PRODUCT DRAFT SUBMISSION FROM OPERATOR / ADMIN)
 if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $rawInput = file_get_contents('php://input');
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    if (empty($input) && !empty($_POST)) {
+        $input = $_POST;
+    }
 
     $poNumber    = trim($input['po_number'] ?? '-');
     if (empty($poNumber)) $poNumber = '-';
@@ -185,11 +228,17 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $startedAt   = trim($input['started_at'] ?? '');
     $items       = $input['items'] ?? [];
 
+    if (is_string($items)) {
+        $items = json_decode($items, true) ?? [];
+    }
+
     if (empty($items) || !is_array($items)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Draft penerimaan barang masih kosong. Silakan tambahkan minimal 1 packaging material.']);
         exit;
     }
+
+    $photoPathValue = handleUploadedInboundPhotos();
 
     try {
         $pdo->beginTransaction();
@@ -206,8 +255,8 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemDuration = max(1, round($totalDuration / $itemCount));
 
         $stmtIn = $pdo->prepare("
-            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, photo_path, received_by, started_at, completed_at, duration_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
 
         $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -239,9 +288,20 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $stockAfter  = $stockBefore + $qty;
 
             $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
-            $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
+            $cleanItemNotes = ($itemNotes !== '-' && !empty($itemNotes)) ? $itemNotes : '';
+            $cleanGlobalNotes = ($globalNotes !== '-' && !empty($globalNotes)) ? $globalNotes : '';
+            
+            if (!empty($cleanGlobalNotes) && !empty($cleanItemNotes)) {
+                $combinedNotes = "{$cleanGlobalNotes} | {$cleanItemNotes}";
+            } elseif (!empty($cleanItemNotes)) {
+                $combinedNotes = $cleanItemNotes;
+            } elseif (!empty($cleanGlobalNotes)) {
+                $combinedNotes = $cleanGlobalNotes;
+            } else {
+                $combinedNotes = '-';
+            }
 
-            $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $combinedNotes, $authId, $startTime, $now, $itemDuration]);
+            $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $combinedNotes, $photoPathValue, $authId, $startTime, $now, $itemDuration]);
             $stmtUpMat->execute([$stockAfter, $materialId]);
 
             $mutNotes = "Barang Masuk (Diterima oleh {$authName})";

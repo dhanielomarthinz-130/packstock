@@ -44,6 +44,14 @@ class Auth {
         return self::role() === 'operator';
     }
 
+    public static function isOperatorFulfillment(): bool {
+        return self::role() === 'operator_fulfillment';
+    }
+
+    public static function isOperatorAny(): bool {
+        return self::role() === 'operator' || self::role() === 'operator_fulfillment';
+    }
+
     public static function isMaintenanceMode(): bool {
         $flagFile = __DIR__ . '/../config/maintenance.flag';
         return file_exists($flagFile);

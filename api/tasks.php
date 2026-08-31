@@ -528,13 +528,56 @@ if ($action === 'start' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// Helper to process uploaded photos for tasks
+function handleUploadedTaskPhotos(): ?string {
+    if (!isset($_FILES['photos'])) {
+        return null;
+    }
+    $files = $_FILES['photos'];
+    $fileCount = is_array($files['name']) ? count($files['name']) : 0;
+    if ($fileCount === 0) {
+        return null;
+    }
+
+    $uploadDir = __DIR__ . '/../uploads/tasks/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0777, true);
+    }
+
+    $photoPaths = [];
+    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+    for ($i = 0; $i < $fileCount; $i++) {
+        if ($files['error'][$i] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $files['tmp_name'][$i];
+            $fileName = $files['name'][$i];
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+            if (in_array($ext, $allowedExtensions)) {
+                $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
+                $destPath = $uploadDir . $newFileName;
+                if (move_uploaded_file($fileTmpPath, $destPath)) {
+                    $photoPaths[] = 'uploads/tasks/' . $newFileName;
+                }
+            }
+        }
+    }
+
+    return !empty($photoPaths) ? json_encode($photoPaths) : null;
+}
+
 // 7. SUBMIT TASK / COMPLETE PICKING (Operator Finalize & Stock Deduction)
 if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $rawInput = file_get_contents('php://input');
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    if (empty($input) && !empty($_POST)) {
+        $input = $_POST;
+    }
 
     $taskId          = (int)($input['task_id'] ?? 0);
     $actualQty       = (int)($input['actual_qty'] ?? 0);
     $completionNotes = trim($input['completion_notes'] ?? '');
+    $photoPathValue  = handleUploadedTaskPhotos();
 
     if ($taskId <= 0 || $actualQty <= 0) {
         http_response_code(400);
@@ -591,12 +634,13 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             SET status = 'COMPLETED', 
                 actual_qty = ?, 
                 completion_notes = ?, 
+                photo_path = IFNULL(?, photo_path),
                 started_at = IFNULL(started_at, ?),
                 completed_at = CURRENT_TIMESTAMP,
                 duration_seconds = ?
             WHERE id = ?
         ");
-        $stmtUpdateTask->execute([$actualQty, $completionNotes, date('Y-m-d H:i:s', $startedAtTime), $durationSeconds, $taskId]);
+        $stmtUpdateTask->execute([$actualQty, $completionNotes, $photoPathValue, date('Y-m-d H:i:s', $startedAtTime), $durationSeconds, $taskId]);
 
         // Update Material Stock
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");

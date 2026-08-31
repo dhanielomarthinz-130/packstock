@@ -205,7 +205,12 @@ const App = {
 
   // Number & Date formatters
   formatNumber(num) {
-    return new Intl.NumberFormat('id-ID').format(num || 0);
+    if (num === null || num === undefined || num === '') return '0';
+    const n = Number(num);
+    if (isNaN(n)) return '0';
+    return new Intl.NumberFormat('id-ID', {
+      maximumFractionDigits: 3
+    }).format(n);
   },
 
   formatDate(dateStr) {
@@ -521,6 +526,16 @@ const App = {
     updateTriggerText();
   },
 
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
   syncSearchableSelect(select) {
     if (!select) return;
     if (select.dataset.ssInit !== 'true') {
@@ -540,7 +555,10 @@ const App = {
   }
 };
 
-window.escapeHtml = App.escapeHtml;
+function escapeHtml(str) {
+  return App.escapeHtml(str);
+}
+window.escapeHtml = escapeHtml;
 
 document.addEventListener('DOMContentLoaded', () => {
   App.initAllSearchableSelects();
