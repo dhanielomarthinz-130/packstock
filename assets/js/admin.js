@@ -3553,9 +3553,17 @@ async function loadInboundHistory() {
 
         <!-- 8. Aksi -->
         <td class="p-3 text-center whitespace-nowrap">
-          <button onclick="openInboundDetailModal(${idx})" title="Lihat Rincian Detail" class="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs">
-            <span class="material-symbols-outlined text-[16px]">visibility</span>
-          </button>
+          <div class="flex items-center justify-center gap-1">
+            <button onclick="openInboundDetailModal(${idx})" title="Lihat Rincian Detail" class="p-1.5 rounded-lg bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">visibility</span>
+            </button>
+            <button onclick="openEditInboundModal(${idx})" title="Edit Transaksi Inbound" class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 border border-amber-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+            <button onclick="confirmDeleteInbound(${i.id}, '${escapeHtml(i.inbound_no)}')" title="Hapus Transaksi Inbound" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+            </button>
+          </div>
         </td>
       </tr>
       `;
@@ -3563,8 +3571,12 @@ async function loadInboundHistory() {
   }
 }
 
-// ================= 8.1 MODAL DETAIL INBOUND =================
+// ================= 8.1 MODAL DETAIL & EDIT INBOUND =================
+let currentSelectedInboundIdx = null;
+let currentEditInboundId = null;
+
 function openInboundDetailModal(idx) {
+  currentSelectedInboundIdx = idx;
   const i = window._currentInboundList?.[idx];
   if (!i) return;
 
@@ -3703,6 +3715,180 @@ function openInboundDetailModal(idx) {
 
   document.getElementById('detailInboundContent').innerHTML = content;
   App.openModal('modalInboundDetail');
+}
+
+function openEditInboundModalFromDetail() {
+  if (currentSelectedInboundIdx !== null) {
+    openEditInboundModal(currentSelectedInboundIdx);
+  }
+}
+
+function populateEditInboundMaterialSelect(selectedMaterialId = null) {
+  const sel = document.getElementById('editInboundMaterialSelect');
+  if (!sel) return;
+  
+  sel.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' + (allMaterials || []).map(m => `
+    <option value="${m.id}" data-stock="${m.current_stock}" data-unit="${m.unit || 'Pcs'}" data-rack="${m.rack_location || '-'}" ${selectedMaterialId && Number(selectedMaterialId) === Number(m.id) ? 'selected' : ''}>
+      ${escapeHtml(m.name)} (${escapeHtml(m.code)}) - Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit || 'Pcs')}
+    </option>
+  `).join('');
+
+  handleEditInboundMaterialChange();
+}
+
+function handleEditInboundMaterialChange() {
+  const sel = document.getElementById('editInboundMaterialSelect');
+  const opt = sel?.options[sel.selectedIndex];
+  const stockEl = document.getElementById('editInboundCurrentStock');
+  const rackEl = document.getElementById('editInboundRackHint');
+
+  if (opt && opt.value) {
+    const stock = opt.getAttribute('data-stock') || '0';
+    const unit = opt.getAttribute('data-unit') || 'Pcs';
+    const rack = opt.getAttribute('data-rack') || '-';
+
+    if (stockEl) stockEl.innerText = `${App.formatNumber(stock)} ${unit}`;
+    if (rackEl) rackEl.innerText = `• Lokasi Rak: ${rack}`;
+  } else {
+    if (stockEl) stockEl.innerText = '0';
+    if (rackEl) rackEl.innerText = '• Lokasi: -';
+  }
+}
+
+async function openEditInboundModal(idx) {
+  const i = window._currentInboundList?.[idx];
+  if (!i) return;
+
+  currentEditInboundId = i.id;
+
+  // Make sure allMaterials is loaded
+  if (!allMaterials || allMaterials.length === 0) {
+    await loadMaterials();
+  }
+
+  document.getElementById('editInboundId').value = i.id;
+  document.getElementById('editInboundNoDisplay').innerText = i.inbound_no;
+  document.getElementById('editInboundReceiverDisplay').innerText = i.receiver_name || i.received_by || 'Admin';
+  
+  populateEditInboundMaterialSelect(i.material_id);
+  
+  document.getElementById('editInboundQty').value = i.qty;
+  document.getElementById('editInboundPoNumber').value = (i.po_number && i.po_number !== '-') ? i.po_number : '';
+  document.getElementById('editInboundSupplier').value = (i.supplier && i.supplier !== '-') ? i.supplier : '';
+  document.getElementById('editInboundNotes').value = (i.notes && i.notes !== '-') ? i.notes : '';
+  
+  // Format datetime-local (YYYY-MM-DDTHH:mm)
+  const rawDate = i.created_at || i.completed_at;
+  if (rawDate) {
+    const dt = new Date(rawDate.replace(' ', 'T'));
+    if (!isNaN(dt.getTime())) {
+      const pad = n => String(n).padStart(2, '0');
+      const formattedDt = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      document.getElementById('editInboundCreatedAt').value = formattedDt;
+    }
+  }
+
+  App.closeModal('modalInboundDetail');
+  App.openModal('modalEditInbound');
+}
+
+async function handleEditInboundSubmit(e) {
+  e.preventDefault();
+  const id = document.getElementById('editInboundId').value;
+  const material_id = document.getElementById('editInboundMaterialSelect').value;
+  const qty = parseFloat(document.getElementById('editInboundQty').value || 0);
+  const po_number = document.getElementById('editInboundPoNumber').value.trim();
+  const supplier = document.getElementById('editInboundSupplier').value.trim();
+  const notes = document.getElementById('editInboundNotes').value.trim();
+  const created_at_local = document.getElementById('editInboundCreatedAt').value;
+
+  if (!id || !material_id || qty <= 0) {
+    App.toast('Material dan Jumlah Masuk (Qty > 0) wajib diisi!', 'warning');
+    return;
+  }
+
+  let created_at = '';
+  if (created_at_local) {
+    created_at = created_at_local.replace('T', ' ') + ':00';
+  }
+
+  const btn = document.getElementById('btnSubmitEditInbound');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span> Menyimpan...';
+
+  const res = await App.fetchJson('../api/inbound.php?action=update', {
+    method: 'POST',
+    body: JSON.stringify({
+      id,
+      material_id,
+      qty,
+      po_number,
+      supplier,
+      notes,
+      created_at
+    })
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span> Simpan Perubahan';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Inbound Diperbarui');
+    App.closeModal('modalEditInbound');
+    loadInboundHistory();
+    loadMaterials();
+    loadDashboardStockSummary();
+    if (typeof loadMutations === 'function') loadMutations(true);
+  } else {
+    App.toast(res.message || 'Gagal memperbarui data inbound', 'error');
+  }
+}
+
+async function confirmDeleteInbound(id, inboundNo) {
+  if (!confirm(`Apakah Anda yakin ingin MENGHAPUS transaksi Inbound ${inboundNo}?\n\nPerhatian: Stok master material akan dikurangi kembali sesuai jumlah yang diterima.`)) {
+    return;
+  }
+
+  const res = await App.fetchJson('../api/inbound.php?action=delete', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Inbound Dihapus');
+    loadInboundHistory();
+    loadMaterials();
+    loadDashboardStockSummary();
+    if (typeof loadMutations === 'function') loadMutations(true);
+  } else {
+    App.toast(res.message || 'Gagal menghapus transaksi inbound', 'error');
+  }
+}
+
+async function deleteCurrentEditInbound() {
+  const id = document.getElementById('editInboundId').value;
+  const inboundNo = document.getElementById('editInboundNoDisplay').innerText;
+  if (!id) return;
+
+  if (!confirm(`Apakah Anda yakin ingin MENGHAPUS transaksi Inbound ${inboundNo}?\n\nPerhatian: Stok master material akan dikurangi kembali sesuai jumlah yang diterima.`)) {
+    return;
+  }
+
+  const res = await App.fetchJson('../api/inbound.php?action=delete', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Inbound Dihapus');
+    App.closeModal('modalEditInbound');
+    loadInboundHistory();
+    loadMaterials();
+    loadDashboardStockSummary();
+    if (typeof loadMutations === 'function') loadMutations(true);
+  } else {
+    App.toast(res.message || 'Gagal menghapus transaksi inbound', 'error');
+  }
 }
 
 async function handleInboundTableSubmit(e) {

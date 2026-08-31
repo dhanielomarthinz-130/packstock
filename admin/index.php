@@ -3661,9 +3661,113 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- Injected by JavaScript -->
     </div>
 
-    <div class="flex items-center justify-end pt-3 border-t border-slate-100">
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+      <button type="button" id="btnEditFromInboundDetail" onclick="openEditInboundModalFromDetail()" class="px-3.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-outlined text-[16px]">edit</span>
+        <span>Edit Transaksi</span>
+      </button>
       <button type="button" onclick="App.closeModal('modalInboundDetail')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Tutup</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EDIT TRANSAKSI INBOUND ================= -->
+<div id="modalEditInbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] overflow-y-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200 shadow-2xs">
+          <span class="material-symbols-outlined text-[20px]">edit_note</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Edit Transaksi Inbound</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Koreksi data penerimaan material barang masuk</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalEditInbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formEditInbound" onsubmit="handleEditInboundSubmit(event)" class="space-y-3.5 text-xs">
+      <input type="hidden" id="editInboundId">
+      
+      <!-- Nomor Inbound Info Box -->
+      <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">No. Transaksi Inbound</span>
+          <span id="editInboundNoDisplay" class="font-mono font-black text-sm text-emerald-950">-</span>
+        </div>
+        <div class="text-right">
+          <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">Penerima (PIC)</span>
+          <span id="editInboundReceiverDisplay" class="font-bold text-xs text-emerald-950">-</span>
+        </div>
+      </div>
+
+      <!-- Pilih Material -->
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Material Packaging <span class="text-rose-500">*</span></label>
+        <select id="editInboundMaterialSelect" required onchange="handleEditInboundMaterialChange()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600 focus:bg-white transition-colors">
+          <option value="">-- Pilih Material Packaging --</option>
+        </select>
+        <div id="editInboundStockHint" class="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
+          <span>Stok Master Saat Ini: <b id="editInboundCurrentStock" class="font-mono text-emerald-800">0</b></span>
+          <span id="editInboundRackHint" class="text-slate-400">&bull; Lokasi: -</span>
+        </div>
+      </div>
+
+      <!-- Qty Masuk & Satuan -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Jumlah Masuk (Qty) <span class="text-rose-500">*</span></label>
+          <input type="number" id="editInboundQty" required step="any" min="0.001" placeholder="0" class="w-full p-2.5 bg-slate-50 border-2 border-emerald-500 rounded-xl font-mono font-black text-base text-emerald-900 text-center outline-none focus:bg-white">
+          <p class="text-[10px] text-slate-400 mt-0.5">Dapat berupa bilangan desimal/koma (kg)</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">No. PO / Surat Jalan / Ref</label>
+          <input type="text" id="editInboundPoNumber" placeholder="Contoh: PO-2026/08/001 atau No. SJ..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600 focus:bg-white">
+        </div>
+      </div>
+
+      <!-- Supplier & Tanggal -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Supplier / Vendor</label>
+          <input type="text" id="editInboundSupplier" placeholder="Nama Supplier / Vendor..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium outline-none focus:border-emerald-600 focus:bg-white">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tanggal & Waktu Penerimaan</label>
+          <input type="datetime-local" id="editInboundCreatedAt" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600 focus:bg-white">
+        </div>
+      </div>
+
+      <!-- Catatan -->
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Catatan / Keterangan</label>
+        <textarea id="editInboundNotes" rows="2" placeholder="Catatan kondisi penerimaan, surat jalan, dsb..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:border-emerald-600 focus:bg-white resize-none"></textarea>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+        <button type="button" onclick="deleteCurrentEditInbound()" class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">delete</span>
+          <span>Hapus Transaksi</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="App.closeModal('modalEditInbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+            Batal
+          </button>
+          <button type="submit" id="btnSubmitEditInbound" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[17px]">save</span>
+            <span>Simpan Perubahan</span>
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 

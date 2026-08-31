@@ -332,5 +332,266 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 4. GET SINGLE INBOUND DETAIL (Admin / Operator)
+if ($action === 'get') {
+    $id = (int)($_GET['id'] ?? 0);
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID inbound tidak valid']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT i.*, 
+               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_current_stock,
+               COALESCE(u.name, i.received_by, 'Admin') as receiver_name
+        FROM inbound_transactions i
+        JOIN materials m ON i.material_id = m.id
+        LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username OR i.received_by = u.name)
+        WHERE i.id = ?
+    ");
+    $stmt->execute([$id]);
+    $data = $stmt->fetch();
+
+    if ($data) {
+        echo json_encode(['success' => true, 'data' => $data]);
+    } else {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Data transaksi inbound tidak ditemukan']);
+    }
+    exit;
+}
+
+// 5. UPDATE INBOUND TRANSACTION (Admin Only)
+if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $id         = (int)($input['id'] ?? 0);
+    $materialId = (int)($input['material_id'] ?? 0);
+    $qty        = max(0, (float)($input['qty'] ?? 0));
+    $poNumber   = trim($input['po_number'] ?? '-');
+    if (empty($poNumber)) $poNumber = '-';
+    $supplier   = trim($input['supplier'] ?? '-');
+    if (empty($supplier)) $supplier = '-';
+    $notes      = trim($input['notes'] ?? '');
+    $createdAt  = trim($input['created_at'] ?? '');
+
+    if ($id <= 0 || $materialId <= 0 || $qty <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Transaksi, Material, dan Jumlah Masuk (Qty > 0) wajib diisi!']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmtOld = $pdo->prepare("SELECT * FROM inbound_transactions WHERE id = ?");
+        $stmtOld->execute([$id]);
+        $oldInbound = $stmtOld->fetch();
+
+        if (!$oldInbound) {
+            $pdo->rollBack();
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Data transaksi inbound tidak ditemukan.']);
+            exit;
+        }
+
+        $oldMaterialId = (int)$oldInbound['material_id'];
+        $oldQty        = (float)$oldInbound['qty'];
+        $inboundNo     = $oldInbound['inbound_no'];
+        $now           = date('Y-m-d H:i:s');
+        $effectiveDate = !empty($createdAt) ? date('Y-m-d H:i:s', strtotime($createdAt)) : $oldInbound['created_at'];
+
+        // If material didn't change:
+        if ($oldMaterialId === $materialId) {
+            $stmtMat = $pdo->prepare("SELECT id, name, current_stock, unit FROM materials WHERE id = ?");
+            $stmtMat->execute([$materialId]);
+            $mat = $stmtMat->fetch();
+            if (!$mat) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Material tidak ditemukan.']);
+                exit;
+            }
+
+            $currentStock = (float)$mat['current_stock'];
+            $qtyDiff      = $qty - $oldQty; // positive means increased stock, negative means decreased
+            $newStock     = $currentStock + $qtyDiff;
+
+            if ($newStock < 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Stok gudang tidak dapat bernilai negatif setelah koreksi (Stok saat ini: {$currentStock}, Koreksi: {$qtyDiff})."]);
+                exit;
+            }
+
+            // Update Material Stock
+            $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+            $stmtUpMat->execute([$newStock, $materialId]);
+
+            // Update Inbound Transaction
+            $stmtUpIn = $pdo->prepare("
+                UPDATE inbound_transactions 
+                SET material_id = ?, qty = ?, po_number = ?, supplier = ?, notes = ?, created_at = ?, completed_at = ?
+                WHERE id = ?
+            ");
+            $stmtUpIn->execute([$materialId, $qty, $poNumber, $supplier, $notes, $effectiveDate, $effectiveDate, $id]);
+
+            // Record Mutation if Qty Changed
+            if ($qtyDiff != 0) {
+                $stmtMut = $pdo->prepare("
+                    INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                    VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $mutNotes = "Koreksi Edit Transaksi Inbound #{$inboundNo} (Qty lama: {$oldQty} -> Qty baru: {$qty})";
+                $stmtMut->execute([$materialId, $qtyDiff, $currentStock, $newStock, $inboundNo, $mutNotes, Auth::id(), $now]);
+            }
+        } else {
+            // Material changed!
+            // 1. Revert stock from old material
+            $stmtOldMat = $pdo->prepare("SELECT id, name, current_stock FROM materials WHERE id = ?");
+            $stmtOldMat->execute([$oldMaterialId]);
+            $oldMat = $stmtOldMat->fetch();
+            if ($oldMat) {
+                $oldMatStockBefore = (float)$oldMat['current_stock'];
+                $oldMatStockAfter  = $oldMatStockBefore - $oldQty;
+                if ($oldMatStockAfter < 0) {
+                    $pdo->rollBack();
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'message' => "Stok material lama ({$oldMat['name']}) tidak mencukupi untuk dibatalkan (Sisa: {$oldMatStockBefore})."]);
+                    exit;
+                }
+                $stmtUpOld = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+                $stmtUpOld->execute([$oldMatStockAfter, $oldMaterialId]);
+
+                $stmtMutOld = $pdo->prepare("
+                    INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                    VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmtMutOld->execute([$oldMaterialId, -$oldQty, $oldMatStockBefore, $oldMatStockAfter, $inboundNo, "Pembatalan Material Lama via Edit Inbound #{$inboundNo}", Auth::id(), $now]);
+            }
+
+            // 2. Add stock to new material
+            $stmtNewMat = $pdo->prepare("SELECT id, name, current_stock FROM materials WHERE id = ?");
+            $stmtNewMat->execute([$materialId]);
+            $newMat = $stmtNewMat->fetch();
+            if (!$newMat) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Material baru tidak ditemukan.']);
+                exit;
+            }
+
+            $newMatStockBefore = (float)$newMat['current_stock'];
+            $newMatStockAfter  = $newMatStockBefore + $qty;
+
+            $stmtUpNew = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+            $stmtUpNew->execute([$newMatStockAfter, $materialId]);
+
+            $stmtMutNew = $pdo->prepare("
+                INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                VALUES (?, 'INBOUND', ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmtMutNew->execute([$materialId, $qty, $newMatStockBefore, $newMatStockAfter, $inboundNo, "Pengalihan Material Baru via Edit Inbound #{$inboundNo}", Auth::id(), $now]);
+
+            // Update Inbound Transaction
+            $stmtUpIn = $pdo->prepare("
+                UPDATE inbound_transactions 
+                SET material_id = ?, qty = ?, po_number = ?, supplier = ?, notes = ?, created_at = ?, completed_at = ?
+                WHERE id = ?
+            ");
+            $stmtUpIn->execute([$materialId, $qty, $poNumber, $supplier, $notes, $effectiveDate, $effectiveDate, $id]);
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Transaksi Inbound #{$inboundNo} berhasil diperbarui!",
+            'inbound_no' => $inboundNo
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui transaksi inbound: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 6. DELETE INBOUND TRANSACTION (Admin Only)
+if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $id = (int)($input['id'] ?? 0);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Transaksi tidak valid.']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("SELECT * FROM inbound_transactions WHERE id = ?");
+        $stmt->execute([$id]);
+        $inbound = $stmt->fetch();
+
+        if (!$inbound) {
+            $pdo->rollBack();
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Data transaksi inbound tidak ditemukan.']);
+            exit;
+        }
+
+        $materialId = (int)$inbound['material_id'];
+        $qty        = (float)$inbound['qty'];
+        $inboundNo  = $inbound['inbound_no'];
+        $now        = date('Y-m-d H:i:s');
+
+        // Check and revert stock
+        $stmtMat = $pdo->prepare("SELECT id, name, current_stock FROM materials WHERE id = ?");
+        $stmtMat->execute([$materialId]);
+        $mat = $stmtMat->fetch();
+
+        if ($mat) {
+            $stockBefore = (float)$mat['current_stock'];
+            $stockAfter  = $stockBefore - $qty;
+            if ($stockAfter < 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Stok material {$mat['name']} saat ini ({$stockBefore}) tidak mencukupi untuk dibatalkan sejumlah {$qty}."]);
+                exit;
+            }
+
+            $stmtUp = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+            $stmtUp->execute([$stockAfter, $materialId]);
+
+            $stmtMut = $pdo->prepare("
+                INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmtMut->execute([$materialId, -$qty, $stockBefore, $stockAfter, $inboundNo, "Penghapusan Transaksi Inbound #{$inboundNo} oleh " . (Auth::name() ?? 'Admin'), Auth::id(), $now]);
+        }
+
+        $stmtDel = $pdo->prepare("DELETE FROM inbound_transactions WHERE id = ?");
+        $stmtDel->execute([$id]);
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Transaksi Inbound #{$inboundNo} berhasil dihapus dan stok master telah dikembalikan."
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal menghapus transaksi: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Aksi inbound tidak valid']);
+
