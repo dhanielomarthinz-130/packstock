@@ -245,6 +245,26 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($matId <= 0 || $qty <= 0) continue;
 
+            // Validate stock availability
+            $stmtMat = $pdo->prepare("SELECT id, name, current_stock, unit FROM materials WHERE id = ?");
+            $stmtMat->execute([$matId]);
+            $mat = $stmtMat->fetch();
+
+            if (!$mat) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Material dengan ID #{$matId} tidak ditemukan!"]);
+                exit;
+            }
+
+            $currentStock = (float)$mat['current_stock'];
+            if ($qty > $currentStock) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Jumlah permintaan untuk \"{$mat['name']}\" ({$qty} {$mat['unit']}) tidak boleh melebihi sisa stok di gudang ({$currentStock} {$mat['unit']})!"]);
+                exit;
+            }
+
             $stmtItem->execute([$requestId, $matId, $qty, $itemNotes, $now]);
             $totalQty += $qty;
             $validItemCount++;

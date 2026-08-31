@@ -2389,11 +2389,12 @@ function handleOpReqMaterialSelectChange(sel) {
   const stockVal = document.getElementById('opReqStockVal');
   if (!sel || !sel.value) {
     if (badge) badge.classList.add('hidden');
+    validateOpReqQtyLive();
     return;
   }
 
   const opt = sel.options[sel.selectedIndex];
-  const stock = opt.getAttribute('data-stock') || 0;
+  const stock = parseFloat(opt.getAttribute('data-stock') || 0);
   const unit = opt.getAttribute('data-unit') || 'Pcs';
   const rack = opt.getAttribute('data-rack') || '-';
 
@@ -2401,6 +2402,77 @@ function handleOpReqMaterialSelectChange(sel) {
     stockVal.innerText = `${App.formatNumber(stock)} ${unit} (Rak: ${rack})`;
     badge.classList.remove('hidden');
   }
+
+  validateOpReqQtyLive();
+}
+
+function validateOpReqQtyLive() {
+  const sel = document.getElementById('opReqMaterialSelect');
+  const qtyInp = document.getElementById('opReqQty');
+  const warningBox = document.getElementById('opReqStockWarning');
+  const warningText = document.getElementById('opReqStockWarningText');
+  const addBtn = document.getElementById('btnOpReqAddDraft');
+
+  if (!sel || !qtyInp) return true;
+
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !sel.value) {
+    if (warningBox) warningBox.classList.add('hidden');
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    return true;
+  }
+
+  const materialId = parseInt(sel.value);
+  const stock = parseFloat(opt.getAttribute('data-stock') || 0);
+  const unit = opt.getAttribute('data-unit') || 'Pcs';
+  const name = opt.getAttribute('data-name') || 'Material';
+  const enteredQty = parseFloat(qtyInp.value || 0);
+
+  // Check if item is already in draft
+  const existingInDraft = opConsumableDraft.find(i => i.material_id === materialId);
+  const draftQty = existingInDraft ? existingInDraft.qty : 0;
+  const totalRequested = enteredQty + draftQty;
+
+  if (stock <= 0) {
+    if (warningBox && warningText) {
+      warningText.innerText = `Stok material "${name}" HABIS (0 ${unit}) di gudang!`;
+      warningBox.classList.remove('hidden');
+    }
+    qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    return false;
+  }
+
+  if (enteredQty > 0 && totalRequested > stock) {
+    if (warningBox && warningText) {
+      warningText.innerText = draftQty > 0
+        ? `Total permintaan (${App.formatNumber(totalRequested)} ${unit}) melebihi sisa stok (${App.formatNumber(stock)} ${unit}). Di draft: ${App.formatNumber(draftQty)} ${unit}.`
+        : `Jumlah permintaan (${App.formatNumber(enteredQty)} ${unit}) melebihi sisa stok yang tersedia (${App.formatNumber(stock)} ${unit})!`;
+      warningBox.classList.remove('hidden');
+    }
+    qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    return false;
+  }
+
+  // Valid
+  if (warningBox) warningBox.classList.add('hidden');
+  qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  if (addBtn) {
+    addBtn.disabled = false;
+    addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  }
+  return true;
 }
 
 function addConsumableDraftItem() {
@@ -2411,7 +2483,7 @@ function addConsumableDraftItem() {
   if (!sel || !qtyInp) return;
 
   const materialId = parseInt(sel.value);
-  const qty = parseInt(qtyInp.value);
+  const qty = parseFloat(qtyInp.value || 0);
   const notes = notesInp ? notesInp.value.trim() : '';
 
   if (!materialId || materialId <= 0) {
@@ -2421,18 +2493,33 @@ function addConsumableDraftItem() {
   }
 
   if (!qty || qty <= 0) {
-    App.toast('Jumlah permintaan harus lebih dari 0.', 'warning');
+    App.toast('Jumlah permintaan harus lebih besar dari 0.', 'warning');
     qtyInp.focus();
     return;
   }
 
   const opt = sel.options[sel.selectedIndex];
   const itemCode = opt.getAttribute('data-code') || '';
-  const itemName = opt.getAttribute('data-name') || '';
-  const itemStock = parseInt(opt.getAttribute('data-stock') || 0);
+  const itemName = opt.getAttribute('data-name') || 'Material';
+  const itemStock = parseFloat(opt.getAttribute('data-stock') || 0);
   const itemUnit = opt.getAttribute('data-unit') || 'Pcs';
 
+  if (itemStock <= 0) {
+    App.toast(`Stok material "${itemName}" saat ini habis (0 ${itemUnit}). Tidak dapat mengajukan request.`, 'error');
+    return;
+  }
+
   const existingIdx = opConsumableDraft.findIndex(i => i.material_id === materialId);
+  const currentDraftQty = existingIdx >= 0 ? opConsumableDraft[existingIdx].qty : 0;
+  const totalRequested = currentDraftQty + qty;
+
+  if (totalRequested > itemStock) {
+    App.toast(`Jumlah permintaan (${App.formatNumber(totalRequested)} ${itemUnit}) tidak boleh melebihi sisa stok gudang (${App.formatNumber(itemStock)} ${itemUnit})!`, 'error');
+    qtyInp.focus();
+    validateOpReqQtyLive();
+    return;
+  }
+
   if (existingIdx >= 0) {
     opConsumableDraft[existingIdx].qty += qty;
     if (notes) opConsumableDraft[existingIdx].notes = notes;
@@ -2464,7 +2551,7 @@ function addConsumableDraftItem() {
   }
 
   renderConsumableDraftList();
-  App.toast(`${itemName} (+${qty} ${itemUnit}) ditambahkan ke draft!`, 'success');
+  App.toast(`${itemName} (+${App.formatNumber(qty)} ${itemUnit}) ditambahkan ke draft!`, 'success');
 }
 
 function renderConsumableDraftList() {

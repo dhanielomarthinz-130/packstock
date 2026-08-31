@@ -766,24 +766,31 @@ require_once __DIR__ . '/../includes/header.php';
                   <option value="">-- Pilih Material Packaging --</option>
                 </select>
                 <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-amber-50/80 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
-                  <span class="text-slate-600 font-medium">Stok di Gudang:</span>
+                  <span class="text-slate-600 font-medium">Sisa Stok di Gudang:</span>
                   <span id="opReqStockVal" class="font-mono font-black text-amber-950">0 Pcs</span>
                 </div>
               </div>
 
               <!-- 3. Qty & Tombol Tambah -->
-              <div class="flex items-end gap-2">
-                <div class="w-1/3">
-                  <label class="block font-bold text-slate-800 mb-1 text-xs">
-                    Qty <span class="text-rose-500">*</span>
-                  </label>
-                  <input type="number" id="opReqQty" min="1" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-amber-600">
+              <div class="space-y-1.5">
+                <div class="flex items-end gap-2">
+                  <div class="w-1/3">
+                    <label class="block font-bold text-slate-800 mb-1 text-xs">
+                      Qty <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="number" id="opReqQty" min="0.001" step="any" oninput="validateOpReqQtyLive()" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors">
+                  </div>
+                  <div class="w-2/3">
+                    <button type="button" id="btnOpReqAddDraft" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
+                      <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                      <span>+ Masukkan Draft</span>
+                    </button>
+                  </div>
                 </div>
-                <div class="w-2/3">
-                  <button type="button" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
-                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                    <span>+ Masukkan Draft</span>
-                  </button>
+                <!-- Real-time Validation Error Banner -->
+                <div id="opReqStockWarning" class="hidden p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold text-[11px] flex items-center gap-1.5 animate-scale-up">
+                  <span class="material-symbols-outlined text-[15px] text-rose-600 shrink-0">error</span>
+                  <span id="opReqStockWarningText"></span>
                 </div>
               </div>
             </div>
