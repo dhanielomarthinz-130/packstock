@@ -193,7 +193,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
     $materialId  = (int)($input['material_id'] ?? 0);
-    $qty         = (int)($input['qty'] ?? 0);
+    $qty         = max(0, (float)($input['qty'] ?? 0));
     $destination = trim($input['destination'] ?? 'Line Produksi');
     $reason      = trim($input['reason'] ?? 'Pemakaian Reguler');
     $notes       = trim($input['notes'] ?? '');
@@ -222,11 +222,11 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stockBefore = (int)$mat['current_stock'];
+        $stockBefore = (float)$mat['current_stock'];
         if ($qty > $stockBefore) {
             $pdo->rollBack();
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => "Stok di gudang tidak mencukupi! Sisa stok saat ini hanya {$stockBefore}."]);
+            echo json_encode(['success' => false, 'message' => "Stok di gudang tidak mencukupi! Sisa stok saat ini hanya " . number_format($stockBefore, 2, ',', '.') . "."]);
             exit;
         }
 
@@ -336,7 +336,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($items as $item) {
             $materialId  = (int)($item['material_id'] ?? 0);
-            $qty         = (int)($item['qty'] ?? 0);
+            $qty         = max(0, (float)($item['qty'] ?? 0));
             $destination = trim($item['destination'] ?? 'HANASUI');
             $reason      = trim($item['reason'] ?? 'Kebutuhan Produksi');
             $itemNotes   = trim($item['notes'] ?? '');
@@ -348,11 +348,11 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $mat = $stmtMat->fetch();
             if (!$mat) continue;
 
-            $stockBefore = (int)$mat['current_stock'];
+            $stockBefore = (float)$mat['current_stock'];
             if ($qty > $stockBefore) {
                 $pdo->rollBack();
                 http_response_code(400);
-                echo json_encode(['success' => false, 'message' => "Stok untuk {$mat['name']} tidak mencukupi! Tersisa {$stockBefore}."]);
+                echo json_encode(['success' => false, 'message' => "Stok untuk {$mat['name']} tidak mencukupi! Tersisa " . number_format($stockBefore, 2, ',', '.') . "."]);
                 exit;
             }
 

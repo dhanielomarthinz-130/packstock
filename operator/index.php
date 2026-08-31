@@ -1392,7 +1392,7 @@ require_once __DIR__ . '/../includes/header.php';
         <label class="block font-bold text-slate-800 mb-1 text-xs">
           Jumlah Riil yang Diserahkan (<span id="submitUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
         </label>
-        <input type="number" id="submitActualQty" required min="1" 
+        <input type="number" step="any" id="submitActualQty" required min="0.001" 
           class="w-full p-2.5 bg-amber-50/70 border-2 border-amber-500 rounded-xl font-black text-xl text-amber-900 text-center outline-none">
         
         <!-- Stepper Helper -->

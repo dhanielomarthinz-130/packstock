@@ -3536,7 +3536,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Target Qty <span class="text-rose-500">*</span></label>
-          <input type="number" id="editTaskTargetQty" min="1" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-mono font-bold text-xs">
+          <input type="number" step="any" id="editTaskTargetQty" min="0.001" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-mono font-bold text-xs">
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke Operator PIC <span class="text-rose-500">*</span></label>

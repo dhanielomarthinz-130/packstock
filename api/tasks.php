@@ -7,6 +7,37 @@ Auth::requireLogin();
 $pdo = Database::getConnection();
 $action = $_GET['action'] ?? 'list';
 
+/**
+ * Helper: Parse Excel localized numbers (e.g. 1.712,36 or 0,7 or 1,712.36 or 1712.36)
+ */
+function parseExcelNumeric($val) {
+    if (is_numeric($val)) return (float)$val;
+    $val = trim((string)$val);
+    if ($val === '') return 0.0;
+    $val = preg_replace('/[^\d.,\-+]/u', '', $val);
+
+    if (strpos($val, ',') !== false && strpos($val, '.') !== false) {
+        $lastComma = strrpos($val, ',');
+        $lastDot   = strrpos($val, '.');
+        if ($lastComma > $lastDot) {
+            $val = str_replace('.', '', $val);
+            $val = str_replace(',', '.', $val);
+        } else {
+            $val = str_replace(',', '', $val);
+        }
+    } elseif (strpos($val, ',') !== false) {
+        $val = str_replace(',', '.', $val);
+    } elseif (strpos($val, '.') !== false) {
+        $parts = explode('.', $val);
+        if (count($parts) > 2) {
+            $val = str_replace('.', '', $val);
+        }
+    }
+
+    $clean = preg_replace('/[^0-9.\-+]/', '', $val);
+    return is_numeric($clean) ? (float)$clean : 0.0;
+}
+
 // 1. DOWNLOAD TEMPLATE EXCEL / CSV UNTUK TASK ASSIGNMENT
 if ($action === 'template') {
     header('Content-Type: text/csv; charset=utf-8');
@@ -94,7 +125,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
     $materialId  = (int)($input['material_id'] ?? 0);
-    $targetQty   = (int)($input['target_qty'] ?? 0);
+    $targetQty   = max(0, (float)($input['target_qty'] ?? 0));
     $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
     $destination = trim($input['destination'] ?? 'Line Packing');
     $assignedTo  = (int)($input['assigned_to'] ?? 0);
@@ -121,7 +152,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         echo json_encode([
             'success' => false, 
-            'message' => "Target Qty ({$targetQty}) tidak bisa lebih besar dari Sisa Stok yang tersedia (" . number_format($mat['current_stock'], 0, ',', '.') . ") untuk material {$mat['name']}!"
+            'message' => "Target Qty ({$targetQty}) tidak bisa lebih besar dari Sisa Stok yang tersedia (" . number_format($mat['current_stock'], 2, ',', '.') . ") untuk material {$mat['name']}!"
         ]);
         exit;
     }
@@ -186,7 +217,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $taskId      = (int)($input['task_id'] ?? 0);
     $materialId  = (int)($input['material_id'] ?? 0);
-    $targetQty   = (int)($input['target_qty'] ?? 0);
+    $targetQty   = max(0, (float)($input['target_qty'] ?? 0));
     $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
     $destination = trim($input['destination'] ?? '');
     $assignedTo  = (int)($input['assigned_to'] ?? 0);
@@ -194,7 +225,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($taskId <= 0 || $materialId <= 0 || $targetQty <= 0 || empty($destination) || $assignedTo <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Material, Qty Target, Tujuan Antar, dan Operator PIC wajib diisi!']);
+        echo json_encode(['success' => false, 'message' => 'Material, Qty Target (> 0), Tujuan Antar, dan Operator PIC wajib diisi!']);
         exit;
     }
 
@@ -269,7 +300,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($tasksList as $idx => $t) {
             $materialId  = (int)($t['material_id'] ?? 0);
-            $targetQty   = (int)($t['target_qty'] ?? 0);
+            $targetQty   = max(0, (float)($t['target_qty'] ?? 0));
             $priority    = strtoupper(trim($t['priority'] ?? 'NORMAL'));
             if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) $priority = 'NORMAL';
             $destination = trim($t['destination'] ?? 'Line Packing');
@@ -292,7 +323,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false, 
-                    'message' => "Target Qty ({$targetQty}) tidak bisa lebih besar dari Sisa Stok (" . number_format($mat['current_stock'], 0, ',', '.') . ") untuk material {$mat['name']} pada baris ke-" . ($idx + 1) . "!"
+                    'message' => "Target Qty ({$targetQty}) tidak bisa lebih besar dari Sisa Stok (" . number_format($mat['current_stock'], 2, ',', '.') . ") untuk material {$mat['name']} pada baris ke-" . ($idx + 1) . "!"
                 ]);
                 exit;
             }
@@ -355,7 +386,7 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $rawText = trim($input['raw_text'] ?? '');
         if (empty($rawText)) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Silakan upload file Excel atau paste data tabel tugas.']);
+            echo json_encode(['success' => false, 'message' => 'Silakan upload file CSV/Excel atau paste teks tabel tugas.']);
             exit;
         }
 
@@ -376,47 +407,50 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($rows)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Tidak ada data tugas yang terbaca.']);
+        echo json_encode(['success' => false, 'message' => 'Data file tugas kosong atau tidak dapat dibaca']);
         exit;
     }
 
-    // Header index detection
+    // Find header
+    $headerRowIdx = 0;
+    for ($r = 0; $r < min(10, count($rows)); $r++) {
+        $lineLower = strtolower(implode(' ', array_map('strval', $rows[$r])));
+        if (strpos($lineLower, 'item') !== false || strpos($lineLower, 'sku') !== false || strpos($lineLower, 'target') !== false || strpos($lineLower, 'qty') !== false) {
+            $headerRowIdx = $r;
+            break;
+        }
+    }
+
     $headers = array_map(function($h) {
-        return strtolower(trim(preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $h)));
-    }, $rows[0]);
+        return strtolower(trim(preg_replace('/[\x00-\x1F\x80-\xFF\.]/', '', (string)$h)));
+    }, $rows[$headerRowIdx]);
 
-    $itemNoIdx      = -1;
-    $qtyIdx         = -1;
-    $destIdx        = -1;
-    $opIdx          = -1;
-    $priorityIdx    = -1;
-    $notesIdx       = -1;
+    $itemNoIdx = -1;
+    $qtyIdx = -1;
+    $destIdx = -1;
+    $opIdx = -1;
+    $priorityIdx = -1;
+    $notesIdx = -1;
 
-    foreach ($headers as $idx => $h) {
-        if (in_array($h, ['item no', 'item no.', 'item_no', 'item number', 'kode', 'kode item', 'code', 'sku'])) $itemNoIdx = $idx;
-        elseif (in_array($h, ['target qty', 'target_qty', 'qty target', 'qty', 'target', 'jumlah', 'jumlah ambil'])) $qtyIdx = $idx;
-        elseif (in_array($h, ['destination', 'tujuan', 'line', 'tujuan line', 'departemen'])) $destIdx = $idx;
-        elseif (in_array($h, ['operator', 'operator username', 'assigned to', 'operator pic', 'username operator', 'pic'])) $opIdx = $idx;
-        elseif (in_array($h, ['priority', 'prioritas', 'tingkat'])) $priorityIdx = $idx;
-        elseif (in_array($h, ['notes', 'catatan', 'keterangan', 'instruksi'])) $notesIdx = $idx;
+    foreach ($headers as $idx => $header) {
+        if (strpos($header, 'item no') !== false || strpos($header, 'itemno') !== false || strpos($header, 'kode') !== false || strpos($header, 'sku') !== false) {
+            $itemNoIdx = $idx;
+        } elseif (strpos($header, 'target qty') !== false || strpos($header, 'qty') !== false || strpos($header, 'jumlah') !== false || strpos($header, 'target') !== false) {
+            $qtyIdx = $idx;
+        } elseif (strpos($header, 'destination') !== false || strpos($header, 'tujuan') !== false || strpos($header, 'line') !== false) {
+            $destIdx = $idx;
+        } elseif (strpos($header, 'operator') !== false || strpos($header, 'pic') !== false || strpos($header, 'petugas') !== false) {
+            $opIdx = $idx;
+        } elseif (strpos($header, 'priority') !== false || strpos($header, 'prioritas') !== false) {
+            $priorityIdx = $idx;
+        } elseif (strpos($header, 'note') !== false || strpos($header, 'catatan') !== false || strpos($header, 'keterangan') !== false) {
+            $notesIdx = $idx;
+        }
     }
 
-    $hasHeader = ($itemNoIdx !== -1 || $qtyIdx !== -1 || $destIdx !== -1);
-    if (!$hasHeader) {
-        $itemNoIdx = 0;
-        $qtyIdx    = 1;
-        $destIdx   = 2;
-        $opIdx     = 3;
-        $priorityIdx = 4;
-        $notesIdx  = 5;
-        $startRow  = 0;
-    } else {
-        if ($itemNoIdx === -1) $itemNoIdx = 0;
-        if ($qtyIdx === -1) $qtyIdx = 1;
-        if ($destIdx === -1) $destIdx = 2;
-        if ($opIdx === -1) $opIdx = 3;
-        $startRow = 1;
-    }
+    if ($itemNoIdx === -1) $itemNoIdx = 0;
+    if ($qtyIdx === -1) $qtyIdx = 1;
+    $startRow = $headerRowIdx + 1;
 
     // Load materials and operators dictionary for fast lookup
     $materialsMap = [];
@@ -444,8 +478,7 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $itemNo   = strtoupper(trim($r[$itemNoIdx] ?? ''));
         $qtyRaw   = trim($r[$qtyIdx] ?? '1');
-        $qtyClean = preg_replace('/[^0-9]/', '', $qtyRaw);
-        $targetQty = is_numeric($qtyClean) ? max(1, (int)$qtyClean) : 1;
+        $targetQty = max(0.01, parseExcelNumeric($qtyRaw));
         $destination = ($destIdx !== -1 && !empty($r[$destIdx])) ? trim($r[$destIdx]) : 'Line Packing 1';
         $opRaw    = ($opIdx !== -1 && !empty($r[$opIdx])) ? strtolower(trim($r[$opIdx])) : '';
         $priority = ($priorityIdx !== -1 && !empty($r[$priorityIdx])) ? strtoupper(trim($r[$priorityIdx])) : 'NORMAL';
@@ -471,8 +504,8 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $invalidCount++;
         } else {
             $validCount++;
-            if ($targetQty > (int)$mat['current_stock']) {
-                $warningMessage = "Peringatan: Stok tersedia ({$mat['current_stock']} {$mat['unit']}) kurang dari target ambil ({$targetQty} {$mat['unit']}).";
+            if ($targetQty > (float)$mat['current_stock']) {
+                $warningMessage = "Peringatan: Stok tersedia (" . number_format($mat['current_stock'], 2, ',', '.') . " {$mat['unit']}) kurang dari target ambil ({$targetQty} {$mat['unit']}).";
             }
         }
 
@@ -482,7 +515,7 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'material_id' => $mat ? (int)$mat['id'] : 0,
             'material_name' => $mat ? $mat['name'] : 'Item Tidak Ditemukan',
             'material_unit' => $mat ? $mat['unit'] : 'Pcs',
-            'material_stock' => $mat ? (int)$mat['current_stock'] : 0,
+            'material_stock' => $mat ? (float)$mat['current_stock'] : 0,
             'rack_location' => $mat ? $mat['rack_location'] : '-',
             'target_qty' => $targetQty,
             'destination' => $destination,
@@ -578,7 +611,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $taskId          = (int)($input['task_id'] ?? 0);
-    $actualQty       = (int)($input['actual_qty'] ?? 0);
+    $actualQty       = max(0, (float)($input['actual_qty'] ?? 0));
     $completionNotes = trim($input['completion_notes'] ?? '');
     $photoPathValue  = handleUploadedTaskPhotos();
 

@@ -136,14 +136,14 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $supplier   = trim($input['supplier'] ?? '-');
     if (empty($supplier)) $supplier = '-';
     $materialId = (int)($input['material_id'] ?? 0);
-    $qty        = (int)($input['qty'] ?? 0);
+    $qty        = max(0, (float)($input['qty'] ?? 0));
     $notes      = trim($input['notes'] ?? '');
     $startedAt  = trim($input['started_at'] ?? '');
     $photoPathValue = handleUploadedInboundPhotos();
 
     if ($materialId <= 0 || $qty <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Material packaging dan Jumlah Masuk (Qty) wajib diisi!']);
+        echo json_encode(['success' => false, 'message' => 'Material packaging dan Jumlah Masuk (Qty) wajib diisi lebih dari 0!']);
         exit;
     }
 
@@ -161,7 +161,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stockBefore = (int)$mat['current_stock'];
+        $stockBefore = (float)$mat['current_stock'];
         $stockAfter  = $stockBefore + $qty;
 
         $prefix = 'INB-' . date('Ym') . '-';
@@ -274,7 +274,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($items as $item) {
             $materialId = (int)($item['material_id'] ?? 0);
-            $qty        = (int)($item['qty'] ?? 0);
+            $qty        = max(0, (float)($item['qty'] ?? 0));
             $itemNotes  = trim($item['notes'] ?? '');
 
             if ($materialId <= 0 || $qty <= 0) continue;
@@ -284,7 +284,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $mat = $stmtMat->fetch();
             if (!$mat) continue;
 
-            $stockBefore = (int)$mat['current_stock'];
+            $stockBefore = (float)$mat['current_stock'];
             $stockAfter  = $stockBefore + $qty;
 
             $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);

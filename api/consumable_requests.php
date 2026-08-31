@@ -240,7 +240,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         foreach ($items as $it) {
             $matId = (int)($it['material_id'] ?? 0);
-            $qty   = (int)($it['qty'] ?? 0);
+            $qty   = max(0, (float)($it['qty'] ?? 0));
             $itemNotes = trim($it['notes'] ?? '');
 
             if ($matId <= 0 || $qty <= 0) continue;
@@ -424,12 +424,12 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($items as $it) {
                 $outboundNo = $prefixOut . str_pad($nextOutNum++, 4, '0', STR_PAD_LEFT);
                 $matId = (int)$it['material_id'];
-                $qty   = (int)$it['qty'];
+                $qty   = max(0, (float)$it['qty']);
 
                 // Re-fetch current stock
                 $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
                 $stmtMat->execute([$matId]);
-                $stockBefore = (int)$stmtMat->fetchColumn();
+                $stockBefore = (float)$stmtMat->fetchColumn();
                 $stockAfter = max(0, $stockBefore - $qty);
 
                 $reasonText = "ACC Permintaan Consumable #{$req['request_no']} ({$req['destination']})";
