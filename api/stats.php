@@ -118,29 +118,40 @@ try {
         $rows = $stmt->fetchAll();
 
         $data = [];
-        $sumInbound = 0;
-        $sumOutbound = 0;
-        $sumAdjustment = 0;
-        $sumAdjustmentPlus = 0;
-        $sumAdjustmentMinus = 0;
-        $sumEndingStock = 0;
+        $sumInbound = 0.0;
+        $sumOutbound = 0.0;
+        $sumAdjustment = 0.0;
+        $sumAdjustmentPlus = 0.0;
+        $sumAdjustmentMinus = 0.0;
+        $sumEndingStock = 0.0;
         $activeSkuCount = 0;
         $lowStockCount = 0;
         $outOfStockCount = 0;
 
+        $periodStockByUnit = [];
+        $periodInboundByUnit = [];
+        $periodOutboundByUnit = [];
+        $periodAdjustmentByUnit = [];
+
         foreach ($rows as $r) {
-            $current = (int)$r['current_stock'];
-            $changeSinceStart = (int)$r['change_since_start'];
-            $changeAfterEnd = (int)$r['change_after_end'];
+            $current = (float)$r['current_stock'];
+            $changeSinceStart = (float)$r['change_since_start'];
+            $changeAfterEnd = (float)$r['change_after_end'];
             
             $beginningStock = $current - $changeSinceStart;
             $endingStock = $current - $changeAfterEnd;
-            $inbound = (int)$r['total_inbound'];
-            $outbound = (int)$r['total_outbound'];
-            $adjustment = (int)$r['total_adjustment'];
-            $minStock = (int)$r['min_stock'];
+            $inbound = (float)$r['total_inbound'];
+            $outbound = (float)$r['total_outbound'];
+            $adjustment = (float)$r['total_adjustment'];
+            $minStock = (float)$r['min_stock'];
 
-            $hasActivity = ($inbound !== 0 || $outbound !== 0 || $adjustment !== 0);
+            $unitName = !empty(trim((string)$r['unit'])) ? trim((string)$r['unit']) : 'Pcs';
+            $periodStockByUnit[$unitName] = ($periodStockByUnit[$unitName] ?? 0.0) + $endingStock;
+            if ($inbound > 0) $periodInboundByUnit[$unitName] = ($periodInboundByUnit[$unitName] ?? 0.0) + $inbound;
+            if ($outbound > 0) $periodOutboundByUnit[$unitName] = ($periodOutboundByUnit[$unitName] ?? 0.0) + $outbound;
+            if ($adjustment != 0) $periodAdjustmentByUnit[$unitName] = ($periodAdjustmentByUnit[$unitName] ?? 0.0) + $adjustment;
+
+            $hasActivity = ($inbound != 0 || $outbound != 0 || $adjustment != 0);
 
             if ($endingStock <= 0) $outOfStockCount++;
             elseif ($endingStock <= $minStock) $lowStockCount++;
@@ -150,7 +161,7 @@ try {
             if ($status === 'low' && ($endingStock > $minStock || $endingStock <= 0)) continue;
             if ($status === 'empty' && $endingStock > 0) continue;
             if ($status === 'safe' && $endingStock <= $minStock) continue;
-            if ($status === 'adjusted_only' && $adjustment === 0) continue;
+            if ($status === 'adjusted_only' && $adjustment == 0) continue;
 
             $stockStatus = 'safe';
             if ($endingStock <= 0) $stockStatus = 'empty';
@@ -169,7 +180,7 @@ try {
                 'id'              => (int)$r['id'],
                 'code'            => $r['code'],
                 'name'            => $r['name'],
-                'unit'            => $r['unit'] ?: 'Pcs',
+                'unit'            => $unitName,
                 'rack_location'   => $r['rack_location'] ?: '-',
                 'category'        => $r['category'] ?: 'Umum',
                 'min_stock'       => $minStock,
@@ -285,11 +296,25 @@ try {
         ");
         $categoryStats = $stmtCat->fetchAll();
 
-        // Total stock in entire warehouse (Physical Total)
-        $totalWarehouseStock = (int)$pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials")->fetchColumn();
+        // Total stock in entire warehouse grouped by unit (Physical Total)
+        $stmtUnit = $pdo->query("
+            SELECT 
+                COALESCE(NULLIF(TRIM(unit), ''), 'Pcs') AS unit,
+                COUNT(*) AS sku_count,
+                COALESCE(SUM(current_stock), 0) AS total_stock
+            FROM materials
+            GROUP BY COALESCE(NULLIF(TRIM(unit), ''), 'Pcs')
+            ORDER BY total_stock DESC
+        ");
+        $warehouseStockByUnit = [];
+        while ($uRow = $stmtUnit->fetch(PDO::FETCH_ASSOC)) {
+            $warehouseStockByUnit[$uRow['unit']] = (float)$uRow['total_stock'];
+        }
+
+        $totalWarehouseStock = (float)$pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials")->fetchColumn();
         $totalMasterSku = (int)$pdo->query("SELECT COUNT(*) FROM materials")->fetchColumn();
-        $totalAllInbound = (int)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM inbound_transactions")->fetchColumn();
-        $totalAllOutbound = (int)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM outbound_transactions")->fetchColumn();
+        $totalAllInbound = (float)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM inbound_transactions")->fetchColumn();
+        $totalAllOutbound = (float)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM outbound_transactions")->fetchColumn();
 
         // ================= OPERATOR PROCESS KPIS =================
         $taskDateCondition = "";
@@ -320,7 +345,7 @@ try {
         $inProgT = (int)($taskOverall['in_progress_tasks'] ?? 0);
         $pendT = (int)($taskOverall['pending_tasks'] ?? 0);
         $cancT = (int)($taskOverall['cancelled_tasks'] ?? 0);
-        $pickedQty = (int)($taskOverall['total_picked_qty'] ?? 0);
+        $pickedQty = (float)($taskOverall['total_picked_qty'] ?? 0);
         $avgDur = round((float)($taskOverall['avg_duration_seconds'] ?? 0));
         $completionRate = $totT > 0 ? round(($compT / $totT) * 100, 1) : 0;
 
@@ -370,21 +395,26 @@ try {
                 'end_date'    => $endDateStr
             ],
             'summary' => [
-                'total_sku'             => $activeSkuCount,
-                'total_master_sku'      => $totalMasterSku,
-                'total_inbound'         => $sumInbound,
-                'total_outbound'        => $sumOutbound,
-                'total_adjustment'      => $sumAdjustment,
-                'total_adjustment_plus' => $sumAdjustmentPlus,
-                'total_adjustment_minus'=> $sumAdjustmentMinus,
-                'total_ending_stock'    => $sumEndingStock,
-                'total_warehouse_stock' => $totalWarehouseStock,
-                'total_all_inbound'     => $totalAllInbound,
-                'total_all_outbound'    => $totalAllOutbound,
-                'net_flow'              => $sumInbound - $sumOutbound + $sumAdjustment,
-                'low_stock_count'       => $lowStockCount,
-                'out_of_stock_count'    => $outOfStockCount,
-                'critical_stock_count'  => $lowStockCount + $outOfStockCount
+                'total_sku'              => $activeSkuCount,
+                'total_master_sku'       => $totalMasterSku,
+                'total_inbound'          => $sumInbound,
+                'total_outbound'         => $sumOutbound,
+                'total_adjustment'       => $sumAdjustment,
+                'total_adjustment_plus'  => $sumAdjustmentPlus,
+                'total_adjustment_minus' => $sumAdjustmentMinus,
+                'total_ending_stock'     => $sumEndingStock,
+                'total_warehouse_stock'  => $totalWarehouseStock,
+                'stock_by_unit'          => $warehouseStockByUnit,
+                'period_stock_by_unit'   => $periodStockByUnit,
+                'inbound_by_unit'        => $periodInboundByUnit,
+                'outbound_by_unit'       => $periodOutboundByUnit,
+                'adjustment_by_unit'     => $periodAdjustmentByUnit,
+                'total_all_inbound'      => $totalAllInbound,
+                'total_all_outbound'     => $totalAllOutbound,
+                'net_flow'               => $sumInbound - $sumOutbound + $sumAdjustment,
+                'low_stock_count'        => $lowStockCount,
+                'out_of_stock_count'     => $outOfStockCount,
+                'critical_stock_count'   => $lowStockCount + $outOfStockCount
             ],
             'operator_kpi' => [
                 'total_tasks'          => $totT,

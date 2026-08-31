@@ -490,10 +490,70 @@ async function loadDashboardStockSummary() {
     const elNet = document.getElementById('dashKpiNetFlow');
     const elCrit = document.getElementById('dashKpiCriticalStock');
 
-    const totalStockDisplay = sum.total_warehouse_stock !== undefined ? sum.total_warehouse_stock : sum.total_ending_stock;
-    if (elStockUnits) elStockUnits.innerText = `${App.formatNumber(totalStockDisplay || 0)} Pcs`;
-    if (elIn) elIn.innerText = `+${App.formatNumber(sum.total_inbound || 0)}`;
-    if (elOut) elOut.innerText = `-${App.formatNumber(sum.total_outbound || 0)}`;
+    // 1. SISA STOK TOTAL (Breakdown Pcs, Kg, Roll, dsb.)
+    const stockByUnit = sum.stock_by_unit || sum.period_stock_by_unit || {};
+    const unitKeys = Object.keys(stockByUnit);
+    if (elStockUnits) {
+      if (unitKeys.length > 0) {
+        elStockUnits.innerHTML = `
+          <div class="space-y-1.5 pt-0.5">
+            ${unitKeys.map(u => `
+              <div class="flex items-baseline justify-between gap-2 border-b border-emerald-600/40 pb-1 last:border-0 last:pb-0">
+                <span class="font-mono font-black text-sm sm:text-base lg:text-lg text-white leading-none tracking-tight">${App.formatNumber(stockByUnit[u])}</span>
+                <span class="text-[10px] font-extrabold uppercase text-emerald-100 bg-white/15 px-1.5 py-0.5 rounded shadow-2xs">${escapeHtml(u)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        const totalStockDisplay = sum.total_warehouse_stock !== undefined ? sum.total_warehouse_stock : sum.total_ending_stock;
+        elStockUnits.innerText = `${App.formatNumber(totalStockDisplay || 0)} Pcs`;
+      }
+    }
+
+    // 2. BARANG MASUK (+)
+    const inByUnit = sum.inbound_by_unit || {};
+    const inUnits = Object.keys(inByUnit).filter(u => Number(inByUnit[u]) > 0);
+    if (elIn) {
+      if (inUnits.length > 1) {
+        elIn.innerHTML = `
+          <div class="space-y-1 pt-0.5">
+            ${inUnits.map(u => `
+              <div class="flex items-baseline justify-between gap-1 text-xs">
+                <span class="font-mono font-black text-emerald-700">+${App.formatNumber(inByUnit[u])}</span>
+                <span class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-1 rounded">${escapeHtml(u)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (inUnits.length === 1) {
+        elIn.innerText = `+${App.formatNumber(inByUnit[inUnits[0]])} ${inUnits[0]}`;
+      } else {
+        elIn.innerText = `+${App.formatNumber(sum.total_inbound || 0)}`;
+      }
+    }
+
+    // 3. BARANG KELUAR (-)
+    const outByUnit = sum.outbound_by_unit || {};
+    const outUnits = Object.keys(outByUnit).filter(u => Number(outByUnit[u]) > 0);
+    if (elOut) {
+      if (outUnits.length > 1) {
+        elOut.innerHTML = `
+          <div class="space-y-1 pt-0.5">
+            ${outUnits.map(u => `
+              <div class="flex items-baseline justify-between gap-1 text-xs">
+                <span class="font-mono font-black text-rose-700">-${App.formatNumber(outByUnit[u])}</span>
+                <span class="text-[9px] font-bold text-rose-800 bg-rose-100 px-1 rounded">${escapeHtml(u)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } else if (outUnits.length === 1) {
+        elOut.innerText = `-${App.formatNumber(outByUnit[outUnits[0]])} ${outUnits[0]}`;
+      } else {
+        elOut.innerText = `-${App.formatNumber(sum.total_outbound || 0)}`;
+      }
+    }
     
     if (elAdj) {
       const adjVal = sum.total_adjustment || 0;
