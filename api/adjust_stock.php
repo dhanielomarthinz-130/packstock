@@ -507,12 +507,12 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $materialId = (int)($input['material_id'] ?? 0);
     $adjustType = strtoupper(trim($input['adjust_type'] ?? 'PLUS')); // PLUS or MINUS
-    $adjustQty  = abs((int)($input['adjust_qty'] ?? 0));
+    $adjustQty  = abs((float)($input['adjust_qty'] ?? 0));
     $notes      = trim($input['notes'] ?? '');
 
     if ($materialId <= 0 || $adjustQty <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Material dan jumlah penyesuaian wajib diisi (minimal 1)']);
+        echo json_encode(['success' => false, 'message' => 'Material dan jumlah penyesuaian wajib diisi lebih dari 0']);
         exit;
     }
 
@@ -533,7 +533,7 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $stockBefore = (int)$mat['current_stock'];
+        $stockBefore = (float)$mat['current_stock'];
         $stockAfter = $stockBefore + $delta;
 
         $stmtUp = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
@@ -541,18 +541,18 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $fullNotes = "Penyesuaian " . ($adjustType === 'MINUS' ? 'Minus (-)' : 'Plus (+)') . ($notes ? ": {$notes}" : '');
 
+        $now = date('Y-m-d H:i:s');
         $stmtMut = $pdo->prepare("
-            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
-            VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmtMut->execute([$materialId, $delta, $stockBefore, $stockAfter, $refNo, $fullNotes, $userId]);
+        $stmtMut->execute([$materialId, $delta, $stockBefore, $stockAfter, $refNo, $fullNotes, $userId, $now]);
 
         $userName = Auth::name() ?? 'SYSTEM';
-        $now = date('Y-m-d H:i:s');
         if ($adjustType === 'PLUS') {
             $stmtInsertInbound = $pdo->prepare("
-                INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-                VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0)
+                INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds, created_at)
+                VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0, ?)
             ");
             $stmtInsertInbound->execute([
                 $refNo,
@@ -561,12 +561,13 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $fullNotes,
                 $userName,
                 $now,
+                $now,
                 $now
             ]);
         } else {
             $stmtInsertOutbound = $pdo->prepare("
-                INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-                VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0)
+                INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds, created_at)
+                VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0, ?)
             ");
             $stmtInsertOutbound->execute([
                 $refNo,
@@ -574,6 +575,7 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $adjustQty,
                 $userName,
                 $fullNotes,
+                $now,
                 $now,
                 $now
             ]);

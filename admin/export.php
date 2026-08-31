@@ -7,6 +7,20 @@ Auth::requireAdmin();
 $pdo = Database::getConnection();
 $type = $_GET['type'] ?? 'all_materials';
 
+function formatExportDate($dateStr) {
+    if (empty($dateStr) || $dateStr === '-') return '-';
+    $time = strtotime($dateStr);
+    if (!$time) return $dateStr;
+    return date('d/m/Y H:i:s', $time);
+}
+
+function formatExportDateOnly($dateStr) {
+    if (empty($dateStr) || $dateStr === '-') return '-';
+    $time = strtotime($dateStr);
+    if (!$time) return $dateStr;
+    return date('d/m/Y', $time);
+}
+
 // =========================================================================
 // 1. EXPORT KARTU RIWAYAT STOK MATERIAL INDIVIDUAL (.xlsx)
 // =========================================================================
@@ -126,12 +140,12 @@ if ($type === 'material_history') {
 
         $rows[] = [
             $no++,
-            $m['created_at'],
+            formatExportDate($m['created_at']),
             $typeLabel,
             $m['reference_no'],
             $inQty,
             $outQty,
-            (int)$m['stock_after'],
+            (float)$m['stock_after'],
             $m['notes'] ?: '-',
             $pic
         ];
@@ -196,29 +210,32 @@ if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
 
     $no = 1;
     while ($row = $stmt->fetch()) {
-        $stock = (int)$row['current_stock'];
-        $min = (int)$row['min_stock'];
+        $stock = (float)$row['current_stock'];
+        $min = (float)$row['min_stock'];
+        $initStock = (float)$row['initial_upload_stock'];
+        $inbound = (float)$row['total_inbound'];
+        $outbound = (float)$row['total_outbound'];
         
-        $statusText = 'AMAN';
+        $status = 'AMAN';
         if ($stock <= 0) {
-            $statusText = 'HABIS';
+            $status = 'HABIS';
         } elseif ($stock <= $min) {
-            $statusText = 'MENIPIS';
+            $status = 'MENIPIS';
         }
 
         $rows[] = [
             $no++,
             $row['code'],
             $row['name'],
-            $row['category'],
-            (int)$row['initial_upload_stock'],
-            (int)$row['total_inbound'],
-            (int)$row['total_outbound'],
+            $row['category'] ?: 'Packaging Material',
+            $initStock,
+            $inbound,
+            $outbound,
             $stock,
-            $row['unit'],
-            $row['rack_location'],
+            $row['unit'] ?: 'Pcs',
+            $row['rack_location'] ?: '-',
             $min,
-            $statusText
+            $status
         ];
     }
 
@@ -226,20 +243,20 @@ if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
 }
 
 // =========================================================================
-// 3. EXPORT OUTBOUND TRANSACTIONS (BARANG KELUAR & TASK PICKING) (.xlsx)
+// 3. EXPORT ALL OUTBOUND / PENGELUARAN BARANG (MANUAL + TASK PICKING) (.xlsx)
 // =========================================================================
 if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_excel') {
-    $filename = "Laporan_Barang_Keluar_Outbound_" . date('Ymd_His') . ".xlsx";
-    $title = "LAPORAN TRANSAKSI PENGELUARAN BARANG (OUTBOUND & TASK OPERATOR)";
+    $filename = "Laporan_Pengeluaran_Barang_Outbound_" . date('Ymd_His') . ".xlsx";
+    $title = "LAPORAN PENGELUARAN BARANG (OUTBOUND & TASK PICKING)";
 
     $headers = [
         'No',
         'Tanggal',
         'Waktu Mulai',
-        'Waktu Selesai',
-        'No. Dokumen / Task',
-        'Tipe Pengeluaran',
-        'Status Pengerjaan',
+        'Waktu Submit',
+        'No. Transaksi',
+        'Tipe Outbound',
+        'Status',
         'Item No',
         'Nama Packaging Material',
         'Satuan',
@@ -314,7 +331,7 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
     $stmt = $pdo->query($query);
     $no = 1;
     while ($r = $stmt->fetch()) {
-        $qty = (int)$r['qty'];
+        $qty = (float)$r['qty'];
         $durSec = max(0, (int)$r['duration_seconds']);
         $taktSec = $qty > 0 ? round($durSec / $qty, 1) : 0;
         
@@ -330,22 +347,21 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
         $taktFmt = $taktSec > 0 ? ($taktSec < 60 ? "{$taktSec} dtk/item" : round($taktSec / 60, 1) . " mnt/item") : '-';
         $typeLabel = $r['outbound_type'] === 'TASK_PICKING' ? 'Task Operator' : 'Manual Admin';
 
-        // Admin Penugas output format: Username
         $adminPenugas = $r['admin_username'] ?: ($r['admin_name'] ?: 'admin');
         $operatorPIC = $r['operator_name'] ?: ($r['operator_username'] ?: 'Operator');
 
         $rows[] = [
             $no++,
-            date('Y-m-d', strtotime($r['completed_at'] ?: $r['created_at'])),
-            $r['started_at'],
-            $r['completed_at'],
+            formatExportDateOnly($r['completed_at'] ?: $r['created_at']),
+            formatExportDate($r['started_at'] ?: $r['created_at']),
+            formatExportDate($r['completed_at'] ?: $r['created_at']),
             $r['outbound_no'],
             $typeLabel,
             $r['status'],
             $r['material_code'],
             $r['material_name'],
             $r['material_unit'] ?: 'Pcs',
-            $r['rack_location'],
+            $r['rack_location'] ?: '-',
             $qty,
             $durFmt,
             $taktFmt,
@@ -426,7 +442,7 @@ if ($type === 'inbound' || $type === 'inbound_csv' || $type === 'inbound_excel')
     $stmt->execute($params);
     $no = 1;
     while ($r = $stmt->fetch()) {
-        $qty = (int)$r['qty'];
+        $qty = (float)$r['qty'];
         $durSec = max(0, (int)($r['duration_seconds'] ?? 0));
         $taktSec = $qty > 0 ? round($durSec / $qty, 1) : 0;
 
@@ -443,9 +459,9 @@ if ($type === 'inbound' || $type === 'inbound_csv' || $type === 'inbound_excel')
 
         $rows[] = [
             $no++,
-            date('Y-m-d', strtotime($r['completed_at'] ?: $r['created_at'])),
-            $r['started_at'] ?: $r['created_at'],
-            $r['completed_at'] ?: $r['created_at'],
+            formatExportDateOnly($r['completed_at'] ?: $r['created_at']),
+            formatExportDate($r['started_at'] ?: $r['created_at']),
+            formatExportDate($r['completed_at'] ?: $r['created_at']),
             $r['inbound_no'],
             $r['material_code'],
             $r['material_name'],
@@ -726,14 +742,14 @@ if ($type === 'adjust_history') {
 
         $rows[] = [
             $no++,
-            $r['created_at'],
+            formatExportDate($r['created_at']),
             $r['reference_no'],
             $r['material_code'],
             $r['material_name'],
             $r['rack_location'] ?: '-',
-            (int)$r['stock_before'],
+            (float)$r['stock_before'],
             $qtyFormatted,
-            (int)$r['stock_after'],
+            (float)$r['stock_after'],
             $r['notes'] ?: '-',
             $pic
         ];
@@ -817,15 +833,15 @@ if ($type === 'mutations') {
 
         $rows[] = [
             $no++,
-            $r['created_at'],
+            formatExportDate($r['created_at']),
             $r['type'],
             $r['reference_no'],
             $r['material_code'],
             $r['material_name'],
             $r['rack_location'] ?: '-',
-            (int)$r['stock_before'],
+            (float)$r['stock_before'],
             $qtyFormatted,
-            (int)$r['stock_after'],
+            (float)$r['stock_after'],
             $r['notes'] ?: '-',
             $pic
         ];
@@ -935,7 +951,7 @@ if ($type === 'counting_detail' || $type === 'dynamic_counting_detail') {
         $rows[] = [
             $no++,
             $r['opname_no'],
-            $r['counted_at'] ?: $r['created_at'],
+            formatExportDate($r['counted_at'] ?: $r['created_at']),
             $typeLabel,
             $stageLabel,
             $r['material_code'],
