@@ -7555,6 +7555,8 @@ async function loadDatabaseStats() {
       setBadge('statMaint_tasks', s.tasks ? s.tasks.count : 0, 'Task');
       setBadge('statMaint_stock_opnames', s.stock_opnames ? s.stock_opnames.count : 0, 'Sesi');
       setBadge('statMaint_stock_mutations', s.stock_mutations ? s.stock_mutations.count : 0, 'Entri');
+      setBadge('statMaint_handovers', s.handovers ? s.handovers.count : 0, 'Data');
+      setBadge('statMaint_consumable_requests', s.consumable_requests ? s.consumable_requests.count : 0, 'Pengajuan');
     }
   } catch (err) {
     console.error('Error loading database maintenance stats:', err);

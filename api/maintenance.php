@@ -64,6 +64,8 @@ if ($action === 'stats') {
             'stock_opnames'        => 'Sesi Stock Opname & Dynamic',
             'stock_opname_items'   => 'Item Opname & Dynamic',
             'stock_mutations'      => 'Buku Log Mutasi Stok',
+            'handovers'            => 'Serah Terima Shift (Handover)',
+            'consumable_requests'  => 'Permintaan Consumable Material',
             'users'                => 'Manajemen Pengguna'
         ];
 
@@ -155,6 +157,19 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clearedInfo = "Buku Log Mutasi Stok ({$count} entri)";
                 break;
 
+            case 'handovers':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM handovers")->fetchColumn();
+                clearTable($pdo, 'handovers', $isSqlite);
+                $clearedInfo = "Riwayat Serah Terima Pekerjaan Shift ({$count} data)";
+                break;
+
+            case 'consumable_requests':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM consumable_requests")->fetchColumn();
+                clearTable($pdo, 'consumable_request_items', $isSqlite);
+                clearTable($pdo, 'consumable_requests', $isSqlite);
+                $clearedInfo = "Permintaan Consumable Material ({$count} pengajuan)";
+                break;
+
             default:
                 setForeignKeyChecks($pdo, true, $isSqlite);
                 http_response_code(400);
@@ -200,6 +215,9 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
         clearTable($pdo, 'stock_opname_items', $isSqlite);
         clearTable($pdo, 'stock_opnames', $isSqlite);
         clearTable($pdo, 'stock_mutations', $isSqlite);
+        clearTable($pdo, 'handovers', $isSqlite);
+        clearTable($pdo, 'consumable_request_items', $isSqlite);
+        clearTable($pdo, 'consumable_requests', $isSqlite);
 
         if ($resetStockZero) {
             $pdo->exec("UPDATE materials SET current_stock = 0;");
@@ -209,7 +227,7 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
 
         echo json_encode([
             'success' => true,
-            'message' => 'Seluruh riwayat transaksi (Inbound, Outbound, Task, Opname, Mutasi) telah berhasil dikosongkan. Master Material dan User tetap aman.'
+            'message' => 'Seluruh riwayat transaksi (Inbound, Outbound, Task, Opname, Mutasi, Handover, Request Consumable) telah berhasil dikosongkan. Master Material dan User tetap aman.'
         ]);
     } catch (Throwable $e) {
         setForeignKeyChecks($pdo, true, $isSqlite);
@@ -243,6 +261,9 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         clearTable($pdo, 'stock_opname_items', $isSqlite);
         clearTable($pdo, 'stock_opnames', $isSqlite);
         clearTable($pdo, 'stock_mutations', $isSqlite);
+        clearTable($pdo, 'handovers', $isSqlite);
+        clearTable($pdo, 'consumable_request_items', $isSqlite);
+        clearTable($pdo, 'consumable_requests', $isSqlite);
 
         setForeignKeyChecks($pdo, true, $isSqlite);
 

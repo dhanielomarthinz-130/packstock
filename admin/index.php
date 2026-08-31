@@ -2843,9 +2843,39 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
                 <h5 class="font-bold text-slate-900 text-xs">Buku Log Mutasi & Kartu Stok</h5>
               </div>
-              <button type="button" onclick="openCleanTableModal('mutations', 'Buku Log Mutasi Stok (stock_mutations)', document.getElementById('statMaint_stock_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+              <button type="button" onclick="openCleanTableModal('mutations', 'Buku Log Mutasi Stok (stock_mutations)', document.getElementById('statMaint_stock_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
                 <span>Kosongkan Log Mutasi</span>
+              </button>
+            </div>
+
+            <!-- 7. Handover Shift Card -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">handovers</span>
+                  <span id="statMaint_handovers" class="px-2 py-0.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-800 border border-indigo-200">0 Data</span>
+                </div>
+                <h5 class="font-bold text-slate-900 text-xs">Serah Terima Pekerjaan (Handover Shift)</h5>
+              </div>
+              <button type="button" onclick="openCleanTableModal('handovers', 'Serah Terima Pekerjaan (handovers)', document.getElementById('statMaint_handovers').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                <span>Kosongkan Data Handover</span>
+              </button>
+            </div>
+
+            <!-- 8. Request Consumable Card -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">consumable_requests</span>
+                  <span id="statMaint_consumable_requests" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Pengajuan</span>
+                </div>
+                <h5 class="font-bold text-slate-900 text-xs">Permintaan Material (Request Consumable)</h5>
+              </div>
+              <button type="button" onclick="openCleanTableModal('consumable_requests', 'Permintaan Material (consumable_requests)', document.getElementById('statMaint_consumable_requests').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                <span>Kosongkan Request Consumable</span>
               </button>
             </div>
 
