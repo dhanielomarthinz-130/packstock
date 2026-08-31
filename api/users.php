@@ -90,10 +90,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Larang keras Administrator biasa mendaftarkan user sebagai Super Admin
-    if ($role === 'superadmin' && !Auth::isSuperAdmin()) {
+    // Larang keras Administrator biasa mendaftarkan user sebagai Super Admin atau Teknisi
+    if (($role === 'superadmin' || $role === 'teknisi') && !Auth::isSuperAdmin()) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Anda tidak memiliki hak akses untuk mendaftarkan akun dengan role Super Administrator.']);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Anda tidak memiliki wewenang untuk menetapkan role Teknisi atau Super Administrator.']);
         exit;
     }
 
@@ -169,10 +169,10 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = 'operator';
     }
 
-    // Non-superadmin cannot escalate role to superadmin
-    if ($role === 'superadmin' && !Auth::isSuperAdmin()) {
+    // Non-superadmin cannot escalate role to superadmin or teknisi
+    if (($role === 'superadmin' || $role === 'teknisi') && !Auth::isSuperAdmin()) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Anda tidak dapat menetapkan role Super Administrator.']);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Anda tidak dapat menetapkan role Teknisi atau Super Administrator.']);
         exit;
     }
 

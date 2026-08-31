@@ -2584,7 +2584,9 @@ require_once __DIR__ . '/../includes/header.php';
 
             <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Role</option>
+              <?php if (Auth::isSuperAdmin()): ?>
               <option value="teknisi">Teknisi</option>
+              <?php endif; ?>
               <option value="admin">Admin</option>
               <option value="operator">Operator Gudang (PIC)</option>
               <option value="operator_fulfillment">Operator Fulfillment</option>
@@ -3498,8 +3500,10 @@ require_once __DIR__ . '/../includes/header.php';
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
           <option value="operator">Operator Gudang (Panel Mobile Lengkap)</option>
           <option value="operator_fulfillment">Operator Fulfillment (Khusus Form Request Consumable)</option>
-          <option value="teknisi">Teknisi (Panel Admin)</option>
           <option value="admin">Administrator (Panel Admin)</option>
+          <?php if (Auth::isSuperAdmin()): ?>
+          <option value="teknisi">Teknisi (Panel Admin)</option>
+          <?php endif; ?>
         </select>
       </div>
 
