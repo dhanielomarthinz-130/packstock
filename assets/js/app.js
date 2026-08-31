@@ -215,22 +215,52 @@ const App = {
 
   formatDate(dateStr) {
     if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
+    let cleanStr = String(dateStr).trim();
+    if (cleanStr.includes(' ') && !cleanStr.includes('T')) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+    const d = new Date(cleanStr);
+    if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
+    }).replace(/\./g, ':');
+  },
+
+  formatDateOnly(dateStr) {
+    if (!dateStr) return '-';
+    let cleanStr = String(dateStr).trim();
+    if (cleanStr.includes(' ') && !cleanStr.includes('T')) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+    const d = new Date(cleanStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
     });
   },
 
   formatTime(dateStr) {
     if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d)) return dateStr;
-    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    let cleanStr = String(dateStr).trim();
+    if (cleanStr.includes(' ') && !cleanStr.includes('T')) {
+      cleanStr = cleanStr.replace(' ', 'T');
+    }
+    const d = new Date(cleanStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleTimeString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }).replace(/\./g, ':');
   },
 
   formatDuration(sec) {
