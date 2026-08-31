@@ -81,12 +81,6 @@ $MENUS_CATALOG = [
         'description' => 'Monitoring pengajuan barang consumable dari operator dan proses persetujuan (ACC).'
     ],
     [
-        'key' => 'tasks',
-        'label' => 'Assign Task Operator',
-        'icon' => 'assignment',
-        'description' => 'Penugasan pengambilan material ke operator (single, multi-row, upload Excel).'
-    ],
-    [
         'key' => 'handover',
         'label' => 'Handover Shift',
         'icon' => 'published_with_changes',

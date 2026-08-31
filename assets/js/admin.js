@@ -4470,7 +4470,6 @@ async function applyMyPermissions() {
       inbound: 'nav-inbound',
       outbound: 'nav-outbound',
       consumable_requests: 'nav-consumable_requests',
-      tasks: 'nav-tasks',
       handover: 'nav-handover',
       mutations: 'nav-mutations',
       users: 'nav-users',

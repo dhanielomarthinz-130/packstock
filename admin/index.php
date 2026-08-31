@@ -104,15 +104,6 @@ require_once __DIR__ . '/../includes/header.php';
             <span id="sidebarConsumableReqBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">0</span>
           </button>
 
-          <button onclick="switchAdminTab('tasks')" id="nav-tasks" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Penugasan Operator (Task Dispatch)">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">assignment</span>
-              <span class="sidebar-text truncate">Penugasan Operator</span>
-            </div>
-            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Task</span>
-          </button>
-
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
             <div class="flex items-center gap-3">
