@@ -582,6 +582,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Canvas Chart Container -->
             <div class="relative w-full min-h-[330px] h-[340px] mt-4">
               <canvas id="dashBarChartCanvas"></canvas>
+              <div id="dashBarChartEmptyState" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-slate-50/90 rounded-xl border border-dashed border-slate-200 backdrop-blur-[1px]"></div>
             </div>
           </div>
 

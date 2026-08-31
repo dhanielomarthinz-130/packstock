@@ -693,21 +693,43 @@ function navigateFromDashboard(targetTab, filterVal = null) {
 // ================= 1.1 DASHBOARD CHARTS (CHART.JS) =================
 function switchDashboardChart(mode) {
   currentChartMode = mode;
-
-  const btnIn = document.getElementById('btnChartTabIn');
-  const btnOut = document.getElementById('btnChartTabOut');
-
-  const activeInClass = 'py-1 px-3 rounded-md bg-emerald-600 text-white shadow-2xs font-bold transition-all';
-  const activeOutClass = 'py-1 px-3 rounded-md bg-rose-600 text-white shadow-2xs font-bold transition-all';
-  const inactiveClass = 'py-1 px-3 rounded-md text-slate-600 hover:text-slate-900 font-bold transition-all';
-
-  if (btnIn) btnIn.className = mode === 'inbound' ? activeInClass : inactiveClass;
-  if (btnOut) btnOut.className = mode === 'outbound' ? activeOutClass : inactiveClass;
-
+  updateChartTabButtons();
   renderDashboardBarChart();
 }
 
+function updateChartTabButtons() {
+  const btnIn = document.getElementById('btnChartTabIn');
+  const btnOut = document.getElementById('btnChartTabOut');
+
+  const inCount = (dashboardTopInbound || []).length;
+  const outCount = (dashboardTopOutbound || []).length;
+
+  const activeInClass = 'py-1 px-3 rounded-md bg-emerald-600 text-white shadow-2xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer';
+  const activeOutClass = 'py-1 px-3 rounded-md bg-rose-600 text-white shadow-2xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer';
+  const inactiveClass = 'py-1 px-3 rounded-md text-slate-600 hover:text-slate-900 font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer';
+
+  if (btnIn) {
+    btnIn.className = currentChartMode === 'inbound' ? activeInClass : inactiveClass;
+    btnIn.innerHTML = `<span>Top 10 Masuk</span><span class="px-1.5 py-0.2 rounded-full text-[10px] font-black ${currentChartMode === 'inbound' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}">${inCount}</span>`;
+  }
+  if (btnOut) {
+    btnOut.className = currentChartMode === 'outbound' ? activeOutClass : inactiveClass;
+    btnOut.innerHTML = `<span>Top 10 Keluar</span><span class="px-1.5 py-0.2 rounded-full text-[10px] font-black ${currentChartMode === 'outbound' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'}">${outCount}</span>`;
+  }
+}
+
 function renderDashboardCharts() {
+  // Smart auto-select mode with data if current mode is empty
+  const inCount = (dashboardTopInbound || []).length;
+  const outCount = (dashboardTopOutbound || []).length;
+
+  if (inCount === 0 && outCount > 0) {
+    currentChartMode = 'outbound';
+  } else if (outCount === 0 && inCount > 0) {
+    currentChartMode = 'inbound';
+  }
+
+  updateChartTabButtons();
   renderDashboardBarChart();
   renderDashboardCategoryChart();
 }
@@ -716,6 +738,7 @@ function renderDashboardBarChart() {
   if (typeof Chart === 'undefined') return;
 
   const canvas = document.getElementById('dashBarChartCanvas');
+  const emptyEl = document.getElementById('dashBarChartEmptyState');
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
@@ -726,6 +749,36 @@ function renderDashboardBarChart() {
 
   const isInc = currentChartMode === 'inbound';
   const sourceList = isInc ? dashboardTopInbound : dashboardTopOutbound;
+  const otherMode = isInc ? 'outbound' : 'inbound';
+  const otherList = isInc ? dashboardTopOutbound : dashboardTopInbound;
+  const otherLabel = isInc ? 'Barang Keluar' : 'Barang Masuk';
+  const otherCount = (otherList || []).length;
+
+  if (!sourceList || sourceList.length === 0) {
+    if (emptyEl) {
+      emptyEl.classList.remove('hidden');
+      emptyEl.innerHTML = `
+        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+          <span class="material-symbols-outlined text-[26px]">bar_chart</span>
+        </div>
+        <p class="text-xs font-bold text-slate-700">Belum ada transaksi ${isInc ? 'Barang Masuk' : 'Barang Keluar'} pada periode ini</p>
+        <p class="text-[11px] text-slate-400 mt-1 max-w-xs">
+          ${otherCount > 0 ? `Terdapat data ${otherCount} transaksi ${otherLabel} pada periode ini.` : 'Tidak ada pergerakan material packaging pada filter tanggal yang dipilih.'}
+        </p>
+        ${otherCount > 0 ? `
+          <button type="button" onclick="switchDashboardChart('${otherMode}')" class="mt-3 px-3 py-1.5 bg-${isInc ? 'rose' : 'emerald'}-600 hover:opacity-90 active:scale-95 text-white text-xs font-extrabold rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+            <span>Lihat Top 10 ${isInc ? 'Keluar' : 'Masuk'} (${otherCount} SKU)</span>
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+          </button>
+        ` : ''}
+      `;
+    }
+    return;
+  }
+
+  if (emptyEl) {
+    emptyEl.classList.add('hidden');
+  }
 
   const labels = [];
   const dataValues = [];
@@ -736,43 +789,36 @@ function renderDashboardBarChart() {
   const hoverColor = isInc ? 'rgba(4, 120, 87, 1)' : 'rgba(190, 18, 60, 1)';
   const borderColor = isInc ? '#059669' : '#e11d48';
 
-  if (sourceList.length === 0) {
-    labels.push('Belum ada transaksi');
-    dataValues.push(0);
-    bgColors.push('rgba(203, 213, 225, 0.5)');
-    borderColors.push('#94a3b8');
-  } else {
-    sourceList.forEach((item, i) => {
-      // Full non-truncated label with smart multi-line wrapping
-      const cleanCode = String(item.code || '').trim();
-      const cleanName = String(item.name || '').trim();
-      const full = `${cleanCode} - ${cleanName}`;
+  sourceList.forEach((item, i) => {
+    // Full non-truncated label with smart multi-line wrapping
+    const cleanCode = String(item.code || '').trim();
+    const cleanName = String(item.name || '').trim();
+    const full = `${cleanCode} - ${cleanName}`;
 
-      if (full.length <= 26) {
-        labels.push(full);
-      } else {
-        const words = cleanName.split(' ');
-        let line1 = `${cleanCode} -`;
-        let line2 = '';
-        let switched = false;
+    if (full.length <= 26) {
+      labels.push(full);
+    } else {
+      const words = cleanName.split(' ');
+      let line1 = `${cleanCode} -`;
+      let line2 = '';
+      let switched = false;
 
-        for (const w of words) {
-          if (!w) continue;
-          if (!switched && (line1 + ' ' + w).length <= 26) {
-            line1 += ' ' + w;
-          } else {
-            switched = true;
-            line2 = line2 ? (line2 + ' ' + w) : w;
-          }
+      for (const w of words) {
+        if (!w) continue;
+        if (!switched && (line1 + ' ' + w).length <= 26) {
+          line1 += ' ' + w;
+        } else {
+          switched = true;
+          line2 = line2 ? (line2 + ' ' + w) : w;
         }
-        labels.push(line2 ? [line1, line2] : line1);
       }
+      labels.push(line2 ? [line1, line2] : line1);
+    }
 
-      dataValues.push(parseInt(item.total_qty || 0));
-      bgColors.push(baseColor);
-      borderColors.push(borderColor);
-    });
-  }
+    dataValues.push(parseFloat(item.total_qty || 0));
+    bgColors.push(baseColor);
+    borderColors.push(borderColor);
+  });
 
   dashBarChartInstance = new Chart(ctx, {
     type: 'bar',

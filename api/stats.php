@@ -204,11 +204,11 @@ try {
                 m.category,
                 m.rack_location,
                 m.current_stock,
-                COALESCE(SUM(i.qty), 0) AS total_qty,
-                COUNT(i.id) AS tx_count
-            FROM inbound_transactions i
-            JOIN materials m ON i.material_id = m.id
-            WHERE i.created_at BETWEEN ? AND ?
+                COALESCE(SUM(sm.qty_change), 0) AS total_qty,
+                COUNT(sm.id) AS tx_count
+            FROM stock_mutations sm
+            JOIN materials m ON sm.material_id = m.id
+            WHERE sm.type = 'INBOUND' AND sm.created_at BETWEEN ? AND ?
             GROUP BY m.id
             HAVING total_qty > 0
             ORDER BY total_qty DESC, tx_count DESC
@@ -216,28 +216,6 @@ try {
         ");
         $stmtTopIn->execute([$startDateTime, $endDateTime]);
         $topInbound = $stmtTopIn->fetchAll();
-
-        if (empty($topInbound)) {
-            $stmtTopInAll = $pdo->query("
-                SELECT 
-                    m.id,
-                    m.code,
-                    m.name,
-                    m.unit,
-                    m.category,
-                    m.rack_location,
-                    m.current_stock,
-                    COALESCE(SUM(i.qty), 0) AS total_qty,
-                    COUNT(i.id) AS tx_count
-                FROM inbound_transactions i
-                JOIN materials m ON i.material_id = m.id
-                GROUP BY m.id
-                HAVING total_qty > 0
-                ORDER BY total_qty DESC, tx_count DESC
-                LIMIT 10
-            ");
-            $topInbound = $stmtTopInAll->fetchAll();
-        }
 
         // ================= TOP 10 BARANG KELUAR =================
         $stmtTopOut = $pdo->prepare("
@@ -249,11 +227,11 @@ try {
                 m.category,
                 m.rack_location,
                 m.current_stock,
-                COALESCE(SUM(o.qty), 0) AS total_qty,
-                COUNT(o.id) AS tx_count
-            FROM outbound_transactions o
-            JOIN materials m ON o.material_id = m.id
-            WHERE o.created_at BETWEEN ? AND ?
+                COALESCE(SUM(ABS(sm.qty_change)), 0) AS total_qty,
+                COUNT(sm.id) AS tx_count
+            FROM stock_mutations sm
+            JOIN materials m ON sm.material_id = m.id
+            WHERE sm.type IN ('OUTBOUND', 'TASK_PICKING') AND sm.created_at BETWEEN ? AND ?
             GROUP BY m.id
             HAVING total_qty > 0
             ORDER BY total_qty DESC, tx_count DESC
@@ -261,28 +239,6 @@ try {
         ");
         $stmtTopOut->execute([$startDateTime, $endDateTime]);
         $topOutbound = $stmtTopOut->fetchAll();
-
-        if (empty($topOutbound)) {
-            $stmtTopOutAll = $pdo->query("
-                SELECT 
-                    m.id,
-                    m.code,
-                    m.name,
-                    m.unit,
-                    m.category,
-                    m.rack_location,
-                    m.current_stock,
-                    COALESCE(SUM(o.qty), 0) AS total_qty,
-                    COUNT(o.id) AS tx_count
-                FROM outbound_transactions o
-                JOIN materials m ON o.material_id = m.id
-                GROUP BY m.id
-                HAVING total_qty > 0
-                ORDER BY total_qty DESC, tx_count DESC
-                LIMIT 10
-            ");
-            $topOutbound = $stmtTopOutAll->fetchAll();
-        }
 
         // ================= CATEGORY DISTRIBUTION =================
         $stmtCat = $pdo->query("
