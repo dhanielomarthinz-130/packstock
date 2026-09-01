@@ -83,6 +83,15 @@ require_once __DIR__ . '/../includes/header.php';
             <span id="sidebarAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs">0</span>
           </button>
 
+          <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis (Lead Time 1 Minggu)">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
+              <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
+            </div>
+            <span id="sidebarReorderAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs animate-pulse">0</span>
+          </button>
+
           <button onclick="switchAdminTab('inbound')" id="nav-inbound" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Masuk">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">move_to_inbox</span>
@@ -102,15 +111,6 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="sidebar-text truncate">Request Consumable</span>
             </div>
             <span id="sidebarConsumableReqBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">0</span>
-          </button>
-
-          <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis (Lead Time 1 Minggu)">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
-              <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
-            </div>
-            <span id="sidebarReorderAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs animate-pulse">0</span>
           </button>
 
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
@@ -1102,6 +1102,11 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Action Buttons (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button onclick="switchAdminTab('reorder_alerts')" class="h-[38px] px-3.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-extrabold cursor-pointer animate-pulse" title="Buka Rekomendasi Purchase Order & Stok Menipis (Lead Time 1 Minggu)">
+              <span class="material-symbols-outlined text-[18px]">notification_important</span>
+              <span>Peringatan PO (Stok Kritis)</span>
+            </button>
+
             <button onclick="loadMaterials()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Master">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
               <span>Refresh</span>
