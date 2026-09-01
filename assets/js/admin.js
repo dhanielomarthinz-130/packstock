@@ -14,15 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initPremiumPickers();
   handleUrlHashNavigation(false);
 
-  // Auto refresh live stats & task monitor periodically
+  // Auto refresh live stats & task monitor periodically (paused when tab is hidden)
   setInterval(() => {
+    if (document.hidden) return;
     if (currentAdminTab === 'dashboard') loadStats(true);
-    if (currentAdminTab === 'counting_progress') loadCountingProgressDashboard();
-    if (currentAdminTab === 'tasks') loadTasks();
-    if (currentAdminTab === 'inbound') loadInboundHistory();
-    if (currentAdminTab === 'outbound') loadOutboundHistory();
-    if (currentAdminTab === 'handover') loadAdminHandovers(true);
-  }, 25000);
+    else if (currentAdminTab === 'counting_progress') loadCountingProgressDashboard();
+    else if (currentAdminTab === 'tasks') loadTasks();
+    else if (currentAdminTab === 'inbound') loadInboundHistory();
+    else if (currentAdminTab === 'outbound') loadOutboundHistory();
+    else if (currentAdminTab === 'handover') loadAdminHandovers(true);
+  }, 45000);
 });
 
 // ================= 0.1 PREMIUM DATE & TIME PICKERS INITIALIZER =================

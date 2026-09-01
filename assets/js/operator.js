@@ -12,36 +12,32 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     loadFulfillmentStats();
     loadOperatorConsumableRequests();
-    loadOperatorStock();
     initMandatoryShiftGate();
 
     setInterval(() => {
+      if (document.hidden) return;
       loadFulfillmentStats();
       if (currentOpTab === 'request_consumable' && currentOpReqSubTab === 'history') {
         loadOperatorConsumableRequests();
       }
-    }, 15000);
+    }, 45000);
     return;
   }
 
+  // Load only home/active tab data initially to avoid flooding server connections
   loadOperatorStats();
   loadOperatorTasks(true);
-  loadOperatorDynamicTasks(true);
-  loadOperatorBlankCounts(true);
-  loadOperatorRecountTasks(true);
-  loadOperatorStock(true);
-  loadHandovers(true);
   initMandatoryShiftGate();
 
-  // Auto refresh data every 15 seconds in background
+  // Auto refresh data periodically (paused when tab is hidden)
   setInterval(() => {
+    if (document.hidden) return;
     if (currentOpTab === 'tasks') loadOperatorTasks(true);
-    if (currentOpTab === 'dynamic_count') loadOperatorDynamicTasks(true);
-    if (currentOpTab === 'opname') { loadOperatorBlankCounts(true); loadOperatorRecountTasks(true); }
-    if (currentOpTab === 'handover') loadHandovers(true);
-    loadOperatorStats(true);
-    loadHandovers(true);
-  }, 15000);
+    else if (currentOpTab === 'dynamic_count') loadOperatorDynamicTasks(true);
+    else if (currentOpTab === 'opname') { loadOperatorBlankCounts(true); loadOperatorRecountTasks(true); }
+    else if (currentOpTab === 'handover') loadHandovers(true);
+    else if (currentOpTab === 'home') loadOperatorStats(true);
+  }, 45000);
 });
 
 // Digital Clock Updater
