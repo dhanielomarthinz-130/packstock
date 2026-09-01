@@ -46,8 +46,6 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <p class="text-[10px] text-emerald-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
               <span id="headerUserShiftDisplay" class="truncate font-bold bg-emerald-900/60 px-1.5 py-0.2 rounded border border-emerald-500/40 text-emerald-200"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></span>
-              <span class="text-emerald-300/70">&bull;</span>
-              <span class="text-emerald-200 font-mono text-[9px]">#<?= htmlspecialchars($user['id'] ?? '0') ?></span>
             </p>
           </div>
         </div>
@@ -1240,9 +1238,6 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="flex items-center gap-1.5 mt-1">
             <span class="px-2 py-0.5 bg-emerald-900/90 text-emerald-200 text-[9px] font-black uppercase rounded-md border border-emerald-600/40">
               <?= htmlspecialchars($user['role'] ?? 'OPERATOR') ?>
-            </span>
-            <span class="px-2 py-0.5 bg-slate-700 text-slate-200 text-[9px] font-bold rounded-md">
-              ID #<?= htmlspecialchars($user['id'] ?? '0') ?>
             </span>
           </div>
         </div>
