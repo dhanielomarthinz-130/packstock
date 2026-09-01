@@ -2952,6 +2952,33 @@ function renderUsersTable(users) {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">account_circle</span>Operator Gudang</span>';
     }
 
+    // Format Divisi / Shift Display
+    let divisionDisplay = '';
+    const rawShift = (u.shift || '').trim();
+
+    if (u.role === 'superadmin' || isSuperAdmin) {
+      divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">Head Office / Super Admin</span>';
+    } else if (u.role === 'teknisi') {
+      divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">Teknisi & Maintenance</span>';
+    } else if (u.role === 'admin') {
+      divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Administrator Gudang</span>';
+    } else if (u.role === 'operator_fulfillment') {
+      divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">Fulfillment & Consumable</span>';
+    } else {
+      // Operator Shift & Division
+      if (rawShift.includes('Shift 1')) {
+        divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">wb_sunny</span>Shift 1 (Pagi)</span>';
+      } else if (rawShift.includes('Shift 2')) {
+        divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">dark_mode</span>Shift 2 (Siang)</span>';
+      } else if (rawShift.toLowerCase() === 'inventory') {
+        divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">inventory</span>Inventory</span>';
+      } else if (rawShift) {
+        divisionDisplay = `<span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(rawShift)}</span>`;
+      } else {
+        divisionDisplay = '<span class="text-slate-400 font-mono text-xs">-</span>';
+      }
+    }
+
     return `
       <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
         <td class="p-3 font-mono font-bold text-slate-900 text-xs">
@@ -2960,14 +2987,14 @@ function renderUsersTable(users) {
         </td>
         <td class="p-3 font-semibold text-slate-800 text-xs">${escapeHtml(u.name)}</td>
         <td class="p-3">${roleBadge}</td>
-        <td class="p-3 text-xs text-slate-600 font-medium">${escapeHtml(u.shift || '-')}</td>
+        <td class="p-3">${divisionDisplay}</td>
         <td class="p-3 text-xs text-slate-400">${App.formatDate(u.created_at)}</td>
         <td class="p-3 text-right space-x-1 whitespace-nowrap">
-          <button onclick="openEditUserModal(${u.id})" title="Edit User" class="p-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-200 transition-colors">
+          <button onclick="openEditUserModal(${u.id})" title="Edit User" class="p-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-200 transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">edit</span>
           </button>
           ${!isSuperAdmin ? `
-            <button onclick="deleteUser(${u.id}, '${escapeHtml(u.name)}')" title="Hapus User" class="p-1 px-1.5 rounded bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 text-xs border border-rose-200 transition-colors">
+            <button onclick="deleteUser(${u.id}, '${escapeHtml(u.name)}')" title="Hapus User" class="p-1 px-1.5 rounded bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 text-xs border border-rose-200 transition-colors cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">delete</span>
             </button>
           ` : ''}

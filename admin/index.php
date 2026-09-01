@@ -2766,7 +2766,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="p-3 border-r border-white/10">Username</th>
                   <th class="p-3 border-r border-white/10">Nama Lengkap</th>
                   <th class="p-3 border-r border-white/10">Role Pengguna</th>
-                  <th class="p-3 border-r border-white/10">Divisi</th>
+                  <th class="p-3 border-r border-white/10">Divisi / Shift Kerja</th>
                   <th class="p-3 border-r border-white/10">Tanggal Dibuat</th>
                   <th class="p-3 text-right">Aksi</th>
                 </tr>
