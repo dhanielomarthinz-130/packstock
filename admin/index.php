@@ -104,6 +104,15 @@ require_once __DIR__ . '/../includes/header.php';
             <span id="sidebarConsumableReqBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">0</span>
           </button>
 
+          <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis (Lead Time 1 Minggu)">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
+              <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
+            </div>
+            <span id="sidebarReorderAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs animate-pulse">0</span>
+          </button>
+
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
             <div class="flex items-center gap-3">
@@ -2105,6 +2114,135 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
+      <!-- ================= 4.2 TAB: PERINGATAN PO & STOK MENIPIS (7-DAY LEAD TIME) ================= -->
+      <div id="tab-reorder_alerts" class="hidden space-y-4">
+        
+        <!-- Header Controls & Actions -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shadow-xs">
+              <span class="material-symbols-outlined text-[22px]">notification_important</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="font-black text-slate-900 text-base">Peringatan PO & Safety Stock</h2>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">Lead Time: 1 Minggu (7 Hari)</span>
+              </div>
+              <p class="text-xs text-slate-500">Monitoring stok 0 / menipis dan rekomendasi Qty Purchase Order agar operasional & produksi tidak terputus.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" onclick="shareReorderAlertsWhatsApp()" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Kirim Rekap Kebutuhan PO via WhatsApp">
+              <span class="material-symbols-outlined text-[18px]">share</span>
+              <span>Share Rekap PO (WA)</span>
+            </button>
+            <button type="button" onclick="exportReorderAlerts()" class="h-[38px] px-3.5 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Rekap PO ke CSV / Excel">
+              <span class="material-symbols-outlined text-[18px] text-emerald-600">download</span>
+              <span>Export CSV</span>
+            </button>
+            <button type="button" onclick="loadReorderAlerts()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3 KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white p-4 rounded-2xl border border-rose-200 shadow-xs flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[24px]">production_quantity_limits</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Stok Habis (0)</p>
+              <h3 class="text-2xl font-black text-rose-600 font-mono" id="kpiReorderEmptyCount">0</h3>
+              <p class="text-[10px] text-rose-600 font-semibold">Mendesak segera PO darurat</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[24px]">warning</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Harus PO Segera (Kritis)</p>
+              <h3 class="text-2xl font-black text-amber-700 font-mono" id="kpiReorderMustPoCount">0</h3>
+              <p class="text-[10px] text-amber-700 font-semibold">Stok &lt; Kebutuhan 7 Hari</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-emerald-200 shadow-xs flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-[24px]">shopping_basket</span>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Estimasi Kebutuhan PO</p>
+              <h3 class="text-2xl font-black text-emerald-800 font-mono" id="kpiReorderTotalQty">0</h3>
+              <p class="text-[10px] text-emerald-700 font-semibold">Total unit rekomendasi pesan</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+          <div class="flex items-center gap-2 flex-1 min-w-[260px]">
+            <div class="relative flex-1">
+              <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
+              <input type="text" id="reorderSearchInput" oninput="debounceReorderSearch()" placeholder="Cari SKU, Nama Material Kemas, Rak..." 
+                class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:bg-white focus:border-amber-600 font-medium">
+            </div>
+            <select id="reorderCategoryFilter" onchange="loadReorderAlerts()" class="p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none">
+              <option value="all">Semua Kategori</option>
+            </select>
+          </div>
+
+          <!-- Urgency Quick Pill Filters -->
+          <div class="flex items-center gap-1.5 overflow-x-auto">
+            <button type="button" onclick="setReorderFilterType('ALL_CRITICAL')" id="btnReorderFilter_ALL_CRITICAL" 
+              class="reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-black transition-all bg-slate-900 text-white shadow-xs">
+              Semua Kritis
+            </button>
+            <button type="button" onclick="setReorderFilterType('EMPTY')" id="btnReorderFilter_EMPTY" 
+              class="reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700">
+              Stok Habis (0)
+            </button>
+            <button type="button" onclick="setReorderFilterType('MUST_PO')" id="btnReorderFilter_MUST_PO" 
+              class="reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700">
+              Harus PO (&lt; 7 Hari)
+            </button>
+            <button type="button" onclick="setReorderFilterType('ALL')" id="btnReorderFilter_ALL" 
+              class="reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700">
+              Semua Item
+            </button>
+          </div>
+        </div>
+
+        <!-- DataTable -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-gradient-to-r from-amber-800 to-orange-800 text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-amber-900">
+                <tr>
+                  <th class="py-3.5 px-3 whitespace-nowrap border-r border-white/20">Kemas & SKU</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Rak</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20 font-mono">Sisa Stok</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20 font-mono">Safety Stock</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Pemakaian / Hari</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Estimasi Sisa Hari</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Saran Qty PO</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Status Urgensi</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap border-r border-white/20">Status PO</th>
+                  <th class="py-3.5 px-3 text-center whitespace-nowrap">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="reorderAlertsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
       <!-- ================= 5. TAB: MANAJEMEN PENUGASAN OPERATOR (TASK DISPATCH) ================= -->
       <div id="tab-tasks" class="hidden space-y-4">
         
@@ -3623,6 +3761,76 @@ require_once __DIR__ . '/../includes/header.php';
         <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Perubahan Qty</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: CATAT PENGAJUAN PURCHASE ORDER (PO) ================= -->
+<div id="modalRecordPO" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-2xs">
+          <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm">Catat Pengajuan Purchase Order (PO)</h3>
+          <p class="text-xs text-slate-500 font-mono" id="modalPoMaterialSubtitle">-</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalRecordPO')" class="text-slate-400 hover:text-slate-600 p-1">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formRecordPO" onsubmit="handleRecordPOSubmit(event)" class="space-y-3 text-xs">
+      <input type="hidden" id="poMaterialId" value="">
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Nomor PO / Referensi Purchasing <span class="text-rose-500">*</span></label>
+        <input type="text" id="poNumberInput" required placeholder="Contoh: PO-202609-0012 / PR-089" 
+          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white font-mono font-bold text-xs">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Qty Dipesan (<span id="poUnitLabel">Pcs</span>) <span class="text-rose-500">*</span></label>
+          <input type="number" step="any" id="poQtyInput" min="0.01" required 
+            class="w-full p-2.5 bg-emerald-50/70 border-2 border-emerald-500 rounded-xl outline-none font-mono font-black text-sm text-emerald-950 text-center">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Nama Supplier / Vendor</label>
+          <input type="text" id="poSupplierInput" placeholder="Contoh: PT Kemas Indah" 
+            class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white text-xs">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tanggal Order</label>
+          <input type="date" id="poOrderDateInput" required 
+            class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 font-mono text-xs">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Estimasi Tiba (ETA +7 Hari) <span class="text-rose-500">*</span></label>
+          <input type="date" id="poEtaDateInput" required 
+            class="w-full p-2.5 bg-amber-50/70 border border-amber-400 rounded-xl outline-none focus:border-amber-600 font-mono font-bold text-xs">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+        <textarea id="poNotesInput" rows="2" placeholder="Catatan pengadaan, no kontak purchasing, dll..." 
+          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 text-xs"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalRecordPO')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnRecordPOSubmit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">check_circle</span>
+          <span>Simpan Status PO</span>
         </button>
       </div>
     </form>

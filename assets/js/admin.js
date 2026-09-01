@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.hidden) return;
     if (currentAdminTab === 'dashboard') loadStats(true);
     else if (currentAdminTab === 'counting_progress') loadCountingProgressDashboard();
+    else if (currentAdminTab === 'reorder_alerts') loadReorderAlerts();
     else if (currentAdminTab === 'tasks') loadTasks();
     else if (currentAdminTab === 'inbound') loadInboundHistory();
     else if (currentAdminTab === 'outbound') loadOutboundHistory();
@@ -227,7 +228,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -254,7 +255,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
   
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
   
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -292,6 +293,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     dashboard: 'Dashboard Monitoring Stok & Lapangan',
     counting_progress: 'Dashboard Live Progress Counting (Dynamic Count & Stock Opname)',
     inventory: 'Master Stok Packaging & Stok Akhir',
+    reorder_alerts: 'Peringatan PO & Safety Stock (Lead Time 1 Minggu)',
     dynamic_count: 'Dynamic Counting (Penugasan SKU Terpilih)',
     dynamic_counting_detail: 'Detail Dynamic Count (Log Breakdown per Putaran)',
     opname: 'Stock Opname (Blank Count & Recount)',
@@ -315,6 +317,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'dashboard') { loadDashboardStockSummary(); loadStats(true); }
   if (tabName === 'counting_progress') { loadCountingProgressDashboard(); }
   if (tabName === 'inventory') { loadMaterials(); }
+  if (tabName === 'reorder_alerts') { loadReorderAlerts(); }
   if (tabName === 'dynamic_count') { loadDynamicSessions(); }
   if (tabName === 'dynamic_counting_detail') { loadDynamicCountingDetails(); }
   if (tabName === 'opname') { loadOpnames(); }
@@ -9258,6 +9261,375 @@ function executeConsumablePrint() {
     setTimeout(cleanUp, 2500);
   }, 60);
 }
+
+// =========================================================================
+// 19. PERINGATAN PO & SAFETY STOCK REORDER PLANNING (7-DAY LEAD TIME)
+// =========================================================================
+
+let allReorderAlerts = [];
+let currentReorderFilterType = 'ALL_CRITICAL';
+let reorderSearchTimeout = null;
+
+async function loadReorderAlerts() {
+  const tbody = document.getElementById('reorderAlertsTableBody');
+  if (!tbody) return;
+
+  const search = document.getElementById('reorderSearchInput')?.value || '';
+  const category = document.getElementById('reorderCategoryFilter')?.value || 'all';
+
+  if (!allReorderAlerts || allReorderAlerts.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="p-8 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
+          <p>Menganalisis data stok, konsumsi harian, dan kalkulasi Reorder Point...</p>
+        </td>
+      </tr>
+    `;
+  }
+
+  const res = await App.fetchJson(`../api/reorder_alerts.php?action=list&filter_type=${currentReorderFilterType}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`);
+  
+  if (!res.success) {
+    App.toast(res.message || 'Gagal memuat data peringatan PO', 'error');
+    tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-rose-500 text-xs">Gagal memuat data peringatan PO.</td></tr>';
+    return;
+  }
+
+  allReorderAlerts = res.data || [];
+  const metrics = res.metrics || {};
+
+  // Update KPI Counters
+  const elEmpty = document.getElementById('kpiReorderEmptyCount');
+  if (elEmpty) elEmpty.innerText = App.formatNumber(metrics.total_empty || 0);
+
+  const elMustPo = document.getElementById('kpiReorderMustPoCount');
+  if (elMustPo) elMustPo.innerText = App.formatNumber(metrics.total_must_po || 0);
+
+  const elTotalPo = document.getElementById('kpiReorderTotalQty');
+  if (elTotalPo) elTotalPo.innerText = App.formatNumber(metrics.total_po_estimate || 0);
+
+  // Update Sidebar Badge
+  const badge = document.getElementById('sidebarReorderAlertBadge');
+  if (badge) {
+    const totalCrit = (metrics.total_empty || 0) + (metrics.total_must_po || 0);
+    if (totalCrit > 0) {
+      badge.innerText = totalCrit;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  // Populate category filter if empty
+  const catSelect = document.getElementById('reorderCategoryFilter');
+  if (catSelect && catSelect.options.length <= 1) {
+    const catRes = await App.fetchJson('../api/materials.php?action=categories');
+    if (catRes.success && catRes.data) {
+      catSelect.innerHTML = '<option value="all">Semua Kategori</option>' +
+        catRes.data.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    }
+  }
+
+  renderReorderAlertsTable();
+}
+
+function renderReorderAlertsTable() {
+  const tbody = document.getElementById('reorderAlertsTableBody');
+  if (!tbody) return;
+
+  if (allReorderAlerts.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="10" class="p-8 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-[36px] text-emerald-300 mb-1">verified</span>
+          <p class="font-bold text-slate-700 text-sm">Semua Stok Material Kemas Aman!</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Tidak ada item yang berada di bawah safety stock untuk kriteria filter ini.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = allReorderAlerts.map(it => {
+    // Urgency Status Badge
+    let statusBadge = '';
+    if (it.urgency_status === 'EMPTY') {
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-100 text-rose-900 border border-rose-300 inline-flex items-center gap-1 shadow-2xs animate-pulse"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>HABIS (0)</span>';
+    } else if (it.urgency_status === 'MUST_PO') {
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-orange-100 text-orange-950 border border-orange-300 inline-flex items-center gap-1 shadow-2xs"><span class="material-symbols-outlined text-[13px] text-orange-600">error</span>HARUS PO (&lt; 7 Hari)</span>';
+    } else if (it.urgency_status === 'LOW') {
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px] text-amber-600">warning</span>Menipis</span>';
+    } else {
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1">Aman</span>';
+    }
+
+    // PO Tracking Status Badge
+    let poBadge = '';
+    if (it.is_ordered) {
+      poBadge = `
+        <div class="inline-block p-1.5 bg-blue-50 border border-blue-200 rounded-lg text-left text-[10px] max-w-[170px]">
+          <div class="flex items-center gap-1 font-bold text-blue-900">
+            <span class="material-symbols-outlined text-[13px] text-blue-600">local_shipping</span>
+            <span>PO #${escapeHtml(it.latest_po_number)}</span>
+          </div>
+          <p class="text-[9.5px] text-blue-700 font-mono mt-0.5">ETA: ${it.latest_po_eta ? App.formatDate(it.latest_po_eta) : '-'}</p>
+          ${it.latest_supplier ? `<p class="text-[9px] text-slate-500 truncate">${escapeHtml(it.latest_supplier)}</p>` : ''}
+        </div>
+      `;
+    } else {
+      poBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200">Belum Ada PO</span>';
+    }
+
+    // Runway warning style
+    let runwayColor = 'text-slate-700';
+    if (it.current_stock <= 0) runwayColor = 'text-rose-600 font-black';
+    else if (it.runway_days !== null && it.runway_days <= 7) runwayColor = 'text-orange-700 font-black animate-pulse';
+
+    return `
+      <tr class="hover:bg-amber-50/30 border-b border-slate-100 text-xs transition-colors">
+        <!-- 1. Kemas & SKU -->
+        <td class="p-3.5 align-middle max-w-xs">
+          <div class="font-extrabold text-slate-900 text-xs leading-snug">${escapeHtml(it.name)}</div>
+          <div class="flex items-center gap-1.5 pt-0.5 text-[10px] text-slate-500">
+            <span class="font-mono bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200 font-bold">${escapeHtml(it.code)}</span>
+            <span class="text-slate-400">&bull;</span>
+            <span class="text-slate-600 font-medium">${escapeHtml(it.category)}</span>
+          </div>
+        </td>
+
+        <!-- 2. Lokasi Rak -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <span class="font-mono font-bold bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200 text-[11px]">${escapeHtml(it.rack_location)}</span>
+        </td>
+
+        <!-- 3. Sisa Stok Fisik -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <span class="font-mono font-black text-sm ${it.current_stock <= 0 ? 'text-rose-600' : (it.current_stock <= it.min_stock ? 'text-amber-700' : 'text-slate-900')}">
+            ${App.formatNumber(it.current_stock)}
+          </span>
+          <span class="text-[10px] text-slate-400 font-bold ml-0.5">${escapeHtml(it.unit)}</span>
+        </td>
+
+        <!-- 4. Safety Stock (Min Stock) -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap text-slate-600 font-mono font-bold">
+          ${App.formatNumber(it.min_stock)} <span class="text-[10px] text-slate-400 font-normal">${escapeHtml(it.unit)}</span>
+        </td>
+
+        <!-- 5. Laju Keluar / Hari -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap text-slate-700">
+          <span class="font-mono font-bold">${it.daily_usage > 0 ? App.formatNumber(it.daily_usage) : '0'}</span>
+          <span class="text-[10px] text-slate-400 block">${escapeHtml(it.unit)} / hari</span>
+        </td>
+
+        <!-- 6. Estimasi Sisa Hari (Runway) -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <span class="${runwayColor} text-xs font-mono">${it.runway_text}</span>
+          ${it.daily_usage > 0 && it.lead_time_demand > 0 ? `<p class="text-[9.5px] text-slate-400 font-mono mt-0.5">Req 7 Hari: ${App.formatNumber(it.lead_time_demand)} ${escapeHtml(it.unit)}</p>` : ''}
+        </td>
+
+        <!-- 7. Saran Qty PO -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          ${it.suggested_po_qty > 0 ? `
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-950 border border-emerald-300 font-mono font-black text-xs shadow-2xs">
+              +${App.formatNumber(it.suggested_po_qty)} ${escapeHtml(it.unit)}
+            </span>
+          ` : '<span class="text-slate-400 font-mono">-</span>'}
+        </td>
+
+        <!-- 8. Status Urgensi -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          ${statusBadge}
+        </td>
+
+        <!-- 9. Status PO -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          ${poBadge}
+        </td>
+
+        <!-- 10. Aksi -->
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <div class="flex items-center justify-center gap-1">
+            <button onclick="openRecordPOModal(${it.id})" class="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="Catat No. PO Purchasing">
+              <span class="material-symbols-outlined text-[15px]">post_add</span>
+              <span>Catat PO</span>
+            </button>
+            ${it.is_ordered ? `
+              <button onclick="cancelActivePO(${it.id})" class="p-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-400 rounded-xl transition-colors cursor-pointer" title="Batalkan status PO aktif">
+                <span class="material-symbols-outlined text-[15px]">cancel</span>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function setReorderFilterType(type) {
+  currentReorderFilterType = type;
+  document.querySelectorAll('.reorder-filter-pill').forEach(btn => {
+    btn.className = 'reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 hover:bg-slate-200 text-slate-700';
+  });
+
+  const activeBtn = document.getElementById(`btnReorderFilter_${type}`);
+  if (activeBtn) {
+    activeBtn.className = 'reorder-filter-pill px-3 py-1.5 rounded-xl text-xs font-black transition-all bg-slate-900 text-white shadow-xs';
+  }
+
+  loadReorderAlerts();
+}
+
+function debounceReorderSearch() {
+  clearTimeout(reorderSearchTimeout);
+  reorderSearchTimeout = setTimeout(() => {
+    loadReorderAlerts();
+  }, 300);
+}
+
+function exportReorderAlerts() {
+  window.location.href = '../api/reorder_alerts.php?action=export';
+}
+
+function openRecordPOModal(matId) {
+  const item = allReorderAlerts.find(m => m.id === matId);
+  if (!item) return;
+
+  document.getElementById('poMaterialId').value = item.id;
+  document.getElementById('modalPoMaterialSubtitle').innerText = `${item.name} (${item.code})`;
+  document.getElementById('poUnitLabel').innerText = item.unit;
+  document.getElementById('poQtyInput').value = item.suggested_po_qty || 100;
+  document.getElementById('poNumberInput').value = '';
+  document.getElementById('poSupplierInput').value = item.latest_supplier || '';
+
+  const now = new Date();
+  const orderDateStr = now.toISOString().split('T')[0];
+  document.getElementById('poOrderDateInput').value = orderDateStr;
+
+  const eta = new Date();
+  eta.setDate(eta.getDate() + 7);
+  const etaStr = eta.toISOString().split('T')[0];
+  document.getElementById('poEtaDateInput').value = etaStr;
+
+  document.getElementById('poNotesInput').value = '';
+
+  App.openModal('modalRecordPO');
+}
+
+async function handleRecordPOSubmit(e) {
+  e.preventDefault();
+  const material_id   = document.getElementById('poMaterialId').value;
+  const po_number     = document.getElementById('poNumberInput').value.trim();
+  const supplier_name = document.getElementById('poSupplierInput').value.trim();
+  const ordered_qty   = document.getElementById('poQtyInput').value;
+  const order_date    = document.getElementById('poOrderDateInput').value;
+  const eta_date      = document.getElementById('poEtaDateInput').value;
+  const notes         = document.getElementById('poNotesInput').value.trim();
+
+  const submitBtn = document.getElementById('btnRecordPOSubmit');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+
+  const res = await App.fetchJson('../api/reorder_alerts.php?action=mark_ordered', {
+    method: 'POST',
+    body: JSON.stringify({ material_id, po_number, supplier_name, ordered_qty, order_date, eta_date, notes })
+  });
+
+  submitBtn.disabled = false;
+  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">check_circle</span><span>Simpan Status PO</span>';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'PO Berhasil Dicatat');
+    App.closeModal('modalRecordPO');
+    loadReorderAlerts();
+  } else {
+    App.toast(res.message || 'Gagal mencatat status PO', 'error');
+  }
+}
+
+async function cancelActivePO(matId) {
+  if (!confirm('Batalkan status pengajuan PO aktif untuk material ini?')) return;
+
+  const res = await App.fetchJson('../api/reorder_alerts.php?action=clear_po', {
+    method: 'POST',
+    body: JSON.stringify({ material_id: matId })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success');
+    loadReorderAlerts();
+  } else {
+    App.toast(res.message || 'Gagal membatalkan status PO', 'error');
+  }
+}
+
+// Share Reorder Alerts via WhatsApp
+async function shareReorderAlertsWhatsApp() {
+  if (!allReorderAlerts || allReorderAlerts.length === 0) {
+    App.toast('Tidak ada item kritis yang perlu di-PO saat ini', 'info');
+    return;
+  }
+
+  const criticalItems = allReorderAlerts.filter(it => it.urgency_status !== 'SAFE');
+  if (criticalItems.length === 0) {
+    App.toast('Semua stok material aman, tidak ada kebutuhan PO', 'success');
+    return;
+  }
+
+  const dateFormatted = App.formatDate(new Date());
+
+  const itemsListText = criticalItems.map((it, idx) => {
+    const statusIcon = it.current_stock <= 0 ? '🔴 *[HABIS]*' : (it.urgency_status === 'MUST_PO' ? '🟠 *[HARUS PO]*' : '🟡 *[MENIPIS]*');
+    return `${idx + 1}. ${statusIcon} *${it.name}*
+   • SKU: \`${it.code}\` | Rak: ${it.rack_location}
+   • Sisa Stok Fisik: *${App.formatNumber(it.current_stock)} ${it.unit}* (Safety: ${App.formatNumber(it.min_stock)} ${it.unit})
+   • Pemakaian: ~${it.daily_usage > 0 ? App.formatNumber(it.daily_usage) : '0'} ${it.unit}/hari | Runway: ${it.runway_text}
+   • *Rekomendasi Qty Order (PO):* *+${App.formatNumber(it.suggested_po_qty)} ${it.unit}*
+   • Status PO: ${it.is_ordered ? `_Sedang Dipesan (PO #${it.latest_po_number} - ETA: ${it.latest_po_eta})_` : '_Belum Diajukan_'}`;
+  }).join('\n\n');
+
+  const caption = `🚨 *REKAP PERINGATAN REORDER & SAFETY STOCK MATERIAL KEMAS*
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+Halo Tim Purchasing & Pengadaan Packaging,
+Berikut daftar material kemas dengan status kritis / di bawah safety stock (*Lead Time Pengadaan: 1 Minggu*):
+
+📅 *Tanggal Laporan:* ${dateFormatted}
+📦 *Total Item Kritis:* *${criticalItems.length} Item*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 *DAFTAR ITEM & SARAN QTY PURCHASE ORDER:*
+
+${itemsListText}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ *Catatan:* Mohon segera diproses Purchase Order (PO) agar tidak terjadi kekosongan stok saat lini produksi dan fulfillment beroperasi.
+
+_Dibuat otomatis via PackStock WMS (Inventory Control System)_`;
+
+  // Try Native Share API or WhatsApp URL
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'Rekap Kebutuhan PO Material Kemas',
+        text: caption
+      });
+      App.toast('Berhasil membuka menu share', 'success');
+      return;
+    } catch (e) {
+      if (e.name !== 'AbortError') console.warn('Share API error:', e);
+    }
+  }
+
+  // Copy to clipboard
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(caption).catch(() => {});
+  }
+
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
+  window.open(waUrl, '_blank');
+  App.toast('Format rekap PO telah disalin ke clipboard dan membuka WhatsApp', 'success', 'WhatsApp Share');
+}
+
 
 
 

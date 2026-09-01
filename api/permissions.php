@@ -81,6 +81,12 @@ $MENUS_CATALOG = [
         'description' => 'Monitoring pengajuan barang consumable dari operator dan proses persetujuan (ACC).'
     ],
     [
+        'key' => 'reorder_alerts',
+        'label' => 'Peringatan PO & Stok Menipis',
+        'icon' => 'notification_important',
+        'description' => 'Monitoring stok 0 / kritis dengan kalkulasi Lead Time 1 Minggu dan rekomendasi Purchase Order.'
+    ],
+    [
         'key' => 'handover',
         'label' => 'Handover Shift',
         'icon' => 'published_with_changes',
