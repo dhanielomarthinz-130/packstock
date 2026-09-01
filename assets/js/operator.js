@@ -882,11 +882,61 @@ function generateShareText(group) {
   return text.trim();
 }
 
+let selectedSharePhotos = [];
+
+function renderShareModalPhotos() {
+  const photoContainer = document.getElementById('shareModalPhotosContainer');
+  const photosList = document.getElementById('shareModalPhotosList');
+  const countLabel = document.getElementById('shareModalPhotoCountLabel');
+  if (!photoContainer || !photosList || !currentShareData) return;
+
+  const totalPhotos = currentShareData.photos || [];
+  if (totalPhotos.length === 0) {
+    photosList.innerHTML = '';
+    photoContainer.classList.add('hidden');
+    return;
+  }
+
+  if (countLabel) {
+    countLabel.innerText = `(${selectedSharePhotos.length}/${totalPhotos.length} Terpilih)`;
+  }
+
+  photosList.innerHTML = totalPhotos.map((p, idx) => {
+    const isSelected = selectedSharePhotos.includes(p);
+    return `
+      <div onclick="toggleSharePhotoSelection('${escapeHtml(p)}')" class="relative cursor-pointer transition-all shrink-0 select-none group" title="${isSelected ? 'Klik untuk membuang/melewati foto ini' : 'Klik untuk memilih foto ini'}">
+        <div class="w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500/20' : 'border-slate-300 opacity-40 grayscale'}">
+          <img src="../${escapeHtml(p)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+        </div>
+        <!-- Status Indicator Badge -->
+        <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-xs text-white transition-all ${isSelected ? 'bg-emerald-600' : 'bg-slate-700'}">
+          <span class="material-symbols-outlined text-[13px] font-bold">${isSelected ? 'check' : 'close'}</span>
+        </span>
+        <span class="block text-center text-[9px] font-bold mt-0.5 ${isSelected ? 'text-emerald-700' : 'text-slate-400'}">
+          ${isSelected ? 'Kirim' : 'Dilewati'}
+        </span>
+      </div>
+    `;
+  }).join('');
+
+  photoContainer.classList.remove('hidden');
+}
+
+function toggleSharePhotoSelection(photoPath) {
+  if (selectedSharePhotos.includes(photoPath)) {
+    selectedSharePhotos = selectedSharePhotos.filter(p => p !== photoPath);
+  } else {
+    selectedSharePhotos.push(photoPath);
+  }
+  renderShareModalPhotos();
+}
+
 function openShareOutboundModal(groupKey) {
   const group = window._currentGroupedHistory?.[groupKey];
   if (!group) return;
 
   currentShareData = group;
+  selectedSharePhotos = [...(group.photos || [])]; // Default: All selected
   const shareText = generateShareText(group);
 
   const docLabel = group.request_no ? `Req #${group.request_no} (${group.task_nos.join(', ')})` : group.task_nos.join(', ');
@@ -895,23 +945,7 @@ function openShareOutboundModal(groupKey) {
   const previewBox = document.getElementById('shareTextPreviewBox');
   if (previewBox) previewBox.value = shareText;
 
-  // Render Photo Previews in Modal
-  const photoContainer = document.getElementById('shareModalPhotosContainer');
-  const photosList = document.getElementById('shareModalPhotosList');
-  if (photoContainer && photosList) {
-    if (group.photos && group.photos.length > 0) {
-      photosList.innerHTML = group.photos.map((p, idx) => `
-        <a href="../${escapeHtml(p)}" target="_blank" class="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block relative group hover:opacity-90">
-          <img src="../${escapeHtml(p)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
-          <span class="absolute inset-0 bg-slate-950/40 text-white text-[9px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">Buka</span>
-        </a>
-      `).join('');
-      photoContainer.classList.remove('hidden');
-    } else {
-      photosList.innerHTML = '';
-      photoContainer.classList.add('hidden');
-    }
-  }
+  renderShareModalPhotos();
 
   const btnLabel = document.getElementById('btnCopyShareTextLabel');
   if (btnLabel) btnLabel.innerText = 'Salin Teks';
@@ -923,15 +957,17 @@ async function shareOrCopyDirectly(groupKey) {
   const group = window._currentGroupedHistory?.[groupKey];
   if (!group) return;
 
+  currentShareData = group;
+  selectedSharePhotos = [...(group.photos || [])];
   const text = generateShareText(group);
   const title = `Update Output Kemas ${group.destination || ''}`;
 
   // Try Web Share API Level 2 (Share actual image files directly to WhatsApp with caption)
-  if (navigator.share && group.photos && group.photos.length > 0) {
+  if (navigator.share && selectedSharePhotos.length > 0) {
     try {
       const files = [];
-      for (let i = 0; i < Math.min(group.photos.length, 3); i++) {
-        const photoPath = group.photos[i];
+      for (let i = 0; i < Math.min(selectedSharePhotos.length, 3); i++) {
+        const photoPath = selectedSharePhotos[i];
         const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
         const resp = await fetch(fetchUrl);
         if (resp.ok) {
@@ -948,10 +984,10 @@ async function shareOrCopyDirectly(groupKey) {
           text: text,
           files: files
         });
+        markAsShared(group.groupKey);
         return;
       }
     } catch (e) {
-      console.log('Share with files cancelled / fallback:', e);
       if (e.name === 'AbortError') return;
     }
   }
@@ -963,6 +999,7 @@ async function shareOrCopyDirectly(groupKey) {
         title: title,
         text: text
       });
+      markAsShared(group.groupKey);
       return;
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -984,13 +1021,17 @@ async function copyShareTextToClipboard() {
     await navigator.clipboard.writeText(text);
     const btnLabel = document.getElementById('btnCopyShareTextLabel');
     if (btnLabel) btnLabel.innerText = 'Tersalin! ✓';
-    App.toast('Teks output kemas berhasil disalin & status share dicatat!', 'success', 'Tersalin');
+    App.toast('Teks output kemas berhasil disalin!', 'success', 'Tersalin');
+    
     if (currentShareData && currentShareData.groupKey) {
       markAsShared(currentShareData.groupKey);
     }
+    
+    // Auto close modal & kembali ke halaman riwayat
     setTimeout(() => {
+      App.closeModal('modalShareOutboundSummary');
       if (btnLabel) btnLabel.innerText = 'Salin Teks';
-    }, 2500);
+    }, 400);
   } catch (e) {
     App.toast('Gagal menyalin teks', 'error');
   }
@@ -1005,12 +1046,15 @@ async function openWhatsAppShare() {
     markAsShared(currentShareData.groupKey);
   }
 
-  // If browser can share file directly via Web Share, trigger it first
-  if (navigator.share && currentShareData.photos && currentShareData.photos.length > 0) {
+  // Auto close modal & kembali ke halaman riwayat
+  App.closeModal('modalShareOutboundSummary');
+
+  // If browser can share file directly via Web Share, trigger it with selected photos
+  if (navigator.share && selectedSharePhotos && selectedSharePhotos.length > 0) {
     try {
       const files = [];
-      for (let i = 0; i < Math.min(currentShareData.photos.length, 3); i++) {
-        const photoPath = currentShareData.photos[i];
+      for (let i = 0; i < Math.min(selectedSharePhotos.length, 3); i++) {
+        const photoPath = selectedSharePhotos[i];
         const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
         const resp = await fetch(fetchUrl);
         if (resp.ok) {

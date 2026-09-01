@@ -1902,8 +1902,14 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="my-3 flex-1 overflow-y-auto space-y-2.5">
       <!-- Photos Preview -->
       <div id="shareModalPhotosContainer" class="hidden space-y-1">
-        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Foto Surat Jalan & Bukti:</p>
-        <div id="shareModalPhotosList" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
+        <div class="flex items-center justify-between">
+          <p class="text-[10px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
+            <span>Pilih Foto Bukti</span>
+            <span id="shareModalPhotoCountLabel" class="text-emerald-700 font-mono text-[10px]"></span>
+          </p>
+          <span class="text-[9px] text-slate-400 font-medium">Klik foto untuk pilih/buang</span>
+        </div>
+        <div id="shareModalPhotosList" class="flex items-center gap-2.5 overflow-x-auto pb-1 pt-1"></div>
       </div>
 
       <!-- Caption Box -->
