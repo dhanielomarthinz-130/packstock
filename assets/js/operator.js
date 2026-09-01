@@ -1040,47 +1040,66 @@ async function copyShareTextToClipboard() {
 async function openWhatsAppShare() {
   if (!currentShareData) return;
   const textarea = document.getElementById('shareTextPreviewBox');
-  const text = textarea ? textarea.value : generateShareText(currentShareData);
+  const text = (textarea && textarea.value.trim()) ? textarea.value.trim() : generateShareText(currentShareData);
   
   if (currentShareData && currentShareData.groupKey) {
     markAsShared(currentShareData.groupKey);
   }
 
+  // Auto copy text ke clipboard sebagai backup instan
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    }
+  } catch (e) {}
+
   // Auto close modal & kembali ke halaman riwayat
   App.closeModal('modalShareOutboundSummary');
 
-  // If browser can share file directly via Web Share, trigger it with selected photos
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const encodedText = encodeURIComponent(text);
+  const waUrl = isMobile ? `whatsapp://send?text=${encodedText}` : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+  // If mobile browser supports Web Share API with images
   if (navigator.share && selectedSharePhotos && selectedSharePhotos.length > 0) {
     try {
       const files = [];
-      for (let i = 0; i < Math.min(selectedSharePhotos.length, 3); i++) {
-        const photoPath = selectedSharePhotos[i];
-        const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
-        const resp = await fetch(fetchUrl);
-        if (resp.ok) {
-          const blob = await resp.blob();
-          const ext = photoPath.split('.').pop() || 'jpg';
-          const file = new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
-          files.push(file);
+      const fetchPromises = selectedSharePhotos.slice(0, 3).map(async (photoPath, i) => {
+        try {
+          const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
+          const resp = await fetch(fetchUrl);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const ext = photoPath.split('.').pop() || 'jpg';
+            return new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+          }
+        } catch (err) {
+          return null;
         }
-      }
+      });
 
-      if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
+      const resolvedFiles = (await Promise.all(fetchPromises)).filter(Boolean);
+
+      if (resolvedFiles.length > 0 && navigator.canShare && navigator.canShare({ files: resolvedFiles })) {
         await navigator.share({
           title: `Update Output Kemas`,
           text: text,
-          files: files
+          files: resolvedFiles
         });
         return;
       }
     } catch (e) {
+      // If user cancels or share fails, fallback seamlessly to WhatsApp direct link
       if (e.name === 'AbortError') return;
     }
   }
 
-  // Fallback to WhatsApp URL
-  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-  window.open(waUrl, '_blank');
+  // Direct instant open WhatsApp without popup blocker delay
+  if (isMobile) {
+    window.location.href = waUrl;
+  } else {
+    window.open(waUrl, '_blank');
+  }
 }
 
 // 3. START TASK (Status -> IN_PROGRESS)
