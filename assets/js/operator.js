@@ -768,7 +768,7 @@ function generateShareText(group) {
                `${shift}\n` +
                `Brand ${brand}\n\n` +
                `${itemsList.trim()}\n\n` +
-               `Cc:@~Nurul @~rehan @~Muhamad Afif`;
+               `Cc: @6287773566099 @6283896006626 @62881025581421`;
 
   return text.trim();
 }
