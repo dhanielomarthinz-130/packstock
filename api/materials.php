@@ -22,35 +22,26 @@ if ($action === 'list') {
     $category = trim($_GET['category'] ?? '');
     $stockStatus = trim($_GET['status'] ?? ''); // all, low, safe, empty
 
-    // Reconcile and calculate real stock before listing
-    reconcileMaterialStock($pdo);
-
     $query = "
         SELECT m.*,
-               COALESCE((
-                   SELECT SUM(qty_change) 
-                   FROM stock_mutations 
-                   WHERE material_id = m.id 
-                     AND qty_change > 0 
-                     AND type != 'INITIAL_IMPORT'
-               ), 0) as total_inbound,
-               COALESCE((
-                   SELECT SUM(ABS(qty_change)) 
-                   FROM stock_mutations 
-                   WHERE material_id = m.id 
-                     AND qty_change < 0
-               ), 0) as total_outbound,
-               COALESCE((
-                   SELECT qty_change 
-                   FROM stock_mutations 
-                   WHERE material_id = m.id 
-                     AND type = 'INITIAL_IMPORT' 
-                   ORDER BY id DESC LIMIT 1
-               ), (
-                   m.current_stock - 
-                   COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
-               )) as initial_upload_stock
+               COALESCE(sm_agg.total_inbound, 0) as total_inbound,
+               COALESCE(sm_agg.total_outbound, 0) as total_outbound,
+               COALESCE(sm_init.qty_change, (m.current_stock - COALESCE(sm_agg.total_net_flow, 0))) as initial_upload_stock
         FROM materials m
+        LEFT JOIN (
+            SELECT material_id,
+                   SUM(CASE WHEN qty_change > 0 AND type != 'INITIAL_IMPORT' THEN qty_change ELSE 0 END) as total_inbound,
+                   SUM(CASE WHEN qty_change < 0 THEN ABS(qty_change) ELSE 0 END) as total_outbound,
+                   SUM(CASE WHEN type != 'INITIAL_IMPORT' THEN qty_change ELSE 0 END) as total_net_flow
+            FROM stock_mutations
+            GROUP BY material_id
+        ) sm_agg ON m.id = sm_agg.material_id
+        LEFT JOIN (
+            SELECT material_id, qty_change
+            FROM stock_mutations
+            WHERE type = 'INITIAL_IMPORT'
+            GROUP BY material_id
+        ) sm_init ON m.id = sm_init.material_id
         WHERE 1=1
     ";
     $params = [];

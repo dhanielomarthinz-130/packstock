@@ -3470,39 +3470,59 @@ function recalcInboundTotalQty() {
   if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
-async function loadInboundHistory() {
+async function loadInboundHistory(isManual = false) {
   const tbody = document.getElementById('inboundHistoryTable');
   if (!tbody) return;
+
+  const btnRefresh = document.getElementById('btnRefreshInbound');
+  const icon = btnRefresh?.querySelector('.material-symbols-outlined');
+  if (icon) icon.classList.add('animate-spin');
 
   const search = document.getElementById('inboundSearchInput')?.value || '';
   const date = document.getElementById('inboundDateFilter')?.value || '';
   const query = new URLSearchParams({ action: 'list', search, date, limit: 150 });
 
-  const res = await App.fetchJson(`../api/inbound.php?${query.toString()}`);
-  if (res.success && res.data) {
-    window._currentInboundList = res.data;
+  try {
+    const res = await App.fetchJson(`../api/inbound.php?${query.toString()}`);
+    if (res.success && res.data) {
+      window._currentInboundList = res.data;
 
-    // Update KPI Metric Cards
-    const totalEl = document.getElementById('inboundTotalQtyMetric');
-    const avgDurEl = document.getElementById('inboundAvgDurationMetric');
-    const avgTaktEl = document.getElementById('inboundAvgTaktTimeMetric');
-    if (totalEl) totalEl.innerText = App.formatNumber(res.metrics?.total_inbound_qty || 0);
-    if (avgDurEl) avgDurEl.innerText = App.formatDuration(res.metrics?.avg_duration_seconds || 0);
-    if (avgTaktEl) avgTaktEl.innerText = App.formatTaktTime(res.metrics?.avg_takt_time_seconds || 0);
+      // Update KPI Metric Cards
+      const totalEl = document.getElementById('inboundTotalQtyMetric');
+      const avgDurEl = document.getElementById('inboundAvgDurationMetric');
+      const avgTaktEl = document.getElementById('inboundAvgTaktTimeMetric');
+      if (totalEl) totalEl.innerText = App.formatNumber(res.metrics?.total_inbound_qty || 0);
+      if (avgDurEl) avgDurEl.innerText = App.formatDuration(res.metrics?.avg_duration_seconds || 0);
+      if (avgTaktEl) avgTaktEl.innerText = App.formatTaktTime(res.metrics?.avg_takt_time_seconds || 0);
 
-    if (res.data.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="8" class="p-8 text-center text-slate-400 text-xs font-medium">
-            <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">move_to_inbox</span>
-            <p>Tidak ada riwayat penerimaan barang masuk.</p>
-          </td>
-        </tr>
-      `;
-      return;
+      if (res.data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="p-8 text-center text-slate-400 text-xs font-medium">
+              <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">move_to_inbox</span>
+              <p>Tidak ada riwayat penerimaan barang masuk.</p>
+            </td>
+          </tr>
+        `;
+      } else {
+        renderInboundRows(res.data, tbody);
+      }
+
+      if (isManual) {
+        App.toast(`Data barang masuk diperbarui (${res.data.length} transaksi)`, 'info');
+      }
     }
+  } catch (err) {
+    if (isManual) App.toast('Gagal memuat data inbound: ' + err.message, 'error');
+  } finally {
+    if (icon) {
+      setTimeout(() => icon.classList.remove('animate-spin'), 300);
+    }
+  }
+}
 
-    tbody.innerHTML = res.data.map((i, idx) => {
+function renderInboundRows(data, tbody) {
+  tbody.innerHTML = data.map((i, idx) => {
       let photos = [];
       if (i.photo_path) {
         if (i.photo_path.startsWith('[')) {
@@ -3599,7 +3619,6 @@ async function loadInboundHistory() {
       </tr>
       `;
     }).join('');
-  }
 }
 
 // ================= 8.1 MODAL DETAIL & EDIT INBOUND =================
@@ -4162,9 +4181,13 @@ function recalcOutboundTotalQty() {
   if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
-async function loadOutboundHistory() {
+async function loadOutboundHistory(isManual = false) {
   const tbody = document.getElementById('outboundHistoryTable');
   if (!tbody) return;
+
+  const btnRefresh = document.getElementById('btnRefreshOutbound');
+  const icon = btnRefresh?.querySelector('.material-symbols-outlined');
+  if (icon) icon.classList.add('animate-spin');
 
   const search = document.getElementById('outboundSearchInput')?.value || '';
   const typeFilter = document.getElementById('outboundTypeFilter')?.value || 'ALL';
@@ -4172,33 +4195,49 @@ async function loadOutboundHistory() {
   const date = document.getElementById('outboundDateFilter')?.value || '';
   const query = new URLSearchParams({ action: 'list', search, type: typeFilter, status: statusFilter, date, limit: 150 });
 
-  const res = await App.fetchJson(`../api/outbound.php?${query.toString()}`);
-  if (res.success && res.data) {
-    // Update KPI Metric Cards
-    const totalEl = document.getElementById('outboundTotalQtyMetric');
-    const avgDurEl = document.getElementById('outboundAvgDurationMetric');
-    const avgTaktEl = document.getElementById('outboundAvgTaktTimeMetric');
-    if (totalEl) totalEl.innerText = App.formatNumber(res.metrics?.total_outbound_qty || 0);
-    if (avgDurEl) avgDurEl.innerText = App.formatDuration(res.metrics?.avg_duration_seconds || 0);
-    if (avgTaktEl) avgTaktEl.innerText = App.formatTaktTime(res.metrics?.avg_takt_time_seconds || 0);
+  try {
+    const res = await App.fetchJson(`../api/outbound.php?${query.toString()}`);
+    if (res.success && res.data) {
+      // Update KPI Metric Cards
+      const totalEl = document.getElementById('outboundTotalQtyMetric');
+      const avgDurEl = document.getElementById('outboundAvgDurationMetric');
+      const avgTaktEl = document.getElementById('outboundAvgTaktTimeMetric');
+      if (totalEl) totalEl.innerText = App.formatNumber(res.metrics?.total_outbound_qty || 0);
+      if (avgDurEl) avgDurEl.innerText = App.formatDuration(res.metrics?.avg_duration_seconds || 0);
+      if (avgTaktEl) avgTaktEl.innerText = App.formatTaktTime(res.metrics?.avg_takt_time_seconds || 0);
 
-    let currentOutboundList = res.data;
-    window._currentOutboundList = currentOutboundList;
+      let currentOutboundList = res.data;
+      window._currentOutboundList = currentOutboundList;
 
-    if (res.data.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="7" class="p-8 text-center text-slate-400 text-xs font-medium">
-            <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">outbox</span>
-            <p>Tidak ada riwayat pengeluaran barang keluar.</p>
-          </td>
-        </tr>
-      `;
-      return;
+      if (res.data.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="p-8 text-center text-slate-400 text-xs font-medium">
+              <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">outbox</span>
+              <p>Tidak ada riwayat pengeluaran barang keluar.</p>
+            </td>
+          </tr>
+        `;
+      } else {
+        renderOutboundRows(res.data, tbody);
+      }
+
+      if (isManual) {
+        App.toast(`Data barang keluar diperbarui (${res.data.length} transaksi)`, 'info');
+      }
     }
+  } catch (err) {
+    if (isManual) App.toast('Gagal memuat data outbound: ' + err.message, 'error');
+  } finally {
+    if (icon) {
+      setTimeout(() => icon.classList.remove('animate-spin'), 300);
+    }
+  }
+}
 
-    tbody.innerHTML = res.data.map((o, idx) => {
-      const isTask = o.outbound_type === 'TASK_PICKING';
+function renderOutboundRows(data, tbody) {
+  tbody.innerHTML = data.map((o, idx) => {
+    const isTask = o.outbound_type === 'TASK_PICKING';
 
       let photos = [];
       if (o.photo_path) {
@@ -4312,7 +4351,6 @@ async function loadOutboundHistory() {
         </tr>
       `;
     }).join('');
-  }
 }
 
 // ================= 9.0 MODAL DETAIL OUTBOUND (ICON MATA) =================

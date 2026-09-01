@@ -1918,7 +1918,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Inbound Actions (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button onclick="loadInboundHistory()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Inbound">
+            <button id="btnRefreshInbound" onclick="loadInboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Inbound">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
               <span>Refresh</span>
             </button>
@@ -1957,7 +1957,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <!-- ================= 4. TAB: BARANG KELUAR (OUTBOUND) ================= -->
+      <!-- ================= 4. TAB: BARANG KELUAR & MONITORING TASK (OUTBOUND) ================= -->
       <div id="tab-outbound" class="hidden space-y-4">
 
         <!-- Outbound Control Bar -->
@@ -1994,7 +1994,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Outbound Actions (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button onclick="loadOutboundHistory()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Outbound">
+            <button id="btnRefreshOutbound" onclick="loadOutboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Outbound">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
               <span>Refresh</span>
             </button>

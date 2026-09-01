@@ -1,9 +1,10 @@
 <?php
-// config/database.php - Dual MySQL / SQLite Database Manager with Auto-Migration
+// config/database.php - Dual MySQL / SQLite Database Manager with Auto-Migration & Performance Caching
 date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
+    private const CURRENT_SCHEMA_VERSION = 3;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -53,7 +54,7 @@ class Database {
                 self::$pdo->exec("SET NAMES utf8mb4;");
             } catch (Throwable $e) {}
 
-            self::initMySQLTables(self::$pdo);
+            self::ensureSchema(self::$pdo, 'mysql');
             return self::$pdo;
         } catch (Exception $e) {
             // Fallback to SQLite if MySQL is unavailable
@@ -69,8 +70,56 @@ class Database {
                 self::$pdo->exec("PRAGMA busy_timeout = 30000;");
             } catch (Throwable $ignored) {}
 
-            self::initSQLiteTables(self::$pdo);
+            self::ensureSchema(self::$pdo, 'sqlite');
             return self::$pdo;
+        }
+    }
+
+    private static function ensureSchema(PDO $pdo, string $driver): void {
+        try {
+            $currentVer = 0;
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `_schema_version` (`version` INT PRIMARY KEY, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $stmt = $pdo->query("SELECT MAX(version) FROM `_schema_version`");
+            $currentVer = (int)($stmt ? $stmt->fetchColumn() : 0);
+
+            if ($currentVer >= self::CURRENT_SCHEMA_VERSION) {
+                return; // Schema is already up to date, skip expensive DDL & table scans
+            }
+
+            if ($driver === 'mysql') {
+                self::initMySQLTables($pdo);
+            } else {
+                self::initSQLiteTables($pdo);
+            }
+
+            // Clean any duplicate menu permissions
+            $pdo->exec("
+                DELETE FROM menu_permissions 
+                WHERE id NOT IN (
+                    SELECT MAX(id) 
+                    FROM menu_permissions 
+                    GROUP BY role, COALESCE(user_id, 0), menu_key
+                )
+            ");
+
+            $stmtVer = $pdo->prepare("INSERT OR REPLACE INTO `_schema_version` (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)");
+            if ($driver === 'mysql') {
+                $stmtVer = $pdo->prepare("REPLACE INTO `_schema_version` (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)");
+            }
+            $stmtVer->execute([self::CURRENT_SCHEMA_VERSION]);
+
+            if ($driver === 'sqlite') {
+                try {
+                    $pdo->exec("VACUUM;");
+                } catch (Throwable $ignored) {}
+            }
+        } catch (Throwable $e) {
+            // Fallback: run initial table setups if check failed
+            if ($driver === 'mysql') {
+                self::initMySQLTables($pdo);
+            } else {
+                self::initSQLiteTables($pdo);
+            }
         }
     }
 
@@ -371,16 +420,27 @@ class Database {
             "ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'"
         ];
 
-        foreach ($migrations as $sql) {
+        // Create performance indexes for MySQL
+        $mysqlIndexes = [
+            "CREATE INDEX `idx_mut_mat_date` ON `stock_mutations` (`material_id`, `created_at`)",
+            "CREATE INDEX `idx_mut_type_date` ON `stock_mutations` (`type`, `created_at`)",
+            "CREATE INDEX `idx_mut_ref` ON `stock_mutations` (`reference_no`)",
+            "CREATE INDEX `idx_tasks_assign_status` ON `tasks` (`assigned_to`, `status`)",
+            "CREATE INDEX `idx_tasks_date` ON `tasks` (`created_at`)",
+            "CREATE INDEX `idx_inb_date` ON `inbound_transactions` (`created_at`)",
+            "CREATE INDEX `idx_outb_date` ON `outbound_transactions` (`created_at`)",
+            "CREATE INDEX `idx_mat_cat_stock` ON `materials` (`category`, `current_stock`)",
+            "CREATE INDEX `idx_menu_perm_role_user` ON `menu_permissions` (`role`, `user_id`, `menu_key`)"
+        ];
+        foreach ($mysqlIndexes as $idxSql) {
             try {
-                $pdo->exec($sql);
+                $pdo->exec($idxSql);
             } catch (Throwable $e) {
-                // Column already exists
+                // Index already exists
             }
         }
 
         self::seedDefaultData($pdo);
-        self::autoReconcileStockMutations($pdo);
     }
 
     private static function initSQLiteTables(PDO $pdo): void {
@@ -585,8 +645,27 @@ class Database {
             }
         }
 
+        // Create performance indexes for SQLite
+        $sqliteIndexes = [
+            "CREATE INDEX IF NOT EXISTS idx_mut_mat_date ON stock_mutations (material_id, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_mut_type_date ON stock_mutations (type, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_mut_ref ON stock_mutations (reference_no)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_assign_status ON tasks (assigned_to, status)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks (created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_inb_date ON inbound_transactions (created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_outb_date ON outbound_transactions (created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_mat_cat_stock ON materials (category, current_stock)",
+            "CREATE INDEX IF NOT EXISTS idx_menu_perm_role_user ON menu_permissions (role, user_id, menu_key)"
+        ];
+        foreach ($sqliteIndexes as $idxSql) {
+            try {
+                $pdo->exec($idxSql);
+            } catch (Throwable $e) {
+                // Index already exists
+            }
+        }
+
         self::seedDefaultData($pdo);
-        self::autoReconcileStockMutations($pdo);
     }
 
     public static function autoReconcileStockMutations(PDO $pdo): void {
@@ -726,47 +805,40 @@ class Database {
             $stmtUser->execute(['operator2', $passOp2, 'Agus Pratama', 'operator', 'Shift 2 (Siang 16:00 - 00:00)']);
         }
 
-        // Seed default menu permissions
-        $defaultMenus = [
-            'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'counting_progress'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'counting_detail'         => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
-            'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
-            'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
-            'consumable_requests'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 1],
-        ];
+        // Seed default menu permissions ONLY if table is empty
+        $stmtPermCount = $pdo->query("SELECT COUNT(*) FROM menu_permissions");
+        $permCount = (int)($stmtPermCount ? $stmtPermCount->fetchColumn() : 0);
 
-        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        if ($driver === 'sqlite') {
-            $stmtInsertPerm = $pdo->prepare("
-                INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
-                VALUES (?, NULL, ?, ?)
-                ON CONFLICT(role, user_id, menu_key) DO UPDATE SET is_allowed = excluded.is_allowed
-            ");
-        } else {
-            $stmtInsertPerm = $pdo->prepare("
-                INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
-                VALUES (?, NULL, ?, ?)
-                ON DUPLICATE KEY UPDATE is_allowed = is_allowed
-            ");
-        }
-        foreach ($defaultMenus as $menuKey => $roles) {
-            foreach ($roles as $role => $allowed) {
-                try {
-                    $stmtInsertPerm->execute([$role, $menuKey, $allowed]);
-                } catch (Throwable $e) {
-                    // Ignored
+        if ($permCount === 0) {
+            $defaultMenus = [
+                'dashboard'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'counting_progress'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'inventory'               => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'opname'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'dynamic_count'           => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'counting_detail'         => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'users'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'permissions'             => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
+                'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
+                'consumable_requests'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 1],
+            ];
+
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $stmtInsertPerm = $pdo->prepare("INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed) VALUES (?, NULL, ?, ?)");
+            foreach ($defaultMenus as $menuKey => $roles) {
+                foreach ($roles as $role => $allowed) {
+                    try {
+                        $stmtInsertPerm->execute([$role, $menuKey, $allowed]);
+                    } catch (Throwable $e) {
+                        // Ignored
+                    }
                 }
             }
         }
