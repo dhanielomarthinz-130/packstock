@@ -838,23 +838,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <input type="text" id="opReqGlobalNotes" placeholder="Ketik catatan jika ada..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:bg-white focus:border-amber-600">
               </div>
 
-              <!-- Foto Upload -->
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <label class="font-bold text-slate-700 text-xs">Foto Dokumen Request</label>
-                  <span id="opReqPhotoCountBadge" class="text-[10px] text-slate-400 font-normal">0 Foto dipilih</span>
-                </div>
-
-                <input type="file" id="opReqPhotoInput" accept="image/*" multiple class="hidden" onchange="handleOpReqPhotosSelected(this)">
-                <div onclick="document.getElementById('opReqPhotoInput').click()" 
-                  class="p-2.5 bg-slate-50 hover:bg-amber-50 border border-dashed border-slate-300 hover:border-amber-400 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 text-slate-700 hover:text-amber-900 active:scale-98">
-                  <span class="material-symbols-outlined text-[18px] text-amber-600">add_a_photo</span>
-                  <span class="text-xs font-bold">+ Ambil / Pilih Foto Dokumen</span>
-                </div>
-
-                <div id="opReqPhotoPreviewGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2 hidden"></div>
-              </div>
-
             </div>
 
             <!-- 6. Submit Button -->
@@ -1412,9 +1395,12 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div>
-        <label class="block font-bold text-slate-700 mb-1">Catatan Penerima di Line / PIC</label>
-        <input type="text" id="submitNotes" placeholder="Contoh: Diterima Pak Joko di Line Packing 1" 
-          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white">
+        <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center justify-between">
+          <span>Catatan Penerima di Line / PIC <span class="text-rose-500 font-bold">*</span></span>
+          <span class="text-[10px] text-rose-600 font-semibold">Wajib Diisi</span>
+        </label>
+        <input type="text" id="submitNotes" required placeholder="Contoh: Diterima Pak Joko di Line Packing 1" 
+          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white text-xs font-semibold">
       </div>
 
       <!-- Task Picking Photo Proof Section -->
@@ -1422,7 +1408,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="flex items-center justify-between">
           <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
-            <span>Foto Bukti Penyerahan ke Line (Bisa > 1 Foto)</span>
+            <span>Foto Bukti Penyerahan ke Line <span class="text-rose-500 font-bold">* (Min 1 Foto)</span></span>
           </label>
           <span id="taskPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-amber-100 px-2 py-0.5 rounded-full">0 Foto</span>
         </div>

@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (document.hidden) return;
       loadFulfillmentStats();
       if (currentOpTab === 'request_consumable' && currentOpReqSubTab === 'history') {
-        loadOperatorConsumableRequests();
+        loadOperatorConsumableRequests(true);
       }
     }, 45000);
     return;
@@ -497,7 +497,23 @@ async function handleFinalTaskSubmit(e) {
   const completion_notes = document.getElementById('submitNotes').value.trim();
 
   if (actual_qty <= 0) {
-    App.toast('Jumlah ambil harus lebih dari 0', 'warning');
+    App.toast('Jumlah riil yang diserahkan harus lebih dari 0', 'warning', 'Qty Wajib');
+    return;
+  }
+
+  if (!completion_notes) {
+    App.toast('Catatan penerima di line / PIC wajib diisi!', 'warning', 'Wajib Diisi');
+    const notesInput = document.getElementById('submitNotes');
+    if (notesInput) {
+      notesInput.focus();
+      notesInput.classList.add('border-rose-500', 'bg-rose-50');
+      setTimeout(() => notesInput.classList.remove('border-rose-500', 'bg-rose-50'), 3000);
+    }
+    return;
+  }
+
+  if (!taskCompleteSelectedFiles || taskCompleteSelectedFiles.length === 0) {
+    App.toast('Foto bukti penyerahan ke line wajib diunggah minimal 1 foto!', 'warning', 'Foto Wajib');
     return;
   }
 
@@ -2662,30 +2678,56 @@ async function handleConsumableRequestSubmit() {
   } else {
     App.toast(res.message || 'Gagal mengirim pengajuan', 'error');
   }
+}let allOperatorConsumableRequests = [];
+let openedOpReqCardIds = new Set();
+
+function toggleOpReqCard(reqId) {
+  const detailEl = document.getElementById(`opReqDetail_${reqId}`);
+  const chevronEl = document.getElementById(`opReqChevron_${reqId}`);
+  const labelEl = document.getElementById(`opReqToggleLabel_${reqId}`);
+  if (!detailEl) return;
+
+  const isHidden = detailEl.classList.contains('hidden');
+  if (isHidden) {
+    detailEl.classList.remove('hidden');
+    openedOpReqCardIds.add(reqId);
+    if (chevronEl) chevronEl.innerText = 'expand_less';
+    if (labelEl) labelEl.innerText = 'Tutup Detail';
+  } else {
+    detailEl.classList.add('hidden');
+    openedOpReqCardIds.delete(reqId);
+    if (chevronEl) chevronEl.innerText = 'expand_more';
+    if (labelEl) labelEl.innerText = 'Klik untuk Buka Detail';
+  }
 }
 
-async function loadOperatorConsumableRequests() {
+async function loadOperatorConsumableRequests(isSilent = false) {
   const container = document.getElementById('opReqHistoryContainer');
   if (!container) return;
 
-  container.innerHTML = `
-    <div class="p-8 text-center text-slate-400 text-xs">
-      <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
-      <p>Memuat riwayat pengajuan consumable...</p>
-    </div>
-  `;
+  if (!isSilent && (!allOperatorConsumableRequests || allOperatorConsumableRequests.length === 0)) {
+    container.innerHTML = `
+      <div class="p-8 text-center text-slate-400 text-xs">
+        <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
+        <p>Memuat riwayat pengajuan consumable...</p>
+      </div>
+    `;
+  }
 
   const res = await App.fetchJson('../api/consumable_requests.php?action=list');
   if (!res.success || !res.data || res.data.length === 0) {
+    allOperatorConsumableRequests = [];
     container.innerHTML = `
       <div class="p-8 text-center text-slate-400 text-xs bg-white rounded-2xl border border-slate-200 shadow-xs">
         <span class="material-symbols-outlined text-[36px] text-slate-300 mb-1">inbox</span>
-        <p class="font-bold text-slate-600">Belum ada riwayat pengajuan.</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">Buat pengajuan baru melalui tab "Buat Request Baru".</p>
+        <p class="font-bold text-slate-600">Belum ada riwayat pengajuan aktif.</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Pengajuan yang belum selesai atau diserahkan hari ini akan tampil di sini.</p>
       </div>
     `;
     return;
   }
+
+  allOperatorConsumableRequests = res.data;
 
   const pendingList = res.data.filter(r => r.status === 'PENDING');
   const myPendingBadge = document.getElementById('badgeOpReqMyPending');
@@ -2708,102 +2750,392 @@ async function loadOperatorConsumableRequests() {
     }
   }
 
-  container.innerHTML = res.data.map(req => {
+  container.innerHTML = res.data.map((req, idx) => {
+    const isUrgent = req.priority === 'URGENT';
+    const ho = req.handover_info || {};
+    const stage = ho.stage || (req.status === 'APPROVED' ? 2 : (req.status === 'PENDING' ? 1 : 0));
+    const simpleShift = (req.requester_shift || '').split('(')[0].trim() || (req.requester_shift || 'Shift');
+    
+    // Default open state: open if user previously opened it, otherwise keep collapsed
+    const isOpen = openedOpReqCardIds.has(req.id);
+
+    // Status Pill Badge
     let statusBadge = '';
     if (req.status === 'PENDING') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC Admin</span>';
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC</span>';
     } else if (req.status === 'APPROVED') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Disetujui (ACC)</span>';
+      if (ho.is_handed_over) {
+        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px] text-emerald-700">task_alt</span>Selesai Diserahkan</span>';
+      } else {
+        statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px] text-blue-700 animate-spin">sync</span>Diproses Gudang</span>';
+      }
     } else if (req.status === 'REJECTED') {
       statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-rose-600">cancel</span>Ditolak Admin</span>';
+    } else if (req.status === 'CANCELLED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-300">Dibatalkan</span>';
     } else {
       statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${req.status}</span>`;
     }
 
-    const isUrgent = req.priority === 'URGENT';
-
-    return `
-      <div class="p-3.5 bg-white rounded-2xl border ${isUrgent ? 'border-rose-300' : 'border-slate-200'} shadow-xs space-y-2.5 transition-all">
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-mono font-black text-amber-900 text-xs">${escapeHtml(req.request_no)}</span>
-              ${isUrgent ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-extrabold text-[9px] border border-rose-300">URGENT</span>' : ''}
-            </div>
-            <p class="text-[10px] text-slate-400 mt-0.5">${App.formatDate(req.created_at)}</p>
+    // 1. VISUAL PROGRESS TRACKER (STEPPER)
+    let stepperHtml = '';
+    if (req.status === 'REJECTED') {
+      stepperHtml = `
+        <div class="p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl space-y-1.5">
+          <div class="flex items-center justify-between text-[11px] font-extrabold text-rose-900">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-rose-600">cancel</span>
+              <span>Pengajuan Ditolak oleh Admin</span>
+            </span>
+            <span class="text-[10px] text-rose-700">${req.approved_at ? App.formatDate(req.approved_at) : ''}</span>
           </div>
-          <div class="text-right">${statusBadge}</div>
+          ${req.admin_notes ? `<p class="text-[11px] text-rose-800 bg-white/80 p-2 rounded-lg border border-rose-200"><strong>Alasan:</strong> ${App.escapeHtml(req.admin_notes)}</p>` : ''}
         </div>
+      `;
+    } else if (req.status === 'CANCELLED') {
+      stepperHtml = `
+        <div class="p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-600 text-[11px] font-semibold flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px] text-slate-500">block</span>
+          <span>Pengajuan ini telah dibatalkan oleh pemohon.</span>
+        </div>
+      `;
+    } else {
+      const step1Done = true;
+      const step2Done = (stage >= 2);
+      const step2Active = (stage === 1);
+      const step3Done = (stage >= 3);
+      const step3Active = (stage === 2);
 
-        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs space-y-1">
-          <div class="flex items-center justify-between text-[11px]">
-            <span class="text-slate-500 font-medium">Tujuan:</span>
-            <span class="font-bold text-slate-900">${escapeHtml(req.destination)}</span>
+      stepperHtml = `
+        <div class="p-3 bg-gradient-to-r from-slate-50 to-amber-50/30 rounded-xl border border-slate-200/80 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-amber-600">timeline</span>
+              <span>Progres Fulfillment:</span>
+            </span>
+            <span class="text-[10px] font-extrabold font-mono px-2 py-0.5 rounded-full ${step3Done ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : (step2Done ? 'bg-blue-100 text-blue-900 border border-blue-300' : 'bg-amber-100 text-amber-900 border border-amber-300')}">
+              ${step3Done ? '3/3 Selesai (Diserahkan)' : (step2Done ? '2/3 Disetujui (Picking)' : '1/3 Menunggu ACC')}
+            </span>
           </div>
-          ${req.notes ? `
-            <div class="pt-1 border-t border-slate-200/60 text-[10px] text-slate-600">
-              <span class="font-semibold text-slate-500">Catatan:</span> &ldquo;${escapeHtml(req.notes)}&rdquo;
+
+          <div class="relative grid grid-cols-3 gap-2 px-1 pt-1 pb-1">
+            <div class="absolute left-8 right-8 top-4.5 h-1 bg-slate-200 z-0">
+              <div class="h-full ${step3Done ? 'bg-emerald-500 w-full' : (step2Done ? 'bg-blue-500 w-1/2' : 'bg-amber-500 w-0')} transition-all duration-500"></div>
+            </div>
+
+            <div class="relative z-10 flex flex-col items-center text-center group cursor-default">
+              <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs border-2 border-white">
+                <span class="material-symbols-outlined text-[16px] font-bold">check</span>
+              </div>
+              <span class="text-[10.5px] font-black text-emerald-950 mt-1">1. Diajukan</span>
+              <span class="text-[9.5px] font-bold text-slate-800 truncate max-w-[100px] flex items-center gap-0.5 justify-center" title="Pemohon: ${App.escapeHtml(req.requester_name || 'Operator')}">
+                <span class="material-symbols-outlined text-[11px] text-slate-400">person</span>
+                <span>${App.escapeHtml(req.requester_name || 'Operator')}</span>
+              </span>
+              <span class="text-[8.5px] text-slate-500 font-mono font-medium">${App.formatDate(req.created_at)}</span>
+            </div>
+
+            <div class="relative z-10 flex flex-col items-center text-center group cursor-default">
+              <div class="w-8 h-8 rounded-full ${step2Done ? 'bg-emerald-500 text-white' : (step2Active ? 'bg-amber-500 text-white ring-4 ring-amber-100 animate-pulse' : 'bg-slate-200 text-slate-400')} flex items-center justify-center shadow-xs border-2 border-white">
+                <span class="material-symbols-outlined text-[16px]">${step2Done ? 'check' : (step2Active ? 'hourglass_top' : 'inventory_2')}</span>
+              </div>
+              <span class="text-[10.5px] font-black ${step2Done ? 'text-emerald-950' : (step2Active ? 'text-amber-900' : 'text-slate-400')} mt-1">2. ACC Admin</span>
+              ${step2Done ? `
+                <span class="text-[9.5px] font-bold text-slate-800 truncate max-w-[100px] flex items-center gap-0.5 justify-center" title="Disetujui: ${App.escapeHtml(req.approver_name || 'Admin')}">
+                  <span class="material-symbols-outlined text-[11px] text-emerald-600">verified_user</span>
+                  <span>${App.escapeHtml(req.approver_name || 'Admin')}</span>
+                </span>
+                <span class="text-[8.5px] text-slate-500 font-mono font-medium">${req.approved_at ? App.formatDate(req.approved_at) : '-'}</span>
+              ` : `
+                <span class="text-[9px] text-amber-700 font-semibold">${step2Active ? 'Menunggu ACC' : '-'}</span>
+                <span class="text-[8.5px] text-slate-400 font-mono">${step2Active ? 'Antrean Admin' : ''}</span>
+              `}
+            </div>
+
+            <div class="relative z-10 flex flex-col items-center text-center group cursor-default">
+              <div class="w-8 h-8 rounded-full ${step3Done ? 'bg-emerald-600 text-white ring-2 ring-emerald-200' : (step3Active ? 'bg-blue-600 text-white ring-4 ring-blue-100 animate-pulse' : 'bg-slate-200 text-slate-400')} flex items-center justify-center shadow-xs border-2 border-white">
+                <span class="material-symbols-outlined text-[16px]">${step3Done ? 'verified' : (step3Active ? 'local_shipping' : 'handshake')}</span>
+              </div>
+              <span class="text-[10.5px] font-black ${step3Done ? 'text-emerald-950' : (step3Active ? 'text-blue-900' : 'text-slate-400')} mt-1">3. Diserahkan</span>
+              ${step3Done ? `
+                <span class="text-[9.5px] font-bold text-slate-800 truncate max-w-[100px] flex items-center gap-0.5 justify-center" title="Diserahkan: ${App.escapeHtml(ho.penyerah_name || 'Gudang')}">
+                  <span class="material-symbols-outlined text-[11px] text-emerald-600">handshake</span>
+                  <span>${App.escapeHtml(ho.penyerah_name || 'Gudang')}</span>
+                </span>
+                <span class="text-[8.5px] text-slate-500 font-mono font-medium">${ho.handover_time ? App.formatDate(ho.handover_time) : (req.approved_at ? App.formatDate(req.approved_at) : '-')}</span>
+              ` : `
+                <span class="text-[9px] ${step3Active ? 'text-blue-700 font-bold' : 'text-slate-400'}">${step3Active ? (ho.penyerah_name || 'Picking') : '-'}</span>
+                <span class="text-[8.5px] ${step3Active ? 'text-blue-600 font-mono font-semibold' : 'text-slate-400'}">${step3Active ? 'Proses Ambil' : ''}</span>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    let handoverBoxHtml = '';
+    if (stage >= 2 && req.status === 'APPROVED') {
+      const hasHandoverPhotos = ho.handover_photos && ho.handover_photos.length > 0;
+      handoverBoxHtml = `
+        <div class="p-3 rounded-xl border ${ho.is_handed_over ? 'bg-emerald-50/60 border-emerald-200' : 'bg-blue-50/60 border-blue-200'} space-y-2 text-xs">
+          <div class="flex items-center justify-between border-b ${ho.is_handed_over ? 'border-emerald-200/80' : 'border-blue-200/80'} pb-1.5">
+            <span class="font-extrabold text-[11px] ${ho.is_handed_over ? 'text-emerald-950' : 'text-blue-950'} flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] ${ho.is_handed_over ? 'text-emerald-700' : 'text-blue-700'}">${ho.is_handed_over ? 'local_shipping' : 'pending_actions'}</span>
+              <span>${ho.is_handed_over ? 'Bukti Serah Terima & Handover Barang' : 'Status Pengeluaran Barang (Gudang)'}</span>
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${ho.is_handed_over ? 'bg-emerald-200 text-emerald-900' : 'bg-blue-200 text-blue-900'}">
+              ${ho.is_handed_over ? 'Barang Sudah Dikeluarkan' : 'Sedang Disiapkan'}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+            <div class="p-2 bg-white/80 rounded-lg border border-slate-200/70 space-y-0.5">
+              <span class="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">${ho.is_handed_over ? 'Diserahkan Oleh (Gudang):' : 'Petugas Picking (Gudang):'}</span>
+              <p class="font-extrabold text-slate-900 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px] text-amber-600">badge</span>
+                <span>${App.escapeHtml(ho.penyerah_name || req.approver_name || 'Tim Gudang')}</span>
+              </p>
+            </div>
+
+            <div class="p-2 bg-white/80 rounded-lg border border-slate-200/70 space-y-0.5">
+              <span class="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Diterima Oleh (Fulfillment / Line):</span>
+              <p class="font-extrabold text-slate-900 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px] ${ho.is_handed_over ? 'text-emerald-600' : 'text-slate-400'}">${ho.is_handed_over ? 'person' : 'hourglass_empty'}</span>
+                <span>${ho.is_handed_over ? `${App.escapeHtml(ho.penerima_name || req.requester_name || 'Line Fulfillment')} &bull; ${App.escapeHtml(req.destination)}` : '<span class="text-slate-400 font-normal italic">Belum Diterima (Menunggu Serah Terima)</span>'}</span>
+              </p>
+            </div>
+          </div>
+
+          ${ho.handover_notes ? `
+            <div class="text-[11px] bg-white/90 p-2 rounded-lg border border-slate-200 text-slate-700">
+              <span class="font-bold text-slate-800">Catatan Serah Terima:</span> &ldquo;${App.escapeHtml(ho.handover_notes)}&rdquo;
             </div>
           ` : ''}
-        </div>
 
-        <!-- Items Table in Card -->
-        <div class="space-y-1.5 pt-1">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Daftar Material (${req.items ? req.items.length : 0} Item)</span>
-          <div class="divide-y divide-slate-100 bg-slate-50/70 rounded-xl border border-slate-200/60 p-2 text-xs">
-            ${(req.items || []).map(it => `
-              <div class="py-1.5 flex items-center justify-between gap-2 first:pt-0 last:pb-0">
-                <div class="min-w-0 flex-1">
-                  <p class="font-bold text-slate-800 text-[11px] truncate">${escapeHtml(it.material_name)}</p>
-                  <p class="font-mono text-[9px] text-slate-400">${escapeHtml(it.material_code)}</p>
-                </div>
-                <div class="text-right shrink-0">
-                  <span class="font-mono font-black text-amber-900 text-xs">${App.formatNumber(it.qty)}</span>
-                  <span class="text-[10px] text-slate-500">${escapeHtml(it.material_unit || 'Pcs')}</span>
-                </div>
+          ${hasHandoverPhotos ? `
+            <div class="pt-1.5 border-t ${ho.is_handed_over ? 'border-emerald-200/60' : 'border-blue-200/60'} space-y-1.5">
+              <span class="text-[10px] font-extrabold text-slate-700 flex items-center gap-1 uppercase tracking-wider">
+                <span class="material-symbols-outlined text-[14px] text-emerald-700">photo_camera</span>
+                <span>Foto Handover & Bukti Barang Keluar (${ho.handover_photos.length}):</span>
+              </span>
+              <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                ${ho.handover_photos.map((ph, idx) => `
+                  <a href="../${ph}" target="_blank" class="block shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 border-emerald-300 shadow-xs hover:border-emerald-600 hover:scale-105 transition-all relative group" title="Klik untuk memperbesar Foto Handover ${idx + 1}">
+                    <img src="../${ph}" alt="Foto Handover ${idx + 1}" class="w-full h-full object-cover">
+                    <span class="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
+                      <span class="material-symbols-outlined text-[16px]">zoom_in</span>
+                    </span>
+                  </a>
+                `).join('')}
               </div>
-            `).join('')}
+            </div>
+          ` : (ho.is_handed_over ? `
+            <p class="text-[10px] text-slate-500 italic flex items-center gap-1">
+              <span class="material-symbols-outlined text-[13px] text-slate-400">info</span>
+              <span>Barang telah dikeluarkan & tercatat di mutasi stok barang keluar.</span>
+            </p>
+          ` : '')}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="bg-white rounded-2xl border ${isUrgent ? 'border-rose-300 ring-2 ring-rose-50' : 'border-slate-200'} shadow-xs transition-all overflow-hidden">
+        
+        <!-- Clickable Header Card -->
+        <div onclick="toggleOpReqCard(${req.id})" class="p-3.5 hover:bg-slate-50/80 active:bg-slate-100 cursor-pointer transition-colors space-y-2">
+          
+          <!-- Top Row: No Request, Badges & Status -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono font-black text-amber-900 text-xs">${App.escapeHtml(req.request_no)}</span>
+              ${isUrgent ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-extrabold text-[9px] border border-rose-300">URGENT</span>' : ''}
+              <span class="px-2 py-0.2 rounded bg-slate-100 text-slate-800 font-black text-[10px] border border-slate-200">${App.escapeHtml(req.destination)}</span>
+            </div>
+            <div class="text-right flex items-center gap-1.5">
+              ${statusBadge}
+              <div class="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-transform">
+                <span id="opReqChevron_${req.id}" class="material-symbols-outlined text-[18px] transition-transform">${isOpen ? 'expand_less' : 'expand_more'}</span>
+              </div>
+            </div>
           </div>
+
+          <!-- Bottom Summary Row -->
+          <div class="flex items-center justify-between text-[10.5px] text-slate-500 pt-0.5">
+            <div class="truncate">
+              <span>Pemohon: <b class="text-slate-800 font-bold">${App.escapeHtml(req.requester_name || 'Operator')}</b> (${App.escapeHtml(simpleShift)}) &bull; ${App.formatDate(req.created_at)}</span>
+            </div>
+            <div class="shrink-0 text-right font-bold text-amber-950 font-mono">
+              <span>${req.items ? req.items.length : 0} Item (${App.formatNumber(req.total_qty || 0)} Qty)</span>
+            </div>
+          </div>
+
+          <!-- Mini Quick Actions Bar -->
+          <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px]" onclick="event.stopPropagation()">
+            <span class="text-[10px] font-bold text-amber-700 flex items-center gap-0.5 cursor-pointer hover:underline" onclick="toggleOpReqCard(${req.id})">
+              <span class="material-symbols-outlined text-[14px]">touch_app</span>
+              <span id="opReqToggleLabel_${req.id}">${isOpen ? 'Tutup Detail' : 'Klik untuk Buka Detail'}</span>
+            </span>
+
+            <button type="button" onclick="shareConsumableRequest(${req.id})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 hover:border-emerald-300 rounded-lg text-[10.5px] font-extrabold transition-all inline-flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer">
+              <span class="material-symbols-outlined text-[14px] text-emerald-600">share</span>
+              <span>Bagikan (WA)</span>
+            </button>
+          </div>
+
         </div>
 
-        <!-- Attached Photos Preview in History -->
-        ${(req.photos_list && req.photos_list.length > 0) ? `
-          <div class="pt-1.5 border-t border-slate-100 space-y-1">
-            <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px] text-amber-600">photo_library</span>
-              <span>Foto Terlampir (${req.photos_list.length}):</span>
-            </span>
-            <div class="flex items-center gap-2 overflow-x-auto pb-1">
-              ${req.photos_list.map((ph, pIdx) => `
-                <a href="../${ph}" target="_blank" class="block shrink-0 w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-amber-500 transition-colors">
-                  <img src="../${ph}" alt="Foto ${pIdx + 1}" class="w-full h-full object-cover">
-                </a>
+        <!-- Expandable Detail Body (Hidden by default, open on click) -->
+        <div id="opReqDetail_${req.id}" class="${isOpen ? '' : 'hidden'} p-3.5 pt-0 border-t border-slate-100 space-y-3 bg-slate-50/40">
+          
+          <!-- 1. Visual Progress Stepper -->
+          <div class="pt-3">
+            ${stepperHtml}
+          </div>
+
+          <!-- 2. Items List -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Daftar Material Permintaan (${req.items ? req.items.length : 0} Item)</span>
+              <span class="text-[10px] font-bold text-amber-900 font-mono">Total Qty: ${App.formatNumber(req.total_qty || 0)}</span>
+            </div>
+            <div class="divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 p-2 text-xs shadow-2xs">
+              ${(req.items || []).map(it => `
+                <div class="py-1.5 flex items-center justify-between gap-2 first:pt-0 last:pb-0">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-slate-800 text-[11px] truncate">${App.escapeHtml(it.material_name)}</p>
+                    <p class="font-mono text-[9px] text-slate-400">${App.escapeHtml(it.material_code)} ${it.rack_location ? `&bull; Rak: ${App.escapeHtml(it.rack_location)}` : ''}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="font-mono font-black text-amber-900 text-xs">${App.formatNumber(it.qty)}</span>
+                    <span class="text-[10px] text-slate-500">${App.escapeHtml(it.material_unit || 'Pcs')}</span>
+                  </div>
+                </div>
               `).join('')}
             </div>
           </div>
-        ` : ''}
 
-        ${req.admin_notes ? `
-          <div class="p-2.5 rounded-xl border ${req.status === 'REJECTED' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-emerald-50 border-emerald-200 text-emerald-900'} text-xs">
-            <p class="font-extrabold text-[10px] flex items-center gap-1 uppercase tracking-wider mb-0.5">
-              <span class="material-symbols-outlined text-[13px]">${req.status === 'REJECTED' ? 'info' : 'verified'}</span>
-              <span>Respon Admin (${escapeHtml(req.approver_name || 'Admin')}):</span>
-            </p>
-            <p class="text-[11px] font-semibold">${escapeHtml(req.admin_notes)}</p>
-          </div>
-        ` : ''}
+          <!-- 3. Notes & Uploaded Request Photos -->
+          ${req.notes ? `
+            <div class="p-2 bg-white rounded-xl border border-slate-200 text-[11px] text-slate-700 shadow-2xs">
+              <span class="font-semibold text-slate-500">Catatan Pemohon:</span> &ldquo;${App.escapeHtml(req.notes)}&rdquo;
+            </div>
+          ` : ''}
 
-        ${req.status === 'PENDING' ? `
-          <div class="pt-1 text-right">
-            <button type="button" onclick="cancelOperatorConsumableRequest(${req.id})" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 rounded-xl text-[11px] font-bold transition-colors inline-flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">close</span>
-              <span>Batalkan Pengajuan</span>
-            </button>
-          </div>
-        ` : ''}
+          <!-- 4. Handover & Goods Issue Details (Penyerah, Penerima, Foto Handover) -->
+          ${handoverBoxHtml}
+
+          <!-- 5. Admin Response Box -->
+          ${req.admin_notes && req.status !== 'REJECTED' ? `
+            <div class="p-2.5 rounded-xl border bg-emerald-50/70 border-emerald-200 text-emerald-900 text-xs">
+              <p class="font-extrabold text-[10px] flex items-center gap-1 uppercase tracking-wider mb-0.5">
+                <span class="material-symbols-outlined text-[13px]">verified</span>
+                <span>Respon Admin (${App.escapeHtml(req.approver_name || 'Admin')}):</span>
+              </p>
+              <p class="text-[11px] font-semibold">${App.escapeHtml(req.admin_notes)}</p>
+            </div>
+          ` : ''}
+
+          <!-- 6. Action Footer (Cancel Request if Pending) -->
+          ${req.status === 'PENDING' ? `
+            <div class="pt-2 border-t border-slate-200/80 flex items-center justify-end">
+              <button type="button" onclick="cancelOperatorConsumableRequest(${req.id})" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-[11px] font-bold transition-colors inline-flex items-center gap-1 cursor-pointer active:scale-95">
+                <span class="material-symbols-outlined text-[14px]">close</span>
+                <span>Batalkan Pengajuan</span>
+              </button>
+            </div>
+          ` : ''}
+
+        </div>
+
       </div>
     `;
   }).join('');
+}
+
+// =========================================================================
+// 3. SHARE CONSUMABLE REQUEST TO INVENTORY CONSUMABLE (WHATSAPP CAPTION DIRECT)
+// =========================================================================
+
+async function shareConsumableRequest(id) {
+  const req = (allOperatorConsumableRequests || []).find(r => r.id === id);
+  if (!req) {
+    App.toast('Data pengajuan tidak ditemukan', 'error');
+    return;
+  }
+
+  const isUrgent = req.priority === 'URGENT';
+  const ho = req.handover_info || {};
+  
+  let statusText = '🟡 MENUNGGU ACC ADMIN';
+  if (req.status === 'APPROVED') {
+    statusText = ho.is_handed_over ? '🟢 SELESAI DISERAHKAN (HANDOVER DONE)' : '🔵 DISETUJUI ADMIN (SEDANG PICKING GUDANG)';
+  } else if (req.status === 'REJECTED') {
+    statusText = '🔴 DITOLAK ADMIN';
+  } else if (req.status === 'CANCELLED') {
+    statusText = '⚪ DIBATALKAN';
+  }
+
+  let itemsText = '';
+  if (req.items && req.items.length > 0) {
+    itemsText = req.items.map((it, idx) => {
+      return `${idx + 1}. *${it.material_name}* : *${App.formatNumber(it.qty)} ${it.material_unit || 'Pcs'}*`;
+    }).join('\n');
+  } else {
+    itemsText = '- Tidak ada rincian item';
+  }
+
+  let handoverSummaryText = '';
+  if (ho && ho.is_handed_over) {
+    handoverSummaryText = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━\n📦 *BUKTI SERAH TERIMA GUDANG:*\n• *Diserahkan Oleh:* ${ho.penyerah_name || 'Staff Inventory'}\n• *Diterima Oleh:* ${ho.penerima_name || req.requester_name || 'Line Fulfillment'}\n• *Waktu Selesai:* ${ho.handover_time ? App.formatDate(ho.handover_time) : '-'}\n${ho.handover_notes ? `• *Catatan:* ${ho.handover_notes}\n` : ''}`;
+  }
+
+  const simpleShift = (req.requester_shift || '').split('(')[0].trim() || (req.requester_shift || 'Shift');
+
+  const shareCaption = `📦 *KONFIRMASI PERMINTAAN CONSUMABLE MATERIAL*
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+Halo Tim Gudang / Inventory Consumable,
+Pengajuan material telah dikirimkan dari tim Fulfillment:
+
+📋 *No. Request:* #${req.request_no}
+🏷️ *Tujuan Brand / Line:* *${req.destination}*
+⚡ *Prioritas:* *${req.priority}* ${isUrgent ? '🚨 (MENDESAK)' : ''}
+👤 *Pemohon (PIC):* ${req.requester_name || 'Operator'} (${simpleShift})
+📅 *Waktu Pengajuan:* ${App.formatDate(req.created_at)}
+📊 *Status Saat Ini:* ${statusText}
+
+📦 *Daftar Material yang Diajukan:*
+${itemsText}
+${req.notes ? `\n📝 *Catatan Pemohon:* "${req.notes}"` : ''}${handoverSummaryText}
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+_Dibuat otomatis via PackStock WMS (Fulfillment System)_`;
+
+  // 1. Try Native Mobile Web Share API if available
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Permintaan Consumable #${req.request_no}`,
+        text: shareCaption
+      });
+      App.toast('Permintaan consumable berhasil dibagikan!', 'success');
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      // if canceled or unsupported, fallback to WA link
+    }
+  }
+
+  // 2. Direct WhatsApp Web Link
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareCaption)}`;
+  window.open(waUrl, '_blank');
+
+  // Copy to clipboard for easy pasting
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(shareCaption);
+      App.toast('Teks caption telah disalin ke clipboard & WhatsApp dibuka!', 'success');
+    } catch (e) {}
+  }
 }
 
 async function cancelOperatorConsumableRequest(id) {

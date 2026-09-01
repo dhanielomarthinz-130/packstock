@@ -4514,27 +4514,6 @@ function openOutboundDetailModal(idx) {
 
 // ================= 9.1 EDIT & CANCEL TASK MODAL HANDLERS =================
 async function openEditTaskModal(taskId) {
-  const matSelect = document.getElementById('editTaskMaterialSelect');
-  const opSelect = document.getElementById('editTaskOperatorSelect');
-
-  if (matSelect) {
-    matSelect.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' +
-      allMaterials.map(m => `
-        <option value="${m.id}" data-code="${escapeHtml(m.code)}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-rack="${escapeHtml(m.rack_location)}">
-          ${escapeHtml(m.name)} (Stok: ${App.formatNumber(m.current_stock)} | Rak: ${escapeHtml(m.rack_location)})
-        </option>
-      `).join('');
-    App.syncSearchableSelect(matSelect);
-  }
-
-  if (opSelect) {
-    opSelect.innerHTML = '<option value="">-- Pilih PIC --</option>' +
-      allOperators.map(op => `
-        <option value="${op.id}">${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift')})</option>
-      `).join('');
-    App.syncSearchableSelect(opSelect);
-  }
-
   const res = await App.fetchJson(`../api/tasks.php?action=get&id=${taskId}`);
   if (!res.success || !res.data) {
     App.toast(res.message || 'Gagal memuat detail task', 'error');
@@ -4543,26 +4522,54 @@ async function openEditTaskModal(taskId) {
 
   const t = res.data;
   document.getElementById('editTaskId').value = t.id;
-  document.getElementById('editTaskNoSubtitle').innerText = `No. Task: #${t.task_no} (${t.status})`;
-  if (matSelect) matSelect.value = t.material_id;
-  document.getElementById('editTaskTargetQty').value = t.target_qty;
-  if (opSelect) opSelect.value = t.assigned_to;
+  document.getElementById('editTaskMaterialId').value = t.material_id;
+  document.getElementById('editTaskAssignedTo').value = t.assigned_to;
   document.getElementById('editTaskDestination').value = t.destination;
   document.getElementById('editTaskPriority').value = t.priority || 'NORMAL';
   document.getElementById('editTaskNotes').value = t.notes || '';
 
+  document.getElementById('editTaskNoSubtitle').innerText = `No. Task: #${t.task_no} (${t.status})`;
+  document.getElementById('editTaskMaterialName').innerText = t.material_name || '-';
+  document.getElementById('editTaskMaterialCode').innerText = t.material_code || '-';
+  document.getElementById('editTaskRackLocation').innerText = t.rack_location || '-';
+  document.getElementById('editTaskStockAvailable').innerText = `${App.formatNumber(t.material_stock || 0)} ${t.material_unit || 'Pcs'}`;
+  document.getElementById('editTaskUnitLabel').innerText = t.material_unit || 'Pcs';
+
+  const qtyInput = document.getElementById('editTaskTargetQty');
+  qtyInput.value = t.target_qty;
+
+  document.getElementById('editTaskOperatorName').innerText = `${t.operator_name || '-'} (${t.operator_shift || 'Shift'})`;
+  document.getElementById('editTaskDestinationDisplay').innerText = t.destination || '-';
+  
+  const prioEl = document.getElementById('editTaskPriorityDisplay');
+  if (prioEl) {
+    prioEl.innerText = t.priority || 'NORMAL';
+    prioEl.className = t.priority === 'URGENT' ? 'font-black text-rose-600' : 'font-bold text-slate-700';
+  }
+
+  document.getElementById('editTaskNotesDisplay').innerText = t.notes || '-';
+
   App.openModal('modalEditTask');
+  setTimeout(() => {
+    qtyInput.focus();
+    qtyInput.select();
+  }, 150);
 }
 
 async function handleEditTaskSubmit(e) {
   e.preventDefault();
   const taskId      = document.getElementById('editTaskId').value;
-  const material_id = document.getElementById('editTaskMaterialSelect').value;
+  const material_id = document.getElementById('editTaskMaterialId').value;
   const target_qty  = document.getElementById('editTaskTargetQty').value;
-  const assigned_to = document.getElementById('editTaskOperatorSelect').value;
-  const destination = document.getElementById('editTaskDestination').value.trim();
+  const assigned_to = document.getElementById('editTaskAssignedTo').value;
+  const destination = document.getElementById('editTaskDestination').value;
   const priority    = document.getElementById('editTaskPriority').value;
-  const notes       = document.getElementById('editTaskNotes').value.trim();
+  const notes       = document.getElementById('editTaskNotes').value;
+
+  if (App.parseNumber(target_qty) <= 0) {
+    App.toast('Target Qty pengeluaran harus lebih dari 0', 'warning');
+    return;
+  }
 
   const submitBtn = document.getElementById('btnEditTaskSubmit');
   submitBtn.disabled = true;
@@ -4574,7 +4581,7 @@ async function handleEditTaskSubmit(e) {
   });
 
   submitBtn.disabled = false;
-  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Perubahan Penugasan</span>';
+  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Perubahan Qty</span>';
 
   if (res.success) {
     App.toast(res.message, 'success', 'Berhasil Diperbarui');
@@ -4583,7 +4590,7 @@ async function handleEditTaskSubmit(e) {
     loadTasks();
     loadStats();
   } else {
-    App.toast(res.message || 'Gagal menyimpan perubahan task', 'error');
+    App.toast(res.message || 'Gagal menyimpan perubahan Qty task', 'error');
   }
 }
 
@@ -8776,8 +8783,8 @@ function renderAdminConsumableTable(requests) {
 
         <!-- 9. Aksi -->
         <td class="p-3 text-center whitespace-nowrap">
-          ${r.status === 'PENDING' ? `
-            <div class="flex items-center justify-center gap-1.5">
+          <div class="flex items-center justify-center gap-1.5">
+            ${r.status === 'PENDING' ? `
               <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-lg shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
                 <span class="material-symbols-outlined text-[15px]">check</span>
                 <span>ACC</span>
@@ -8786,10 +8793,12 @@ function renderAdminConsumableTable(requests) {
                 <span class="material-symbols-outlined text-[15px]">close</span>
                 <span>Tolak</span>
               </button>
-            </div>
-          ` : `
-            <span class="text-[10px] text-slate-400 font-medium">Selesai</span>
-          `}
+            ` : ''}
+            <button onclick="printSingleConsumableRequest(${r.id})" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-extrabold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="Cetak Surat Permintaan Consumable #${r.request_no}">
+              <span class="material-symbols-outlined text-[15px] text-amber-700">print</span>
+              <span>Cetak</span>
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -8952,6 +8961,297 @@ async function handleAdminRejectConsumableSubmit(e) {
   } else {
     App.toast(res.message || 'Gagal menolak pengajuan', 'error');
   }
+}
+
+// =========================================================================
+// PRINTING FUNCTIONS: CONSUMABLE REQUEST FORM & SUMMARY REPORT
+// =========================================================================
+
+function printFromApproveModal() {
+  const reqId = parseInt(document.getElementById('approveReqIdInput')?.value || 0);
+  if (reqId) {
+    printSingleConsumableRequest(reqId);
+  }
+}
+
+function printSingleConsumableRequest(id) {
+  const req = (allAdminConsumableRequests || []).find(r => r.id === id);
+  if (!req) {
+    App.toast('Data pengajuan tidak ditemukan', 'error');
+    return;
+  }
+
+  const isUrgent = req.priority === 'URGENT';
+  const ho = req.handover_info || {};
+
+  const docEl = document.getElementById('printConsumableDocContent');
+  const titleEl = document.getElementById('printConsumableTitle');
+  const subEl = document.getElementById('printConsumableSubtitle');
+
+  if (titleEl) titleEl.innerText = `Cetak Surat Permintaan #${req.request_no}`;
+  if (subEl) subEl.innerText = `Pemohon: ${req.requester_name || 'Operator'} &bull; Tujuan: ${req.destination}`;
+
+  if (docEl) {
+    docEl.innerHTML = `
+      <div style="font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #0f172a; line-height: 1.4;">
+        
+        <!-- 1. Header Perusahaan & No Request -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+              PS
+            </div>
+            <div>
+              <h1 style="font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">PACKSTOCK WMS</h1>
+              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System Kemas/Consumbale</p>
+              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Warehouse Fulfillment & Consumable Control System</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span style="display: inline-block; padding: 4px 12px; background-color: #fef3c7; color: #78350f; font-family: monospace; font-weight: 900; font-size: 12.5px; border-radius: 6px; border: 1px solid #fcd34d;">
+              #${escapeHtml(req.request_no)}
+            </span>
+            <p style="font-size: 9.5px; font-family: monospace; color: #64748b; margin: 4px 0 0 0;">Dicetak: ${App.formatDate(new Date())}</p>
+          </div>
+        </div>
+
+        <!-- 2. Judul Dokumen -->
+        <div style="text-align: center; margin: 14px 0 16px 0; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px;">
+          <h2 style="font-weight: 900; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; margin: 0;">SURAT PERMINTAAN & PENGELUARAN MATERIAL CONSUMABLE</h2>
+          <p style="font-size: 9.5px; font-family: monospace; color: #64748b; margin: 3px 0 0 0;">CONSUMABLE REQUISITION & GOODS ISSUE SLIP</p>
+        </div>
+
+        <!-- 3. Metadata Pengajuan (2 Kolom Bersih) -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 12px 14px; background-color: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px; font-size: 11px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+              <span style="color: #64748b; font-weight: 500;">Tanggal Pengajuan:</span>
+              <b style="color: #0f172a; font-family: monospace;">${App.formatDate(req.created_at)}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #64748b; font-weight: 500;">Pemohon (Fulfillment):</span>
+              <b style="color: #0f172a;">${escapeHtml(req.requester_name || 'Operator')} (${escapeHtml((req.requester_shift || '').split('(')[0].trim() || (req.requester_shift || '-'))})</b>
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
+              <span style="color: #64748b; font-weight: 500;">Prioritas:</span>
+              <b style="color: ${isUrgent ? '#e11d48' : '#0f172a'}; font-weight: 800;">${escapeHtml(req.priority)} ${isUrgent ? '(MENDESAK)' : ''}</b>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #64748b; font-weight: 500;">Tujuan Brand / Line:</span>
+              <b style="color: #78350f; font-weight: 900; font-size: 12px;">${escapeHtml(req.destination)}</b>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Tabel Rincian Material -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 11px; text-align: left;">
+          <thead>
+            <tr style="background-color: #059669; color: #ffffff; font-weight: 800; font-size: 10px; text-transform: uppercase;">
+              <th style="border: 1px solid #047857; padding: 7px 8px; text-align: center; width: 35px; color: #ffffff;">No</th>
+              <th style="border: 1px solid #047857; padding: 7px 8px; width: 130px; color: #ffffff;">Kode SKU</th>
+              <th style="border: 1px solid #047857; padding: 7px 8px; color: #ffffff;">Nama Material Packaging</th>
+              <th style="border: 1px solid #047857; padding: 7px 8px; text-align: center; width: 100px; color: #ffffff;">Qty Diminta</th>
+              <th style="border: 1px solid #047857; padding: 7px 8px; text-align: center; width: 80px; color: #ffffff;">Satuan</th>
+              <th style="border: 1px solid #047857; padding: 7px 8px; color: #ffffff;">Keterangan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(req.items || []).map((it, idx) => `
+              <tr style="background-color: ${idx % 2 === 1 ? '#f8fafc' : '#ffffff'};">
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700;">${idx + 1}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-family: monospace; font-weight: 700; color: #1e293b;">${escapeHtml(it.material_code)}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-weight: 700; color: #0f172a;">${escapeHtml(it.material_name)}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 900; color: #78350f; font-size: 12px;">${App.formatNumber(it.qty)}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; color: #475569;">${escapeHtml(it.material_unit || 'Pcs')}</td>
+                <td style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; color: #64748b;">${escapeHtml(it.notes || '-')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f1f5f9; font-weight: 900; border-top: 2px solid #94a3b8;">
+              <td colspan="3" style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; text-transform: uppercase; font-size: 10px; color: #334155;">Total Permintaan:</td>
+              <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 900; font-size: 13px; color: #78350f;">${App.formatNumber(req.total_qty || 0)}</td>
+              <td colspan="2" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; font-family: monospace; color: #64748b;">${(req.items || []).length} SKU Material</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- 5. Catatan Pemohon & Respon Admin -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; font-size: 10.5px;">
+          <div style="padding: 10px 12px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <span style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; display: block; margin-bottom: 3px;">Catatan Pemohon:</span>
+            <p style="font-style: italic; color: #334155; margin: 0;">${escapeHtml(req.notes || 'Tidak ada catatan tambahan.')}</p>
+          </div>
+          <div style="padding: 10px 12px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <span style="font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; display: block; margin-bottom: 3px;">Catatan / Respon Admin:</span>
+            <p style="font-style: italic; color: #334155; margin: 0;">${escapeHtml(req.admin_notes || 'Disetujui dan disiapkan oleh tim gudang.')}</p>
+          </div>
+        </div>
+
+        <!-- 6. 3 Kolom Tanda Tangan Resmi -->
+        <div style="margin-top: 24px; padding-top: 14px; border-top: 1px solid #cbd5e1;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center; font-size: 11px;">
+            <div>
+              <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Yang Menyerahkan (Inventory):</p>
+              <div style="border-bottom: 1px solid #0f172a; width: 140px; margin: 0 auto 4px auto;"></div>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml((ho && ho.penyerah_name) ? ho.penyerah_name : (req.approver_name || 'Staff Inventory'))}</p>
+              <p style="font-size: 9.5px; color: #64748b; margin: 2px 0 0 0;">Staff Inventory / Gudang</p>
+            </div>
+            <div>
+              <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Yang Menerima (Fulfillment):</p>
+              <div style="border-bottom: 1px solid #0f172a; width: 140px; margin: 0 auto 4px auto;"></div>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml(req.requester_name || 'PIC Fulfillment')}</p>
+              <p style="font-size: 9.5px; color: #64748b; margin: 2px 0 0 0;">PIC Line / Fulfillment</p>
+            </div>
+            <div>
+              <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Mengetahui (Admin Inventory):</p>
+              <div style="border-bottom: 1px solid #0f172a; width: 140px; margin: 0 auto 4px auto;"></div>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml(req.approver_name || 'Admin Inventory')}</p>
+              <p style="font-size: 9.5px; color: #64748b; margin: 2px 0 0 0;">Admin Inventory / Supervisor</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  App.openModal('modalPrintConsumableRequest');
+}
+
+function printConsumableRequestsReport() {
+  const requests = allAdminConsumableRequests || [];
+  if (requests.length === 0) {
+    App.toast('Tidak ada data pengajuan consumable yang dapat dicetak', 'warning');
+    return;
+  }
+
+  const docEl = document.getElementById('printConsumableDocContent');
+  const titleEl = document.getElementById('printConsumableTitle');
+  const subEl = document.getElementById('printConsumableSubtitle');
+
+  const dateFilter = document.getElementById('adminConsumableDateFilter')?.value || '';
+  const statusFilter = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
+
+  if (titleEl) titleEl.innerText = 'Laporan Rekapitulasi Permintaan Consumable';
+  if (subEl) subEl.innerText = `Total: ${requests.length} Pengajuan &bull; Filter: Status ${statusFilter}${dateFilter ? ` / Tanggal ${dateFilter}` : ''}`;
+
+  const totalQtyAll = requests.reduce((sum, r) => sum + (Number(r.total_qty) || 0), 0);
+
+  if (docEl) {
+    docEl.innerHTML = `
+      <div style="font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #0f172a; line-height: 1.4;">
+        
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; flex-shrink: 0;">
+              PS
+            </div>
+            <div>
+              <h1 style="font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">PACKSTOCK WMS</h1>
+              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">LAPORAN REKAPITULASI PERMINTAAN CONSUMABLE MATERIAL</p>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <p style="font-size: 12px; font-weight: 800; color: #0f172a; margin: 0;">Total: ${requests.length} Pengajuan</p>
+            <p style="font-size: 9.5px; font-family: monospace; color: #64748b; margin: 3px 0 0 0;">Dicetak: ${App.formatDate(new Date())}</p>
+          </div>
+        </div>
+
+        <!-- Filter info -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 11px; margin-bottom: 16px;">
+          <div>
+            <span style="color: #64748b;">Filter Status:</span> <b style="color: #0f172a;">${statusFilter}</b> &bull;
+            <span style="color: #64748b;">Tanggal:</span> <b style="color: #0f172a;">${dateFilter || 'Semua Tanggal'}</b>
+          </div>
+          <div>
+            <span style="color: #64748b;">Total Akumulasi Qty:</span> <b style="font-family: monospace; font-weight: 900; color: #78350f; font-size: 12px;">${App.formatNumber(totalQtyAll)} Pcs</b>
+          </div>
+        </div>
+
+        <!-- Tabel Rekap -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10.5px; text-align: left;">
+          <thead>
+            <tr style="background-color: #059669; color: #ffffff; font-weight: 800; font-size: 9.5px; text-transform: uppercase;">
+              <th style="border: 1px solid #047857; padding: 6px 8px; text-align: center; width: 28px; color: #ffffff;">No</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; width: 90px; color: #ffffff;">Tanggal</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; width: 110px; color: #ffffff;">No. Request</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; color: #ffffff;">Pemohon (PIC)</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; color: #ffffff;">Tujuan Line</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; color: #ffffff;">Rincian Material</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; text-align: center; width: 75px; color: #ffffff;">Total Qty</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; text-align: center; width: 75px; color: #ffffff;">Status</th>
+              <th style="border: 1px solid #047857; padding: 6px 8px; color: #ffffff;">Diserahkan Oleh</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${requests.map((r, idx) => {
+              const ho = r.handover_info || {};
+              const itemsSummary = (r.items || []).map(it => `${it.material_name} (${App.formatNumber(it.qty)} ${it.material_unit || 'Pcs'})`).join(', ');
+              return `
+                <tr style="background-color: ${idx % 2 === 1 ? '#f8fafc' : '#ffffff'};">
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-family: monospace; font-weight: 700;">${idx + 1}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-family: monospace; white-space: nowrap;">${App.formatDate(r.created_at)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-family: monospace; font-weight: 800; color: #78350f;">${escapeHtml(r.request_no)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px;">${escapeHtml(r.requester_name || 'Operator')}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-weight: 700;">${escapeHtml(r.destination)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 10px; color: #334155;">${escapeHtml(itemsSummary)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-family: monospace; font-weight: 800; color: #78350f;">${App.formatNumber(r.total_qty || 0)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-weight: 700; font-size: 9.5px;">${escapeHtml(r.status)}</td>
+                  <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 10px; color: #475569;">${escapeHtml(ho.penyerah_name || r.approver_name || '-')}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background-color: #f1f5f9; font-weight: 900; border-top: 2px solid #94a3b8;">
+              <td colspan="6" style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: right; text-transform: uppercase; font-size: 9.5px; color: #334155;">Total Keseluruhan Qty:</td>
+              <td style="border: 1px solid #cbd5e1; padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 900; color: #78350f;">${App.formatNumber(totalQtyAll)}</td>
+              <td colspan="2" style="border: 1px solid #cbd5e1; padding: 6px 8px; font-size: 10px; font-family: monospace; color: #64748b;">${requests.length} Transaksi Pengajuan</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Tanda Tangan Laporan -->
+        <div style="margin-top: 28px; padding-top: 14px; border-top: 1px solid #cbd5e1;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; text-align: center; font-size: 11px;">
+            <div>
+              <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Dibuat Oleh:</p>
+              <div style="border-bottom: 1px solid #0f172a; width: 160px; margin: 0 auto 4px auto;"></div>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">Staff Administrasi Gudang</p>
+            </div>
+            <div>
+              <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Diketahui & Diverifikasi Oleh:</p>
+              <div style="border-bottom: 1px solid #0f172a; width: 160px; margin: 0 auto 4px auto;"></div>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">Kepala Gudang / Warehouse Manager</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
+  App.openModal('modalPrintConsumableRequest');
+}
+
+function executeConsumablePrint() {
+  document.body.classList.add('printing-consumable-doc');
+
+  const cleanUp = () => {
+    document.body.classList.remove('printing-consumable-doc');
+    window.removeEventListener('afterprint', cleanUp);
+  };
+
+  window.addEventListener('afterprint', cleanUp);
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(cleanUp, 2500);
+  }, 60);
 }
 
 

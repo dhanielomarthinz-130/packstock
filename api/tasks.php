@@ -215,17 +215,12 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
-    $taskId      = (int)($input['task_id'] ?? 0);
-    $materialId  = (int)($input['material_id'] ?? 0);
-    $targetQty   = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
-    $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
-    $destination = trim($input['destination'] ?? '');
-    $assignedTo  = (int)($input['assigned_to'] ?? 0);
-    $notes       = trim($input['notes'] ?? '');
+    $taskId    = (int)($input['task_id'] ?? 0);
+    $targetQty = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
 
-    if ($taskId <= 0 || $materialId <= 0 || $targetQty <= 0 || empty($destination) || $assignedTo <= 0) {
+    if ($taskId <= 0 || $targetQty <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Material, Qty Target (> 0), Tujuan Antar, dan Operator PIC wajib diisi!']);
+        echo json_encode(['success' => false, 'message' => 'Target Qty pengeluaran wajib diisi lebih dari 0!']);
         exit;
     }
 
@@ -245,6 +240,12 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $materialId  = !empty($input['material_id']) ? (int)$input['material_id'] : (int)$existingTask['material_id'];
+    $assignedTo  = !empty($input['assigned_to']) ? (int)$input['assigned_to'] : (int)$existingTask['assigned_to'];
+    $destination = isset($input['destination']) && trim($input['destination']) !== '' ? trim($input['destination']) : $existingTask['destination'];
+    $priority    = isset($input['priority']) && trim($input['priority']) !== '' ? strtoupper(trim($input['priority'])) : $existingTask['priority'];
+    $notes       = isset($input['notes']) ? trim($input['notes']) : $existingTask['notes'];
+
     try {
         $stmtUpdate = $pdo->prepare("
             UPDATE tasks 
@@ -258,7 +259,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
         $stmtUpdate->execute([$materialId, $targetQty, $priority, $destination, $assignedTo, $notes, $taskId]);
 
-        echo json_encode(['success' => true, 'message' => 'Penugasan task berhasil diperbarui!']);
+        echo json_encode(['success' => true, 'message' => 'Target Qty penugasan task berhasil diperbarui!']);
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Gagal memperbarui task: ' . $e->getMessage()]);
@@ -618,6 +619,18 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($taskId <= 0 || $actualQty <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Jumlah riil barang yang diambil wajib diisi lebih dari 0!']);
+        exit;
+    }
+
+    if (empty($completionNotes)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Catatan penerima di line / PIC wajib diisi!']);
+        exit;
+    }
+
+    if (empty($photoPathValue)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Foto bukti penyerahan ke line wajib diunggah minimal 1 foto!']);
         exit;
     }
 

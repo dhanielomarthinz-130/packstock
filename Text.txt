@@ -1,3 +1,10 @@
 Hide Menu Stock di panel Opeerator
 Tambhkan 1 Menu Untuk form request Consumable di panel Operator operator Hanya bisa membuat form request untuk pengambilan Barang Nanti nya admin yang akan ACC untuk mengambil barangnya dari request consumable operator
 1 Menu dan 1 role Baru untuk role operator_fullfilment  (Form Request Consumbale)
+
+PR Saat Stock Menipis Dari Safety Stock
+
+1. Progress di Halaman Request Consumbale Tab Riwayat Pengajuan.
+2. Foto handover & nama penyarah dan nerima Dari Barang keluar Di Tampilkan di Request Consumbale Tab Riwayat Pengajuan. ( Untuk progres Fillfilment Pnel Operator)
+3. Penambahan Tombol share di Halaman Request Consumbale Tab Riwayat Sudah di request, di konfirmasi Sudah di request dari Fulfillment Ke Inventory Consumable
+4. Tombol print di Halam consumable_requests

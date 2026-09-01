@@ -2071,6 +2071,10 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" onclick="printConsumableRequestsReport()" class="h-[38px] px-3.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Cetak Rekap Laporan Permintaan Consumable">
+              <span class="material-symbols-outlined text-[18px] text-amber-700">print</span>
+              <span>Cetak Rekap</span>
+            </button>
             <button type="button" onclick="loadAdminConsumableRequests()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Pengajuan">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
               <span>Refresh</span>
@@ -3547,16 +3551,16 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: EDIT PENUGASAN TASK ================= -->
+<!-- ================= MODAL: EDIT PENUGASAN TASK (HANYA EDIT QTY) ================= -->
 <div id="modalEditTask" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
       <div class="flex items-center gap-2.5">
         <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
-          <span class="material-symbols-outlined text-[20px]">edit_note</span>
+          <span class="material-symbols-outlined text-[20px]">edit_square</span>
         </div>
         <div>
-          <h3 class="font-extrabold text-slate-900 text-sm">Edit Penugasan Task Operator</h3>
+          <h3 class="font-extrabold text-slate-900 text-sm">Edit Target Qty Pengeluaran Task</h3>
           <p class="text-xs text-slate-500 font-mono" id="editTaskNoSubtitle">No. Task: -</p>
         </div>
       </div>
@@ -3567,47 +3571,58 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form id="formEditTask" onsubmit="handleEditTaskSubmit(event)" class="space-y-3 text-xs">
       <input type="hidden" id="editTaskId" value="">
+      <input type="hidden" id="editTaskMaterialId" value="">
+      <input type="hidden" id="editTaskAssignedTo" value="">
+      <input type="hidden" id="editTaskDestination" value="">
+      <input type="hidden" id="editTaskPriority" value="">
+      <input type="hidden" id="editTaskNotes" value="">
 
+      <!-- Product Preview Box (Read-only) -->
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stock Kemas (Produk):</span>
+        <p class="font-extrabold text-slate-900 text-xs" id="editTaskMaterialName">-</p>
+        <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 pt-0.5">
+          <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold" id="editTaskMaterialCode">-</span>
+          <span>&bull; Rak: <b class="text-slate-700" id="editTaskRackLocation">-</b></span>
+          <span>&bull; Stok: <b class="text-emerald-700 font-mono" id="editTaskStockAvailable">-</b></span>
+        </div>
+      </div>
+
+      <!-- Target Qty Input (Satu-satunya yang dapat diedit) -->
       <div>
-        <label class="block font-semibold text-slate-700 mb-1">Stock Kemas (Produk) <span class="text-rose-500">*</span></label>
-        <select id="editTaskMaterialSelect" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-medium text-xs"></select>
+        <label class="block font-bold text-slate-800 mb-1 text-xs">
+          Target Qty Pengeluaran (<span id="editTaskUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
+        </label>
+        <input type="number" step="any" id="editTaskTargetQty" min="0.001" required 
+          class="w-full p-2.5 bg-emerald-50/60 border-2 border-emerald-500 rounded-xl outline-none font-black text-lg text-emerald-950 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-200">
+        <p class="text-[10px] text-slate-400 mt-1">Ubah jumlah target barang yang akan dikeluarkan / diambil operator.</p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <!-- Read-Only Task Details -->
+      <div class="grid grid-cols-2 gap-2 p-2.5 bg-slate-100/70 rounded-xl border border-slate-200/80 text-[11px]">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Target Qty <span class="text-rose-500">*</span></label>
-          <input type="number" step="any" id="editTaskTargetQty" min="0.001" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-mono font-bold text-xs">
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">Operator PIC:</span>
+          <span class="font-bold text-slate-800 truncate block" id="editTaskOperatorName">-</span>
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Tugaskan ke Operator PIC <span class="text-rose-500">*</span></label>
-          <select id="editTaskOperatorSelect" required class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-medium text-xs"></select>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label class="block font-semibold text-slate-700 mb-1">Tujuan Antar <span class="text-rose-500">*</span></label>
-          <input type="text" id="editTaskDestination" required placeholder="Contoh: Line Packing 1" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-medium text-xs">
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">Tujuan Antar:</span>
+          <span class="font-bold text-slate-800 truncate block" id="editTaskDestinationDisplay">-</span>
         </div>
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Prioritas</label>
-          <select id="editTaskPriority" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-bold text-xs">
-            <option value="NORMAL">Normal</option>
-            <option value="URGENT">URGENT</option>
-          </select>
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">Prioritas:</span>
+          <span class="font-bold" id="editTaskPriorityDisplay">-</span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold block uppercase">Catatan:</span>
+          <span class="font-medium text-slate-600 truncate block" id="editTaskNotesDisplay">-</span>
         </div>
       </div>
 
-      <div>
-        <label class="block font-semibold text-slate-700 mb-1">Catatan / Instruksi Tambahan</label>
-        <textarea id="editTaskNotes" rows="2" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 text-xs" placeholder="Instruksi khusus untuk operator..."></textarea>
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalEditTask')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1">
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+        <button type="button" onclick="App.closeModal('modalEditTask')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
           <span class="material-symbols-outlined text-[16px]">save</span>
-          <span>Simpan Perubahan Penugasan</span>
+          <span>Simpan Perubahan Qty</span>
         </button>
       </div>
     </form>
@@ -3992,12 +4007,18 @@ require_once __DIR__ . '/../includes/header.php';
         <input type="text" id="approveAdminNotes" placeholder="Contoh: Disetujui, segera ambil di Rak A-01..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-emerald-600 text-xs">
       </div>
 
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalApproveConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitApproveConsumable" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-[17px]">verified</span>
-          <span>Setujui (ACC Sekarang)</span>
+      <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
+        <button type="button" onclick="printFromApproveModal()" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer" title="Cetak Surat Permintaan Ini">
+          <span class="material-symbols-outlined text-[16px] text-amber-700">print</span>
+          <span>Cetak Form</span>
         </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="App.closeModal('modalApproveConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+          <button type="submit" id="btnSubmitApproveConsumable" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[17px]">verified</span>
+            <span>Setujui (ACC Sekarang)</span>
+          </button>
+        </div>
       </div>
     </form>
   </div>
@@ -4038,6 +4059,40 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: PRINT PREVIEW CONSUMABLE REQUEST FORM ================= -->
+<div id="modalPrintConsumableRequest" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-2 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[95vh] flex flex-col">
+    <!-- Header Modal -->
+    <div class="flex items-center justify-between border-b border-slate-200 pb-3 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[20px]">print</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-sm" id="printConsumableTitle">Preview Dokumen Cetak</h3>
+          <p class="text-[11px] text-slate-500" id="printConsumableSubtitle">Form Permintaan & Pengeluaran Material</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="executeConsumablePrint()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[17px]">print</span>
+          <span>Cetak Sekarang (Print)</span>
+        </button>
+        <button type="button" onclick="App.closeModal('modalPrintConsumableRequest')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+          <span class="material-symbols-outlined text-[22px]">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Printable Paper Area -->
+    <div class="flex-1 overflow-y-auto bg-slate-100 p-2 sm:p-4 rounded-xl border border-slate-200">
+      <div id="printConsumableDocContent" class="bg-white p-6 rounded-lg shadow-sm border border-slate-300 max-w-3xl mx-auto text-slate-900">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
   </div>
 </div>
 

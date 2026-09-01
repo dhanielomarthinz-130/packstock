@@ -776,6 +776,66 @@ select[data-no-search] {
     padding: 5px 8px !important;
     font-size: 9pt !important;
   }
+
+  /* Specific Print Mode for Consumable Requests Document Modal */
+  body.printing-consumable-doc {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body.printing-consumable-doc * {
+    visibility: hidden;
+  }
+
+  body.printing-consumable-doc #modalPrintConsumableRequest,
+  body.printing-consumable-doc #modalPrintConsumableRequest * {
+    visibility: visible !important;
+  }
+
+  body.printing-consumable-doc #modalPrintConsumableRequest {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    z-index: 999999 !important;
+  }
+
+  body.printing-consumable-doc #modalPrintConsumableRequest > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  body.printing-consumable-doc #modalPrintConsumableRequest .shrink-0,
+  body.printing-consumable-doc #modalPrintConsumableRequest button {
+    display: none !important;
+  }
+
+  body.printing-consumable-doc #modalPrintConsumableRequest .bg-slate-100 {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  body.printing-consumable-doc #printConsumableDocContent {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
 }
 
 /* ========================================================================= */

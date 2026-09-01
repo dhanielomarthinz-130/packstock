@@ -127,7 +127,7 @@ if ($action === 'list') {
     $stmt->execute($params);
     $requests = $stmt->fetchAll();
 
-    // Fetch items for all requests
+    // Fetch items and fulfillment / handover records for all requests
     if (!empty($requests)) {
         $requestIds = array_column($requests, 'id');
         $inPlaceholders = implode(',', array_fill(0, count($requestIds), '?'));
@@ -153,6 +153,92 @@ if ($action === 'list') {
             $itemsByRequest[$item['request_id']][] = $item;
         }
 
+        // Fetch related tasks for picking & handover
+        $tasksByRequest = [];
+        $requestNos = array_column($requests, 'request_no');
+        $taskIds = array_filter(array_column($requests, 'task_id'));
+        $outboundIds = array_filter(array_column($requests, 'outbound_id'));
+
+        if (!empty($requestNos)) {
+            $likeClauses = [];
+            $taskParams = [];
+            foreach ($requestNos as $rNo) {
+                $likeClauses[] = "t.notes LIKE ?";
+                $taskParams[] = "%#" . $rNo . "%";
+            }
+            if (!empty($taskIds)) {
+                $inTaskPlaceholders = implode(',', array_fill(0, count($taskIds), '?'));
+                $taskSql = "
+                    SELECT t.*, u.name as operator_name, u.username as operator_username, u.shift as operator_shift
+                    FROM tasks t
+                    LEFT JOIN users u ON t.assigned_to = u.id
+                    WHERE t.id IN ($inTaskPlaceholders) OR (" . implode(' OR ', $likeClauses) . ")
+                    ORDER BY t.id ASC
+                ";
+                $taskParams = array_merge(array_values($taskIds), $taskParams);
+            } else {
+                $taskSql = "
+                    SELECT t.*, u.name as operator_name, u.username as operator_username, u.shift as operator_shift
+                    FROM tasks t
+                    LEFT JOIN users u ON t.assigned_to = u.id
+                    WHERE " . implode(' OR ', $likeClauses) . "
+                    ORDER BY t.id ASC
+                ";
+            }
+            $stmtT = $pdo->prepare($taskSql);
+            $stmtT->execute($taskParams);
+            $allTasks = $stmtT->fetchAll();
+
+            foreach ($allTasks as $tsk) {
+                foreach ($requests as $r) {
+                    if ((!empty($r['task_id']) && $r['task_id'] == $tsk['id']) || (!empty($tsk['notes']) && strpos($tsk['notes'], '#' . $r['request_no']) !== false)) {
+                        $tasksByRequest[$r['id']][] = $tsk;
+                    }
+                }
+            }
+        }
+
+        // Fetch related direct outbound transactions
+        $outboundsByRequest = [];
+        if (!empty($requestNos)) {
+            $likeClausesOut = [];
+            $outParams = [];
+            foreach ($requestNos as $rNo) {
+                $likeClausesOut[] = "o.reason LIKE ?";
+                $likeClausesOut[] = "o.notes LIKE ?";
+                $outParams[] = "%#" . $rNo . "%";
+                $outParams[] = "%#" . $rNo . "%";
+            }
+            if (!empty($outboundIds)) {
+                $inOutPlaceholders = implode(',', array_fill(0, count($outboundIds), '?'));
+                $outSql = "
+                    SELECT o.*
+                    FROM outbound_transactions o
+                    WHERE o.id IN ($inOutPlaceholders) OR (" . implode(' OR ', $likeClausesOut) . ")
+                    ORDER BY o.id ASC
+                ";
+                $outParams = array_merge(array_values($outboundIds), $outParams);
+            } else {
+                $outSql = "
+                    SELECT o.*
+                    FROM outbound_transactions o
+                    WHERE " . implode(' OR ', $likeClausesOut) . "
+                    ORDER BY o.id ASC
+                ";
+            }
+            $stmtO = $pdo->prepare($outSql);
+            $stmtO->execute($outParams);
+            $allOuts = $stmtO->fetchAll();
+
+            foreach ($allOuts as $out) {
+                foreach ($requests as $r) {
+                    if ((!empty($r['outbound_id']) && $r['outbound_id'] == $out['id']) || (!empty($out['reason']) && strpos($out['reason'], '#' . $r['request_no']) !== false) || (!empty($out['notes']) && strpos($out['notes'], '#' . $r['request_no']) !== false)) {
+                        $outboundsByRequest[$r['id']][] = $out;
+                    }
+                }
+            }
+        }
+
         foreach ($requests as &$req) {
             $req['items'] = $itemsByRequest[$req['id']] ?? [];
             $req['total_items'] = count($req['items']);
@@ -167,8 +253,140 @@ if ($action === 'list') {
                 }
             }
             $req['photos_list'] = $photosArr;
+
+            // Fulfillment / Handover Synthesis
+            $relatedTasks = $tasksByRequest[$req['id']] ?? [];
+            $relatedOutbounds = $outboundsByRequest[$req['id']] ?? [];
+
+            $handoverPhotos = [];
+            $penyerahName = null;
+            $penerimaName = $req['requester_name'] ?? 'Line Fulfillment';
+            $handoverTime = null;
+            $handoverNotes = null;
+            $isTaskCompleted = false;
+            $isOutboundDirect = !empty($relatedOutbounds);
+
+            if (!empty($relatedTasks)) {
+                $totalTasks = count($relatedTasks);
+                $completedTasks = 0;
+                foreach ($relatedTasks as $t) {
+                    if ($t['status'] === 'COMPLETED') {
+                        $completedTasks++;
+                        if (!empty($t['photo_path'])) {
+                            $dec = json_decode($t['photo_path'], true);
+                            if (is_array($dec)) {
+                                $handoverPhotos = array_merge($handoverPhotos, $dec);
+                            } else {
+                                $handoverPhotos[] = $t['photo_path'];
+                            }
+                        }
+                        if (!$penyerahName && !empty($t['operator_name'])) {
+                            $penyerahName = $t['operator_name'] . (!empty($t['operator_shift']) ? ' (' . $t['operator_shift'] . ')' : '');
+                        }
+                        if (!empty($t['completed_at'])) {
+                            $handoverTime = $t['completed_at'];
+                        }
+                        if (!empty($t['completion_notes'])) {
+                            $handoverNotes = $t['completion_notes'];
+                        }
+                    } elseif (!$penyerahName && !empty($t['operator_name'])) {
+                        $penyerahName = $t['operator_name'] . (!empty($t['operator_shift']) ? ' (' . $t['operator_shift'] . ')' : '');
+                    }
+                }
+                if ($totalTasks > 0 && $completedTasks === $totalTasks) {
+                    $isTaskCompleted = true;
+                }
+            }
+
+            if (!empty($relatedOutbounds)) {
+                foreach ($relatedOutbounds as $o) {
+                    if (!empty($o['photo_path'])) {
+                        $dec = json_decode($o['photo_path'], true);
+                        if (is_array($dec)) {
+                            $handoverPhotos = array_merge($handoverPhotos, $dec);
+                        } else {
+                            $handoverPhotos[] = $o['photo_path'];
+                        }
+                    }
+                    if (!$penyerahName && !empty($o['issued_by'])) {
+                        $penyerahName = $o['issued_by'];
+                    }
+                    if (!$handoverTime && !empty($o['completed_at'])) {
+                        $handoverTime = $o['completed_at'];
+                    } elseif (!$handoverTime && !empty($o['created_at'])) {
+                        $handoverTime = $o['created_at'];
+                    }
+                    if (!$handoverNotes && !empty($o['notes'])) {
+                        $handoverNotes = $o['notes'];
+                    }
+                }
+            }
+
+            // Fallback penyerah to approver if approved
+            if (!$penyerahName && !empty($req['approver_name'])) {
+                $penyerahName = $req['approver_name'] . ' (Admin Gudang)';
+            }
+
+            // Determine stage:
+            // 1 = PENDING (Diajukan)
+            // 2 = APPROVED (Disetujui - Dalam Proses Picking Gudang)
+            // 3 = COMPLETED (Selesai Diserahkan ke Pemohon / Handover Done)
+            // -1 = REJECTED (Ditolak)
+            // -2 = CANCELLED (Dibatalkan)
+            $stage = 1;
+            $stageText = 'Diajukan (Menunggu ACC)';
+            if ($req['status'] === 'PENDING') {
+                $stage = 1;
+                $stageText = 'Menunggu ACC Admin';
+            } elseif ($req['status'] === 'REJECTED') {
+                $stage = -1;
+                $stageText = 'Ditolak Admin';
+            } elseif ($req['status'] === 'CANCELLED') {
+                $stage = -2;
+                $stageText = 'Dibatalkan';
+            } elseif ($req['status'] === 'APPROVED' || $req['status'] === 'COMPLETED') {
+                if ($isTaskCompleted || $isOutboundDirect || $req['status'] === 'COMPLETED') {
+                    $stage = 3;
+                    $stageText = 'Selesai Diserahkan (Handover)';
+                } else {
+                    $stage = 2;
+                    $stageText = 'Disetujui (Proses Picking Gudang)';
+                }
+            }
+
+            $req['handover_info'] = [
+                'is_handed_over'    => ($stage === 3),
+                'stage'             => $stage,
+                'stage_label'       => $stageText,
+                'penyerah_name'     => $penyerahName ?: 'Tim Gudang Consumable',
+                'penerima_name'     => $penerimaName,
+                'handover_time'     => $handoverTime ?: $req['approved_at'],
+                'handover_notes'    => $handoverNotes,
+                'handover_photos'   => array_values(array_unique(array_filter($handoverPhotos))),
+                'related_tasks'     => $relatedTasks,
+                'related_outbounds' => $relatedOutbounds
+            ];
         }
         unset($req);
+
+        // Filter untuk Operator (Fulfillment):
+        // 1. Pengajuan yang belum selesai (Stage 1 / Menunggu ACC & Stage 2 / Proses Picking) SELALU tampil (kapanpun dibuat).
+        // 2. Pengajuan yang sudah "Selesai Diserahkan" (Stage 3) atau Dibatalkan/Ditolak HANYA tampil untuk hari ini (CURDATE). Untuk hari besoknya otomatis hilang dari tab riwayat aktif.
+        if (!Auth::isAdmin() && empty($date) && empty($_GET['all_history'])) {
+            $today = date('Y-m-d');
+            $requests = array_values(array_filter($requests, function($r) use ($today) {
+                $ho = $r['handover_info'] ?? [];
+                $stage = $ho['stage'] ?? 1;
+                // Belum selesai serah terima -> Selalu tampil
+                if ($stage === 1 || $stage === 2) {
+                    return true;
+                }
+                // Sudah selesai serah terima / ditolak / dibatalkan -> Hanya tampil jika hari ini
+                $refTime = $ho['handover_time'] ?? $r['approved_at'] ?? $r['created_at'] ?? '';
+                $refDate = !empty($refTime) ? substr($refTime, 0, 10) : '';
+                return ($refDate === $today);
+            }));
+        }
     }
 
     echo json_encode(['success' => true, 'data' => $requests]);
