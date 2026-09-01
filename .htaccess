@@ -27,3 +27,12 @@ RewriteRule ^(.*)$ $1.php [L,QSA]
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 </IfModule>
+
+<IfModule mod_headers.c>
+    # Disable caching for dynamic PHP files
+    <FilesMatch "\.(php)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+</IfModule>
