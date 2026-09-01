@@ -4343,12 +4343,14 @@ function renderOutboundRows(data, tbody) {
               </button>
 
               ${isTask && (o.status === 'PENDING' || o.status === 'IN_PROGRESS') ? `
-                <button type="button" onclick="openEditTaskModal(${o.task_id})" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Edit Penugasan Task (Ganti Produk / Operator)">
+                <button type="button" onclick="openEditTaskModal(${o.task_id})" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Edit Target Qty Task">
                   <span class="material-symbols-outlined text-[16px]">edit</span>
                 </button>
-                <button type="button" onclick="cancelOutboundTask(${o.task_id})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Batalkan Penugasan Task">
-                  <span class="material-symbols-outlined text-[16px]">cancel</span>
-                </button>
+                ${(window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi') ? `
+                  <button type="button" onclick="cancelOutboundTask(${o.task_id})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Batalkan Penugasan Task (Super Admin Only)">
+                    <span class="material-symbols-outlined text-[16px]">cancel</span>
+                  </button>
+                ` : ''}
               ` : ''}
               ${isTask && o.status === 'CANCELLED' ? `
                 <button type="button" onclick="reactivateOutboundTask(${o.task_id})" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300 font-bold transition-all inline-flex items-center gap-1 text-[11px] shadow-2xs cursor-pointer" title="Kembalikan status task ke On Proses">

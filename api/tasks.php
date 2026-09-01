@@ -722,9 +722,13 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// 8. CANCEL TASK (Admin only)
+// 8. CANCEL TASK (Super Admin only)
 if ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    Auth::requireAdmin();
+    if (!Auth::isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak membatalkan penugasan tugas!']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $taskId = (int)($input['task_id'] ?? 0);
 
