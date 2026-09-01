@@ -3097,7 +3097,10 @@ async function populateOpReqMaterialSelect() {
     const unit = App.escapeHtml(m.unit || 'Pcs');
     const rack = App.escapeHtml(m.rack_location || '-');
     const stock = Number(m.current_stock || 0);
-    return `<option value="${m.id}" data-code="${code}" data-name="${name}" data-stock="${stock}" data-unit="${unit}" data-rack="${rack}">${name} (Stok: ${App.formatNumber(stock)} ${unit})</option>`;
+    const isFrozen = !!m.is_frozen;
+    const frozenLabel = isFrozen ? ` [🔒 DYNAMIC COUNT - FREEZE #${App.escapeHtml(m.frozen_session_no || '')}]` : '';
+    const disabledAttr = isFrozen ? 'disabled style="color:#94a3b8; background-color:#f1f5f9;"' : '';
+    return `<option value="${m.id}" data-code="${code}" data-name="${name}" data-stock="${stock}" data-unit="${unit}" data-rack="${rack}" data-frozen="${isFrozen ? '1' : '0'}" ${disabledAttr}>${name}${frozenLabel} (Stok: ${App.formatNumber(stock)} ${unit})</option>`;
   }).join('');
 
   if (currentVal) sel.value = currentVal;
@@ -3116,12 +3119,17 @@ function handleOpReqMaterialSelectChange(sel) {
   }
 
   const opt = sel.options[sel.selectedIndex];
+  const isFrozen = opt.getAttribute('data-frozen') === '1';
   const stock = parseFloat(opt.getAttribute('data-stock') || 0);
   const unit = opt.getAttribute('data-unit') || 'Pcs';
   const rack = opt.getAttribute('data-rack') || '-';
 
   if (badge && stockVal) {
-    stockVal.innerText = `${App.formatNumber(stock)} ${unit} (Rak: ${rack})`;
+    if (isFrozen) {
+      stockVal.innerHTML = `<span class="text-rose-600 font-bold">🔒 DIBEKUKAN (SEDANG DYNAMIC COUNT)</span> - ${App.formatNumber(stock)} ${unit}`;
+    } else {
+      stockVal.innerText = `${App.formatNumber(stock)} ${unit} (Rak: ${rack})`;
+    }
     badge.classList.remove('hidden');
   }
 
@@ -3148,11 +3156,25 @@ function validateOpReqQtyLive() {
     return true;
   }
 
+  const isFrozen = opt.getAttribute('data-frozen') === '1';
   const materialId = parseInt(sel.value);
   const stock = parseFloat(opt.getAttribute('data-stock') || 0);
   const unit = opt.getAttribute('data-unit') || 'Pcs';
   const name = opt.getAttribute('data-name') || 'Material';
   const enteredQty = parseFloat(qtyInp.value || 0);
+
+  if (isFrozen) {
+    if (warningBox && warningText) {
+      warningText.innerText = `Material "${name}" sedang dibekukan (Freeze) dalam sesi Dynamic Count aktif. Transaksi & Request dikunci sampai sesi selesai!`;
+      warningBox.classList.remove('hidden');
+    }
+    qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
+    if (addBtn) {
+      addBtn.disabled = true;
+      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    return false;
+  }
 
   // Check if item is already in draft
   const existingInDraft = opConsumableDraft.find(i => i.material_id === materialId);
@@ -3214,17 +3236,17 @@ function addConsumableDraftItem() {
     return;
   }
 
-  if (!qty || qty <= 0) {
-    App.toast('Jumlah permintaan harus lebih besar dari 0.', 'warning');
-    qtyInp.focus();
-    return;
-  }
-
   const opt = sel.options[sel.selectedIndex];
+  const isFrozen = opt.getAttribute('data-frozen') === '1';
   const itemCode = opt.getAttribute('data-code') || '';
   const itemName = opt.getAttribute('data-name') || 'Material';
   const itemStock = parseFloat(opt.getAttribute('data-stock') || 0);
   const itemUnit = opt.getAttribute('data-unit') || 'Pcs';
+
+  if (isFrozen) {
+    App.toast(`Material "${itemName}" sedang dibekukan (Freeze) dalam sesi Dynamic Count aktif. Tidak dapat mengajukan request sampai sesi diselesaikan.`, 'error');
+    return;
+  }
 
   if (itemStock <= 0) {
     App.toast(`Stok material "${itemName}" saat ini habis (0 ${itemUnit}). Tidak dapat mengajukan request.`, 'error');

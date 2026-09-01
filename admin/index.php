@@ -1362,6 +1362,14 @@ require_once __DIR__ . '/../includes/header.php';
               0 SKU Dipilih
             </span>
 
+            <!-- Finish / Complete Session Button (Unfreeze SKUs) -->
+            <button type="button" id="btnFinishDynamicSession" onclick="confirmFinishDynamicSession()" 
+              class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" 
+              title="Selesaikan Sesi Dynamic Count & Buka Pembekuan (Freeze) SKU">
+              <span class="material-symbols-outlined text-[18px]">lock_open</span>
+              <span id="labelFinishDynamicSession">Selesaikan Sesi</span>
+            </button>
+
             <button type="button" id="btnAssignDynamicRecount" onclick="openAssignDynamicRecountModal()" class="h-[38px] px-3.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Tugaskan Hitung Ulang (Recount) ke Operator">
               <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
               <span>Tugaskan Recount</span>

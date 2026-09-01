@@ -139,6 +139,17 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Validasi Pembekuan (Freeze) SKU saat pembuatan task
+    $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
+    if ($freeze) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => "Pembuatan Tugas Picking DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze) sampai sesi diselesaikan."
+        ]);
+        exit;
+    }
+
     // Validate available stock
     $stmtMat = $pdo->prepare("SELECT id, name, current_stock FROM materials WHERE id = ?");
     $stmtMat->execute([$materialId]);
@@ -332,6 +343,18 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $notes       = trim($t['notes'] ?? '');
 
             if ($materialId <= 0 || $assignedTo <= 0) continue;
+
+            // Validasi Pembekuan (Freeze) SKU saat batch create task
+            $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
+            if ($freeze) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Pembuatan Tugas Picking DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze) pada baris ke-" . ($idx + 1) . "!"
+                ]);
+                exit;
+            }
 
             if ($targetQty <= 0) {
                 $pdo->rollBack();
@@ -677,6 +700,18 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Tugas ini sudah selesai disubmit sebelumnya.']);
+            exit;
+        }
+
+        // Validasi Pembekuan (Freeze) SKU saat penyelesaian task
+        $freeze = getMaterialDynamicCountFreeze($pdo, (int)$task['material_id']);
+        if ($freeze) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "Penyelesaian Tugas / Pengurangan Stok DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze) sampai sesi diselesaikan."
+            ]);
             exit;
         }
 

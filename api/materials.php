@@ -71,8 +71,25 @@ if ($action === 'list') {
     $stmt->execute($params);
     $materials = $stmt->fetchAll();
 
-    // Attach status label to each
+    // Fetch all active dynamic count materials for fast lookup
+    $stmtFrozen = $pdo->query("
+        SELECT soi.material_id, so.opname_no
+        FROM stock_opname_items soi
+        JOIN stock_opnames so ON soi.opname_id = so.id
+        WHERE so.counting_type = 'DYNAMIC_COUNT' 
+          AND so.status IN ('OPEN', 'COUNTING', 'RECOUNTING')
+    ");
+    $frozenMap = [];
+    while ($fRow = $stmtFrozen->fetch()) {
+        $frozenMap[(int)$fRow['material_id']] = $fRow['opname_no'];
+    }
+
+    // Attach status label and freeze state to each
     foreach ($materials as &$mat) {
+        $mid = (int)$mat['id'];
+        $mat['is_frozen'] = isset($frozenMap[$mid]);
+        $mat['frozen_session_no'] = $frozenMap[$mid] ?? null;
+
         $mat['initial_upload_stock'] = (float)$mat['initial_upload_stock'];
         $mat['total_inbound'] = (float)$mat['total_inbound'];
         $mat['total_outbound'] = (float)$mat['total_outbound'];

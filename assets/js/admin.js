@@ -5631,6 +5631,70 @@ async function loadDynamicMatrix() {
       tbody.innerHTML = currentDynamicItems.map((item, idx) => buildMatrixRowHtml(item, idx, currentDynamicMaxStage, true)).join('');
     }
   }
+
+  // Update Selesaikan Sesi (Finish Session & Unfreeze) button state
+  const btnFinish = document.getElementById('btnFinishDynamicSession');
+  const labelFinish = document.getElementById('labelFinishDynamicSession');
+  if (btnFinish) {
+    if (!currentDynamicSession || opname_id === '0') {
+      btnFinish.classList.add('hidden');
+    } else {
+      btnFinish.classList.remove('hidden');
+      const isCompleted = currentDynamicSession.status === 'COMPLETED';
+      if (isCompleted) {
+        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-slate-100 text-slate-500 border border-slate-300 flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-not-allowed opacity-80';
+        btnFinish.disabled = true;
+        btnFinish.title = 'Sesi ini sudah selesai. Pembekuan (freeze) SKU sudah dibuka.';
+        if (labelFinish) labelFinish.innerText = 'Sesi Selesai (Unfrozen)';
+        const iconEl = btnFinish.querySelector('.material-symbols-outlined');
+        if (iconEl) iconEl.innerText = 'check_circle';
+      } else {
+        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer';
+        btnFinish.disabled = false;
+        btnFinish.title = 'Selesaikan Sesi Dynamic Count & Buka Pembekuan (Unfreeze) SKU';
+        if (labelFinish) labelFinish.innerText = 'Selesaikan Sesi';
+        const iconEl = btnFinish.querySelector('.material-symbols-outlined');
+        if (iconEl) iconEl.innerText = 'lock_open';
+      }
+    }
+  }
+}
+
+// -------------------------------------------------------------------------
+// FINISH DYNAMIC COUNT SESSION (UNFREEZE ALL RELATED SKUS)
+// -------------------------------------------------------------------------
+async function confirmFinishDynamicSession() {
+  if (!currentDynamicSession || !currentDynamicSession.id) {
+    App.toast('Pilih salah satu sesi Dynamic Count terlebih dahulu.', 'warning');
+    return;
+  }
+
+  const sessionName = currentDynamicSession.opname_no || currentDynamicSession.title || `#${currentDynamicSession.id}`;
+  const totalSku = currentDynamicItems.length;
+
+  App.confirm(
+    `Apakah Anda yakin ingin menyelesaikan sesi Dynamic Count <b>${escapeHtml(sessionName)}</b> (${totalSku} SKU)?<br><br>` +
+    `<span class="text-xs text-emerald-900 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 block text-left">` +
+    `✓ Setelah diselesaikan, status sesi berubah menjadi <b>COMPLETED</b> dan seluruh SKU terkait akan <b>otomatis dibuka dari status Freeze (Unfrozen)</b> sehingga transaksi barang keluar/masuk dan request dapat diproses normal kembali.</span>`,
+    async () => {
+      try {
+        const res = await App.fetchJson('../api/opnames.php?action=finish_session', {
+          method: 'POST',
+          body: JSON.stringify({ opname_id: currentDynamicSession.id })
+        });
+
+        if (res.success) {
+          App.toast(res.message || 'Sesi Dynamic Count berhasil diselesaikan dan SKU berhasil dibuka (Unfrozen)!', 'success', 'Selesai');
+          loadDynamicMatrix();
+        } else {
+          App.toast(res.message || 'Gagal menyelesaikan sesi', 'error');
+        }
+      } catch (err) {
+        App.toast('Terjadi kesalahan saat memproses penyelesaian sesi', 'error');
+      }
+    },
+    'Selesaikan Sesi & Buka Freeze'
+  );
 }
 
 // Alias for compatibility

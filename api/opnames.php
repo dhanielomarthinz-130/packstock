@@ -1966,6 +1966,46 @@ if ($action === 'apply_adjustment') {
     }
 }
 
+// =========================================================================
+// 15. FINISH / CLOSE DYNAMIC COUNTING OR STOCK OPNAME SESSION (UNFREEZE SKUs)
+// =========================================================================
+if ($action === 'finish_session' || $action === 'finish_dynamic_session' || $action === 'close_session') {
+    Auth::requireAdmin();
+    $raw = file_get_contents('php://input');
+    $input = !empty($raw) ? json_decode($raw, true) : [];
+    if (empty($input) && !empty($_POST)) $input = $_POST;
+    $id = (int)($input['opname_id'] ?? $input['id'] ?? $_GET['id'] ?? 0);
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Sesi wajib dipilih']);
+        exit;
+    }
+
+    $stmtSo = $pdo->prepare("SELECT * FROM stock_opnames WHERE id = ?");
+    $stmtSo->execute([$id]);
+    $opname = $stmtSo->fetch();
+
+    if (!$opname) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Sesi tidak ditemukan']);
+        exit;
+    }
+
+    $stmtUpdate = $pdo->prepare("UPDATE stock_opnames SET status = 'COMPLETED', updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+    $stmtUpdate->execute([$id]);
+
+    $typeName = $opname['counting_type'] === 'DYNAMIC_COUNT' ? 'Dynamic Count' : 'Stock Opname';
+
+    echo json_encode([
+        'success' => true,
+        'message' => "Sesi {$typeName} '{$opname['opname_no']}' berhasil diselesaikan! Status sesi kini COMPLETED dan seluruh SKU terkait telah dibuka kuncinya (Unfrozen) untuk transaksi keluar/masuk.",
+        'opname_id' => $id,
+        'status' => 'COMPLETED'
+    ]);
+    exit;
+}
+
 // Fallback
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Aksi API tidak valid']);

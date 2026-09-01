@@ -267,3 +267,36 @@ if (!function_exists('parseNumberDecimal')) {
         return is_numeric($clean) ? (float)$clean : 0.0;
     }
 }
+
+/**
+ * Helper to check if a packaging material SKU is locked/frozen in an active Dynamic Count session.
+ * Returns associative array with session metadata if frozen, or null if free to mutate.
+ */
+if (!function_exists('getMaterialDynamicCountFreeze')) {
+    function getMaterialDynamicCountFreeze(PDO $pdo, int $materialId): ?array {
+        if ($materialId <= 0) return null;
+        try {
+            $stmt = $pdo->prepare("
+                SELECT so.id as opname_id, 
+                       so.opname_no, 
+                       so.title as session_title, 
+                       so.status as session_status,
+                       m.id as material_id,
+                       m.name as material_name, 
+                       m.code as material_code
+                FROM stock_opname_items soi
+                JOIN stock_opnames so ON soi.opname_id = so.id
+                JOIN materials m ON soi.material_id = m.id
+                WHERE soi.material_id = ? 
+                  AND so.counting_type = 'DYNAMIC_COUNT' 
+                  AND so.status IN ('OPEN', 'COUNTING', 'RECOUNTING')
+                LIMIT 1
+            ");
+            $stmt->execute([$materialId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+}
+

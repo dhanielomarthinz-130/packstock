@@ -208,6 +208,17 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Validasi Pembekuan (Freeze) SKU saat pengeluaran manual
+    $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
+    if ($freeze) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'message' => "Pengeluaran Barang (Outbound) DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze) sampai sesi diselesaikan."
+        ]);
+        exit;
+    }
+
     try {
         $pdo->beginTransaction();
 
@@ -362,6 +373,18 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $itemNotes   = trim($item['notes'] ?? '');
 
             if ($materialId <= 0 || $qty <= 0) continue;
+
+            // Validasi Pembekuan (Freeze) SKU saat batch outbound
+            $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
+            if ($freeze) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Pengeluaran Barang Batch DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze)."
+                ]);
+                exit;
+            }
 
             $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
             $stmtMat->execute([$materialId]);

@@ -426,6 +426,22 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $priority = 'NORMAL';
     }
 
+    // Validasi Pembekuan (Freeze) SKU yang sedang dalam sesi Dynamic Count aktif
+    foreach ($items as $it) {
+        $matId = (int)($it['material_id'] ?? 0);
+        if ($matId > 0) {
+            $freeze = getMaterialDynamicCountFreeze($pdo, $matId);
+            if ($freeze) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Pengajuan DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze) sampai sesi diselesaikan."
+                ]);
+                exit;
+            }
+        }
+    }
+
     $photosJson = handleConsumablePhotosUpload($_FILES['photos'] ?? null, $input['photos'] ?? null);
 
     $userId = Auth::id();
@@ -576,6 +592,20 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Daftar item pengajuan kosong']);
         exit;
+    }
+
+    // Validasi Pembekuan (Freeze) SKU saat persetujuan ACC
+    foreach ($items as $it) {
+        $matId = (int)$it['material_id'];
+        $freeze = getMaterialDynamicCountFreeze($pdo, $matId);
+        if ($freeze) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "Persetujuan (ACC) DITOLAK! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) saat ini sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan (Freeze). Selesaikan sesi Dynamic Count terlebih dahulu sebelum menyetujui mutasi item ini."
+            ]);
+            exit;
+        }
     }
 
     $adminId = Auth::id();
