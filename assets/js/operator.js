@@ -574,11 +574,28 @@ function toggleHistoryCard(groupKey) {
   }
 }
 
+function isSameDay(dateStr, targetDate = new Date()) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr.replace(' ', 'T'));
+  if (isNaN(d.getTime())) return false;
+  return d.getFullYear() === targetDate.getFullYear() &&
+         d.getMonth() === targetDate.getMonth() &&
+         d.getDate() === targetDate.getDate();
+}
+
+function getTodayCompletedTasks() {
+  return myTasks.filter(t => {
+    if (t.status !== 'COMPLETED') return false;
+    const taskDate = t.completed_at || t.created_at;
+    return isSameDay(taskDate);
+  });
+}
+
 let isAllHistoryExpanded = false;
 function toggleAllHistoryCards() {
   isAllHistoryExpanded = !isAllHistoryExpanded;
   window._expandedHistoryCards = window._expandedHistoryCards || {};
-  const completedTasks = myTasks.filter(t => t.status === 'COMPLETED');
+  const completedTasks = getTodayCompletedTasks();
   const grouped = groupCompletedTasks(completedTasks);
   grouped.forEach(g => {
     window._expandedHistoryCards[g.groupKey] = isAllHistoryExpanded;
@@ -597,7 +614,13 @@ function renderOperatorTasksHistory() {
   const badgeHistory = document.getElementById('badgeOpTaskHistoryCount');
   if (!container) return;
 
-  const completedTasks = myTasks.filter(t => t.status === 'COMPLETED');
+  const todayLabel = document.getElementById('opHistoryTodayDateLabel');
+  if (todayLabel) {
+    todayLabel.innerText = App.formatDate(new Date());
+  }
+
+  // Filter ONLY TODAY'S COMPLETED TASKS
+  const completedTasks = getTodayCompletedTasks();
   const grouped = groupCompletedTasks(completedTasks);
 
   window._currentGroupedHistory = {};
@@ -611,11 +634,11 @@ function renderOperatorTasksHistory() {
     container.innerHTML = `
       <div class="bg-white rounded-3xl p-6 text-center border border-slate-200 shadow-xs space-y-2.5">
         <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
-          <span class="material-symbols-outlined text-[28px]">history</span>
+          <span class="material-symbols-outlined text-[28px]">today</span>
         </div>
         <div>
-          <h4 class="font-extrabold text-slate-800 text-sm">Belum Ada Riwayat Selesai</h4>
-          <p class="text-xs text-slate-500 mt-0.5">Tugas pengeluaran yang telah diselesaikan akan muncul terkelompok di sini.</p>
+          <h4 class="font-extrabold text-slate-800 text-sm">Belum Ada Riwayat Keluar Hari Ini</h4>
+          <p class="text-xs text-slate-500 mt-0.5">Tugas pengeluaran yang diselesaikan hari ini (${App.formatDate(new Date())}) akan muncul di sini.</p>
         </div>
       </div>
     `;

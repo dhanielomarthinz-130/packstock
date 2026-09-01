@@ -429,6 +429,15 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
           </div>
 
+          <!-- Date Filter Header Indicator -->
+          <div class="flex items-center justify-between px-1 text-xs">
+            <span class="font-extrabold text-slate-700 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">today</span>
+              <span>Riwayat Hari Ini:</span>
+              <span id="opHistoryTodayDateLabel" class="text-emerald-700 font-mono"></span>
+            </span>
+          </div>
+
           <div id="opTasksHistoryContainer" class="space-y-2.5">
             <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
               <span class="material-symbols-outlined text-[20px] animate-spin text-emerald-600 mb-1">progress_activity</span>
