@@ -233,29 +233,13 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="material-symbols-outlined text-emerald-700 text-[18px]">grid_view</span>
             <span>Menu Operator</span>
           </h4>
-          <span class="text-[11px] text-slate-400 font-bold">6 Modul</span>
+          <span class="text-[11px] text-slate-400 font-bold">7 Modul</span>
         </div>
 
-        <!-- APP LAUNCHER GRID (NATIVE MOBILE APP TILES) -->
+        <!-- APP LAUNCHER GRID (NATIVE MOBILE APP TILES - URUT SESUAI ABJAD A-Z) -->
         <div class="grid grid-cols-3 gap-y-4 gap-x-2">
 
-          <!-- APP 1: TUGAS PENGAMBILAN PACKAGING -->
-          <div onclick="switchOpTab('tasks')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">assignment</span>
-              </div>
-              <span id="homeBadgeTasks" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] shadow-xs leading-none">
-                0
-              </span>
-            </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Picking</h5>
-            </div>
-          </div>
-
-          <!-- APP 2: DYNAMIC COUNTING (TASK SKU) -->
+          <!-- 1. COUNTING (DYNAMIC COUNTING / TASK SKU) -->
           <div onclick="switchOpTab('dynamic_count')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
@@ -271,23 +255,52 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- APP 3: STOCK OPNAME (PURE BLANK COUNT) -->
-          <div onclick="switchOpTab('opname')" 
+          <!-- 2. HANDOVER (SERAH TERIMA SHIFT) -->
+          <div onclick="switchOpTab('handover')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">inventory_2</span>
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">published_with_changes</span>
               </div>
-              <span id="homeBadgeOpname" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none">
-                Aktif
+              <span id="homeBadgeHandover" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[9px] shadow-xs leading-none">
+                New
               </span>
             </div>
             <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-rose-700 transition-colors">Handover</h5>
             </div>
           </div>
 
-          <!-- APP 4: PENERIMAAN BARANG MASUK -->
+          <!-- 3. HISTORY (RIWAYAT SELESAI) -->
+          <div onclick="switchOpTab('history')" 
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">history</span>
+              </div>
+            </div>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-slate-800 transition-colors">History</h5>
+            </div>
+          </div>
+
+          <!-- 4. PICKING (TUGAS PENGAMBILAN PACKAGING) -->
+          <div onclick="switchOpTab('tasks')" 
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">assignment</span>
+              </div>
+              <span id="homeBadgeTasks" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] shadow-xs leading-none">
+                0
+              </span>
+            </div>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Picking</h5>
+            </div>
+          </div>
+
+          <!-- 5. PUTAWAY (PENERIMAAN BARANG MASUK) -->
           <div onclick="switchOpTab('inbound')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
@@ -300,7 +313,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- APP 5: FORM REQUEST CONSUMABLE (BARU) -->
+          <!-- 6. REQ CONSUMABLE (FORM REQUEST CONSUMABLE) -->
           <div onclick="switchOpTab('request_consumable')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
@@ -316,32 +329,19 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- APP 6: RIWAYAT SELESAI -->
-          <div onclick="switchOpTab('history')" 
+          <!-- 7. STOCK OPNAME (PURE BLANK COUNT) -->
+          <div onclick="switchOpTab('opname')" 
             class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
             <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">history</span>
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">inventory_2</span>
               </div>
-            </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-slate-800 transition-colors">History</h5>
-            </div>
-          </div>
-
-          <!-- APP 7: HANDOVER (SERAH TERIMA SHIFT) -->
-          <div onclick="switchOpTab('handover')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">published_with_changes</span>
-              </div>
-              <span id="homeBadgeHandover" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[9px] shadow-xs leading-none">
-                New
+              <span id="homeBadgeOpname" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none">
+                Aktif
               </span>
             </div>
             <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-rose-700 transition-colors">Handover</h5>
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
             </div>
           </div>
 
