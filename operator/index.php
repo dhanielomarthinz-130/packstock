@@ -1893,9 +1893,11 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Caption Box -->
       <div>
-        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Caption / Teks:</p>
-        <div class="p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 space-y-1 select-all whitespace-pre-wrap leading-relaxed shadow-inner" id="shareTextPreviewBox">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Format Caption Pesan:</p>
+          <span class="text-[10px] text-slate-400 font-medium">Bisa Diedit</span>
         </div>
+        <textarea rows="7" class="w-full p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 select-all leading-relaxed shadow-inner outline-none focus:border-emerald-500 font-medium resize-none" id="shareTextPreviewBox"></textarea>
       </div>
     </div>
 

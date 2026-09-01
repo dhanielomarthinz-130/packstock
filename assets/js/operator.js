@@ -729,27 +729,46 @@ function getPublicPhotoUrl(relativePath) {
   return `${cleanBase}/${clean}`;
 }
 
-// SHARE TEXT & WHATSAPP BUILDER (CONCISE & CLEAN)
+function formatShortDate(dtStr) {
+  if (!dtStr) {
+    const now = new Date();
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    return `${d}-${m}-${y}`;
+  }
+  const parts = dtStr.split(' ')[0].split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  }
+  return dtStr;
+}
+
+function formatShiftShort(shiftStr) {
+  if (!shiftStr) return 'Shift 2';
+  if (shiftStr.toLowerCase().includes('shift 2')) return 'Shift 2';
+  if (shiftStr.toLowerCase().includes('shift 1')) return 'Shift 1';
+  return shiftStr;
+}
+
+// SHARE TEXT & WHATSAPP BUILDER (FORMAT: UPDATE OUTPUT KEMAS)
 function generateShareText(group) {
-  const docNo = group.task_nos.join(', ');
-  const reqBadge = group.request_no ? ` (#${group.request_no})` : '';
-  const receiver = group.receiver_name ? `Penerima: ${group.receiver_name}` : '';
-  const pic = group.operator_name ? `PIC: ${group.operator_name}` : '';
+  const dateFormatted = formatShortDate(group.completed_at || '');
+  const shift = formatShiftShort(group.operator_shift);
+  const brand = (group.destination || 'hanasui').toLowerCase();
 
   let itemsList = '';
   group.items.forEach((it, idx) => {
-    itemsList += `${idx + 1}. ${it.material_name} (${App.formatNumber(it.actual_qty)} ${it.material_unit})\n`;
+    const unit = it.material_unit ? it.material_unit.toLowerCase() : 'pcs';
+    itemsList += `${idx + 1}.${it.material_name.toLowerCase()} ${App.formatNumber(it.actual_qty)} ${unit}\n`;
   });
 
-  let notes = group.completion_notes ? `Catatan: ${group.completion_notes}\n` : '';
-
-  const text = `*SERAH TERIMA PACKAGING*\n` +
-               `No: ${docNo}${reqBadge}\n` +
-               `Tujuan: ${group.destination}\n` +
-               (receiver ? `${receiver}\n` : '') +
-               (pic ? `${pic}\n` : '') +
-               `\n*Barang Keluar:*\n${itemsList}` +
-               (notes ? `\n${notes}` : '');
+  const text = `Update output kemas\n` +
+               `Tgl ${dateFormatted}\n` +
+               `${shift}\n` +
+               `Brand ${brand}\n\n` +
+               `${itemsList.trim()}\n\n` +
+               `Cc:@~Nurul @~rehan @~Muhamad Afif`;
 
   return text.trim();
 }
@@ -763,7 +782,9 @@ function openShareOutboundModal(groupKey) {
 
   const docLabel = group.request_no ? `Req #${group.request_no} (${group.task_nos.join(', ')})` : group.task_nos.join(', ');
   document.getElementById('shareModalSubtitle').innerText = `Dokumen: ${docLabel}`;
-  document.getElementById('shareTextPreviewBox').innerText = shareText;
+  
+  const previewBox = document.getElementById('shareTextPreviewBox');
+  if (previewBox) previewBox.value = shareText;
 
   // Render Photo Previews in Modal
   const photoContainer = document.getElementById('shareModalPhotosContainer');
@@ -794,7 +815,7 @@ async function shareOrCopyDirectly(groupKey) {
   if (!group) return;
 
   const text = generateShareText(group);
-  const title = `Serah Terima ${group.request_no ? '#' + group.request_no : group.task_nos[0]}`;
+  const title = `Update Output Kemas ${group.destination || ''}`;
 
   // Try Web Share API Level 2 (Share actual image files directly to WhatsApp with caption)
   if (navigator.share && group.photos && group.photos.length > 0) {
@@ -807,7 +828,7 @@ async function shareOrCopyDirectly(groupKey) {
         if (resp.ok) {
           const blob = await resp.blob();
           const ext = photoPath.split('.').pop() || 'jpg';
-          const file = new File([blob], `surat_jalan_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+          const file = new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
           files.push(file);
         }
       }
@@ -846,14 +867,15 @@ async function shareOrCopyDirectly(groupKey) {
 }
 
 async function copyShareTextToClipboard() {
-  if (!currentShareData) return;
-  const text = generateShareText(currentShareData);
+  const textarea = document.getElementById('shareTextPreviewBox');
+  const text = textarea ? textarea.value : (currentShareData ? generateShareText(currentShareData) : '');
+  if (!text) return;
 
   try {
     await navigator.clipboard.writeText(text);
     const btnLabel = document.getElementById('btnCopyShareTextLabel');
     if (btnLabel) btnLabel.innerText = 'Tersalin! ✓';
-    App.toast('Teks serah terima & link foto berhasil disalin!', 'success', 'Tersalin');
+    App.toast('Teks output kemas berhasil disalin!', 'success', 'Tersalin');
     setTimeout(() => {
       if (btnLabel) btnLabel.innerText = 'Salin Teks';
     }, 2500);
@@ -864,6 +886,8 @@ async function copyShareTextToClipboard() {
 
 async function openWhatsAppShare() {
   if (!currentShareData) return;
+  const textarea = document.getElementById('shareTextPreviewBox');
+  const text = textarea ? textarea.value : generateShareText(currentShareData);
   
   // If browser can share file directly via Web Share, trigger it first
   if (navigator.share && currentShareData.photos && currentShareData.photos.length > 0) {
@@ -876,15 +900,15 @@ async function openWhatsAppShare() {
         if (resp.ok) {
           const blob = await resp.blob();
           const ext = photoPath.split('.').pop() || 'jpg';
-          const file = new File([blob], `surat_jalan_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+          const file = new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
           files.push(file);
         }
       }
 
       if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
         await navigator.share({
-          title: `Serah Terima ${currentShareData.request_no || currentShareData.task_nos[0]}`,
-          text: generateShareText(currentShareData),
+          title: `Update Output Kemas`,
+          text: text,
           files: files
         });
         return;
@@ -895,7 +919,6 @@ async function openWhatsAppShare() {
   }
 
   // Fallback to WhatsApp URL
-  const text = generateShareText(currentShareData);
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
   window.open(waUrl, '_blank');
 }
