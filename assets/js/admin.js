@@ -5645,10 +5645,10 @@ async function loadDynamicMatrix() {
       const isCompleted = currentDynamicSession.status === 'COMPLETED';
       const iconEl = btnFinish.querySelector('.material-symbols-outlined');
       if (isCompleted) {
-        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 text-xs font-black shrink-0 shadow-2xs cursor-default';
+        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 text-xs font-black shrink-0 shadow-2xs cursor-default';
         btnFinish.disabled = true;
         btnFinish.title = 'Sesi ini telah selesai (Completed). Pembekuan (freeze) SKU sudah dibuka.';
-        if (labelFinish) labelFinish.innerText = 'Completed (Unfrozen)';
+        if (labelFinish) labelFinish.innerText = 'Completed';
         if (iconEl) iconEl.innerText = 'verified';
       } else {
         btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer';
@@ -5670,7 +5670,8 @@ async function confirmFinishDynamicSession() {
     return;
   }
 
-  const sessionName = currentDynamicSession.opname_no || currentDynamicSession.title || `#${currentDynamicSession.id}`;
+  const targetSessionId = currentDynamicSession.id;
+  const sessionName = currentDynamicSession.opname_no || currentDynamicSession.title || `#${targetSessionId}`;
   const totalSku = currentDynamicItems.length;
 
   App.confirm(
@@ -5681,11 +5682,21 @@ async function confirmFinishDynamicSession() {
       try {
         const res = await App.fetchJson('../api/opnames.php?action=finish_session', {
           method: 'POST',
-          body: JSON.stringify({ opname_id: currentDynamicSession.id })
+          body: JSON.stringify({ opname_id: targetSessionId })
         });
 
         if (res.success) {
           App.toast(res.message || 'Sesi Dynamic Count berhasil diselesaikan dan SKU berhasil dibuka (Unfrozen)!', 'success', 'Selesai');
+          
+          if (currentDynamicSession && currentDynamicSession.id === targetSessionId) {
+            currentDynamicSession.status = 'COMPLETED';
+          }
+          
+          const selectEl = document.getElementById('dynamicOpnameSelect');
+          if (selectEl) {
+            selectEl.value = targetSessionId;
+          }
+          
           loadDynamicMatrix();
         } else {
           App.toast(res.message || 'Gagal menyelesaikan sesi', 'error');
