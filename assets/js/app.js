@@ -61,15 +61,29 @@ const App = {
     }, 4000);
   },
 
-  // Universal In-App Confirmation Modal (Promise-based replacement for window.confirm)
-  confirm({
-    title = 'Konfirmasi Tindakan',
-    message = 'Apakah Anda yakin ingin melanjutkan?',
-    confirmText = 'Ya, Lanjutkan',
-    cancelText = 'Batal',
-    type = 'emerald',
-    icon = 'help'
-  } = {}) {
+  // Universal In-App Confirmation Modal (Promise-based & Callback-compatible)
+  confirm(arg1, callback, arg3) {
+    let opts = {};
+    if (typeof arg1 === 'string') {
+      opts = {
+        title: typeof arg3 === 'string' ? arg3 : 'Konfirmasi Tindakan',
+        message: arg1,
+        confirmText: typeof arg3 === 'string' ? arg3 : 'Ya, Lanjutkan',
+        type: 'emerald'
+      };
+    } else if (typeof arg1 === 'object' && arg1 !== null) {
+      opts = arg1;
+    }
+
+    const {
+      title = 'Konfirmasi Tindakan',
+      message = 'Apakah Anda yakin ingin melanjutkan?',
+      confirmText = 'Ya, Lanjutkan',
+      cancelText = 'Batal',
+      type = 'emerald',
+      icon = 'help'
+    } = opts;
+
     return new Promise((resolve) => {
       let modal = document.getElementById('app-confirm-dialog');
       if (!modal) {
@@ -109,7 +123,7 @@ const App = {
       const c = colorMap[type] || colorMap.emerald;
 
       modal.innerHTML = `
-        <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up text-center">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up text-center font-sans">
           <div class="w-14 h-14 rounded-2xl ${c.bg} ${c.text} flex items-center justify-center mx-auto shadow-inner">
             <span class="material-symbols-outlined text-[30px]">${c.icon}</span>
           </div>
@@ -134,6 +148,9 @@ const App = {
       const cleanup = (val) => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        if (typeof callback === 'function' && val === true) {
+          callback();
+        }
         resolve(val);
       };
 

@@ -5674,39 +5674,62 @@ async function confirmFinishDynamicSession() {
   const sessionName = currentDynamicSession.opname_no || currentDynamicSession.title || `#${targetSessionId}`;
   const totalSku = currentDynamicItems.length;
 
-  App.confirm(
-    `Apakah Anda yakin ingin menyelesaikan sesi Dynamic Count <b>${escapeHtml(sessionName)}</b> (${totalSku} SKU)?<br><br>` +
-    `<span class="text-xs text-emerald-900 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 block text-left">` +
-    `✓ Setelah diselesaikan, status sesi berubah menjadi <b>COMPLETED</b> dan seluruh SKU terkait akan <b>otomatis dibuka dari status Freeze (Unfrozen)</b> sehingga transaksi barang keluar/masuk dan request dapat diproses normal kembali.</span>`,
-    async () => {
-      try {
-        const res = await App.fetchJson('../api/opnames.php?action=finish_session', {
-          method: 'POST',
-          body: JSON.stringify({ opname_id: targetSessionId })
-        });
+  const confirmed = await App.confirm({
+    title: 'Selesaikan Sesi Dynamic Count',
+    message: `Apakah Anda yakin ingin menyelesaikan sesi Dynamic Count <b>${escapeHtml(sessionName)}</b> (${totalSku} SKU)?<br><br><span class="text-xs text-emerald-900 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 block text-left">✓ Setelah diselesaikan, status sesi berubah menjadi <b>COMPLETED</b> dan seluruh SKU terkait akan <b>otomatis dibuka dari status Freeze (Unfrozen)</b>.</span>`,
+    confirmText: 'Ya, Selesaikan Sesi',
+    cancelText: 'Batal',
+    type: 'emerald',
+    icon: 'lock_open'
+  });
 
-        if (res.success) {
-          App.toast(res.message || 'Sesi Dynamic Count berhasil diselesaikan dan SKU berhasil dibuka (Unfrozen)!', 'success', 'Selesai');
-          
-          if (currentDynamicSession && currentDynamicSession.id === targetSessionId) {
-            currentDynamicSession.status = 'COMPLETED';
-          }
-          
-          const selectEl = document.getElementById('dynamicOpnameSelect');
-          if (selectEl) {
-            selectEl.value = targetSessionId;
-          }
-          
-          loadDynamicMatrix();
-        } else {
-          App.toast(res.message || 'Gagal menyelesaikan sesi', 'error');
-        }
-      } catch (err) {
-        App.toast('Terjadi kesalahan saat memproses penyelesaian sesi', 'error');
+  if (!confirmed) return;
+
+  const btnFinish = document.getElementById('btnFinishDynamicSession');
+  const labelFinish = document.getElementById('labelFinishDynamicSession');
+  if (btnFinish) {
+    btnFinish.disabled = true;
+    if (labelFinish) labelFinish.innerText = 'Menyimpan...';
+  }
+
+  try {
+    const res = await App.fetchJson('../api/opnames.php?action=finish_session', {
+      method: 'POST',
+      body: JSON.stringify({ opname_id: targetSessionId })
+    });
+
+    if (res.success) {
+      App.toast(res.message || 'Sesi Dynamic Count berhasil diselesaikan dan status berubah ke COMPLETED!', 'success', 'Selesai');
+      
+      if (currentDynamicSession) {
+        currentDynamicSession.status = 'COMPLETED';
       }
-    },
-    'Selesaikan Sesi & Buka Freeze'
-  );
+      
+      if (btnFinish) {
+        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 text-xs font-black shrink-0 shadow-2xs cursor-default';
+        btnFinish.disabled = true;
+        btnFinish.title = 'Sesi ini telah selesai (Completed).';
+        if (labelFinish) labelFinish.innerText = 'Completed';
+        const iconEl = btnFinish.querySelector('.material-symbols-outlined');
+        if (iconEl) iconEl.innerText = 'verified';
+      }
+
+      const selectEl = document.getElementById('dynamicOpnameSelect');
+      if (selectEl) {
+        selectEl.value = targetSessionId;
+      }
+
+      await loadDynamicMatrix();
+    } else {
+      App.toast(res.message || 'Gagal menyelesaikan sesi', 'error');
+      if (btnFinish) btnFinish.disabled = false;
+      if (labelFinish) labelFinish.innerText = 'Selesaikan Sesi';
+    }
+  } catch (err) {
+    App.toast('Terjadi kesalahan saat memproses penyelesaian sesi', 'error');
+    if (btnFinish) btnFinish.disabled = false;
+    if (labelFinish) labelFinish.innerText = 'Selesaikan Sesi';
+  }
 }
 
 // Alias for compatibility
