@@ -9021,7 +9021,7 @@ function printSingleConsumableRequest(id) {
   const subEl = document.getElementById('printConsumableSubtitle');
 
   if (titleEl) titleEl.innerText = `Cetak Surat Permintaan #${req.request_no}`;
-  if (subEl) subEl.innerText = `Pemohon: ${req.requester_name || 'Operator'} &bull; Tujuan: ${req.destination}`;
+  if (subEl) subEl.innerHTML = `Pemohon: <b>${escapeHtml(req.requester_name || 'Operator')}</b> &bull; Tujuan: <b>${escapeHtml(req.destination)}</b>`;
 
   if (docEl) {
     docEl.innerHTML = `
@@ -9035,7 +9035,7 @@ function printSingleConsumableRequest(id) {
             </div>
             <div>
               <h1 style="font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">PACKSTOCK WMS</h1>
-              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System Kemas/Consumbale</p>
+              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System Kemas/Consumable</p>
               <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Warehouse Fulfillment & Consumable Control System</p>
             </div>
           </div>
@@ -9128,7 +9128,7 @@ function printSingleConsumableRequest(id) {
             <div>
               <p style="color: #64748b; font-weight: 600; margin: 0 0 50px 0;">Yang Menyerahkan (Inventory):</p>
               <div style="border-bottom: 1px solid #0f172a; width: 140px; margin: 0 auto 4px auto;"></div>
-              <p style="font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml((ho && ho.penyerah_name) ? ho.penyerah_name : (req.approver_name || 'Staff Inventory'))}</p>
+              <p style="font-weight: 800; color: #0f172a; margin: 0;">${escapeHtml((ho && ho.penyerah_name) ? (ho.penyerah_name.split('(')[0].trim() + (ho.penyerah_name.includes('Shift') ? ' (' + (ho.penyerah_name.split('(')[1] || '').split(')')[0].split('-')[0].trim() + ')' : '')) : (req.approver_name || 'Staff Inventory'))}</p>
               <p style="font-size: 9.5px; color: #64748b; margin: 2px 0 0 0;">Staff Inventory / Gudang</p>
             </div>
             <div>
@@ -9168,7 +9168,7 @@ function printConsumableRequestsReport() {
   const statusFilter = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
 
   if (titleEl) titleEl.innerText = 'Laporan Rekapitulasi Permintaan Consumable';
-  if (subEl) subEl.innerText = `Total: ${requests.length} Pengajuan &bull; Filter: Status ${statusFilter}${dateFilter ? ` / Tanggal ${dateFilter}` : ''}`;
+  if (subEl) subEl.innerHTML = `Total: <b>${requests.length} Pengajuan</b> &bull; Filter: Status <b>${statusFilter}</b>${dateFilter ? ` / Tanggal <b>${dateFilter}</b>` : ''}`;
 
   const totalQtyAll = requests.reduce((sum, r) => sum + (Number(r.total_qty) || 0), 0);
 
