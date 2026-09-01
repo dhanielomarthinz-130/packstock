@@ -652,7 +652,7 @@ function renderOperatorTasksHistory() {
           </span>
         </div>
 
-        <!-- Info Strip: Line & Receiver & Time -->
+        <!-- Info Strip: Line, Shift, Receiver & Time -->
         <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 space-y-2 text-xs">
           <div class="grid grid-cols-2 gap-2">
             <div>
@@ -663,17 +663,25 @@ function renderOperatorTasksHistory() {
               </span>
             </div>
             <div class="text-right">
-              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Waktu Selesai</span>
-              <span class="font-bold text-slate-600 text-[11px] block mt-0.5">${dateFormatted}</span>
+              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Shift Kerja</span>
+              <span class="font-bold text-indigo-700 text-[11px] inline-flex items-center gap-1 mt-0.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
+                <span class="material-symbols-outlined text-[13px]">schedule</span>
+                <span>${escapeHtml(formatShiftShort(g.operator_shift))}</span>
+              </span>
             </div>
           </div>
 
-          ${g.receiver_name ? `
-            <div class="pt-2 border-t border-slate-200/60 flex items-center gap-1.5 text-[11px] text-slate-700">
-              <span class="material-symbols-outlined text-indigo-600 text-[16px]">how_to_reg</span>
-              <span>Diterima Oleh: <b class="text-slate-900 font-bold">${escapeHtml(g.receiver_name)}</b></span>
+          <div class="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
+            ${g.receiver_name ? `
+              <div class="flex items-center gap-1 text-slate-700">
+                <span class="material-symbols-outlined text-indigo-600 text-[15px]">how_to_reg</span>
+                <span>Penerima: <b class="text-slate-900 font-bold">${escapeHtml(g.receiver_name)}</b></span>
+              </div>
+            ` : '<div></div>'}
+            <div class="text-right text-[10px] text-slate-400 font-medium">
+              ${dateFormatted}
             </div>
-          ` : ''}
+          </div>
         </div>
 
         <!-- Items Table Container -->
@@ -698,15 +706,11 @@ function renderOperatorTasksHistory() {
 
         ${photoThumbnails}
 
-        <!-- SHARE / COPY ACTIONS -->
-        <div class="pt-1 flex items-center gap-2">
-          <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-            <span class="material-symbols-outlined text-[17px] text-emerald-400">share</span>
-            <span>Lihat & Share Bukti</span>
-          </button>
-
-          <button type="button" onclick="shareOrCopyDirectly('${g.groupKey}')" class="py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer" title="Bagikan Cepat">
-            <span class="material-symbols-outlined text-[17px]">send</span>
+        <!-- SINGLE UNIFIED WHATSAPP SHARE BUTTON -->
+        <div class="pt-1">
+          <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-98 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <span class="material-symbols-outlined text-[19px]">send</span>
+            <span>Bagikan ke WhatsApp</span>
           </button>
         </div>
 
