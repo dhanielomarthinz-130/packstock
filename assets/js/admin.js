@@ -5738,12 +5738,18 @@ function openAssignDynamicRecountModal() {
 }
 
 function exportDynamicExcel() {
-  const opnameId = currentDynamicSession?.id;
-  if (!opnameId) {
+  const selectEl = document.getElementById('dynamicOpnameSelect');
+  const opnameId = (selectEl && selectEl.value && selectEl.value !== '0') ? selectEl.value : currentDynamicSession?.id;
+  if (!opnameId || opnameId === '0') {
     App.toast('Pilih sesi Dynamic Count terlebih dahulu', 'warning');
     return;
   }
-  window.open(`export.php?type=stock_opname&id=${opnameId}`, '_blank');
+  const link = document.createElement('a');
+  link.href = `export.php?type=stock_opname&id=${opnameId}`;
+  link.setAttribute('download', '');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 async function applyCurrentDynamicAdjustment() {
@@ -6319,12 +6325,18 @@ async function deleteOpnameSession(opnameId) {
 }
 
 function exportCurrentOpnameExcel() {
-  const opnameId = currentOpnameSession?.id;
-  if (!opnameId) {
+  const selectEl = document.getElementById('opnameSelectSession');
+  const opnameId = (selectEl && selectEl.value && selectEl.value !== '0') ? selectEl.value : currentOpnameSession?.id;
+  if (!opnameId || opnameId === '0') {
     App.toast('Pilih sesi Stock Opname terlebih dahulu', 'warning');
     return;
   }
-  window.open(`export.php?type=stock_opname&id=${opnameId}`, '_blank');
+  const link = document.createElement('a');
+  link.href = `export.php?type=stock_opname&id=${opnameId}`;
+  link.setAttribute('download', '');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // =========================================================================
@@ -6666,7 +6678,12 @@ function exportCountingDetailExcel() {
     search
   });
 
-  window.open(`export.php?${params.toString()}`, '_blank');
+  const link = document.createElement('a');
+  link.href = `export.php?${params.toString()}`;
+  link.setAttribute('download', '');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 // =========================================================================
@@ -6847,7 +6864,12 @@ function exportDynamicCountingDetailExcel() {
     search
   });
 
-  window.open(`export.php?${params.toString()}`, '_blank');
+  const link = document.createElement('a');
+  link.href = `export.php?${params.toString()}`;
+  link.setAttribute('download', '');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 async function applyCurrentOpnameAdjustment() {

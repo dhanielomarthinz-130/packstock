@@ -275,56 +275,57 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
     $rows = [];
 
     $query = "
-        SELECT 
-            'TASK_PICKING' as outbound_type,
-            t.task_no as outbound_no,
-            m.code as material_code,
-            m.name as material_name,
-            m.unit as material_unit,
-            m.rack_location,
-            IF(t.status = 'COMPLETED', t.actual_qty, t.target_qty) as qty,
-            t.destination,
-            u_to.name as operator_name,
-            u_to.username as operator_username,
-            u_by.username as admin_username,
-            u_by.name as admin_name,
-            'Pengambilan Line (Operator Task)' as reason,
-            COALESCE(t.completion_notes, t.notes) as notes,
-            t.status,
-            COALESCE(t.started_at, t.created_at) as started_at,
-            COALESCE(t.completed_at, t.created_at) as completed_at,
-            COALESCE(t.duration_seconds, TIMESTAMPDIFF(SECOND, COALESCE(t.started_at, t.created_at), COALESCE(t.completed_at, CURRENT_TIMESTAMP))) as duration_seconds,
-            t.created_at
-        FROM tasks t
-        JOIN materials m ON t.material_id = m.id
-        JOIN users u_to ON t.assigned_to = u_to.id
-        LEFT JOIN users u_by ON t.assigned_by = u_by.id
+        SELECT * FROM (
+            SELECT 
+                'TASK_PICKING' as outbound_type,
+                t.task_no as outbound_no,
+                m.code as material_code,
+                m.name as material_name,
+                m.unit as material_unit,
+                m.rack_location,
+                (CASE WHEN t.status = 'COMPLETED' THEN t.actual_qty ELSE t.target_qty END) as qty,
+                t.destination,
+                u_to.name as operator_name,
+                u_to.username as operator_username,
+                u_by.username as admin_username,
+                u_by.name as admin_name,
+                'Pengambilan Line (Operator Task)' as reason,
+                COALESCE(t.completion_notes, t.notes) as notes,
+                t.status,
+                COALESCE(t.started_at, t.created_at) as started_at,
+                COALESCE(t.completed_at, t.created_at) as completed_at,
+                COALESCE(t.duration_seconds, 0) as duration_seconds,
+                t.created_at
+            FROM tasks t
+            JOIN materials m ON t.material_id = m.id
+            JOIN users u_to ON t.assigned_to = u_to.id
+            LEFT JOIN users u_by ON t.assigned_by = u_by.id
 
-        UNION ALL
+            UNION ALL
 
-        SELECT 
-            'MANUAL_OUTBOUND' as outbound_type,
-            o.outbound_no,
-            m.code as material_code,
-            m.name as material_name,
-            m.unit as material_unit,
-            m.rack_location,
-            o.qty,
-            o.destination,
-            o.issued_by as operator_name,
-            'admin' as operator_username,
-            o.issued_by as admin_username,
-            o.issued_by as admin_name,
-            o.reason,
-            o.notes,
-            'COMPLETED' as status,
-            COALESCE(o.started_at, o.created_at) as started_at,
-            COALESCE(o.completed_at, o.created_at) as completed_at,
-            COALESCE(o.duration_seconds, TIMESTAMPDIFF(SECOND, COALESCE(o.started_at, o.created_at), COALESCE(o.completed_at, o.created_at))) as duration_seconds,
-            o.created_at
-        FROM outbound_transactions o
-        JOIN materials m ON o.material_id = m.id
-
+            SELECT 
+                'MANUAL_OUTBOUND' as outbound_type,
+                o.outbound_no,
+                m.code as material_code,
+                m.name as material_name,
+                m.unit as material_unit,
+                m.rack_location,
+                o.qty,
+                o.destination,
+                o.issued_by as operator_name,
+                'admin' as operator_username,
+                o.issued_by as admin_username,
+                o.issued_by as admin_name,
+                o.reason,
+                o.notes,
+                'COMPLETED' as status,
+                COALESCE(o.started_at, o.created_at) as started_at,
+                COALESCE(o.completed_at, o.created_at) as completed_at,
+                COALESCE(o.duration_seconds, 0) as duration_seconds,
+                o.created_at
+            FROM outbound_transactions o
+            JOIN materials m ON o.material_id = m.id
+        ) combined_outbound
         ORDER BY created_at DESC
     ";
 
