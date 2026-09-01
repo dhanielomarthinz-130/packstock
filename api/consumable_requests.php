@@ -435,10 +435,22 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $prefix = 'REQ-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM consumable_requests WHERE request_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
-        $requestNo = $prefix . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        $stmtLastReq = $pdo->prepare("SELECT request_no FROM consumable_requests WHERE request_no LIKE ? ORDER BY LENGTH(request_no) DESC, request_no DESC LIMIT 1");
+        $stmtLastReq->execute([$prefix . '%']);
+        $lastReqNo = $stmtLastReq->fetchColumn();
+        $nextNum = 1;
+        if ($lastReqNo) {
+            $parts = explode('-', $lastReqNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+
+        $stmtCheckReq = $pdo->prepare("SELECT 1 FROM consumable_requests WHERE request_no = ? LIMIT 1");
+        do {
+            $requestNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+            $stmtCheckReq->execute([$requestNo]);
+        } while ($stmtCheckReq->fetchColumn());
+
         $now = date('Y-m-d H:i:s');
 
         $stmtReq = $pdo->prepare("
@@ -584,10 +596,22 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create Picking Tasks for each item
             $createdTaskNos = [];
             $prefixTask = 'TSK-' . date('Ym') . '-';
-            $stmtTaskCount = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE task_no LIKE ?");
-            $stmtTaskCount->execute([$prefixTask . '%']);
-            $nextTaskNum = (int)$stmtTaskCount->fetchColumn() + 1;
+            
+            // Get highest existing task number to prevent duplicate entry
+            $stmtLastTask = $pdo->prepare("SELECT task_no FROM tasks WHERE task_no LIKE ? ORDER BY LENGTH(task_no) DESC, task_no DESC LIMIT 1");
+            $stmtLastTask->execute([$prefixTask . '%']);
+            $lastTaskNo = $stmtLastTask->fetchColumn();
+            
+            $nextTaskNum = 1;
+            if ($lastTaskNo) {
+                $parts = explode('-', $lastTaskNo);
+                $lastSuffix = end($parts);
+                if (is_numeric($lastSuffix)) {
+                    $nextTaskNum = (int)$lastSuffix + 1;
+                }
+            }
 
+            $stmtCheckTask = $pdo->prepare("SELECT 1 FROM tasks WHERE task_no = ? LIMIT 1");
             $stmtInsertTask = $pdo->prepare("
                 INSERT INTO tasks (task_no, material_id, target_qty, actual_qty, priority, destination, assigned_to, assigned_by, status, notes, created_at)
                 VALUES (?, ?, ?, 0, ?, ?, ?, ?, 'PENDING', ?, ?)
@@ -596,7 +620,11 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $firstTaskId = null;
 
             foreach ($items as $it) {
-                $taskNo = $prefixTask . str_pad($nextTaskNum++, 4, '0', STR_PAD_LEFT);
+                do {
+                    $taskNo = $prefixTask . str_pad($nextTaskNum++, 4, '0', STR_PAD_LEFT);
+                    $stmtCheckTask->execute([$taskNo]);
+                } while ($stmtCheckTask->fetchColumn());
+
                 $taskNotes = "ACC Pengajuan Consumable #{$req['request_no']} oleh {$adminName} (Pemohon: {$req['requester_name']})";
                 if (!empty($adminNotes)) $taskNotes .= " - Catatan: {$adminNotes}";
                 if (!empty($it['notes'])) $taskNotes .= " - Item note: {$it['notes']}";
@@ -640,10 +668,20 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             // DIRECT_OUTBOUND: Potong Stok Langsung & Catat Outbound
             $prefixOut = 'OUT-' . date('Ym') . '-';
-            $stmtOutCount = $pdo->prepare("SELECT COUNT(*) FROM outbound_transactions WHERE outbound_no LIKE ?");
-            $stmtOutCount->execute([$prefixOut . '%']);
-            $nextOutNum = (int)$stmtOutCount->fetchColumn() + 1;
+            $stmtLastOut = $pdo->prepare("SELECT outbound_no FROM outbound_transactions WHERE outbound_no LIKE ? ORDER BY LENGTH(outbound_no) DESC, outbound_no DESC LIMIT 1");
+            $stmtLastOut->execute([$prefixOut . '%']);
+            $lastOutNo = $stmtLastOut->fetchColumn();
+            
+            $nextOutNum = 1;
+            if ($lastOutNo) {
+                $parts = explode('-', $lastOutNo);
+                $lastSuffix = end($parts);
+                if (is_numeric($lastSuffix)) {
+                    $nextOutNum = (int)$lastSuffix + 1;
+                }
+            }
 
+            $stmtCheckOut = $pdo->prepare("SELECT 1 FROM outbound_transactions WHERE outbound_no = ? LIMIT 1");
             $stmtInsertOut = $pdo->prepare("
                 INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 60)
@@ -660,7 +698,11 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $outNos = [];
 
             foreach ($items as $it) {
-                $outboundNo = $prefixOut . str_pad($nextOutNum++, 4, '0', STR_PAD_LEFT);
+                do {
+                    $outboundNo = $prefixOut . str_pad($nextOutNum++, 4, '0', STR_PAD_LEFT);
+                    $stmtCheckOut->execute([$outboundNo]);
+                } while ($stmtCheckOut->fetchColumn());
+
                 $matId = (int)$it['material_id'];
                 $qty   = max(0, (float)$it['qty']);
 

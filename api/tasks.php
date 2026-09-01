@@ -158,10 +158,20 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $prefix = 'TSK-' . date('Ym') . '-';
-    $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE task_no LIKE ?");
-    $stmtCount->execute([$prefix . '%']);
-    $nextNum = (int)$stmtCount->fetchColumn() + 1;
-    $taskNo = $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
+    $stmtLast = $pdo->prepare("SELECT task_no FROM tasks WHERE task_no LIKE ? ORDER BY LENGTH(task_no) DESC, task_no DESC LIMIT 1");
+    $stmtLast->execute([$prefix . '%']);
+    $lastTaskNo = $stmtLast->fetchColumn();
+    $nextNum = 1;
+    if ($lastTaskNo) {
+        $parts = explode('-', $lastTaskNo);
+        $lastSuffix = end($parts);
+        if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+    }
+    $stmtCheck = $pdo->prepare("SELECT 1 FROM tasks WHERE task_no = ? LIMIT 1");
+    do {
+        $taskNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+        $stmtCheck->execute([$taskNo]);
+    } while ($stmtCheck->fetchColumn());
     $now = date('Y-m-d H:i:s');
 
     try {
@@ -190,63 +200,67 @@ if ($action === 'get') {
 
     $stmt = $pdo->prepare("
         SELECT t.*, 
-               m.code as material_code, m.name as material_name, m.current_stock as material_stock, m.rack_location,
-               u.name as operator_name
+               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock,
+               u_to.name as operator_name, u_to.username as operator_username, u_to.shift as operator_shift,
+               u_by.name as creator_name
         FROM tasks t
         JOIN materials m ON t.material_id = m.id
-        JOIN users u ON t.assigned_to = u.id
+        JOIN users u_to ON t.assigned_to = u_to.id
+        JOIN users u_by ON t.assigned_by = u_by.id
         WHERE t.id = ?
     ");
     $stmt->execute([$taskId]);
     $task = $stmt->fetch();
 
-    if (!$task) {
+    if ($task) {
+        echo json_encode(['success' => true, 'data' => $task]);
+    } else {
         http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Task tidak ditemukan']);
-        exit;
     }
-
-    echo json_encode(['success' => true, 'data' => $task]);
     exit;
 }
 
-// 3.2 UPDATE / EDIT TASK (Admin only - Reassign User / Change Product)
+// 3.2 UPDATE TASK (Admin only - Target Qty & Info)
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    
+    $taskId      = (int)($input['task_id'] ?? 0);
+    $materialId  = (int)($input['material_id'] ?? 0);
+    $targetQty   = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
+    $assignedTo  = (int)($input['assigned_to'] ?? 0);
+    $destination = trim($input['destination'] ?? 'Line Packing 1');
+    $priority    = strtoupper(trim($input['priority'] ?? 'NORMAL'));
+    if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) $priority = 'NORMAL';
+    $notes       = trim($input['notes'] ?? '');
 
-    $taskId    = (int)($input['task_id'] ?? 0);
-    $targetQty = max(0, parseNumberDecimal($input['target_qty'] ?? 0));
-
-    if ($taskId <= 0 || $targetQty <= 0) {
+    if ($taskId <= 0 || $materialId <= 0 || $targetQty <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Target Qty pengeluaran wajib diisi lebih dari 0!']);
+        echo json_encode(['success' => false, 'message' => 'Data task tidak lengkap (Target Qty harus > 0).']);
         exit;
     }
-
-    $stmtCheck = $pdo->prepare("SELECT * FROM tasks WHERE id = ?");
-    $stmtCheck->execute([$taskId]);
-    $existingTask = $stmtCheck->fetch();
-
-    if (!$existingTask) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Task tidak ditemukan!']);
-        exit;
-    }
-
-    if ($existingTask['status'] === 'COMPLETED') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Task yang sudah selesai (Completed) tidak dapat diedit lagi!']);
-        exit;
-    }
-
-    $materialId  = !empty($input['material_id']) ? (int)$input['material_id'] : (int)$existingTask['material_id'];
-    $assignedTo  = !empty($input['assigned_to']) ? (int)$input['assigned_to'] : (int)$existingTask['assigned_to'];
-    $destination = isset($input['destination']) && trim($input['destination']) !== '' ? trim($input['destination']) : $existingTask['destination'];
-    $priority    = isset($input['priority']) && trim($input['priority']) !== '' ? strtoupper(trim($input['priority'])) : $existingTask['priority'];
-    $notes       = isset($input['notes']) ? trim($input['notes']) : $existingTask['notes'];
 
     try {
+        $stmtMat = $pdo->prepare("SELECT name, current_stock, unit FROM materials WHERE id = ?");
+        $stmtMat->execute([$materialId]);
+        $mat = $stmtMat->fetch();
+
+        if (!$mat) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Material tidak ditemukan']);
+            exit;
+        }
+
+        if ($targetQty > (float)$mat['current_stock']) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false, 
+                'message' => "Target Qty ({$targetQty}) tidak bisa lebih besar dari Sisa Stok (" . number_format($mat['current_stock'], 2, ',', '.') . " {$mat['unit']}) untuk material {$mat['name']}!"
+            ]);
+            exit;
+        }
+
         $stmtUpdate = $pdo->prepare("
             UPDATE tasks 
             SET material_id = ?, 
@@ -283,9 +297,16 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $prefix = 'TSK-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE task_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
+        $stmtLast = $pdo->prepare("SELECT task_no FROM tasks WHERE task_no LIKE ? ORDER BY LENGTH(task_no) DESC, task_no DESC LIMIT 1");
+        $stmtLast->execute([$prefix . '%']);
+        $lastTaskNo = $stmtLast->fetchColumn();
+        $nextNum = 1;
+        if ($lastTaskNo) {
+            $parts = explode('-', $lastTaskNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+        $stmtCheck = $pdo->prepare("SELECT 1 FROM tasks WHERE task_no = ? LIMIT 1");
 
         $now = date('Y-m-d H:i:s');
         $stmtInsert = $pdo->prepare("
@@ -304,7 +325,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $targetQty   = max(0, parseNumberDecimal($t['target_qty'] ?? 0));
             $priority    = strtoupper(trim($t['priority'] ?? 'NORMAL'));
             if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) $priority = 'NORMAL';
-            $destination = trim($t['destination'] ?? 'Line Packing');
+            $destination = trim($t['destination'] ?? 'Line Packing 1');
             $assignedTo  = (int)($t['assigned_to'] ?? 0);
             $notes       = trim($t['notes'] ?? '');
 
@@ -329,8 +350,10 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $taskNo = $prefix . str_pad($nextNum, 3, '0', STR_PAD_LEFT);
-            $nextNum++;
+            do {
+                $taskNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                $stmtCheck->execute([$taskNo]);
+            } while ($stmtCheck->fetchColumn());
 
             $stmtInsert->execute([$taskNo, $materialId, $targetQty, $priority, $destination, $assignedTo, $authId, $notes, $now]);
             $createdCount++;

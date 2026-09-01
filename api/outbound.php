@@ -235,10 +235,21 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Generate Outbound No: OUT-YYYYMM-XXXX
         $prefix = 'OUT-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM outbound_transactions WHERE outbound_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
-        $outboundNo = $prefix . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        $stmtLastOut = $pdo->prepare("SELECT outbound_no FROM outbound_transactions WHERE outbound_no LIKE ? ORDER BY LENGTH(outbound_no) DESC, outbound_no DESC LIMIT 1");
+        $stmtLastOut->execute([$prefix . '%']);
+        $lastOutNo = $stmtLastOut->fetchColumn();
+        $nextNum = 1;
+        if ($lastOutNo) {
+            $parts = explode('-', $lastOutNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+
+        $stmtCheckOut = $pdo->prepare("SELECT 1 FROM outbound_transactions WHERE outbound_no = ? LIMIT 1");
+        do {
+            $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+            $stmtCheckOut->execute([$outboundNo]);
+        } while ($stmtCheckOut->fetchColumn());
 
         $now = date('Y-m-d H:i:s');
         $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 150);
@@ -311,9 +322,17 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $prefix = 'OUT-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM outbound_transactions WHERE outbound_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
+        $stmtLastOut = $pdo->prepare("SELECT outbound_no FROM outbound_transactions WHERE outbound_no LIKE ? ORDER BY LENGTH(outbound_no) DESC, outbound_no DESC LIMIT 1");
+        $stmtLastOut->execute([$prefix . '%']);
+        $lastOutNo = $stmtLastOut->fetchColumn();
+        $nextNum = 1;
+        if ($lastOutNo) {
+            $parts = explode('-', $lastOutNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+
+        $stmtCheckOut = $pdo->prepare("SELECT 1 FROM outbound_transactions WHERE outbound_no = ? LIMIT 1");
 
         $now = date('Y-m-d H:i:s');
         $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 150);
@@ -358,7 +377,11 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $stockAfter = $stockBefore - $qty;
-            $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+            do {
+                $outboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                $stmtCheckOut->execute([$outboundNo]);
+            } while ($stmtCheckOut->fetchColumn());
+            
             $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
             $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration, $now]);

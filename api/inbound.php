@@ -166,10 +166,21 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stockAfter  = $stockBefore + $qty;
 
         $prefix = 'INB-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM inbound_transactions WHERE inbound_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
-        $inboundNo = $prefix . str_pad($nextNum, 4, '0', STR_PAD_LEFT);
+        $stmtLastIn = $pdo->prepare("SELECT inbound_no FROM inbound_transactions WHERE inbound_no LIKE ? ORDER BY LENGTH(inbound_no) DESC, inbound_no DESC LIMIT 1");
+        $stmtLastIn->execute([$prefix . '%']);
+        $lastInNo = $stmtLastIn->fetchColumn();
+        $nextNum = 1;
+        if ($lastInNo) {
+            $parts = explode('-', $lastInNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+
+        $stmtCheckIn = $pdo->prepare("SELECT 1 FROM inbound_transactions WHERE inbound_no = ? LIMIT 1");
+        do {
+            $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+            $stmtCheckIn->execute([$inboundNo]);
+        } while ($stmtCheckIn->fetchColumn());
 
         $now = date('Y-m-d H:i:s');
         $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 120);
@@ -183,59 +194,56 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $notes, $photoPathValue, Auth::id(), $startTime, $now, $durationSeconds, $now]);
 
         // Update Material Stock in Master Product
-        $stmtUp = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
-        $stmtUp->execute([$stockAfter, $materialId]);
+        $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+        $stmtUpdateMat->execute([$stockAfter, $materialId]);
 
-        // Insert Stock Mutation
+        // Record Stock Mutation
         $stmtMut = $pdo->prepare("
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
             VALUES (?, 'INBOUND', ?, ?, ?, ?, ?, ?, ?)
         ");
-        $mutNotes = "Barang Masuk (Diterima oleh " . (Auth::name() ?? 'Admin') . ")";
-        if (!empty($notes)) $mutNotes .= " - " . $notes;
+        $mutNotes = "Penerimaan Barang Masuk (PO: " . ($poNumber ?: '-') . " dari " . ($supplier ?: '-') . ")";
+        if (!empty($notes)) $mutNotes .= " - {$notes}";
         $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, Auth::id(), $now]);
 
         $pdo->commit();
 
         echo json_encode([
             'success' => true,
-            'message' => "Penerimaan {$mat['name']} sebanyak {$qty} berhasil disimpan! Stok master bertambah menjadi {$stockAfter}.",
+            'message' => "Barang masuk {$mat['name']} sebanyak {$qty} {$mat['unit']} berhasil disimpan!",
             'inbound_no' => $inboundNo,
-            'new_stock' => $stockAfter,
-            'duration_seconds' => $durationSeconds,
-            'takt_time_seconds' => round($durationSeconds / max(1, $qty), 2)
+            'new_stock' => $stockAfter
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal input barang masuk: ' . $e->getMessage()]);
+        echo json_encode(['success' => false, 'message' => 'Gagal memproses barang masuk: ' . $e->getMessage()]);
     }
     exit;
 }
 
-// 3. BATCH CREATE INBOUND (MULTI-PRODUCT DRAFT SUBMISSION FROM OPERATOR / ADMIN)
+// 4. BATCH MULTIPLE INBOUND TRANSACTIONS (Multi-Item Submissions)
 if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $rawInput = file_get_contents('php://input');
-    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    Auth::requireAdmin();
+
+    $input = json_decode(file_get_contents('php://input'), true);
     if (empty($input) && !empty($_POST)) {
         $input = $_POST;
     }
 
-    $poNumber    = trim($input['po_number'] ?? '-');
-    if (empty($poNumber)) $poNumber = '-';
-    $supplier    = trim($input['supplier'] ?? '-');
-    if (empty($supplier)) $supplier = '-';
-    $globalNotes = trim($input['notes'] ?? '');
-    $startedAt   = trim($input['started_at'] ?? '');
     $items       = $input['items'] ?? [];
-
     if (is_string($items)) {
         $items = json_decode($items, true) ?? [];
     }
 
+    $globalPoNumber = trim($input['po_number'] ?? '');
+    $globalSupplier = trim($input['supplier'] ?? '');
+    $globalNotes    = trim($input['notes'] ?? '');
+    $startedAt      = trim($input['started_at'] ?? '');
+
     if (empty($items) || !is_array($items)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Draft penerimaan barang masih kosong. Silakan tambahkan minimal 1 packaging material.']);
+        echo json_encode(['success' => false, 'message' => 'Daftar item barang masuk tidak boleh kosong!']);
         exit;
     }
 
@@ -245,9 +253,17 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         $prefix = 'INB-' . date('Ym') . '-';
-        $stmtCount = $pdo->prepare("SELECT COUNT(*) FROM inbound_transactions WHERE inbound_no LIKE ?");
-        $stmtCount->execute([$prefix . '%']);
-        $nextNum = (int)$stmtCount->fetchColumn() + 1;
+        $stmtLastIn = $pdo->prepare("SELECT inbound_no FROM inbound_transactions WHERE inbound_no LIKE ? ORDER BY LENGTH(inbound_no) DESC, inbound_no DESC LIMIT 1");
+        $stmtLastIn->execute([$prefix . '%']);
+        $lastInNo = $stmtLastIn->fetchColumn();
+        $nextNum = 1;
+        if ($lastInNo) {
+            $parts = explode('-', $lastInNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+
+        $stmtCheckIn = $pdo->prepare("SELECT 1 FROM inbound_transactions WHERE inbound_no = ? LIMIT 1");
 
         $now = date('Y-m-d H:i:s');
         $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 300);
@@ -274,9 +290,11 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $authName = Auth::name() ?? 'Operator';
 
         foreach ($items as $item) {
-            $materialId = (int)($item['material_id'] ?? 0);
-            $qty        = max(0, parseNumberDecimal($item['qty'] ?? 0));
-            $itemNotes  = trim($item['notes'] ?? '');
+            $materialId  = (int)($item['material_id'] ?? 0);
+            $qty         = max(0, parseNumberDecimal($item['qty'] ?? 0));
+            $poNumber    = trim($item['po_number'] ?? $globalPoNumber);
+            $supplier    = trim($item['supplier'] ?? $globalSupplier);
+            $itemNotes   = trim($item['notes'] ?? '');
 
             if ($materialId <= 0 || $qty <= 0) continue;
 
@@ -288,24 +306,17 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $stockBefore = (float)$mat['current_stock'];
             $stockAfter  = $stockBefore + $qty;
 
-            $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
-            $cleanItemNotes = ($itemNotes !== '-' && !empty($itemNotes)) ? $itemNotes : '';
-            $cleanGlobalNotes = ($globalNotes !== '-' && !empty($globalNotes)) ? $globalNotes : '';
-            
-            if (!empty($cleanGlobalNotes) && !empty($cleanItemNotes)) {
-                $combinedNotes = "{$cleanGlobalNotes} | {$cleanItemNotes}";
-            } elseif (!empty($cleanItemNotes)) {
-                $combinedNotes = $cleanItemNotes;
-            } elseif (!empty($cleanGlobalNotes)) {
-                $combinedNotes = $cleanGlobalNotes;
-            } else {
-                $combinedNotes = '-';
-            }
+            do {
+                $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                $stmtCheckIn->execute([$inboundNo]);
+            } while ($stmtCheckIn->fetchColumn());
+
+            $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
             $stmtIn->execute([$inboundNo, $poNumber, $supplier, $materialId, $qty, $combinedNotes, $photoPathValue, $authId, $startTime, $now, $itemDuration, $now]);
             $stmtUpMat->execute([$stockAfter, $materialId]);
 
-            $mutNotes = "Barang Masuk (Diterima oleh {$authName})";
+            $mutNotes = "Penerimaan Barang Masuk (PO: " . ($poNumber ?: '-') . " dari " . ($supplier ?: '-') . ")";
             if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";
             $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $authId, $now]);
 
