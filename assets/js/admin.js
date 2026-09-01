@@ -8693,55 +8693,59 @@ function renderAdminConsumableTable(requests) {
   tbody.innerHTML = requests.map((r, idx) => {
     let statusBadge = '';
     if (r.status === 'PENDING') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC</span>';
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-black bg-amber-100 text-amber-900 border border-amber-300 inline-flex items-center gap-1.5 shadow-2xs"><span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>Menunggu ACC</span>';
     } else if (r.status === 'APPROVED') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Disetujui (ACC)</span>';
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 inline-flex items-center gap-1.5 shadow-2xs"><span class="material-symbols-outlined text-[13px] text-emerald-700">check_circle</span>Disetujui (ACC)</span>';
     } else if (r.status === 'REJECTED') {
-      statusBadge = '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-rose-600">cancel</span>Ditolak</span>';
+      statusBadge = '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1.5 shadow-2xs"><span class="material-symbols-outlined text-[13px] text-rose-600">cancel</span>Ditolak</span>';
     } else {
-      statusBadge = `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(r.status)}</span>`;
+      statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(r.status)}</span>`;
     }
 
     const isUrgent = r.priority === 'URGENT';
+    const simpleShift = (r.requester_shift || '').split('(')[0].trim() || (r.requester_shift || '-');
 
     return `
-      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
+      <tr class="hover:bg-amber-50/30 border-b border-slate-100 text-xs transition-colors">
         <!-- 1. Tanggal -->
-        <td class="p-3 whitespace-nowrap">
-          <span class="font-extrabold text-slate-800">${App.formatDate(r.created_at)}</span>
+        <td class="p-3.5 align-middle whitespace-nowrap">
+          <div class="font-extrabold text-slate-800">${App.formatDate(r.created_at)}</div>
         </td>
 
         <!-- 2. No. Request -->
-        <td class="p-3 font-mono font-bold text-amber-900 whitespace-nowrap">
+        <td class="p-3.5 align-middle whitespace-nowrap">
           <div class="flex items-center gap-1.5">
-            <span class="bg-amber-50 px-2 py-0.5 rounded border border-amber-200">${escapeHtml(r.request_no)}</span>
-            ${isUrgent ? '<span class="px-1.5 py-0.2 rounded bg-rose-100 text-rose-800 font-extrabold text-[9px] border border-rose-300">URGENT</span>' : ''}
+            <span class="bg-amber-50 text-amber-950 font-black px-2.5 py-1 rounded-lg border border-amber-300 font-mono text-xs shadow-2xs">${escapeHtml(r.request_no)}</span>
+            ${isUrgent ? '<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-black text-[9px] border border-rose-300">URGENT</span>' : ''}
           </div>
         </td>
 
         <!-- 3. Pemohon (PIC) -->
-        <td class="p-3 whitespace-nowrap">
-          <div class="font-bold text-slate-900">${escapeHtml(r.requester_name || 'Operator')}</div>
-          <div class="text-[10px] text-slate-400 font-mono">@${escapeHtml(r.requester_username || 'user')} &bull; ${escapeHtml(r.requester_shift || '-')}</div>
+        <td class="p-3.5 align-middle whitespace-nowrap">
+          <div class="font-extrabold text-slate-900 text-xs">${escapeHtml(r.requester_name || 'Operator')}</div>
+          <div class="text-[10.5px] text-slate-500 font-semibold">${escapeHtml(simpleShift)}</div>
         </td>
 
         <!-- 4. Tujuan Line -->
-        <td class="p-3 whitespace-nowrap">
-          <span class="bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-extrabold text-slate-800 text-xs">${escapeHtml(r.destination)}</span>
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <span class="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-black text-slate-800 text-xs shadow-2xs">${escapeHtml(r.destination)}</span>
         </td>
 
         <!-- 5. Items Requested -->
-        <td class="p-3 max-w-sm">
-          <div class="space-y-1">
+        <td class="p-3.5 align-middle min-w-[240px] max-w-sm">
+          <div class="bg-slate-50/90 rounded-xl border border-slate-200 divide-y divide-slate-200/70 overflow-hidden shadow-2xs">
             ${(r.items || []).map(it => `
-              <div class="flex items-center justify-between gap-2 p-1.5 bg-slate-50 rounded-lg border border-slate-200/70 text-[11px]">
+              <div class="py-1.5 px-2.5 flex items-center justify-between gap-3 hover:bg-white transition-colors">
                 <div class="min-w-0 flex-1 truncate">
-                  <span class="font-bold text-slate-900">${escapeHtml(it.material_name)}</span>
-                  <span class="text-slate-400 font-mono text-[9px]">(${escapeHtml(it.material_code)})</span>
+                  <div class="font-bold text-slate-900 text-[11.5px] truncate" title="${escapeHtml(it.material_name)}">${escapeHtml(it.material_name)}</div>
+                  <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1.5 pt-0.5">
+                    <span>${escapeHtml(it.material_code)}</span>
+                    ${it.rack_location ? `<span class="text-slate-400">&bull; Rak: <b class="text-slate-700 font-sans">${escapeHtml(it.rack_location)}</b></span>` : ''}
+                    <span class="text-slate-400">&bull; Sisa: <b class="${it.current_stock <= 0 ? 'text-rose-600' : 'text-slate-700'} font-mono font-bold">${App.formatNumber(it.current_stock)}</b></span>
+                  </div>
                 </div>
-                <div class="text-right whitespace-nowrap">
-                  <span class="font-mono font-black text-amber-900">${App.formatNumber(it.qty)} ${escapeHtml(it.material_unit || 'Pcs')}</span>
-                  <span class="text-[9px] text-slate-400 block">Stok: ${App.formatNumber(it.current_stock)}</span>
+                <div class="text-right shrink-0">
+                  <span class="font-mono font-black text-amber-950 text-xs bg-amber-100/90 px-2 py-0.5 rounded border border-amber-300/80 shadow-2xs">${App.formatNumber(it.qty)} <span class="text-[10px] font-bold text-amber-800">${escapeHtml(it.material_unit || 'Pcs')}</span></span>
                 </div>
               </div>
             `).join('')}
@@ -8749,26 +8753,27 @@ function renderAdminConsumableTable(requests) {
         </td>
 
         <!-- 6. Total Qty -->
-        <td class="p-3 text-center whitespace-nowrap">
-          <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-black font-mono text-xs">
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
+          <span class="px-3 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-black font-mono text-xs shadow-2xs">
             ${App.formatNumber(r.total_qty || 0)} Pcs
           </span>
         </td>
 
         <!-- 7. Status ACC -->
-        <td class="p-3 text-center whitespace-nowrap">
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
           ${statusBadge}
         </td>
 
         <!-- 8. Catatan / Foto / Respon Admin -->
-        <td class="p-3 max-w-xs text-slate-600">
+        <td class="p-3.5 align-middle max-w-xs text-slate-600">
           ${r.admin_notes ? `
-            <div class="p-1.5 bg-slate-50 rounded border border-slate-200 text-[11px] mb-1">
+            <div class="p-1.5 bg-slate-50 rounded-lg border border-slate-200 text-[11px] mb-1">
               <span class="font-bold text-slate-800 block">Admin (${App.escapeHtml(r.approver_name || 'Admin')}):</span>
-              <span class="italic">${App.escapeHtml(r.admin_notes)}</span>
+              <span class="italic text-slate-700">${App.escapeHtml(r.admin_notes)}</span>
             </div>
           ` : ''}
-          ${r.notes ? `<p class="text-[10px] text-slate-500 truncate mb-1" title="${App.escapeHtml(r.notes)}">Req: "${App.escapeHtml(r.notes)}"</p>` : ''}
+          ${r.notes ? `<p class="text-[10.5px] text-slate-600 truncate mb-1" title="${App.escapeHtml(r.notes)}"><strong>Catatan:</strong> &ldquo;${App.escapeHtml(r.notes)}&rdquo;</p>` : ''}
+          ${(!r.admin_notes && !r.notes && (!r.photos_list || r.photos_list.length === 0)) ? '<span class="text-slate-400 font-mono text-[11px]">-</span>' : ''}
           ${(r.photos_list && r.photos_list.length > 0) ? `
             <div class="flex items-center gap-1.5 flex-wrap mt-1">
               ${r.photos_list.map((ph, pIdx) => `
@@ -8782,19 +8787,19 @@ function renderAdminConsumableTable(requests) {
         </td>
 
         <!-- 9. Aksi -->
-        <td class="p-3 text-center whitespace-nowrap">
+        <td class="p-3.5 align-middle text-center whitespace-nowrap">
           <div class="flex items-center justify-center gap-1.5">
             ${r.status === 'PENDING' ? `
-              <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-lg shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
+              <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
                 <span class="material-symbols-outlined text-[15px]">check</span>
                 <span>ACC</span>
               </button>
-              <button onclick="openAdminRejectConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 font-bold rounded-lg transition-all flex items-center gap-1 text-xs cursor-pointer" title="Tolak Permintaan">
+              <button onclick="openAdminRejectConsumableModal(${r.id})" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all flex items-center gap-1 text-xs cursor-pointer" title="Tolak Permintaan">
                 <span class="material-symbols-outlined text-[15px]">close</span>
                 <span>Tolak</span>
               </button>
             ` : ''}
-            <button onclick="printSingleConsumableRequest(${r.id})" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg font-extrabold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="Cetak Surat Permintaan Consumable #${r.request_no}">
+            <button onclick="printSingleConsumableRequest(${r.id})" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="Cetak Surat Permintaan Consumable #${r.request_no}">
               <span class="material-symbols-outlined text-[15px] text-amber-700">print</span>
               <span>Cetak</span>
             </button>
