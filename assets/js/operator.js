@@ -743,21 +743,13 @@ function generateShareText(group) {
 
   let notes = group.completion_notes ? `Catatan: ${group.completion_notes}\n` : '';
 
-  // Foto Bukti & Surat Jalan direct links
-  let photoLinks = '';
-  if (group.photos && group.photos.length > 0) {
-    const urls = group.photos.map(p => getPublicPhotoUrl(p)).join('\n');
-    photoLinks = `\nFoto Surat Jalan & Bukti:\n${urls}\n`;
-  }
-
   const text = `*SERAH TERIMA PACKAGING*\n` +
                `No: ${docNo}${reqBadge}\n` +
                `Tujuan: ${group.destination}\n` +
                (receiver ? `${receiver}\n` : '') +
                (pic ? `${pic}\n` : '') +
                `\n*Barang Keluar:*\n${itemsList}` +
-               (notes ? `\n${notes}` : '') +
-               photoLinks;
+               (notes ? `\n${notes}` : '');
 
   return text.trim();
 }
