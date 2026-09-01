@@ -676,12 +676,12 @@ function renderOperatorTasksHistory() {
     const isShared = !!shareInfo;
 
     const shareStatusBadge = isShared ? `
-      <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs" title="Laporan: Sudah dibagikan pada ${shareInfo.shared_display || ''}">
+      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs whitespace-nowrap shrink-0" title="Laporan: Sudah dibagikan (${shareInfo.shared_display || ''})">
         <span class="material-symbols-outlined text-[13px] text-emerald-600">done_all</span>
-        <span>Sudah Di-Share (${shareInfo.shared_time || 'WA'})</span>
+        <span>Sudah Di-Share</span>
       </span>
     ` : `
-      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1 whitespace-nowrap shrink-0">
         <span class="material-symbols-outlined text-[13px] text-amber-600">schedule</span>
         <span>Belum Di-Share</span>
       </span>
@@ -729,13 +729,13 @@ function renderOperatorTasksHistory() {
         <div onclick="toggleHistoryCard('${g.groupKey}')" class="cursor-pointer space-y-2 select-none group">
           <!-- Top Row: Doc ID, Request ID & Status Badges -->
           <div class="flex items-start justify-between gap-2">
-            <div class="space-y-1">
+            <div class="space-y-1 min-w-0 flex-1">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200 whitespace-nowrap shrink-0">
                   ${escapeHtml(docLabel)}
                 </span>
                 ${g.request_no ? `
-                  <span class="font-mono font-black text-[11px] text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 flex items-center gap-1">
+                  <span class="font-mono font-black text-[11px] text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 inline-flex items-center gap-1 whitespace-nowrap shrink-0">
                     <span class="material-symbols-outlined text-[13px]">assignment</span>
                     <span>#${escapeHtml(g.request_no)}</span>
                   </span>
@@ -745,7 +745,7 @@ function renderOperatorTasksHistory() {
 
             <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
               ${shareStatusBadge}
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-0.5">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-0.5 whitespace-nowrap shrink-0">
                 <span class="material-symbols-outlined text-[12px]">check_circle</span>
                 <span>SELESAI</span>
               </span>
