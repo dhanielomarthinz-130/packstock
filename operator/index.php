@@ -1876,6 +1876,8 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
       </div>
     </form>
+  </div>
+</div>
 
 <!-- Modal Share Outbound Handover Summary -->
 <div id="modalShareOutboundSummary" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
