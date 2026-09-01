@@ -719,39 +719,47 @@ function filterOperatorTaskHistory() {
   renderOperatorTasksHistory();
 }
 
-// SHARE TEXT & WHATSAPP BUILDER
+// HELPER PUBLIC PHOTO URL FOR WHATSAPP PREVIEW
+function getPublicPhotoUrl(relativePath) {
+  if (!relativePath) return '';
+  if (relativePath.startsWith('http://') || relativePath.startsWith('https://')) return relativePath;
+  const clean = relativePath.replace(/^\.\.\//, '').replace(/^\//, '');
+  const base = window.location.origin + window.location.pathname.replace(/\/operator\/?.*$/, '').replace(/\/admin\/?.*$/, '');
+  const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+  return `${cleanBase}/${clean}`;
+}
+
+// SHARE TEXT & WHATSAPP BUILDER (CONCISE & CLEAN)
 function generateShareText(group) {
   const docNo = group.task_nos.join(', ');
-  const reqBadge = group.request_no ? `🎯 *ID Request Fulfillment:* #${group.request_no}` : '';
-  const requester = group.requester_name ? `👤 *Pemohon:* ${group.requester_name}` : '';
-  const receiver = group.receiver_name ? `📥 *Penerima di Line:* ${group.receiver_name}` : '';
-  const dateStr = App.formatDate(group.completed_at) + ', ' + App.formatTime(group.completed_at) + ' WIB';
+  const reqBadge = group.request_no ? ` (#${group.request_no})` : '';
+  const receiver = group.receiver_name ? `Penerima: ${group.receiver_name}` : '';
+  const pic = group.operator_name ? `PIC: ${group.operator_name}` : '';
 
   let itemsList = '';
   group.items.forEach((it, idx) => {
-    itemsList += `${idx + 1}. *${it.material_name}* (${it.material_code})\n   Jumlah: *${App.formatNumber(it.actual_qty)} ${it.material_unit}* (Rak: ${it.rack_location || '-'})\n`;
+    itemsList += `${idx + 1}. ${it.material_name} (${App.formatNumber(it.actual_qty)} ${it.material_unit})\n`;
   });
 
-  let notesStr = group.completion_notes ? `📝 *Catatan / No. Surat Jalan:* ${group.completion_notes}\n` : '';
-  let photoNote = (group.photos && group.photos.length > 0) ? `📸 *Lampiran Bukti & Foto Surat Jalan:* ${group.photos.length} Foto Terlampir\n` : '';
+  let notes = group.completion_notes ? `Catatan: ${group.completion_notes}\n` : '';
 
-  const text = `📦 *BUKTI PENGELUARAN PACKAGING & SURAT JALAN*\n` +
-               `━━━━━━━━━━━━━━━━━━━━━\n` +
-               `📄 *No. Dokumen Outbound:* ${docNo}\n` +
-               (reqBadge ? `${reqBadge}\n` : '') +
-               (requester ? `${requester}\n` : '') +
-               `🏢 *Tujuan Line / Brand:* ${group.destination}\n` +
-               `👷 *PIC Operator Penyerah:* ${group.operator_name} (${group.operator_shift})\n` +
+  // Foto Bukti & Surat Jalan direct links
+  let photoLinks = '';
+  if (group.photos && group.photos.length > 0) {
+    const urls = group.photos.map(p => getPublicPhotoUrl(p)).join('\n');
+    photoLinks = `\nFoto Surat Jalan & Bukti:\n${urls}\n`;
+  }
+
+  const text = `*SERAH TERIMA PACKAGING*\n` +
+               `No: ${docNo}${reqBadge}\n` +
+               `Tujuan: ${group.destination}\n` +
                (receiver ? `${receiver}\n` : '') +
-               `🕒 *Waktu Selesai:* ${dateStr}\n` +
-               `━━━━━━━━━━━━━━━━━━━━━\n` +
-               `📋 *Rincian Item Material Keluar:*\n${itemsList}` +
-               `━━━━━━━━━━━━━━━━━━━━━\n` +
-               notesStr +
-               photoNote +
-               `✅ *Status:* Selesai Diserahkan ke Line`;
+               (pic ? `${pic}\n` : '') +
+               `\n*Barang Keluar:*\n${itemsList}` +
+               (notes ? `\n${notes}` : '') +
+               photoLinks;
 
-  return text;
+  return text.trim();
 }
 
 function openShareOutboundModal(groupKey) {
@@ -765,6 +773,24 @@ function openShareOutboundModal(groupKey) {
   document.getElementById('shareModalSubtitle').innerText = `Dokumen: ${docLabel}`;
   document.getElementById('shareTextPreviewBox').innerText = shareText;
 
+  // Render Photo Previews in Modal
+  const photoContainer = document.getElementById('shareModalPhotosContainer');
+  const photosList = document.getElementById('shareModalPhotosList');
+  if (photoContainer && photosList) {
+    if (group.photos && group.photos.length > 0) {
+      photosList.innerHTML = group.photos.map((p, idx) => `
+        <a href="../${escapeHtml(p)}" target="_blank" class="w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block relative group hover:opacity-90">
+          <img src="../${escapeHtml(p)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+          <span class="absolute inset-0 bg-slate-950/40 text-white text-[9px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">Buka</span>
+        </a>
+      `).join('');
+      photoContainer.classList.remove('hidden');
+    } else {
+      photosList.innerHTML = '';
+      photoContainer.classList.add('hidden');
+    }
+  }
+
   const btnLabel = document.getElementById('btnCopyShareTextLabel');
   if (btnLabel) btnLabel.innerText = 'Salin Teks';
 
@@ -776,8 +802,39 @@ async function shareOrCopyDirectly(groupKey) {
   if (!group) return;
 
   const text = generateShareText(group);
-  const title = `Bukti Pengeluaran ${group.request_no ? '#' + group.request_no : group.task_nos[0]}`;
+  const title = `Serah Terima ${group.request_no ? '#' + group.request_no : group.task_nos[0]}`;
 
+  // Try Web Share API Level 2 (Share actual image files directly to WhatsApp with caption)
+  if (navigator.share && group.photos && group.photos.length > 0) {
+    try {
+      const files = [];
+      for (let i = 0; i < Math.min(group.photos.length, 3); i++) {
+        const photoPath = group.photos[i];
+        const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
+        const resp = await fetch(fetchUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const ext = photoPath.split('.').pop() || 'jpg';
+          const file = new File([blob], `surat_jalan_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+          files.push(file);
+        }
+      }
+
+      if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({
+          title: title,
+          text: text,
+          files: files
+        });
+        return;
+      }
+    } catch (e) {
+      console.log('Share with files cancelled / fallback:', e);
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback to text share
   if (navigator.share) {
     try {
       await navigator.share({
@@ -789,10 +846,11 @@ async function shareOrCopyDirectly(groupKey) {
       if (err.name !== 'AbortError') {
         openShareOutboundModal(groupKey);
       }
+      return;
     }
-  } else {
-    openShareOutboundModal(groupKey);
   }
+
+  openShareOutboundModal(groupKey);
 }
 
 async function copyShareTextToClipboard() {
@@ -803,7 +861,7 @@ async function copyShareTextToClipboard() {
     await navigator.clipboard.writeText(text);
     const btnLabel = document.getElementById('btnCopyShareTextLabel');
     if (btnLabel) btnLabel.innerText = 'Tersalin! ✓';
-    App.toast('Rincian teks serah terima berhasil disalin ke clipboard!', 'success', 'Tersalin');
+    App.toast('Teks serah terima & link foto berhasil disalin!', 'success', 'Tersalin');
     setTimeout(() => {
       if (btnLabel) btnLabel.innerText = 'Salin Teks';
     }, 2500);
@@ -812,8 +870,39 @@ async function copyShareTextToClipboard() {
   }
 }
 
-function openWhatsAppShare() {
+async function openWhatsAppShare() {
   if (!currentShareData) return;
+  
+  // If browser can share file directly via Web Share, trigger it first
+  if (navigator.share && currentShareData.photos && currentShareData.photos.length > 0) {
+    try {
+      const files = [];
+      for (let i = 0; i < Math.min(currentShareData.photos.length, 3); i++) {
+        const photoPath = currentShareData.photos[i];
+        const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
+        const resp = await fetch(fetchUrl);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const ext = photoPath.split('.').pop() || 'jpg';
+          const file = new File([blob], `surat_jalan_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
+          files.push(file);
+        }
+      }
+
+      if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
+        await navigator.share({
+          title: `Serah Terima ${currentShareData.request_no || currentShareData.task_nos[0]}`,
+          text: generateShareText(currentShareData),
+          files: files
+        });
+        return;
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+
+  // Fallback to WhatsApp URL
   const text = generateShareText(currentShareData);
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
   window.open(waUrl, '_blank');

@@ -1883,9 +1883,19 @@ require_once __DIR__ . '/../includes/header.php';
       </button>
     </div>
 
-    <!-- Content: Preview Box -->
-    <div class="my-4 flex-1 overflow-y-auto space-y-3">
-      <div class="p-3.5 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 space-y-1 select-all whitespace-pre-wrap leading-relaxed shadow-inner" id="shareTextPreviewBox">
+    <!-- Content: Photos & Preview Box -->
+    <div class="my-3 flex-1 overflow-y-auto space-y-2.5">
+      <!-- Photos Preview -->
+      <div id="shareModalPhotosContainer" class="hidden space-y-1">
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Foto Surat Jalan & Bukti:</p>
+        <div id="shareModalPhotosList" class="flex items-center gap-2 overflow-x-auto pb-1"></div>
+      </div>
+
+      <!-- Caption Box -->
+      <div>
+        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Caption / Teks:</p>
+        <div class="p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 space-y-1 select-all whitespace-pre-wrap leading-relaxed shadow-inner" id="shareTextPreviewBox">
+        </div>
       </div>
     </div>
 
