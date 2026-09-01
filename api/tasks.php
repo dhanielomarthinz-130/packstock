@@ -769,16 +769,64 @@ if ($action === 'set_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// 9. DELETE TASK (Admin only)
+// 9. DELETE TASK (Super Admin only)
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    Auth::requireAdmin();
+    if (!Auth::isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak menghapus penugasan tugas!']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $taskId = (int)($input['task_id'] ?? 0);
+    $taskNo = trim($input['task_no'] ?? '');
 
-    $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
-    $stmt->execute([$taskId]);
+    if ($taskId <= 0 && empty($taskNo)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Task ID atau Nomor Task tidak valid']);
+        exit;
+    }
 
-    echo json_encode(['success' => true, 'message' => 'Tugas berhasil dihapus']);
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare($taskId > 0 ? "SELECT * FROM tasks WHERE id = ?" : "SELECT * FROM tasks WHERE task_no = ?");
+        $stmt->execute([$taskId > 0 ? $taskId : $taskNo]);
+        $task = $stmt->fetch();
+
+        if ($task) {
+            // If the task was completed, restore the stock
+            if ($task['status'] === 'COMPLETED' && (float)$task['actual_qty'] > 0) {
+                $matId = (int)$task['material_id'];
+                $qty = (float)$task['actual_qty'];
+
+                $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+                $stmtMat->execute([$matId]);
+                $currentStock = (float)$stmtMat->fetchColumn();
+                $newStock = $currentStock + $qty;
+
+                $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+                $stmtUpMat->execute([$newStock, $matId]);
+
+                $stmtMut = $pdo->prepare("
+                    INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                    VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $mutNotes = "Hapus Penugasan Selesai #{$task['task_no']} (Stok dikembalikan +{$qty})";
+                $stmtMut->execute([$matId, $qty, $currentStock, $newStock, $task['task_no'], $mutNotes, Auth::id(), date('Y-m-d H:i:s')]);
+            }
+
+            $stmtDel = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+            $stmtDel->execute([$task['id']]);
+        }
+
+        $pdo->commit();
+
+        echo json_encode(['success' => true, 'message' => "Tugas #" . ($task['task_no'] ?? $taskId) . " berhasil dihapus"]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal menghapus tugas: ' . $e->getMessage()]);
+    }
     exit;
 }
 

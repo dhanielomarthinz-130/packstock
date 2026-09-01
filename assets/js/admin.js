@@ -4358,6 +4358,11 @@ function renderOutboundRows(data, tbody) {
                   <span>On Proses</span>
                 </button>
               ` : ''}
+              ${(window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi') ? `
+                <button type="button" onclick="deleteOutboundTransaction(${idx})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer" title="Hapus Dokumen Outbound / Task Ini (Super Admin Only)">
+                  <span class="material-symbols-outlined text-[16px]">delete</span>
+                </button>
+              ` : ''}
             </div>
           </td>
         </tr>
@@ -4634,6 +4639,40 @@ async function reactivateOutboundTask(taskId) {
     loadStats();
   } else {
     App.toast(res.message || 'Gagal mengubah status task', 'error');
+  }
+}
+
+async function deleteOutboundTransaction(idx) {
+  const o = window._currentOutboundList?.[idx];
+  if (!o) return;
+
+  const docNo = o.outbound_no || 'Dokumen';
+  const isTask = o.outbound_type === 'TASK_PICKING';
+
+  if (!confirm(`PERINGATAN (Super Admin):\nApakah Anda yakin ingin menghapus data pengeluaran #${docNo}?\n\nJika pengeluaran/tugas ini telah memotong stok, sisa stok di gudang akan otomatis dikembalikan.`)) {
+    return;
+  }
+
+  let res;
+  if (isTask) {
+    res = await App.fetchJson('../api/tasks.php?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ task_id: o.task_id, task_no: o.outbound_no })
+    });
+  } else {
+    res = await App.fetchJson('../api/outbound.php?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ outbound_no: o.outbound_no })
+    });
+  }
+
+  if (res && res.success) {
+    App.toast(res.message || `Data pengeluaran #${docNo} berhasil dihapus`, 'success');
+    loadOutboundHistory();
+    loadStats();
+    loadMaterials();
+  } else {
+    App.toast(res?.message || 'Gagal menghapus data pengeluaran', 'error');
   }
 }
 

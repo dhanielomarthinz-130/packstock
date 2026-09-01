@@ -397,5 +397,63 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 5. DELETE OUTBOUND TRANSACTION (Super Admin only)
+if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!Auth::isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak menghapus data pengeluaran!']);
+        exit;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $outboundNo = trim($input['outbound_no'] ?? '');
+
+    if (empty($outboundNo)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Nomor dokumen pengeluaran tidak valid']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("SELECT * FROM outbound_transactions WHERE outbound_no = ?");
+        $stmt->execute([$outboundNo]);
+        $out = $stmt->fetch();
+
+        if ($out) {
+            $matId = (int)$out['material_id'];
+            $qty = (float)$out['qty'];
+
+            $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+            $stmtMat->execute([$matId]);
+            $currentStock = (float)$stmtMat->fetchColumn();
+            $newStock = $currentStock + $qty;
+
+            $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
+            $stmtUpMat->execute([$newStock, $matId]);
+
+            $stmtMut = $pdo->prepare("
+                INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $mutNotes = "Hapus Transaksi Outbound #{$outboundNo} (Stok dikembalikan +{$qty})";
+            $stmtMut->execute([$matId, $qty, $currentStock, $newStock, $outboundNo, $mutNotes, Auth::id(), date('Y-m-d H:i:s')]);
+
+            $stmtDel = $pdo->prepare("DELETE FROM outbound_transactions WHERE outbound_no = ?");
+            $stmtDel->execute([$outboundNo]);
+        }
+
+        $pdo->commit();
+
+        echo json_encode(['success' => true, 'message' => "Dokumen pengeluaran #{$outboundNo} berhasil dihapus & stok dikembalikan!"]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal menghapus pengeluaran: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Aksi outbound tidak valid']);
