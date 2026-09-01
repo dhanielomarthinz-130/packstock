@@ -530,6 +530,68 @@ function groupCompletedTasks(tasks) {
   return Object.values(groups);
 }
 
+// SHARED TRACKER (LOCALSTORAGE TRACKER)
+function getSharedInfo(groupKey) {
+  try {
+    const raw = localStorage.getItem('packstock_shared_' + groupKey);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+function markAsShared(groupKey) {
+  if (!groupKey) return;
+  try {
+    const now = new Date();
+    const timeStr = App.formatTime(now) + ' WIB';
+    const dateStr = App.formatDate(now);
+    const info = {
+      shared: true,
+      shared_at: now.toISOString(),
+      shared_display: `${dateStr}, ${timeStr}`,
+      shared_time: timeStr
+    };
+    localStorage.setItem('packstock_shared_' + groupKey, JSON.stringify(info));
+  } catch (e) {}
+  renderOperatorTasksHistory();
+}
+
+window._expandedHistoryCards = window._expandedHistoryCards || {};
+
+function toggleHistoryCard(groupKey) {
+  window._expandedHistoryCards = window._expandedHistoryCards || {};
+  window._expandedHistoryCards[groupKey] = !window._expandedHistoryCards[groupKey];
+  const body = document.getElementById('body_' + groupKey);
+  const icon = document.getElementById('icon_expand_' + groupKey);
+  if (body) {
+    if (window._expandedHistoryCards[groupKey]) {
+      body.classList.remove('hidden');
+      if (icon) icon.innerText = 'expand_less';
+    } else {
+      body.classList.add('hidden');
+      if (icon) icon.innerText = 'expand_more';
+    }
+  }
+}
+
+let isAllHistoryExpanded = false;
+function toggleAllHistoryCards() {
+  isAllHistoryExpanded = !isAllHistoryExpanded;
+  window._expandedHistoryCards = window._expandedHistoryCards || {};
+  const completedTasks = myTasks.filter(t => t.status === 'COMPLETED');
+  const grouped = groupCompletedTasks(completedTasks);
+  grouped.forEach(g => {
+    window._expandedHistoryCards[g.groupKey] = isAllHistoryExpanded;
+  });
+  
+  const icon = document.getElementById('iconToggleAllHistory');
+  const label = document.getElementById('labelToggleAllHistory');
+  if (icon) icon.innerText = isAllHistoryExpanded ? 'unfold_less' : 'unfold_more';
+  if (label) label.innerText = isAllHistoryExpanded ? 'Tutup Semua' : 'Buka Semua';
+
+  renderOperatorTasksHistory();
+}
+
 function renderOperatorTasksHistory() {
   const container = document.getElementById('opTasksHistoryContainer');
   const badgeHistory = document.getElementById('badgeOpTaskHistoryCount');
@@ -586,6 +648,21 @@ function renderOperatorTasksHistory() {
     const docLabel = g.task_nos.join(', ');
     const totalQty = g.items.reduce((acc, it) => acc + parseFloat(it.actual_qty || 0), 0);
     const dateFormatted = App.formatDate(g.completed_at) + ', ' + App.formatTime(g.completed_at) + ' WIB';
+    const isExpanded = !!window._expandedHistoryCards?.[g.groupKey];
+    const shareInfo = getSharedInfo(g.groupKey);
+    const isShared = !!shareInfo;
+
+    const shareStatusBadge = isShared ? `
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs" title="Laporan: Sudah dibagikan pada ${shareInfo.shared_display || ''}">
+        <span class="material-symbols-outlined text-[13px] text-emerald-600">done_all</span>
+        <span>Sudah Di-Share (${shareInfo.shared_time || 'WA'})</span>
+      </span>
+    ` : `
+      <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+        <span class="material-symbols-outlined text-[13px] text-amber-600">schedule</span>
+        <span>Belum Di-Share</span>
+      </span>
+    `;
 
     const itemsRows = g.items.map((it, idx) => `
       <div class="flex items-start justify-between py-2 border-b border-slate-100 last:border-0 gap-2">
@@ -623,95 +700,100 @@ function renderOperatorTasksHistory() {
     ` : '';
 
     return `
-      <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-3">
+      <div class="bg-white rounded-3xl p-4 border ${isShared ? 'border-emerald-200/80 bg-gradient-to-b from-emerald-50/20 to-white' : 'border-slate-200'} shadow-xs hover:shadow-md transition-all space-y-2.5">
         
-        <!-- Header: Doc ID, Request ID & Destination -->
-        <div class="flex items-start justify-between gap-2">
-          <div class="space-y-1">
-            <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
-                ${escapeHtml(docLabel)}
-              </span>
-              ${g.request_no ? `
-                <span class="font-mono font-black text-[11px] text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[13px]">assignment</span>
-                  <span>#${escapeHtml(g.request_no)}</span>
+        <!-- CLICKABLE COMPACT HEADER (MINIMIZED BY DEFAULT) -->
+        <div onclick="toggleHistoryCard('${g.groupKey}')" class="cursor-pointer space-y-2 select-none group">
+          <!-- Top Row: Doc ID, Request ID & Status Badges -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                  ${escapeHtml(docLabel)}
                 </span>
-              ` : ''}
+                ${g.request_no ? `
+                  <span class="font-mono font-black text-[11px] text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[13px]">assignment</span>
+                    <span>#${escapeHtml(g.request_no)}</span>
+                  </span>
+                ` : ''}
+              </div>
             </div>
-            ${g.requester_name ? `
-              <p class="text-[11px] text-slate-500 font-medium">
-                Pemohon: <b class="text-slate-800">${escapeHtml(g.requester_name)}</b>
-              </p>
-            ` : ''}
+
+            <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+              ${shareStatusBadge}
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[12px]">check_circle</span>
+                <span>SELESAI</span>
+              </span>
+            </div>
           </div>
 
-          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0 flex items-center gap-1">
-            <span class="material-symbols-outlined text-[13px]">check_circle</span>
-            <span>SELESAI</span>
-          </span>
-        </div>
-
-        <!-- Info Strip: Line, Shift, Receiver & Time -->
-        <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 space-y-2 text-xs">
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Tujuan Antar</span>
-              <span class="font-black text-slate-900 flex items-center gap-1 mt-0.5">
+          <!-- Summary Strip: Brand, Shift, Receiver, Total Qty & Expand Toggle Icon -->
+          <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-xs">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-black text-slate-900 flex items-center gap-1">
                 <span class="material-symbols-outlined text-emerald-600 text-[15px]">pin_drop</span>
                 <span>${escapeHtml(g.destination)}</span>
               </span>
+              <span class="text-slate-300">&bull;</span>
+              <span class="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-200 text-[10px]">
+                ${escapeHtml(formatShiftShort(g.operator_shift))}
+              </span>
+              ${g.receiver_name ? `
+                <span class="text-slate-300">&bull;</span>
+                <span class="text-slate-600 text-[11px]">Penerima: <b class="text-slate-800">${escapeHtml(g.receiver_name)}</b></span>
+              ` : ''}
             </div>
-            <div class="text-right">
-              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Shift Kerja</span>
-              <span class="font-bold text-indigo-700 text-[11px] inline-flex items-center gap-1 mt-0.5 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
-                <span class="material-symbols-outlined text-[13px]">schedule</span>
-                <span>${escapeHtml(formatShiftShort(g.operator_shift))}</span>
+
+            <div class="flex items-center gap-1 text-[11px] text-slate-500 font-bold shrink-0">
+              <span class="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 font-mono">${g.items.length} Item (${App.formatNumber(totalQty)})</span>
+              <span id="icon_expand_${g.groupKey}" class="material-symbols-outlined text-[20px] text-slate-400 group-hover:text-slate-700 transition-transform">
+                ${isExpanded ? 'expand_less' : 'expand_more'}
               </span>
             </div>
           </div>
+        </div>
 
-          <div class="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-            ${g.receiver_name ? `
-              <div class="flex items-center gap-1 text-slate-700">
-                <span class="material-symbols-outlined text-indigo-600 text-[15px]">how_to_reg</span>
-                <span>Penerima: <b class="text-slate-900 font-bold">${escapeHtml(g.receiver_name)}</b></span>
+        <!-- COLLAPSIBLE BODY (HIDDEN BY DEFAULT / MAXIMIZE ON CLICK) -->
+        <div id="body_${g.groupKey}" class="${isExpanded ? '' : 'hidden'} pt-2.5 border-t border-slate-200/70 space-y-3">
+          
+          <!-- Detail Strip: PIC & Time -->
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
+            <div>Pemohon: <b class="text-slate-800">${escapeHtml(g.requester_name || '-')}</b> | PIC: <b class="text-slate-800">${escapeHtml(g.operator_name)}</b></div>
+            <div class="font-mono text-slate-500">${dateFormatted}</div>
+          </div>
+
+          <!-- Items Table Container -->
+          <div class="bg-slate-50/50 p-3 rounded-2xl border border-slate-200/70">
+            <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
+              <span>Daftar Material (${g.items.length} Item)</span>
+              <span>Total: ${App.formatNumber(totalQty)}</span>
+            </div>
+            <div class="divide-y divide-slate-100">
+              ${itemsRows}
+            </div>
+          </div>
+
+          ${g.completion_notes ? `
+            <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[11px] text-amber-950 flex items-start gap-1.5">
+              <span class="material-symbols-outlined text-amber-700 text-[15px] shrink-0 mt-0.5">description</span>
+              <div>
+                <b class="font-bold">Catatan:</b> ${escapeHtml(g.completion_notes)}
               </div>
-            ` : '<div></div>'}
-            <div class="text-right text-[10px] text-slate-400 font-medium">
-              ${dateFormatted}
             </div>
-          </div>
-        </div>
+          ` : ''}
 
-        <!-- Items Table Container -->
-        <div class="bg-slate-50/50 p-3 rounded-2xl border border-slate-200/70">
-          <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
-            <span>Daftar Material (${g.items.length} Item)</span>
-            <span>Total: ${App.formatNumber(totalQty)}</span>
-          </div>
-          <div class="divide-y divide-slate-100">
-            ${itemsRows}
-          </div>
-        </div>
+          ${photoThumbnails}
 
-        ${g.completion_notes ? `
-          <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[11px] text-amber-950 flex items-start gap-1.5">
-            <span class="material-symbols-outlined text-amber-700 text-[15px] shrink-0 mt-0.5">description</span>
-            <div>
-              <b class="font-bold">Catatan:</b> ${escapeHtml(g.completion_notes)}
-            </div>
+          <!-- SINGLE UNIFIED WHATSAPP SHARE BUTTON -->
+          <div class="pt-1">
+            <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="w-full py-3 px-4 ${isShared ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'} active:scale-98 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+              <span class="material-symbols-outlined text-[19px]">${isShared ? 'done_all' : 'send'}</span>
+              <span>${isShared ? '✓ Bagikan Ulang ke WhatsApp' : 'Bagikan ke WhatsApp'}</span>
+            </button>
           </div>
-        ` : ''}
 
-        ${photoThumbnails}
-
-        <!-- SINGLE UNIFIED WHATSAPP SHARE BUTTON -->
-        <div class="pt-1">
-          <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-98 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-            <span class="material-symbols-outlined text-[19px]">send</span>
-            <span>Bagikan ke WhatsApp</span>
-          </button>
         </div>
 
       </div>
@@ -879,7 +961,10 @@ async function copyShareTextToClipboard() {
     await navigator.clipboard.writeText(text);
     const btnLabel = document.getElementById('btnCopyShareTextLabel');
     if (btnLabel) btnLabel.innerText = 'Tersalin! ✓';
-    App.toast('Teks output kemas berhasil disalin!', 'success', 'Tersalin');
+    App.toast('Teks output kemas berhasil disalin & status share dicatat!', 'success', 'Tersalin');
+    if (currentShareData && currentShareData.groupKey) {
+      markAsShared(currentShareData.groupKey);
+    }
     setTimeout(() => {
       if (btnLabel) btnLabel.innerText = 'Salin Teks';
     }, 2500);
@@ -893,6 +978,10 @@ async function openWhatsAppShare() {
   const textarea = document.getElementById('shareTextPreviewBox');
   const text = textarea ? textarea.value : generateShareText(currentShareData);
   
+  if (currentShareData && currentShareData.groupKey) {
+    markAsShared(currentShareData.groupKey);
+  }
+
   // If browser can share file directly via Web Share, trigger it first
   if (navigator.share && currentShareData.photos && currentShareData.photos.length > 0) {
     try {

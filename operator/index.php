@@ -420,7 +420,11 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
               <input type="text" id="opTaskHistorySearchInput" oninput="filterOperatorTaskHistory()" placeholder="Cari Dokumen / #REQ / Line..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-emerald-600">
             </div>
-            <button type="button" onclick="loadOperatorTasks()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" title="Refresh Riwayat">
+            <button type="button" onclick="toggleAllHistoryCards()" id="btnToggleAllHistory" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition-colors shrink-0 flex items-center gap-1 cursor-pointer" title="Buka / Tutup Semua">
+              <span id="iconToggleAllHistory" class="material-symbols-outlined text-[16px]">unfold_more</span>
+              <span id="labelToggleAllHistory">Buka Semua</span>
+            </button>
+            <button type="button" onclick="loadOperatorTasks()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer" title="Refresh Riwayat">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
             </button>
           </div>
