@@ -368,7 +368,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- ========================================================================= -->
-      <!-- 1. SCREEN: TUGAS PENGAMBILAN PACKAGING (PICKING TASK LIST) -->
+      <!-- 1. SCREEN: TUGAS PENGAMBILAN PACKAGING (PICKING TASK & OUTBOUND HISTORY) -->
       <!-- ========================================================================= -->
       <div id="op-tab-tasks" class="hidden space-y-3.5 animate-fade-in">
         
@@ -380,17 +380,59 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <div class="text-right">
-            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Tugas Pengambilan</h3>
-            <span class="text-[10px] text-emerald-700 font-semibold">Line Production Handover</span>
+            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Barang Keluar & Tugas</h3>
+            <span class="text-[10px] text-emerald-700 font-semibold">Picking & Handover Line</span>
           </div>
         </div>
 
-        <div id="opTasksContainer" class="space-y-2.5">
-          <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
-            <span class="material-symbols-outlined text-[20px] animate-spin text-emerald-600 mb-1">progress_activity</span>
-            <p>Memuat daftar tugas...</p>
+        <!-- Sub-Tab Segmented Switcher (Tugas Aktif vs Riwayat Keluar) -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/80 rounded-2xl border border-slate-200 text-xs font-bold shadow-2xs">
+          <button type="button" id="btnOpTaskSubTabActive" onclick="switchOpTaskSubTab('active')" 
+            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[17px]">pending_actions</span>
+            <span>Tugas Aktif</span>
+            <span id="badgeOpTaskActiveCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white leading-none">0</span>
+          </button>
+
+          <button type="button" id="btnOpTaskSubTabHistory" onclick="switchOpTaskSubTab('history')" 
+            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[17px]">history</span>
+            <span>Riwayat Keluar</span>
+            <span id="badgeOpTaskHistoryCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-300 text-slate-700 leading-none">0</span>
+          </button>
+        </div>
+
+        <!-- 1. VIEW: TUGAS AKTIF -->
+        <div id="opTaskActiveView" class="space-y-2.5">
+          <div id="opTasksContainer" class="space-y-2.5">
+            <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+              <span class="material-symbols-outlined text-[20px] animate-spin text-emerald-600 mb-1">progress_activity</span>
+              <p>Memuat daftar tugas aktif...</p>
+            </div>
           </div>
         </div>
+
+        <!-- 2. VIEW: RIWAYAT KELUAR / HISTORY TERPADU -->
+        <div id="opTaskHistoryView" class="hidden space-y-2.5">
+          <!-- Search & Filter Bar -->
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-2">
+            <div class="relative flex-1">
+              <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+              <input type="text" id="opTaskHistorySearchInput" oninput="filterOperatorTaskHistory()" placeholder="Cari Dokumen / #REQ / Line..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-emerald-600">
+            </div>
+            <button type="button" onclick="loadOperatorTasks()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors" title="Refresh Riwayat">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+            </button>
+          </div>
+
+          <div id="opTasksHistoryContainer" class="space-y-2.5">
+            <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+              <span class="material-symbols-outlined text-[20px] animate-spin text-emerald-600 mb-1">progress_activity</span>
+              <p>Memuat riwayat barang keluar...</p>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- ========================================================================= -->
@@ -1812,6 +1854,42 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
     </form>
 
+<!-- Modal Share Outbound Handover Summary -->
+<div id="modalShareOutboundSummary" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+  <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+          <span class="material-symbols-outlined text-[20px]">share</span>
+        </div>
+        <div>
+          <h4 class="font-black text-sm text-slate-900">Bagikan Bukti Pengeluaran</h4>
+          <p id="shareModalSubtitle" class="text-[10px] text-slate-400 font-mono">No. Dokumen: -</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalShareOutboundSummary')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Content: Preview Box -->
+    <div class="my-4 flex-1 overflow-y-auto space-y-3">
+      <div class="p-3.5 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 space-y-1 select-all whitespace-pre-wrap leading-relaxed shadow-inner" id="shareTextPreviewBox">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="pt-2 grid grid-cols-2 gap-2">
+      <button type="button" onclick="copyShareTextToClipboard()" id="btnCopyShareText" class="py-3 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">content_copy</span>
+        <span id="btnCopyShareTextLabel">Salin Teks</span>
+      </button>
+      <button type="button" onclick="openWhatsAppShare()" class="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">send</span>
+        <span>Kirim WhatsApp</span>
+      </button>
+    </div>
   </div>
 </div>
 

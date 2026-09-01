@@ -24,12 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Load only home/active tab data initially to avoid flooding server connections
   loadOperatorStats();
   loadOperatorTasks(true);
   initMandatoryShiftGate();
 
-  // Auto refresh data periodically (paused when tab is hidden)
   setInterval(() => {
     if (document.hidden) return;
     if (currentOpTab === 'tasks') loadOperatorTasks(true);
@@ -120,9 +118,9 @@ function switchOpTab(tabName) {
   bottomNavs.forEach(nav => {
     const navBtn = document.getElementById('bottom-nav-' + nav);
     if (navBtn) {
-      const isMatch = (nav === tabName) || 
-                      (nav === 'req-form' && tabName === 'request_consumable' && currentOpReqSubTab === 'form') ||
-                      (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history');
+      const isMatch = (nav === tabName) ||
+        (nav === 'req-form' && tabName === 'request_consumable' && currentOpReqSubTab === 'form') ||
+        (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history');
       if (isMatch) {
         navBtn.classList.remove('text-slate-400', 'font-semibold');
         navBtn.classList.add('text-emerald-700', 'font-bold');
@@ -139,10 +137,10 @@ function switchOpTab(tabName) {
   }
   if (tabName === 'tasks') loadOperatorTasks();
   if (tabName === 'dynamic_count') loadOperatorDynamicTasks();
-  if (tabName === 'opname') { 
-    populateBlankMaterials(); 
-    loadOperatorBlankCounts(); 
-    loadOperatorRecountTasks(); 
+  if (tabName === 'opname') {
+    populateBlankMaterials();
+    loadOperatorBlankCounts();
+    loadOperatorRecountTasks();
     switchOpnameSubTab(currentOpnameSubTab || '1st');
   }
   if (tabName === 'inbound') populateOpInboundMaterials();
@@ -281,21 +279,56 @@ async function loadOperatorStats(silent = false) {
   }
 }
 
-// 2. TASKS FOR OPERATOR
+// 2. TASKS FOR OPERATOR (ACTIVE & GROUPED OUTBOUND HISTORY)
+let currentOpTaskSubTab = 'active';
+window._currentGroupedHistory = {};
+let currentShareData = null;
+
+function switchOpTaskSubTab(tab) {
+  currentOpTaskSubTab = tab;
+  const btnActive = document.getElementById('btnOpTaskSubTabActive');
+  const btnHistory = document.getElementById('btnOpTaskSubTabHistory');
+  const viewActive = document.getElementById('opTaskActiveView');
+  const viewHistory = document.getElementById('opTaskHistoryView');
+
+  if (tab === 'active') {
+    if (btnActive) {
+      btnActive.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs font-bold transition-all cursor-pointer';
+    }
+    if (btnHistory) {
+      btnHistory.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 font-bold transition-all cursor-pointer';
+    }
+    if (viewActive) viewActive.classList.remove('hidden');
+    if (viewHistory) viewHistory.classList.add('hidden');
+  } else {
+    if (btnHistory) {
+      btnHistory.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs font-bold transition-all cursor-pointer';
+    }
+    if (btnActive) {
+      btnActive.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 font-bold transition-all cursor-pointer';
+    }
+    if (viewHistory) viewHistory.classList.remove('hidden');
+    if (viewActive) viewActive.classList.add('hidden');
+  }
+}
+
 async function loadOperatorTasks(silent = false) {
   const res = await App.fetchJson('../api/tasks.php?action=list&my_tasks=1');
   if (res.success) {
-    myTasks = res.data;
+    myTasks = res.data || [];
     renderOperatorTasksList();
+    renderOperatorTasksHistory();
     if (!silent) loadOperatorStats();
   }
 }
 
 function renderOperatorTasksList() {
   const container = document.getElementById('opTasksContainer');
+  const badgeActive = document.getElementById('badgeOpTaskActiveCount');
   if (!container) return;
 
   const activeTasks = myTasks.filter(t => t.status === 'PENDING' || t.status === 'IN_PROGRESS');
+  if (badgeActive) badgeActive.innerText = activeTasks.length;
 
   if (activeTasks.length === 0) {
     container.innerHTML = `
@@ -307,7 +340,7 @@ function renderOperatorTasksList() {
           <h4 class="font-extrabold text-slate-800 text-sm">Tidak Ada Tugas Tertunda</h4>
           <p class="text-xs text-slate-500 mt-0.5">Semua tugas serah terima packaging telah diselesaikan.</p>
         </div>
-        <button onclick="loadOperatorTasks()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors inline-flex items-center gap-1">
+        <button onclick="loadOperatorTasks()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors inline-flex items-center gap-1 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">refresh</span>
           <span>Refresh Tugas</span>
         </button>
@@ -327,11 +360,12 @@ function renderOperatorTasksList() {
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5 flex-wrap">
             <span class="font-mono font-black text-xs text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200">${escapeHtml(t.task_no)}</span>
+            ${t.request_no ? `<span class="font-mono font-black text-[10px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-300">#${escapeHtml(t.request_no)}</span>` : ''}
             ${isInProgress ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">Sedang Diambil</span>' : ''}
           </div>
-          ${isUrgent 
-            ? '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">URGENT</span>'
-            : '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">NORMAL</span>'}
+          ${isUrgent
+        ? '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">URGENT</span>'
+        : '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">NORMAL</span>'}
         </div>
 
         <!-- Material Info -->
@@ -346,7 +380,7 @@ function renderOperatorTasksList() {
             <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400">Lokasi Rak Simpan</p>
             <p class="text-xs font-black text-slate-900 flex items-center gap-1 mt-0.5">
               <span class="material-symbols-outlined text-rose-500 text-[15px]">location_on</span>
-              <span>${escapeHtml(t.rack_location)}</span>
+              <span>${escapeHtml(t.rack_location || '-')}</span>
             </p>
           </div>
           <div class="text-right">
@@ -380,13 +414,13 @@ function renderOperatorTasksList() {
         <!-- Action Buttons -->
         <div class="pt-1 flex items-center gap-2">
           ${!isInProgress ? `
-            <button onclick="startOperatorTask(${t.id})" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 shadow-xs">
+            <button onclick="startOperatorTask(${t.id})" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">play_arrow</span>
               <span>Mulai Ambil</span>
             </button>
           ` : ''}
 
-          <button onclick="openSubmitModal(${t.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5">
+          <button onclick="openSubmitModal(${t.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined text-[17px]">task_alt</span>
             <span>Submit Selesai</span>
           </button>
@@ -395,6 +429,352 @@ function renderOperatorTasksList() {
       </div>
     `;
   }).join('');
+}
+
+// GROUP COMPLETED TASKS BY OUTBOUND DOCUMENT / FULFILLMENT REQUEST ID
+function groupCompletedTasks(tasks) {
+  const groups = {};
+
+  tasks.forEach(t => {
+    let reqNo = t.request_no ? t.request_no.trim() : '';
+    if (!reqNo && t.notes) {
+      const match = t.notes.match(/#(REQ-\d+-\d+)/i);
+      if (match) reqNo = match[1].toUpperCase();
+    }
+
+    let groupKey = '';
+    if (reqNo) {
+      groupKey = 'REQ_' + reqNo;
+    } else {
+      groupKey = 'DOC_' + (t.task_no || ('TASK_' + t.id));
+    }
+
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        groupKey: groupKey,
+        request_no: reqNo,
+        requester_name: t.requester_name || (t.notes ? (t.notes.match(/Pemohon:\s*([^)]+)/i)?.[1]?.trim() || '') : ''),
+        destination: t.destination || 'Line Packing',
+        priority: t.priority || 'NORMAL',
+        completed_at: t.completed_at || t.created_at,
+        operator_name: t.operator_name || 'Operator',
+        operator_shift: t.operator_shift || (typeof CURRENT_USER_SHIFT !== 'undefined' ? CURRENT_USER_SHIFT : ''),
+        completion_notes: t.completion_notes || t.notes || '',
+        photos: [],
+        task_nos: [],
+        items: []
+      };
+    }
+
+    if (t.task_no && !groups[groupKey].task_nos.includes(t.task_no)) {
+      groups[groupKey].task_nos.push(t.task_no);
+    }
+
+    if (t.photo_path) {
+      try {
+        const parsed = JSON.parse(t.photo_path);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(p => { if (!groups[groupKey].photos.includes(p)) groups[groupKey].photos.push(p); });
+        } else if (typeof parsed === 'string' && !groups[groupKey].photos.includes(parsed)) {
+          groups[groupKey].photos.push(parsed);
+        }
+      } catch (e) {
+        if (!groups[groupKey].photos.includes(t.photo_path)) {
+          groups[groupKey].photos.push(t.photo_path);
+        }
+      }
+    }
+
+    if (t.completion_notes && !groups[groupKey].completion_notes.includes(t.completion_notes)) {
+      groups[groupKey].completion_notes = t.completion_notes;
+    }
+
+    groups[groupKey].items.push({
+      task_id: t.id,
+      task_no: t.task_no,
+      material_id: t.material_id,
+      material_name: t.material_name,
+      material_code: t.material_code,
+      material_unit: t.material_unit || 'Pcs',
+      rack_location: t.rack_location || '-',
+      target_qty: t.target_qty,
+      actual_qty: (t.actual_qty > 0) ? t.actual_qty : t.target_qty,
+      notes: t.notes
+    });
+  });
+
+  return Object.values(groups);
+}
+
+function renderOperatorTasksHistory() {
+  const container = document.getElementById('opTasksHistoryContainer');
+  const badgeHistory = document.getElementById('badgeOpTaskHistoryCount');
+  if (!container) return;
+
+  const completedTasks = myTasks.filter(t => t.status === 'COMPLETED');
+  const grouped = groupCompletedTasks(completedTasks);
+
+  window._currentGroupedHistory = {};
+  grouped.forEach(g => {
+    window._currentGroupedHistory[g.groupKey] = g;
+  });
+
+  if (badgeHistory) badgeHistory.innerText = grouped.length;
+
+  if (grouped.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl p-6 text-center border border-slate-200 shadow-xs space-y-2.5">
+        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+          <span class="material-symbols-outlined text-[28px]">history</span>
+        </div>
+        <div>
+          <h4 class="font-extrabold text-slate-800 text-sm">Belum Ada Riwayat Selesai</h4>
+          <p class="text-xs text-slate-500 mt-0.5">Tugas pengeluaran yang telah diselesaikan akan muncul terkelompok di sini.</p>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const query = (document.getElementById('opTaskHistorySearchInput')?.value || '').toLowerCase().trim();
+
+  const filtered = grouped.filter(g => {
+    if (!query) return true;
+    const matchDoc = g.task_nos.join(' ').toLowerCase().includes(query);
+    const matchReq = (g.request_no || '').toLowerCase().includes(query);
+    const matchDest = (g.destination || '').toLowerCase().includes(query);
+    const matchReqUser = (g.requester_name || '').toLowerCase().includes(query);
+    const matchItems = g.items.some(it => (it.material_name || '').toLowerCase().includes(query) || (it.material_code || '').toLowerCase().includes(query));
+    return matchDoc || matchReq || matchDest || matchReqUser || matchItems;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="bg-white rounded-3xl p-6 text-center border border-slate-200 shadow-xs">
+        <p class="text-xs text-slate-400 font-semibold">Tidak ditemukan riwayat yang cocok dengan pencarian.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(g => {
+    const docLabel = g.task_nos.join(', ');
+    const totalQty = g.items.reduce((acc, it) => acc + parseFloat(it.actual_qty || 0), 0);
+    const dateFormatted = App.formatDate(g.completed_at) + ', ' + App.formatTime(g.completed_at) + ' WIB';
+
+    const itemsRows = g.items.map((it, idx) => `
+      <div class="flex items-start justify-between py-2 border-b border-slate-100 last:border-0 gap-2">
+        <div class="min-w-0 flex-1">
+          <div class="font-bold text-slate-900 text-xs leading-tight">${escapeHtml(it.material_name)}</div>
+          <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
+            <span>${escapeHtml(it.material_code)}</span>
+            <span>&bull;</span>
+            <span class="text-slate-600 font-sans">Rak: <b>${escapeHtml(it.rack_location)}</b></span>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="font-mono font-black text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+            ${App.formatNumber(it.actual_qty)} ${escapeHtml(it.material_unit)}
+          </span>
+        </div>
+      </div>
+    `).join('');
+
+    const photoThumbnails = (g.photos && g.photos.length > 0) ? `
+      <div class="pt-2 border-t border-slate-100">
+        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Foto Bukti Penyerahan (${g.photos.length})</p>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1">
+          ${g.photos.map(p => `
+            <a href="../${escapeHtml(p)}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block hover:opacity-90">
+              <img src="../${escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    return `
+      <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs hover:shadow-md transition-all space-y-3">
+        
+        <!-- Header: Doc ID, Request ID & Destination -->
+        <div class="flex items-start justify-between gap-2">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono font-black text-xs text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200">
+                ${escapeHtml(docLabel)}
+              </span>
+              ${g.request_no ? `
+                <span class="font-mono font-black text-[11px] text-amber-900 bg-amber-100 px-2.5 py-0.5 rounded-lg border border-amber-300 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[13px]">assignment</span>
+                  <span>#${escapeHtml(g.request_no)}</span>
+                </span>
+              ` : ''}
+            </div>
+            ${g.requester_name ? `
+              <p class="text-[11px] text-slate-500 font-medium">
+                Pemohon: <b class="text-slate-800">${escapeHtml(g.requester_name)}</b>
+              </p>
+            ` : ''}
+          </div>
+
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[13px]">check_circle</span>
+            <span>SELESAI</span>
+          </span>
+        </div>
+
+        <!-- Info Strip: Line & Time -->
+        <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Tujuan Antar</span>
+            <span class="font-black text-slate-900 flex items-center gap-1 mt-0.5">
+              <span class="material-symbols-outlined text-emerald-600 text-[15px]">pin_drop</span>
+              <span>${escapeHtml(g.destination)}</span>
+            </span>
+          </div>
+          <div class="text-right">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Waktu Selesai</span>
+            <span class="font-bold text-slate-600 text-[11px] block mt-0.5">${dateFormatted}</span>
+          </div>
+        </div>
+
+        <!-- Items Table Container -->
+        <div class="bg-slate-50/50 p-3 rounded-2xl border border-slate-200/70">
+          <div class="flex items-center justify-between pb-1.5 border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
+            <span>Daftar Material (${g.items.length} Item)</span>
+            <span>Total: ${App.formatNumber(totalQty)}</span>
+          </div>
+          <div class="divide-y divide-slate-100">
+            ${itemsRows}
+          </div>
+        </div>
+
+        ${g.completion_notes ? `
+          <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[11px] text-amber-950 flex items-start gap-1.5">
+            <span class="material-symbols-outlined text-amber-700 text-[15px] shrink-0 mt-0.5">description</span>
+            <div>
+              <b class="font-bold">Catatan Serah Terima:</b> ${escapeHtml(g.completion_notes)}
+            </div>
+          </div>
+        ` : ''}
+
+        ${photoThumbnails}
+
+        <!-- SHARE / COPY ACTIONS -->
+        <div class="pt-1 flex items-center gap-2">
+          <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="flex-1 py-2.5 px-3 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[17px] text-emerald-400">share</span>
+            <span>Lihat & Share Bukti</span>
+          </button>
+
+          <button type="button" onclick="shareOrCopyDirectly('${g.groupKey}')" class="py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 cursor-pointer" title="Bagikan Cepat">
+            <span class="material-symbols-outlined text-[17px]">send</span>
+          </button>
+        </div>
+
+      </div>
+    `;
+  }).join('');
+}
+
+function filterOperatorTaskHistory() {
+  renderOperatorTasksHistory();
+}
+
+// SHARE TEXT & WHATSAPP BUILDER
+function generateShareText(group) {
+  const docNo = group.task_nos.join(', ');
+  const reqBadge = group.request_no ? `🎯 *ID Request Fulfillment:* #${group.request_no}` : '';
+  const requester = group.requester_name ? `👤 *Pemohon:* ${group.requester_name}` : '';
+  const dateStr = App.formatDate(group.completed_at) + ', ' + App.formatTime(group.completed_at) + ' WIB';
+
+  let itemsList = '';
+  group.items.forEach((it, idx) => {
+    itemsList += `${idx + 1}. *${it.material_name}* (${it.material_code})\n   Jumlah: *${App.formatNumber(it.actual_qty)} ${it.material_unit}* (Rak: ${it.rack_location || '-'})\n`;
+  });
+
+  let notesStr = group.completion_notes ? `📝 *Catatan Serah Terima:* ${group.completion_notes}\n` : '';
+
+  const text = `📦 *BUKTI PENGELUARAN PACKAGING (HANDOVER)*\n` +
+               `━━━━━━━━━━━━━━━━━━━━━\n` +
+               `📄 *No. Dokumen Outbound:* ${docNo}\n` +
+               (reqBadge ? `${reqBadge}\n` : '') +
+               (requester ? `${requester}\n` : '') +
+               `🏢 *Tujuan Line / Brand:* ${group.destination}\n` +
+               `👷 *PIC Operator Penyerah:* ${group.operator_name} (${group.operator_shift})\n` +
+               `🕒 *Waktu Selesai:* ${dateStr}\n` +
+               `━━━━━━━━━━━━━━━━━━━━━\n` +
+               `📋 *Rincian Item Material Keluar:*\n${itemsList}` +
+               `━━━━━━━━━━━━━━━━━━━━━\n` +
+               notesStr +
+               `✅ *Status:* Selesai Diserahkan ke Line`;
+
+  return text;
+}
+
+function openShareOutboundModal(groupKey) {
+  const group = window._currentGroupedHistory?.[groupKey];
+  if (!group) return;
+
+  currentShareData = group;
+  const shareText = generateShareText(group);
+
+  const docLabel = group.request_no ? `Req #${group.request_no} (${group.task_nos.join(', ')})` : group.task_nos.join(', ');
+  document.getElementById('shareModalSubtitle').innerText = `Dokumen: ${docLabel}`;
+  document.getElementById('shareTextPreviewBox').innerText = shareText;
+
+  const btnLabel = document.getElementById('btnCopyShareTextLabel');
+  if (btnLabel) btnLabel.innerText = 'Salin Teks';
+
+  App.openModal('modalShareOutboundSummary');
+}
+
+async function shareOrCopyDirectly(groupKey) {
+  const group = window._currentGroupedHistory?.[groupKey];
+  if (!group) return;
+
+  const text = generateShareText(group);
+  const title = `Bukti Pengeluaran ${group.request_no ? '#' + group.request_no : group.task_nos[0]}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: title,
+        text: text
+      });
+      return;
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        openShareOutboundModal(groupKey);
+      }
+    }
+  } else {
+    openShareOutboundModal(groupKey);
+  }
+}
+
+async function copyShareTextToClipboard() {
+  if (!currentShareData) return;
+  const text = generateShareText(currentShareData);
+
+  try {
+    await navigator.clipboard.writeText(text);
+    const btnLabel = document.getElementById('btnCopyShareTextLabel');
+    if (btnLabel) btnLabel.innerText = 'Tersalin! ✓';
+    App.toast('Rincian teks serah terima berhasil disalin ke clipboard!', 'success', 'Tersalin');
+    setTimeout(() => {
+      if (btnLabel) btnLabel.innerText = 'Salin Teks';
+    }, 2500);
+  } catch (e) {
+    App.toast('Gagal menyalin teks', 'error');
+  }
+}
+
+function openWhatsAppShare() {
+  if (!currentShareData) return;
+  const text = generateShareText(currentShareData);
+  const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+  window.open(waUrl, '_blank');
 }
 
 // 3. START TASK (Status -> IN_PROGRESS)
@@ -476,7 +856,7 @@ function openSubmitModal(taskId) {
   document.getElementById('submitTargetQtyLabel').innerText = `${App.formatNumber(task.target_qty)} ${escapeHtml(task.material_unit || 'Pcs')}`;
   document.getElementById('submitRackLocationLabel').innerText = task.rack_location;
   document.getElementById('submitDestinationLabel').innerText = task.destination;
-  
+
   const actualInput = document.getElementById('submitActualQty');
   actualInput.value = task.target_qty;
   actualInput.removeAttribute('max');
@@ -627,7 +1007,7 @@ function renderCompletedHistory() {
     let photos = [];
     if (t.photo_path) {
       if (t.photo_path.startsWith('[')) {
-        try { photos = JSON.parse(t.photo_path); } catch(e) { photos = [t.photo_path]; }
+        try { photos = JSON.parse(t.photo_path); } catch (e) { photos = [t.photo_path]; }
       } else {
         photos = [t.photo_path];
       }
@@ -946,7 +1326,7 @@ async function handleInboundDraftSubmit() {
 
     if (res.success) {
       App.toast(res.message, 'success', 'Penerimaan Berhasil');
-      
+
       // Clear form & draft
       const poEl = document.getElementById('opInboundPoNumber');
       if (poEl) poEl.value = '';
@@ -1263,7 +1643,7 @@ async function handleBlankCountSubmit(e) {
 
   if (res.success) {
     App.toast(res.message, 'success', 'Hasil Hitung Tersimpan ke Stock Opname');
-    
+
     // Clear form inputs
     const select = document.getElementById('blankMaterialSelect');
     if (select) {
@@ -1579,14 +1959,14 @@ function toggleHandoverForm() {
 function previewHandoverPhoto(e) {
   const files = e.target.files;
   if (!files || files.length === 0) return;
-  
+
   for (let i = 0; i < files.length; i++) {
     handoverSelectedFiles.push(files[i]);
   }
-  
+
   // Clear file input so the same file or subsequent selections work properly
   e.target.value = '';
-  
+
   renderHandoverPreviews();
 }
 
@@ -1594,30 +1974,30 @@ function renderHandoverPreviews() {
   const label = document.getElementById('handoverPhotoLabel');
   const previewContainer = document.getElementById('handoverPhotoPreviewContainer');
   const clearBtn = document.getElementById('btnClearHandoverPhotos');
-  
+
   if (label) {
-    label.innerText = handoverSelectedFiles.length > 0 
-      ? `${handoverSelectedFiles.length} Foto terpilih` 
+    label.innerText = handoverSelectedFiles.length > 0
+      ? `${handoverSelectedFiles.length} Foto terpilih`
       : 'Belum ada foto';
   }
-  
+
   if (!previewContainer) return;
-  
+
   if (handoverSelectedFiles.length === 0) {
     previewContainer.innerHTML = '';
     previewContainer.classList.add('hidden');
     if (clearBtn) clearBtn.classList.add('hidden');
     return;
   }
-  
+
   previewContainer.innerHTML = '';
   previewContainer.className = 'grid grid-cols-3 gap-2 mt-2';
   previewContainer.classList.remove('hidden');
   if (clearBtn) clearBtn.classList.remove('hidden');
-  
+
   handoverSelectedFiles.forEach((file, index) => {
     const reader = new FileReader();
-    reader.onload = function(event) {
+    reader.onload = function (event) {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200';
       itemDiv.innerHTML = `
@@ -1649,35 +2029,35 @@ async function submitHandover(e) {
   const fromShift = document.getElementById('handoverFromShift')?.value || CURRENT_USER_SHIFT || '';
   const toShift = document.getElementById('handoverToShift').value;
   const notes = document.getElementById('handoverNotes').value.trim();
-  
+
   if (!toShift || !notes) {
     App.toast('Mohon lengkapi shift tujuan dan catatan.', 'error');
     return;
   }
-  
+
   const btn = document.getElementById('btnSubmitHandover');
   btn.disabled = true;
   btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>Mengirim...</span>';
-  
+
   const formData = new FormData();
   formData.append('from_shift', fromShift);
   formData.append('to_shift', toShift);
   formData.append('notes', notes);
-  
+
   for (let i = 0; i < handoverSelectedFiles.length; i++) {
     formData.append('photos[]', handoverSelectedFiles[i]);
   }
-  
+
   try {
     const response = await fetch('../api/handovers.php?action=submit', {
       method: 'POST',
       body: formData
     });
     const res = await response.json();
-    
+
     btn.disabled = false;
     btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">send</span><span>Kirim Handover</span>';
-    
+
     if (res.success) {
       App.toast(res.message, 'success', 'Handover Berhasil');
       document.getElementById('formSubmitHandover').reset();
@@ -1704,7 +2084,7 @@ async function loadHandovers(silent = false) {
     }
     return;
   }
-  
+
   if (!silent) {
     container.innerHTML = `
       <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
@@ -1713,7 +2093,7 @@ async function loadHandovers(silent = false) {
       </div>
     `;
   }
-  
+
   const res = await App.fetchJson('../api/handovers.php?action=list');
   if (res.success) {
     myHandoversList = res.data || [];
@@ -1731,7 +2111,7 @@ async function loadHandovers(silent = false) {
 function updateHandoverBadge() {
   const badge = document.getElementById('homeBadgeHandover');
   if (!badge) return;
-  
+
   const canAcceptHandover = (toShift) => {
     if (typeof CURRENT_USER_SHIFT === 'undefined' || !CURRENT_USER_SHIFT || !toShift) return false;
     const getShiftKey = (str) => {
@@ -1740,9 +2120,9 @@ function updateHandoverBadge() {
     };
     return getShiftKey(CURRENT_USER_SHIFT) === getShiftKey(toShift);
   };
-  
+
   const pendingForMe = myHandoversList.filter(item => item.status === 'PENDING' && canAcceptHandover(item.to_shift));
-  
+
   if (pendingForMe.length > 0) {
     badge.innerText = pendingForMe.length;
     badge.classList.remove('hidden');
@@ -1754,7 +2134,7 @@ function updateHandoverBadge() {
 function renderHandoversList() {
   const container = document.getElementById('handoverListContainer');
   if (!container) return;
-  
+
   if (myHandoversList.length === 0) {
     container.innerHTML = `
       <div class="p-6 bg-white/70 rounded-2xl text-center text-slate-400 text-xs border border-slate-200/50">
@@ -1764,14 +2144,14 @@ function renderHandoversList() {
     `;
     return;
   }
-  
+
   let html = '';
   myHandoversList.forEach(item => {
     const isPending = item.status === 'PENDING';
-    const statusBadge = isPending 
-      ? '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>' 
+    const statusBadge = isPending
+      ? '<span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>'
       : `<span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase">DONE</span>`;
-    
+
     const shareBadge = (item.is_shared == 1)
       ? `<span class="px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200 text-[9px] font-bold flex items-center gap-0.5 leading-none"><span class="material-symbols-outlined text-[10px] font-bold">check</span>Shared</span>`
       : `<span class="px-1.5 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200 text-[9px] font-bold leading-none">Unshared</span>`;
@@ -1803,7 +2183,7 @@ function renderHandoversList() {
       </div>
     `;
   });
-  
+
   container.innerHTML = html;
 }
 
@@ -1821,8 +2201,8 @@ function openHandoverDetail(id) {
 
   // Status Badge
   const isPending = item.status === 'PENDING';
-  const statusBadge = isPending 
-    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>' 
+  const statusBadge = isPending
+    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[9px] font-black uppercase">PENDING</span>'
     : `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[9px] font-black uppercase">DONE</span>`;
   document.getElementById('detHandoverStatusBadge').innerHTML = statusBadge;
 
@@ -1847,7 +2227,7 @@ function openHandoverDetail(id) {
     if (item.photo_path.startsWith('[')) {
       try {
         photos = JSON.parse(item.photo_path);
-      } catch(e) {
+      } catch (e) {
         photos = [item.photo_path];
       }
     } else {
@@ -1886,7 +2266,7 @@ function openHandoverDetail(id) {
 
   const actions = document.getElementById('detHandoverActions');
   let actionsHtml = '';
-  
+
   if (isPending && canAcceptHandover(item.to_shift)) {
     actionsHtml += `
       <button onclick="receiveHandoverInModal(${item.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1 shadow-md">
@@ -1939,13 +2319,13 @@ async function receiveHandover(id) {
   });
 
   if (!confirmed) return;
-  
+
   const res = await App.fetchJson('../api/handovers.php?action=receive', {
     method: 'POST',
     body: 'id=' + id,
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
-  
+
   if (res.success) {
     App.toast(res.message, 'success', 'Handover Diterima');
     loadHandovers(true);
@@ -1985,7 +2365,7 @@ async function receiveHandoverInModal(id) {
 async function shareHandover(id) {
   const item = myHandoversList.find(x => x.id == id);
   if (!item) return;
-  
+
   // Mark as shared in database asynchronously
   fetch('../api/handovers.php?action=mark_shared', {
     method: 'POST',
@@ -2002,14 +2382,14 @@ async function shareHandover(id) {
       loadHandovers(true);
     }
   }).catch(console.error);
-  
+
   // Parse photos
   let photos = [];
   if (item.photo_path) {
     if (item.photo_path.startsWith('[')) {
       try {
         photos = JSON.parse(item.photo_path);
-      } catch(e) {
+      } catch (e) {
         photos = [item.photo_path];
       }
     } else {
@@ -2128,7 +2508,7 @@ async function submitChangeMyShift(e) {
 
     if (res.success) {
       CURRENT_USER_SHIFT = chosenShift;
-      
+
       // Update Header & Home UI
       const headerDisplay = document.getElementById('headerUserShiftDisplay');
       if (headerDisplay) headerDisplay.innerText = chosenShift;
@@ -2552,10 +2932,10 @@ function addConsumableDraftItem() {
   if (notesInp) notesInp.value = '';
   sel.value = '';
   sel.selectedIndex = 0;
-  
+
   const stockBadge = document.getElementById('opReqStockInfoBadge');
   if (stockBadge) stockBadge.classList.add('hidden');
-  
+
   handleOpReqMaterialSelectChange(sel);
   sel.dispatchEvent(new Event('change'));
   if (typeof App.syncSearchableSelect === 'function') {
@@ -2678,7 +3058,7 @@ async function handleConsumableRequestSubmit() {
   } else {
     App.toast(res.message || 'Gagal mengirim pengajuan', 'error');
   }
-}let allOperatorConsumableRequests = [];
+} let allOperatorConsumableRequests = [];
 let openedOpReqCardIds = new Set();
 
 function toggleOpReqCard(reqId) {
@@ -2755,7 +3135,7 @@ async function loadOperatorConsumableRequests(isSilent = false) {
     const ho = req.handover_info || {};
     const stage = ho.stage || (req.status === 'APPROVED' ? 2 : (req.status === 'PENDING' ? 1 : 0));
     const simpleShift = (req.requester_shift || '').split('(')[0].trim() || (req.requester_shift || 'Shift');
-    
+
     // Default open state: open if user previously opened it, otherwise keep collapsed
     const isOpen = openedOpReqCardIds.has(req.id);
 
@@ -3066,7 +3446,7 @@ async function shareConsumableRequest(id) {
 
   const isUrgent = req.priority === 'URGENT';
   const ho = req.handover_info || {};
-  
+
   let statusText = '🟡 MENUNGGU ACC ADMIN';
   if (req.status === 'APPROVED') {
     statusText = ho.is_handed_over ? '🟢 SELESAI DISERAHKAN (HANDOVER DONE)' : '🔵 DISETUJUI ADMIN (SEDANG PICKING GUDANG)';
@@ -3134,7 +3514,7 @@ _Dibuat otomatis via PackStock WMS (Fulfillment System)_`;
     try {
       await navigator.clipboard.writeText(shareCaption);
       App.toast('Teks caption telah disalin ke clipboard & WhatsApp dibuka!', 'success');
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
