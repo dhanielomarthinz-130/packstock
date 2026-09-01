@@ -5579,11 +5579,13 @@ async function loadDynamicMatrix() {
     selectEl.innerHTML = '<option value="0">Semua Sesi</option>' +
       res.sessions.map(s => `
         <option value="${s.id}" ${res.selected_opname_id == s.id ? 'selected' : ''}>
-          ${escapeHtml(formatSessionOptionLabel(s))}
+          ${escapeHtml(formatSessionOptionLabel(s))} ${s.status === 'COMPLETED' ? '(Completed)' : ''}
         </option>
       `).join('');
     if (currentVal && currentVal !== '0') {
       selectEl.value = currentVal;
+    } else if (res.selected_opname_id) {
+      selectEl.value = res.selected_opname_id;
     }
   }
 
@@ -5636,24 +5638,23 @@ async function loadDynamicMatrix() {
   const btnFinish = document.getElementById('btnFinishDynamicSession');
   const labelFinish = document.getElementById('labelFinishDynamicSession');
   if (btnFinish) {
-    if (!currentDynamicSession || opname_id === '0') {
+    if (!currentDynamicSession) {
       btnFinish.classList.add('hidden');
     } else {
       btnFinish.classList.remove('hidden');
       const isCompleted = currentDynamicSession.status === 'COMPLETED';
+      const iconEl = btnFinish.querySelector('.material-symbols-outlined');
       if (isCompleted) {
-        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-slate-100 text-slate-500 border border-slate-300 flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-not-allowed opacity-80';
+        btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1.5 text-xs font-black shrink-0 shadow-2xs cursor-default';
         btnFinish.disabled = true;
-        btnFinish.title = 'Sesi ini sudah selesai. Pembekuan (freeze) SKU sudah dibuka.';
-        if (labelFinish) labelFinish.innerText = 'Sesi Selesai (Unfrozen)';
-        const iconEl = btnFinish.querySelector('.material-symbols-outlined');
-        if (iconEl) iconEl.innerText = 'check_circle';
+        btnFinish.title = 'Sesi ini telah selesai (Completed). Pembekuan (freeze) SKU sudah dibuka.';
+        if (labelFinish) labelFinish.innerText = 'Completed (Unfrozen)';
+        if (iconEl) iconEl.innerText = 'verified';
       } else {
         btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer';
         btnFinish.disabled = false;
         btnFinish.title = 'Selesaikan Sesi Dynamic Count & Buka Pembekuan (Unfreeze) SKU';
         if (labelFinish) labelFinish.innerText = 'Selesaikan Sesi';
-        const iconEl = btnFinish.querySelector('.material-symbols-outlined');
         if (iconEl) iconEl.innerText = 'lock_open';
       }
     }
