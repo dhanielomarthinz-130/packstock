@@ -70,8 +70,8 @@ if ($action === 'list') {
                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock,
                u_to.name as operator_name, u_to.username as operator_username, u_to.shift as operator_shift,
                u_by.name as creator_name,
-               (SELECT cr.request_no FROM consumable_requests cr WHERE cr.task_id = t.id OR t.notes LIKE CONCAT('%#', cr.request_no, '%') LIMIT 1) as request_no,
-               (SELECT u_req.name FROM consumable_requests cr2 JOIN users u_req ON cr2.user_id = u_req.id WHERE cr2.task_id = t.id OR t.notes LIKE CONCAT('%#', cr2.request_no, '%') LIMIT 1) as requester_name
+               (SELECT cr.request_no FROM consumable_requests cr WHERE cr.task_id = t.id OR (t.notes LIKE ('%' || cr.request_no || '%')) LIMIT 1) as request_no,
+               (SELECT u_req.name FROM consumable_requests cr2 JOIN users u_req ON cr2.user_id = u_req.id WHERE cr2.task_id = t.id OR (t.notes LIKE ('%' || cr2.request_no || '%')) LIMIT 1) as requester_name
         FROM tasks t
         JOIN materials m ON t.material_id = m.id
         JOIN users u_to ON t.assigned_to = u_to.id

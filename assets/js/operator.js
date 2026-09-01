@@ -313,12 +313,21 @@ function switchOpTaskSubTab(tab) {
 }
 
 async function loadOperatorTasks(silent = false) {
-  const res = await App.fetchJson('../api/tasks.php?action=list&my_tasks=1');
-  if (res.success) {
-    myTasks = res.data || [];
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=list&my_tasks=1');
+    if (res && res.success) {
+      myTasks = res.data || [];
+    } else {
+      myTasks = [];
+    }
     renderOperatorTasksList();
     renderOperatorTasksHistory();
     if (!silent) loadOperatorStats();
+  } catch (err) {
+    console.error('Failed to load operator tasks:', err);
+    myTasks = [];
+    renderOperatorTasksList();
+    renderOperatorTasksHistory();
   }
 }
 
