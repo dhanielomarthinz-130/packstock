@@ -8815,21 +8815,38 @@ function renderAdminConsumableTable(requests) {
 
         <!-- 9. Aksi -->
         <td class="p-3.5 align-middle text-center whitespace-nowrap">
-          <div class="flex items-center justify-center gap-1.5">
+          <div class="flex items-center justify-center gap-1.5 flex-wrap">
             ${r.status === 'PENDING' ? `
-              <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
+              <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
                 <span class="material-symbols-outlined text-[15px]">check</span>
                 <span>ACC</span>
               </button>
-              <button onclick="openAdminRejectConsumableModal(${r.id})" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all flex items-center gap-1 text-xs cursor-pointer" title="Tolak Permintaan">
+              <button onclick="openAdminRejectConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 border border-rose-200 font-bold rounded-xl transition-all flex items-center gap-1 text-xs cursor-pointer" title="Tolak Permintaan">
                 <span class="material-symbols-outlined text-[15px]">close</span>
                 <span>Tolak</span>
               </button>
             ` : ''}
-            <button onclick="printSingleConsumableRequest(${r.id})" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="Cetak Surat Permintaan Consumable #${r.request_no}">
+
+            <!-- Tombol Cetak -->
+            <button onclick="printSingleConsumableRequest(${r.id})" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-900 border border-amber-300 rounded-xl font-extrabold text-xs transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="Cetak Surat Permintaan Consumable #${r.request_no}">
               <span class="material-symbols-outlined text-[15px] text-amber-700">print</span>
               <span>Cetak</span>
             </button>
+
+            <!-- Tombol Khusus Super Admin: Edit Items, Cancel, & Delete -->
+            ${(window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi') ? `
+              <button onclick="openAdminEditConsumableModal(${r.id})" class="p-1.5 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="Edit Permintaan & Daftar Item Material (Super Admin)">
+                <span class="material-symbols-outlined text-[15px]">edit</span>
+              </button>
+              ${r.status !== 'CANCELLED' ? `
+                <button onclick="adminCancelConsumableRequest(${r.id}, '${escapeHtml(r.request_no)}')" class="p-1.5 bg-orange-50 hover:bg-orange-600 hover:text-white text-orange-700 border border-orange-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="Batalkan Pengajuan Ini (Super Admin)">
+                  <span class="material-symbols-outlined text-[15px]">cancel</span>
+                </button>
+              ` : ''}
+              <button onclick="adminDeleteConsumableRequest(${r.id}, '${escapeHtml(r.request_no)}')" class="p-1.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="Hapus Dokumen Pengajuan Permanen (Super Admin)">
+                <span class="material-symbols-outlined text-[15px]">delete</span>
+              </button>
+            ` : ''}
           </div>
         </td>
       </tr>
@@ -9284,6 +9301,186 @@ function executeConsumablePrint() {
     window.print();
     setTimeout(cleanUp, 2500);
   }, 60);
+}
+
+// =========================================================================
+// 18.5 SUPER ADMIN: EDIT, CANCEL & DELETE CONSUMABLE REQUESTS
+// =========================================================================
+
+function addAdminEditConsumableItemRow(matId = 0, qty = 1, notes = '') {
+  const tbody = document.getElementById('editConsumableItemsTableBody');
+  if (!tbody) return;
+
+  const rowId = 'editConsItem_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.className = 'hover:bg-slate-50 transition-colors';
+
+  const matOptions = (allMaterials || []).map(m => {
+    const isSelected = (parseInt(m.id) === parseInt(matId)) ? 'selected' : '';
+    return `<option value="${m.id}" data-stock="${m.current_stock}" data-unit="${App.escapeHtml(m.unit || 'Pcs')}" ${isSelected}>${App.escapeHtml(m.code)} - ${App.escapeHtml(m.name)} (Stok: ${App.formatNumber(m.current_stock)})</option>`;
+  }).join('');
+
+  tr.innerHTML = `
+    <td class="p-2">
+      <select class="edit-cons-mat-select w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold outline-none focus:bg-white focus:border-blue-600">
+        <option value="">-- Pilih Material Packaging --</option>
+        ${matOptions}
+      </select>
+    </td>
+    <td class="p-2 text-center">
+      <input type="number" step="any" min="0.01" value="${qty}" class="edit-cons-qty-input w-24 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black font-mono text-center outline-none focus:bg-white focus:border-blue-600" placeholder="Qty">
+    </td>
+    <td class="p-2">
+      <input type="text" value="${App.escapeHtml(notes)}" class="edit-cons-notes-input w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:border-blue-600" placeholder="Catatan item (opsional)...">
+    </td>
+    <td class="p-2 text-center">
+      <button type="button" onclick="removeAdminEditConsumableItemRow('${rowId}')" class="p-1.5 rounded-lg text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer" title="Hapus baris item ini">
+        <span class="material-symbols-outlined text-[17px]">delete</span>
+      </button>
+    </td>
+  `;
+
+  tbody.appendChild(tr);
+}
+
+function removeAdminEditConsumableItemRow(rowId) {
+  const tbody = document.getElementById('editConsumableItemsTableBody');
+  const tr = document.getElementById(rowId);
+  if (tr) tr.remove();
+
+  if (tbody && tbody.children.length === 0) {
+    addAdminEditConsumableItemRow();
+  }
+}
+
+async function openAdminEditConsumableModal(id) {
+  if (!allMaterials || allMaterials.length === 0) {
+    const resMat = await App.fetchJson('../api/materials.php?action=list');
+    if (resMat && resMat.success && resMat.data) {
+      allMaterials = resMat.data;
+    }
+  }
+
+  const res = await App.fetchJson(`../api/consumable_requests.php?action=get&id=${id}`);
+  if (!res.success || !res.data) {
+    App.toast(res.message || 'Gagal memuat rincian pengajuan', 'error');
+    return;
+  }
+
+  const req = res.data;
+  document.getElementById('editConsumableReqId').value = req.id;
+  document.getElementById('editConsumableReqSubtitle').innerText = `No. Request: #${req.request_no} - Pemohon: ${req.requester_name || 'Operator'}`;
+  document.getElementById('editConsumableDestination').value = req.destination || 'HANASUI';
+  document.getElementById('editConsumablePriority').value = req.priority || 'NORMAL';
+  document.getElementById('editConsumableNotes').value = req.notes || '';
+
+  const tbody = document.getElementById('editConsumableItemsTableBody');
+  if (tbody) {
+    tbody.innerHTML = '';
+    const items = req.items || [];
+    if (items.length > 0) {
+      items.forEach(it => {
+        addAdminEditConsumableItemRow(it.material_id, it.qty, it.notes || '');
+      });
+    } else {
+      addAdminEditConsumableItemRow();
+    }
+  }
+
+  App.openModal('modalEditConsumableRequest');
+}
+
+async function handleAdminEditConsumableSubmit(e) {
+  e.preventDefault();
+  const requestId   = document.getElementById('editConsumableReqId').value;
+  const destination = document.getElementById('editConsumableDestination').value;
+  const priority    = document.getElementById('editConsumablePriority').value;
+  const notes       = document.getElementById('editConsumableNotes').value.trim();
+
+  const rows = document.querySelectorAll('#editConsumableItemsTableBody tr');
+  const items = [];
+
+  rows.forEach(r => {
+    const matSelect = r.querySelector('.edit-cons-mat-select');
+    const qtyInput  = r.querySelector('.edit-cons-qty-input');
+    const notesInput= r.querySelector('.edit-cons-notes-input');
+
+    const material_id = parseInt(matSelect?.value || '0');
+    const qty = App.parseNumber(qtyInput?.value || 0);
+    const itemNotes = notesInput?.value?.trim() || '';
+
+    if (material_id > 0 && qty > 0) {
+      items.push({ material_id, qty, notes: itemNotes });
+    }
+  });
+
+  if (items.length === 0) {
+    App.toast('Pilih minimal 1 packaging material dengan Qty lebih dari 0!', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btnSubmitEditConsumable');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=update', {
+    method: 'POST',
+    body: JSON.stringify({
+      request_id: requestId,
+      destination,
+      priority,
+      notes,
+      items
+    })
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-[17px]">save</span><span>Simpan Perubahan</span>';
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Diperbarui');
+    App.closeModal('modalEditConsumableRequest');
+    loadAdminConsumableRequests();
+  } else {
+    App.toast(res.message || 'Gagal menyimpan perubahan pengajuan', 'error');
+  }
+}
+
+async function adminCancelConsumableRequest(id, reqNo) {
+  if (!confirm(`Apakah Anda yakin ingin membatalkan pengajuan #${reqNo}?`)) {
+    return;
+  }
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=cancel', {
+    method: 'POST',
+    body: JSON.stringify({ request_id: id })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Dibatalkan');
+    loadAdminConsumableRequests();
+  } else {
+    App.toast(res.message || 'Gagal membatalkan pengajuan', 'error');
+  }
+}
+
+async function adminDeleteConsumableRequest(id, reqNo) {
+  if (!confirm(`PERINGATAN: Dokumen pengajuan #${reqNo} beserta seluruh rincian itemnya akan DIHAPUS PERMANEN!\n\nLanjutkan penghapusan?`)) {
+    return;
+  }
+
+  const res = await App.fetchJson('../api/consumable_requests.php?action=delete', {
+    method: 'POST',
+    body: JSON.stringify({ request_id: id })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Pengajuan Dihapus');
+    loadAdminConsumableRequests();
+  } else {
+    App.toast(res.message || 'Gagal menghapus pengajuan', 'error');
+  }
 }
 
 // =========================================================================

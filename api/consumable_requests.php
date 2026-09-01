@@ -778,7 +778,202 @@ if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// 5. CANCEL REQUEST (By Operator if still PENDING)
+// 5. GET DETAIL SINGLE CONSUMABLE REQUEST (For Edit Modal & Detail)
+if ($action === 'get') {
+    $requestId = (int)($_GET['id'] ?? 0);
+    if ($requestId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Request tidak valid']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT r.*,
+               u.name as requester_name,
+               u.username as requester_username,
+               u.shift as requester_shift,
+               adm.name as approver_name
+        FROM consumable_requests r
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN users adm ON r.approved_by = adm.id
+        WHERE r.id = ?
+    ");
+    $stmt->execute([$requestId]);
+    $req = $stmt->fetch();
+
+    if (!$req) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Data pengajuan tidak ditemukan']);
+        exit;
+    }
+
+    $stmtItems = $pdo->prepare("
+        SELECT ri.*, m.name as material_name, m.code as material_code, m.unit as material_unit, m.current_stock, m.rack_location
+        FROM consumable_request_items ri
+        JOIN materials m ON ri.material_id = m.id
+        WHERE ri.request_id = ?
+        ORDER BY ri.id ASC
+    ");
+    $stmtItems->execute([$requestId]);
+    $req['items'] = $stmtItems->fetchAll();
+
+    echo json_encode(['success' => true, 'data' => $req]);
+    exit;
+}
+
+// 6. UPDATE CONSUMABLE REQUEST & ITEMS (Super Admin Only)
+if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!Auth::isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak mengedit data pengajuan consumable!']);
+        exit;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $requestId   = (int)($input['request_id'] ?? 0);
+    $destination = trim($input['destination'] ?? '');
+    $priority    = trim($input['priority'] ?? 'NORMAL');
+    $notes       = trim($input['notes'] ?? '');
+    $items       = $input['items'] ?? [];
+
+    if (is_string($items)) {
+        $items = json_decode($items, true) ?? [];
+    }
+
+    if ($requestId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Request tidak valid']);
+        exit;
+    }
+
+    if (empty($destination)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Tujuan Brand / Line wajib diisi!']);
+        exit;
+    }
+
+    if (empty($items) || !is_array($items)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Daftar item consumable tidak boleh kosong. Minimal pilih 1 material.']);
+        exit;
+    }
+
+    if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) {
+        $priority = 'NORMAL';
+    }
+
+    $stmtCheck = $pdo->prepare("SELECT * FROM consumable_requests WHERE id = ?");
+    $stmtCheck->execute([$requestId]);
+    $existing = $stmtCheck->fetch();
+    if (!$existing) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Data pengajuan tidak ditemukan']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+        $now = date('Y-m-d H:i:s');
+
+        // Update main request
+        $stmtUp = $pdo->prepare("
+            UPDATE consumable_requests
+            SET destination = ?, priority = ?, notes = ?, updated_at = ?
+            WHERE id = ?
+        ");
+        $stmtUp->execute([$destination, $priority, $notes, $now, $requestId]);
+
+        // Delete old items and insert updated items
+        $stmtDel = $pdo->prepare("DELETE FROM consumable_request_items WHERE request_id = ?");
+        $stmtDel->execute([$requestId]);
+
+        $stmtInsItem = $pdo->prepare("
+            INSERT INTO consumable_request_items (request_id, material_id, qty, notes, created_at)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+
+        $validCount = 0;
+        $totalQty = 0;
+        foreach ($items as $it) {
+            $matId = (int)($it['material_id'] ?? 0);
+            $qty   = max(0, parseNumberDecimal($it['qty'] ?? 0));
+            $itNotes = trim($it['notes'] ?? '');
+
+            if ($matId <= 0 || $qty <= 0) continue;
+
+            $stmtInsItem->execute([$requestId, $matId, $qty, $itNotes, $now]);
+            $validCount++;
+            $totalQty += $qty;
+        }
+
+        if ($validCount === 0) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada item material valid yang disimpan (Qty harus > 0).']);
+            exit;
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Pengajuan Consumable #{$existing['request_no']} berhasil diperbarui! ({$validCount} item material).",
+            'total_items' => $validCount,
+            'total_qty' => $totalQty
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui pengajuan: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 7. DELETE CONSUMABLE REQUEST (Super Admin Only)
+if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!Auth::isSuperAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak menghapus data pengajuan consumable!']);
+        exit;
+    }
+
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $requestId = (int)($input['request_id'] ?? 0);
+
+    $stmtCheck = $pdo->prepare("SELECT * FROM consumable_requests WHERE id = ?");
+    $stmtCheck->execute([$requestId]);
+    $req = $stmtCheck->fetch();
+
+    if (!$req) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Data pengajuan tidak ditemukan']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmtDelItems = $pdo->prepare("DELETE FROM consumable_request_items WHERE request_id = ?");
+        $stmtDelItems->execute([$requestId]);
+
+        $stmtDelReq = $pdo->prepare("DELETE FROM consumable_requests WHERE id = ?");
+        $stmtDelReq->execute([$requestId]);
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Dokumen Pengajuan Consumable #{$req['request_no']} berhasil dihapus permanen."
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Gagal menghapus pengajuan: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// 8. CANCEL REQUEST (By Super Admin or By Operator if still PENDING)
 if ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $requestId = (int)($input['request_id'] ?? 0);
@@ -793,16 +988,23 @@ if ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($req['status'] !== 'PENDING') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Hanya pengajuan berstatus PENDING yang dapat dibatalkan']);
-        exit;
-    }
-
-    if (!Auth::isAdmin() && (int)$req['user_id'] !== Auth::id()) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Anda tidak memiliki hak untuk membatalkan pengajuan ini']);
-        exit;
+    if (Auth::isAdmin()) {
+        if (!Auth::isSuperAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak membatalkan pengajuan consumable!']);
+            exit;
+        }
+    } else {
+        if ((int)$req['user_id'] !== Auth::id()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Anda tidak memiliki hak untuk membatalkan pengajuan ini']);
+            exit;
+        }
+        if ($req['status'] !== 'PENDING') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Hanya pengajuan berstatus PENDING yang dapat dibatalkan']);
+            exit;
+        }
     }
 
     $now = date('Y-m-d H:i:s');

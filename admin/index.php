@@ -4275,6 +4275,100 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
+<!-- ================= MODAL: EDIT CONSUMABLE REQUEST (SUPER ADMIN) ================= -->
+<div id="modalEditConsumableRequest" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-2 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[20px]">edit_document</span>
+        </div>
+        <div>
+          <h3 class="font-black text-slate-900 text-sm">Edit Permintaan Consumable</h3>
+          <p class="text-[11px] text-slate-500" id="editConsumableReqSubtitle">No. Request: -</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalEditConsumableRequest')" class="text-slate-400 hover:text-slate-600 p-1">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formEditConsumableRequest" onsubmit="handleAdminEditConsumableSubmit(event)" class="space-y-4 text-xs overflow-y-auto flex-1 pr-1">
+      <input type="hidden" id="editConsumableReqId">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tujuan Brand / Line <span class="text-rose-500">*</span></label>
+          <select id="editConsumableDestination" required class="w-full h-[38px] px-3 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-600 text-xs font-semibold">
+            <option value="HANASUI">HANASUI</option>
+            <option value="THE ORIGINOTE">THE ORIGINOTE</option>
+            <option value="SKINTIFIC">SKINTIFIC</option>
+            <option value="GLAD2GLOW">GLAD2GLOW</option>
+            <option value="FYNE">FYNE</option>
+            <option value="NCO">NCO</option>
+            <option value="FEALI">FEALI</option>
+            <option value="Line Packing 1">Line Packing 1</option>
+            <option value="Line Packing 2">Line Packing 2</option>
+            <option value="Line Packing 3">Line Packing 3</option>
+            <option value="Line Packing 4">Line Packing 4</option>
+            <option value="Line Packing 5">Line Packing 5</option>
+            <option value="Line Sorting">Line Sorting</option>
+            <option value="Line Inbound">Line Inbound</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Prioritas <span class="text-rose-500">*</span></label>
+          <select id="editConsumablePriority" required class="w-full h-[38px] px-3 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-600 text-xs font-semibold">
+            <option value="NORMAL">NORMAL</option>
+            <option value="URGENT">URGENT (Mendesak)</option>
+            <option value="CRITICAL">CRITICAL (Sangat Kritis)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Item Materials Table Container -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px]">Daftar Item Material Consumable</label>
+          <button type="button" onclick="addAdminEditConsumableItemRow()" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-[15px]">add</span>
+            <span>Tambah Item</span>
+          </button>
+        </div>
+
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-slate-100 text-[10.5px] font-extrabold uppercase text-slate-600 border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Material Packaging</th>
+                <th class="p-2.5 w-28 text-center">Target Qty</th>
+                <th class="p-2.5">Catatan Item</th>
+                <th class="p-2.5 w-12 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="editConsumableItemsTableBody" class="divide-y divide-slate-100">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan Pengajuan</label>
+        <textarea id="editConsumableNotes" rows="2" placeholder="Catatan opsional..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-600 text-xs font-medium"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
+        <button type="button" onclick="App.closeModal('modalEditConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnSubmitEditConsumable" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[17px]">save</span>
+          <span>Simpan Perubahan</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ================= MODAL: PRINT PREVIEW CONSUMABLE REQUEST FORM ================= -->
 <div id="modalPrintConsumableRequest" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-2 sm:p-4">
   <div class="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up max-h-[95vh] flex flex-col">
