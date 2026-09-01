@@ -1438,31 +1438,41 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center justify-between">
-          <span>Catatan Penerima di Line / PIC <span class="text-rose-500 font-bold">*</span></span>
+          <span>Nama Penerima di Line / PIC <span class="text-rose-500 font-bold">*</span></span>
           <span class="text-[10px] text-rose-600 font-semibold">Wajib Diisi</span>
         </label>
-        <input type="text" id="submitNotes" required placeholder="Contoh: Diterima Pak Joko di Line Packing 1" 
+        <input type="text" id="submitReceiverName" required placeholder="Contoh: Pak Joko / Budi (Line Hanasui)" 
           class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white text-xs font-semibold">
       </div>
 
-      <!-- Task Picking Photo Proof Section -->
+      <div>
+        <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center justify-between">
+          <span>Catatan / No. Surat Jalan</span>
+          <span class="text-[10px] text-slate-400 font-normal">Opsional</span>
+        </label>
+        <input type="text" id="submitNotes" placeholder="Contoh: Surat Jalan No. SJ-0123 / Catatan line..." 
+          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white text-xs">
+      </div>
+
+      <!-- Task Picking Photo Proof & Surat Jalan Section -->
       <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-200 space-y-2">
         <div class="flex items-center justify-between">
           <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
-            <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
-            <span>Foto Bukti Penyerahan ke Line <span class="text-rose-500 font-bold">* (Min 1 Foto)</span></span>
+            <span class="material-symbols-outlined text-[16px] text-amber-600">receipt_long</span>
+            <span>Foto Surat Jalan & Bukti Serah Terima <span class="text-rose-500 font-bold">*</span></span>
           </label>
           <span id="taskPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-amber-100 px-2 py-0.5 rounded-full">0 Foto</span>
         </div>
+        <p class="text-[10px] text-slate-500">Lampirkan foto fisik Surat Jalan atau bukti penyerahan barang di line.</p>
         <div class="flex items-center gap-2">
           <input type="file" id="taskCompletePhoto" accept="image/*" class="hidden" multiple onchange="previewTaskCompletePhoto(event)">
           <button type="button" onclick="document.getElementById('taskCompletePhoto').click()" 
-            class="px-3 py-2 bg-white hover:bg-amber-100 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1 text-xs shadow-2xs">
+            class="px-3 py-2 bg-white hover:bg-amber-100 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1 text-xs shadow-2xs cursor-pointer">
             <span class="material-symbols-outlined text-[17px] text-amber-600">photo_camera</span>
             <span>Pilih / Ambil Foto</span>
           </button>
           <button type="button" id="btnTaskClearPhotos" onclick="clearTaskCompletePhotos()" 
-            class="hidden px-2.5 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 transition-colors text-xs flex items-center gap-1">
+            class="hidden px-2.5 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 transition-colors text-xs flex items-center gap-1 cursor-pointer">
             <span class="material-symbols-outlined text-[14px]">delete</span>
             <span>Hapus</span>
           </button>

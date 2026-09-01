@@ -458,11 +458,22 @@ function groupCompletedTasks(tasks) {
       groupKey = 'DOC_' + (t.task_no || ('TASK_' + t.id));
     }
 
+    // Extract Receiver Name
+    let recName = '';
+    const rawNotes = t.completion_notes || t.notes || '';
+    if (rawNotes) {
+      const recMatch = rawNotes.match(/Penerima:\s*([^|\n]+)/i);
+      if (recMatch) {
+        recName = recMatch[1].trim();
+      }
+    }
+
     if (!groups[groupKey]) {
       groups[groupKey] = {
         groupKey: groupKey,
         request_no: reqNo,
         requester_name: t.requester_name || (t.notes ? (t.notes.match(/Pemohon:\s*([^)]+)/i)?.[1]?.trim() || '') : ''),
+        receiver_name: recName,
         destination: t.destination || 'Line Packing',
         priority: t.priority || 'NORMAL',
         completed_at: t.completed_at || t.created_at,
@@ -473,6 +484,10 @@ function groupCompletedTasks(tasks) {
         task_nos: [],
         items: []
       };
+    }
+
+    if (recName && !groups[groupKey].receiver_name) {
+      groups[groupKey].receiver_name = recName;
     }
 
     if (t.task_no && !groups[groupKey].task_nos.includes(t.task_no)) {
@@ -553,8 +568,9 @@ function renderOperatorTasksHistory() {
     const matchReq = (g.request_no || '').toLowerCase().includes(query);
     const matchDest = (g.destination || '').toLowerCase().includes(query);
     const matchReqUser = (g.requester_name || '').toLowerCase().includes(query);
+    const matchReceiver = (g.receiver_name || '').toLowerCase().includes(query);
     const matchItems = g.items.some(it => (it.material_name || '').toLowerCase().includes(query) || (it.material_code || '').toLowerCase().includes(query));
-    return matchDoc || matchReq || matchDest || matchReqUser || matchItems;
+    return matchDoc || matchReq || matchDest || matchReqUser || matchReceiver || matchItems;
   });
 
   if (filtered.length === 0) {
@@ -591,11 +607,15 @@ function renderOperatorTasksHistory() {
 
     const photoThumbnails = (g.photos && g.photos.length > 0) ? `
       <div class="pt-2 border-t border-slate-100">
-        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Foto Bukti Penyerahan (${g.photos.length})</p>
+        <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
+          <span class="material-symbols-outlined text-[14px] text-amber-600">receipt_long</span>
+          <span>Foto Surat Jalan & Bukti Serah Terima (${g.photos.length})</span>
+        </p>
         <div class="flex items-center gap-2 overflow-x-auto pb-1">
           ${g.photos.map(p => `
-            <a href="../${escapeHtml(p)}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block hover:opacity-90">
-              <img src="../${escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
+            <a href="../${escapeHtml(p)}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block hover:opacity-90 relative group">
+              <img src="../${escapeHtml(p)}" alt="Surat Jalan / Bukti" class="w-full h-full object-cover">
+              <span class="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[8px] font-mono text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Zoom</span>
             </a>
           `).join('')}
         </div>
@@ -632,19 +652,28 @@ function renderOperatorTasksHistory() {
           </span>
         </div>
 
-        <!-- Info Strip: Line & Time -->
-        <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Tujuan Antar</span>
-            <span class="font-black text-slate-900 flex items-center gap-1 mt-0.5">
-              <span class="material-symbols-outlined text-emerald-600 text-[15px]">pin_drop</span>
-              <span>${escapeHtml(g.destination)}</span>
-            </span>
+        <!-- Info Strip: Line & Receiver & Time -->
+        <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-100 space-y-2 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Tujuan Antar</span>
+              <span class="font-black text-slate-900 flex items-center gap-1 mt-0.5">
+                <span class="material-symbols-outlined text-emerald-600 text-[15px]">pin_drop</span>
+                <span>${escapeHtml(g.destination)}</span>
+              </span>
+            </div>
+            <div class="text-right">
+              <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Waktu Selesai</span>
+              <span class="font-bold text-slate-600 text-[11px] block mt-0.5">${dateFormatted}</span>
+            </div>
           </div>
-          <div class="text-right">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Waktu Selesai</span>
-            <span class="font-bold text-slate-600 text-[11px] block mt-0.5">${dateFormatted}</span>
-          </div>
+
+          ${g.receiver_name ? `
+            <div class="pt-2 border-t border-slate-200/60 flex items-center gap-1.5 text-[11px] text-slate-700">
+              <span class="material-symbols-outlined text-indigo-600 text-[16px]">how_to_reg</span>
+              <span>Diterima Oleh: <b class="text-slate-900 font-bold">${escapeHtml(g.receiver_name)}</b></span>
+            </div>
+          ` : ''}
         </div>
 
         <!-- Items Table Container -->
@@ -662,7 +691,7 @@ function renderOperatorTasksHistory() {
           <div class="p-2.5 rounded-xl bg-amber-50/60 border border-amber-200/80 text-[11px] text-amber-950 flex items-start gap-1.5">
             <span class="material-symbols-outlined text-amber-700 text-[15px] shrink-0 mt-0.5">description</span>
             <div>
-              <b class="font-bold">Catatan Serah Terima:</b> ${escapeHtml(g.completion_notes)}
+              <b class="font-bold">Catatan:</b> ${escapeHtml(g.completion_notes)}
             </div>
           </div>
         ` : ''}
@@ -695,6 +724,7 @@ function generateShareText(group) {
   const docNo = group.task_nos.join(', ');
   const reqBadge = group.request_no ? `🎯 *ID Request Fulfillment:* #${group.request_no}` : '';
   const requester = group.requester_name ? `👤 *Pemohon:* ${group.requester_name}` : '';
+  const receiver = group.receiver_name ? `📥 *Penerima di Line:* ${group.receiver_name}` : '';
   const dateStr = App.formatDate(group.completed_at) + ', ' + App.formatTime(group.completed_at) + ' WIB';
 
   let itemsList = '';
@@ -702,20 +732,23 @@ function generateShareText(group) {
     itemsList += `${idx + 1}. *${it.material_name}* (${it.material_code})\n   Jumlah: *${App.formatNumber(it.actual_qty)} ${it.material_unit}* (Rak: ${it.rack_location || '-'})\n`;
   });
 
-  let notesStr = group.completion_notes ? `📝 *Catatan Serah Terima:* ${group.completion_notes}\n` : '';
+  let notesStr = group.completion_notes ? `📝 *Catatan / No. Surat Jalan:* ${group.completion_notes}\n` : '';
+  let photoNote = (group.photos && group.photos.length > 0) ? `📸 *Lampiran Bukti & Foto Surat Jalan:* ${group.photos.length} Foto Terlampir\n` : '';
 
-  const text = `📦 *BUKTI PENGELUARAN PACKAGING (HANDOVER)*\n` +
+  const text = `📦 *BUKTI PENGELUARAN PACKAGING & SURAT JALAN*\n` +
                `━━━━━━━━━━━━━━━━━━━━━\n` +
                `📄 *No. Dokumen Outbound:* ${docNo}\n` +
                (reqBadge ? `${reqBadge}\n` : '') +
                (requester ? `${requester}\n` : '') +
                `🏢 *Tujuan Line / Brand:* ${group.destination}\n` +
                `👷 *PIC Operator Penyerah:* ${group.operator_name} (${group.operator_shift})\n` +
+               (receiver ? `${receiver}\n` : '') +
                `🕒 *Waktu Selesai:* ${dateStr}\n` +
                `━━━━━━━━━━━━━━━━━━━━━\n` +
                `📋 *Rincian Item Material Keluar:*\n${itemsList}` +
                `━━━━━━━━━━━━━━━━━━━━━\n` +
                notesStr +
+               photoNote +
                `✅ *Status:* Selesai Diserahkan ke Line`;
 
   return text;
@@ -872,6 +905,8 @@ function openSubmitModal(taskId) {
   const unitLabel = document.getElementById('submitUnitLabel');
   if (unitLabel) unitLabel.innerText = escapeHtml(task.material_unit || 'Qty');
 
+  const recInput = document.getElementById('submitReceiverName');
+  if (recInput) recInput.value = '';
   document.getElementById('submitNotes').value = '';
 
   App.openModal('modalSubmitTask');
@@ -883,26 +918,29 @@ async function handleFinalTaskSubmit(e) {
 
   const task_id = document.getElementById('submitTaskId').value;
   const actual_qty = App.parseNumber(document.getElementById('submitActualQty').value);
-  const completion_notes = document.getElementById('submitNotes').value.trim();
+  const receiver_name = document.getElementById('submitReceiverName')?.value?.trim() || '';
+  const extra_notes = document.getElementById('submitNotes')?.value?.trim() || '';
 
   if (actual_qty <= 0) {
     App.toast('Jumlah riil yang diserahkan harus lebih dari 0', 'warning', 'Qty Wajib');
     return;
   }
 
-  if (!completion_notes) {
-    App.toast('Catatan penerima di line / PIC wajib diisi!', 'warning', 'Wajib Diisi');
-    const notesInput = document.getElementById('submitNotes');
-    if (notesInput) {
-      notesInput.focus();
-      notesInput.classList.add('border-rose-500', 'bg-rose-50');
-      setTimeout(() => notesInput.classList.remove('border-rose-500', 'bg-rose-50'), 3000);
+  if (!receiver_name) {
+    App.toast('Nama Penerima di Line / PIC wajib diisi!', 'warning', 'Wajib Diisi');
+    const recInput = document.getElementById('submitReceiverName');
+    if (recInput) {
+      recInput.focus();
+      recInput.classList.add('border-rose-500', 'bg-rose-50');
+      setTimeout(() => recInput.classList.remove('border-rose-500', 'bg-rose-50'), 3000);
     }
     return;
   }
 
+  const completion_notes = extra_notes ? `Penerima: ${receiver_name} | ${extra_notes}` : `Penerima: ${receiver_name}`;
+
   if (!taskCompleteSelectedFiles || taskCompleteSelectedFiles.length === 0) {
-    App.toast('Foto bukti penyerahan ke line wajib diunggah minimal 1 foto!', 'warning', 'Foto Wajib');
+    App.toast('Foto Surat Jalan / Bukti penyerahan wajib diunggah minimal 1 foto!', 'warning', 'Foto Wajib');
     return;
   }
 
