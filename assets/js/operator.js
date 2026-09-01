@@ -116,7 +116,7 @@ function switchOpTab(tabName) {
   }
 
   // Update bottom navigation bar active states
-  const bottomNavs = ['home', 'tasks', 'dynamic_count', 'opname', 'req-form', 'req-hist'];
+  const bottomNavs = ['home', 'inbound', 'tasks', 'handover', 'dynamic_count', 'opname', 'req-form', 'req-hist'];
   bottomNavs.forEach(nav => {
     const navBtn = document.getElementById('bottom-nav-' + nav);
     if (navBtn) {
@@ -125,9 +125,9 @@ function switchOpTab(tabName) {
                       (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history');
       if (isMatch) {
         navBtn.classList.remove('text-slate-400', 'font-semibold');
-        navBtn.classList.add('text-amber-700', 'text-emerald-700', 'font-bold');
+        navBtn.classList.add('text-emerald-700', 'font-bold');
       } else {
-        navBtn.classList.remove('text-amber-700', 'text-emerald-700', 'font-bold');
+        navBtn.classList.remove('text-emerald-700', 'font-bold');
         navBtn.classList.add('text-slate-400', 'font-semibold');
       }
     }

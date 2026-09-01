@@ -1028,26 +1028,25 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-[20px] leading-none">fact_check</span>
           <span class="text-[9px] tracking-tight">Riwayat ACC</span>
         </button>
-      <?php else: ?>
-        <!-- Picking Button -->
+        <!-- Barang Masuk (Inbound) Button -->
+        <button onclick="switchOpTab('inbound')" id="bottom-nav-inbound" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">move_to_inbox</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Barang Masuk</span>
+        </button>
+
+        <!-- Barang Keluar (Picking / Tasks) Button -->
         <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
           class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">assignment</span>
-          <span class="text-[9px] tracking-tight">Picking</span>
+          <span class="material-symbols-outlined text-[20px] leading-none">outbox</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Barang Keluar</span>
         </button>
 
-        <!-- Counting Button -->
-        <button onclick="switchOpTab('dynamic_count')" id="bottom-nav-dynamic_count" 
+        <!-- Handover Shift Button -->
+        <button onclick="switchOpTab('handover')" id="bottom-nav-handover" 
           class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">checklist</span>
-          <span class="text-[9px] tracking-tight">Counting</span>
-        </button>
-
-        <!-- Opname Button -->
-        <button onclick="switchOpTab('opname')" id="bottom-nav-opname" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">inventory_2</span>
-          <span class="text-[9px] tracking-tight">Opname</span>
+          <span class="material-symbols-outlined text-[20px] leading-none">published_with_changes</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Handover</span>
         </button>
       <?php endif; ?>
 
