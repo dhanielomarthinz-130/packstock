@@ -735,6 +735,36 @@ if ($action === 'cancel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// 8.5 REACTIVATE / SET TASK STATUS (Admin only)
+if ($action === 'set_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $taskId = (int)($input['task_id'] ?? 0);
+    $taskNo = trim($input['task_no'] ?? '');
+    $newStatus = strtoupper(trim($input['status'] ?? 'IN_PROGRESS'));
+
+    if (!in_array($newStatus, ['PENDING', 'IN_PROGRESS', 'CANCELLED'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Status tidak valid']);
+        exit;
+    }
+
+    if ($taskId > 0) {
+        $stmt = $pdo->prepare("UPDATE tasks SET status = ?, started_at = CASE WHEN ? = 'IN_PROGRESS' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END WHERE id = ?");
+        $stmt->execute([$newStatus, $newStatus, $taskId]);
+    } elseif (!empty($taskNo)) {
+        $stmt = $pdo->prepare("UPDATE tasks SET status = ?, started_at = CASE WHEN ? = 'IN_PROGRESS' AND started_at IS NULL THEN CURRENT_TIMESTAMP ELSE started_at END WHERE task_no = ?");
+        $stmt->execute([$newStatus, $newStatus, $taskNo]);
+    } else {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Task ID atau Nomor Task tidak valid']);
+        exit;
+    }
+
+    echo json_encode(['success' => true, 'message' => "Status penugasan berhasil diubah menjadi {$newStatus}!"]);
+    exit;
+}
+
 // 9. DELETE TASK (Admin only)
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();

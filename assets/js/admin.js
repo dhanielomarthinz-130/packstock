@@ -4350,6 +4350,12 @@ function renderOutboundRows(data, tbody) {
                   <span class="material-symbols-outlined text-[16px]">cancel</span>
                 </button>
               ` : ''}
+              ${isTask && o.status === 'CANCELLED' ? `
+                <button type="button" onclick="reactivateOutboundTask(${o.task_id})" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-900 border border-amber-300 font-bold transition-all inline-flex items-center gap-1 text-[11px] shadow-2xs cursor-pointer" title="Kembalikan status task ke On Proses">
+                  <span class="material-symbols-outlined text-[14px]">replay</span>
+                  <span>On Proses</span>
+                </button>
+              ` : ''}
             </div>
           </td>
         </tr>
@@ -4610,6 +4616,22 @@ async function cancelOutboundTask(taskId) {
     loadStats();
   } else {
     App.toast(res.message || 'Gagal membatalkan task', 'error');
+  }
+}
+
+async function reactivateOutboundTask(taskId) {
+  const res = await App.fetchJson('../api/tasks.php?action=set_status', {
+    method: 'POST',
+    body: JSON.stringify({ task_id: taskId, status: 'IN_PROGRESS' })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', 'Task Aktif Kembali');
+    loadOutboundHistory();
+    loadTasks();
+    loadStats();
+  } else {
+    App.toast(res.message || 'Gagal mengubah status task', 'error');
   }
 }
 
