@@ -1028,6 +1028,7 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-[20px] leading-none">fact_check</span>
           <span class="text-[9px] tracking-tight">Riwayat ACC</span>
         </button>
+      <?php else: ?>
         <!-- Barang Masuk (Inbound) Button -->
         <button onclick="switchOpTab('inbound')" id="bottom-nav-inbound" 
           class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
