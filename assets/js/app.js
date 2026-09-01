@@ -616,6 +616,128 @@ const App = {
         App.initSearchableSelect(s);
       }
     });
+  },
+
+  // 5-MINUTE INACTIVITY AUTO-TIMEOUT SYSTEM (300 SECONDS)
+  initInactivityTimeout() {
+    const path = window.location.pathname.toLowerCase();
+    if (path.endsWith('login') || path.endsWith('login.php') || path.endsWith('maintenance') || path.endsWith('maintenance.php')) {
+      return;
+    }
+
+    const IDLE_LIMIT_MS = 5 * 60 * 1000; // 5 Menit = 300.000 ms
+    const WARNING_MS = 30 * 1000;         // Tampilkan dialog peringatan 30 detik sebelum auto-logout
+    let lastActivity = Date.now();
+    let isWarningShown = false;
+    let countdownTimer = null;
+
+    const recordActivity = () => {
+      lastActivity = Date.now();
+      if (isWarningShown) {
+        closeTimeoutModal();
+      }
+    };
+
+    // User interaction listeners
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+      window.addEventListener(evt, recordActivity, { passive: true });
+    });
+
+    const createTimeoutModal = () => {
+      let modal = document.getElementById('modalInactivityTimeoutWarning');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalInactivityTimeoutWarning';
+        modal.className = 'fixed inset-0 z-[100000] bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-4 animate-fade-in font-sans';
+        modal.innerHTML = `
+          <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-amber-200 text-center space-y-4 animate-scale-up">
+            <div class="w-16 h-16 rounded-3xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto shadow-inner">
+              <span class="material-symbols-outlined text-[36px] animate-pulse">timer</span>
+            </div>
+            <div>
+              <h3 class="font-black text-slate-900 text-base">Sesi Tidak Aktif</h3>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Tidak ada aktivitas selama hampir 5 menit. Anda akan otomatis keluar dalam:
+              </p>
+              <div class="my-2.5 inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-900 px-4 py-1.5 rounded-full">
+                <span class="material-symbols-outlined text-[18px] text-amber-600">hourglass_top</span>
+                <span id="inactivityCountdownSecs" class="font-mono font-black text-base text-amber-700">30</span>
+                <span class="text-xs font-bold">Detik</span>
+              </div>
+            </div>
+            <div class="space-y-2 pt-1">
+              <button type="button" id="btnExtendSession" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                <span>Saya Masih Menggunakan Sistem</span>
+              </button>
+              <button type="button" id="btnLogoutNow" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer">
+                Keluar Sekarang
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('btnExtendSession')?.addEventListener('click', () => {
+          recordActivity();
+          closeTimeoutModal();
+          App.toast('Sesi Anda telah diperpanjang!', 'info', 'Aktif');
+        });
+
+        document.getElementById('btnLogoutNow')?.addEventListener('click', () => {
+          logoutDueToTimeout();
+        });
+      }
+      return modal;
+    };
+
+    const showTimeoutModal = () => {
+      isWarningShown = true;
+      const modal = createTimeoutModal();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      let remainingSecs = Math.round(WARNING_MS / 1000);
+      const countdownEl = document.getElementById('inactivityCountdownSecs');
+      if (countdownEl) countdownEl.innerText = remainingSecs;
+
+      clearInterval(countdownTimer);
+      countdownTimer = setInterval(() => {
+        remainingSecs--;
+        if (countdownEl) countdownEl.innerText = Math.max(0, remainingSecs);
+        if (remainingSecs <= 0) {
+          clearInterval(countdownTimer);
+          logoutDueToTimeout();
+        }
+      }, 1000);
+    };
+
+    const closeTimeoutModal = () => {
+      isWarningShown = false;
+      clearInterval(countdownTimer);
+      const modal = document.getElementById('modalInactivityTimeoutWarning');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    };
+
+    const logoutDueToTimeout = () => {
+      clearInterval(checkInterval);
+      clearInterval(countdownTimer);
+      const isSubdir = path.includes('/admin') || path.includes('/operator');
+      const logoutUrl = isSubdir ? '../logout.php?timeout=1' : 'logout.php?timeout=1';
+      window.location.href = logoutUrl;
+    };
+
+    const checkInterval = setInterval(() => {
+      const idleTime = Date.now() - lastActivity;
+      if (idleTime >= IDLE_LIMIT_MS) {
+        logoutDueToTimeout();
+      } else if (idleTime >= (IDLE_LIMIT_MS - WARNING_MS) && !isWarningShown) {
+        showTimeoutModal();
+      }
+    }, 1000);
   }
 };
 
@@ -626,4 +748,5 @@ window.escapeHtml = escapeHtml;
 
 document.addEventListener('DOMContentLoaded', () => {
   App.initAllSearchableSelects();
+  App.initInactivityTimeout();
 });

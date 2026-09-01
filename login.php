@@ -118,10 +118,23 @@ require_once __DIR__ . '/includes/header.php';
       
       <!-- Top Form Header -->
       <div>
-        <div class="border-b border-slate-100 pb-3 mb-6 flex items-center gap-3.5">
+        <div class="border-b border-slate-100 pb-3 mb-5 flex items-center gap-3.5">
           <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/favicon.svg" alt="Logo" class="w-9 h-9 flex-shrink-0">
           <h2 class="text-3xl font-black text-slate-900 tracking-tight uppercase">Login</h2>
         </div>
+
+        <?php if (isset($_GET['timeout'])): ?>
+          <!-- Session Timeout Banner Notification -->
+          <div class="mb-5 p-3.5 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 flex items-start gap-3 shadow-xs animate-fade-in">
+            <span class="material-symbols-outlined text-amber-600 text-[22px] shrink-0 mt-0.5">timer_off</span>
+            <div>
+              <span class="font-black text-amber-950 block text-xs">Sesi Berakhir (Inactivity Timeout)</span>
+              <span class="text-[11px] text-amber-800 leading-tight block mt-0.5">
+                Sistem otomatis keluar demi keamanan akun karena tidak ada aktivitas selama 5 menit. Silakan masukkan kredensial untuk masuk kembali.
+              </span>
+            </div>
+          </div>
+        <?php endif; ?>
 
         <!-- Form Elements -->
         <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">

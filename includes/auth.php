@@ -88,6 +88,25 @@ class Auth {
             exit;
         }
 
+        // Inactivity timeout: 5 minutes (300 seconds)
+        $maxIdleSeconds = 300;
+        if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $maxIdleSeconds)) {
+            self::logout();
+            if (self::isAjax()) {
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit.', 'timeout' => true]);
+                exit;
+            }
+            $base = self::getBaseUrl();
+            header("Location: {$base}/login?timeout=1");
+            exit;
+        }
+
+        // Update last activity on non-ajax navigation
+        if (!self::isAjax()) {
+            $_SESSION['last_activity'] = time();
+        }
+
         // Release session lock immediately for non-blocking concurrent parallel AJAX requests
         if (self::isAjax() && session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
@@ -165,6 +184,7 @@ class Auth {
                 'role' => $user['role'],
                 'shift' => $userShift
             ];
+            $_SESSION['last_activity'] = time();
 
             $isAdminRole = ($user['role'] === 'teknisi' || $user['role'] === 'admin' || $user['role'] === 'superadmin' || strtolower($user['username']) === 'daniel');
 

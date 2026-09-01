@@ -3,5 +3,7 @@
 require_once __DIR__ . '/includes/auth.php';
 
 Auth::logout();
-header("Location: login");
+$timeout = isset($_GET['timeout']) ? '?timeout=1' : '';
+header("Location: login" . $timeout);
 exit;
+
