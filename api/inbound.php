@@ -235,8 +235,6 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // 4. BATCH MULTIPLE INBOUND TRANSACTIONS (Multi-Item Submissions)
 if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    Auth::requireAdmin();
-
     $input = json_decode(file_get_contents('php://input'), true);
     if (empty($input) && !empty($_POST)) {
         $input = $_POST;
