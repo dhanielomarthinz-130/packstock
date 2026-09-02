@@ -2838,6 +2838,7 @@ async function submitChangeMyShift(e) {
 
     if (res.success) {
       CURRENT_USER_SHIFT = chosenShift;
+      sessionStorage.setItem('packstock_op_shift_confirmed', 'true');
 
       // Update Header & Home UI
       const headerDisplay = document.getElementById('headerUserShiftDisplay');
@@ -2874,19 +2875,40 @@ function initMandatoryShiftGate() {
   // 16:00 to 07:59 -> Shift 2
   const isShift1Time = (hour >= 8 && hour < 16);
 
-  // Set default radio selection based on current clock in Gatekeeper
+  // Determine active shift priority:
+  // 1. If CURRENT_USER_SHIFT is set and valid, prioritize user's saved shift preference.
+  // 2. Fall back to clock time (isShift1Time) only if CURRENT_USER_SHIFT is empty.
+  let isShift1Selected = isShift1Time;
+  if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
+    const lowerShift = CURRENT_USER_SHIFT.toLowerCase();
+    if (lowerShift.includes('shift 1') || lowerShift.includes('pagi')) {
+      isShift1Selected = true;
+    } else if (lowerShift.includes('shift 2') || lowerShift.includes('siang') || lowerShift.includes('sore')) {
+      isShift1Selected = false;
+    }
+  }
+
+  // Set default radio selection based on determined shift
   const gateRadio1 = document.querySelector('input[name="gateActiveShift"][value*="Shift 1"]');
   const gateRadio2 = document.querySelector('input[name="gateActiveShift"][value*="Shift 2"]');
   const badge1 = document.getElementById('gateBadgeShift1');
   const badge2 = document.getElementById('gateBadgeShift2');
 
-  if (isShift1Time) {
+  const isUserDefined = typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT !== '';
+
+  if (isShift1Selected) {
     if (gateRadio1) gateRadio1.checked = true;
-    if (badge1) badge1.classList.remove('hidden');
+    if (badge1) {
+      badge1.innerText = isUserDefined ? 'Shift Terdaftar' : 'Otomatis Terpilih';
+      badge1.classList.remove('hidden');
+    }
     if (badge2) badge2.classList.add('hidden');
   } else {
     if (gateRadio2) gateRadio2.checked = true;
-    if (badge2) badge2.classList.remove('hidden');
+    if (badge2) {
+      badge2.innerText = isUserDefined ? 'Shift Terdaftar' : 'Otomatis Terpilih';
+      badge2.classList.remove('hidden');
+    }
     if (badge1) badge1.classList.add('hidden');
   }
 
@@ -2894,7 +2916,7 @@ function initMandatoryShiftGate() {
   const shiftRadios = document.querySelectorAll('input[name="myActiveShift"]');
   shiftRadios.forEach(r => {
     if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
-      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase())) {
+      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase()) || r.value.toLowerCase().includes(CURRENT_USER_SHIFT.toLowerCase())) {
         r.checked = true;
       }
     } else {
