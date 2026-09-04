@@ -380,6 +380,9 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 i.po_number,
                 i.supplier,
                 i.qty,
+                COALESCE(i.started_at, i.created_at) as started_at,
+                COALESCE(i.completed_at, i.created_at) as completed_at,
+                COALESCE(i.duration_seconds, 0) as duration_seconds,
                 i.created_at,
                 i.notes,
                 m.code as material_code,
@@ -393,8 +396,8 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
         ";
         $params = [];
         if ($mode === 'update' && !empty($lastSyncTime)) {
-            $query .= " WHERE i.created_at > ?";
-            $params = [$lastSyncTime];
+            $query .= " WHERE i.created_at > ? OR i.completed_at > ?";
+            $params = [$lastSyncTime, $lastSyncTime];
         }
         $query .= " ORDER BY i.created_at DESC";
 
@@ -403,13 +406,22 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
         $rows = [];
 
         while ($r = $stmt->fetch()) {
-            $createdRaw = (string)($r['created_at'] ?? '');
-            $time = !empty($createdRaw) ? strtotime($createdRaw) : false;
-            $dateStr = $time ? date('d/m/Y H:i:s', $time) : ($r['created_at'] ?: '-');
+            $startRaw = (string)($r['started_at'] ?? '');
+            $startTime = !empty($startRaw) ? strtotime($startRaw) : false;
+            $startStr = $startTime ? date('d/m/Y H:i:s', $startTime) : ($r['started_at'] ?: '-');
+
+            $finishRaw = (string)($r['completed_at'] ?? '');
+            $finishTime = !empty($finishRaw) ? strtotime($finishRaw) : false;
+            $finishStr = $finishTime ? date('d/m/Y H:i:s', $finishTime) : ($r['completed_at'] ?: '-');
+
+            $durSec = (int)($r['duration_seconds'] ?? 0);
+            $durMin = $durSec > 0 ? round($durSec / 60, 1) : 0;
 
             $rows[] = [
                 $r['inbound_no'], // Primary Key (No. Inbound)
-                $dateStr,
+                $startStr,       // Waktu Mulai (Start)
+                $finishStr,      // Waktu Selesai (Finish)
+                $durMin,         // Durasi (Menit)
                 $r['po_number'] ?: '-',
                 $r['supplier'] ?: '-',
                 $r['material_code'],
@@ -431,7 +443,9 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
             'key_index' => 0, // Column 0 (No. Inbound)
             'headers' => [
                 'No. Inbound',
-                'Tanggal & Waktu',
+                'Waktu Mulai (Start)',
+                'Waktu Selesai (Finish)',
+                'Durasi (Menit)',
                 'No. PO',
                 'Supplier',
                 'Item No (SKU)',
@@ -465,7 +479,9 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                     'Pengambilan Line (Operator Task)' as reason,
                     COALESCE(t.completion_notes, t.notes) as notes,
                     t.status,
+                    COALESCE(t.started_at, t.created_at) as started_at,
                     COALESCE(t.completed_at, t.created_at) as completed_at,
+                    COALESCE(t.duration_seconds, 0) as duration_seconds,
                     t.created_at
                 FROM tasks t
                 JOIN materials m ON t.material_id = m.id
@@ -490,7 +506,9 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                     o.reason,
                     o.notes,
                     'COMPLETED' as status,
+                    COALESCE(o.started_at, o.created_at) as started_at,
                     COALESCE(o.completed_at, o.created_at) as completed_at,
+                    COALESCE(o.duration_seconds, 0) as duration_seconds,
                     o.created_at
                 FROM outbound_transactions o
                 JOIN materials m ON o.material_id = m.id
@@ -508,16 +526,25 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
         $rows = [];
 
         while ($r = $stmt->fetch()) {
-            $dateRaw = (string)($r['completed_at'] ?: ($r['created_at'] ?? ''));
-            $time = !empty($dateRaw) ? strtotime($dateRaw) : false;
-            $dateStr = $time ? date('d/m/Y H:i:s', $time) : ($dateRaw ?: '-');
+            $startRaw = (string)($r['started_at'] ?? '');
+            $startTime = !empty($startRaw) ? strtotime($startRaw) : false;
+            $startStr = $startTime ? date('d/m/Y H:i:s', $startTime) : ($r['started_at'] ?: '-');
+
+            $finishRaw = (string)($r['completed_at'] ?? '');
+            $finishTime = !empty($finishRaw) ? strtotime($finishRaw) : false;
+            $finishStr = $finishTime ? date('d/m/Y H:i:s', $finishTime) : ($r['completed_at'] ?: '-');
+
+            $durSec = (int)($r['duration_seconds'] ?? 0);
+            $durMin = $durSec > 0 ? round($durSec / 60, 1) : 0;
 
             $typeLabel = $r['outbound_type'] === 'TASK_PICKING' ? 'Task Operator' : 'Manual Admin';
             $operatorPIC = $r['operator_name'] ?: ($r['operator_username'] ?: 'Operator');
 
             $rows[] = [
                 $r['outbound_no'], // Primary Key (No Transaksi)
-                $dateStr,
+                $startStr,        // Waktu Mulai (Start)
+                $finishStr,       // Waktu Selesai (Finish)
+                $durMin,          // Durasi (Menit)
                 $typeLabel,
                 $r['status'],
                 $r['material_code'],
@@ -541,7 +568,9 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
             'key_index' => 0, // Column 0 (No Transaksi)
             'headers' => [
                 'No. Transaksi',
-                'Tanggal & Waktu',
+                'Waktu Mulai (Start)',
+                'Waktu Selesai (Finish)',
+                'Durasi (Menit)',
                 'Tipe Outbound',
                 'Status',
                 'Item No (SKU)',
