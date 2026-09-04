@@ -179,7 +179,7 @@ if ($action === 'sync') {
 
     // Post to Google Apps Script Web App
     $ch = curl_init($webAppUrl);
-    curl_setopt_array($ch, [
+    $curlOpts = [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($requestData),
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
@@ -189,7 +189,11 @@ if ($action === 'sync') {
         CURLOPT_SSL_VERIFYPEER => false,
         CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_TIMEOUT => 45
-    ]);
+    ];
+    if (defined('CURL_IPRESOLVE_V4')) {
+        $curlOpts[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;
+    }
+    curl_setopt_array($ch, $curlOpts);
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -197,7 +201,11 @@ if ($action === 'sync') {
     curl_close($ch);
 
     if ($curlErr) {
-        echo json_encode(['success' => false, 'message' => "Gagal mengirim data ke Google Sheets: {$curlErr}"]);
+        $userMsg = "Gagal mengirim data ke Google Sheets: {$curlErr}";
+        if (stripos($curlErr, 'could not resolve host') !== false) {
+            $userMsg = "Gagal menghubungkan ke script.google.com (Koneksi Internet atau DNS Terputus). Pastikan laptop/server terhubung ke internet dan DNS aktif.";
+        }
+        echo json_encode(['success' => false, 'message' => $userMsg]);
         exit;
     }
 
