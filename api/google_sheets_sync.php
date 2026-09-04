@@ -201,11 +201,18 @@ if ($action === 'sync') {
     curl_close($ch);
 
     if ($curlErr) {
-        $userMsg = "Gagal mengirim data ke Google Sheets: {$curlErr}";
+        $userMsg = "Server PHP cURL gagal terhubung ke Google: {$curlErr}";
         if (stripos($curlErr, 'could not resolve host') !== false) {
-            $userMsg = "Gagal menghubungkan ke script.google.com (Koneksi Internet atau DNS Terputus). Pastikan laptop/server terhubung ke internet dan DNS aktif.";
+            $userMsg = "Server hosting (InfinityFree / cURL) memblokir koneksi luar ke script.google.com. Mengalihkan ke Direct Browser Sync...";
         }
-        echo json_encode(['success' => false, 'message' => $userMsg]);
+        echo json_encode([
+            'success' => false,
+            'is_curl_error' => true,
+            'message' => $userMsg,
+            'web_app_url' => $webAppUrl,
+            'request_data' => $requestData,
+            'summary_counts' => $summaryCounts
+        ]);
         exit;
     }
 
@@ -229,6 +236,71 @@ if ($action === 'sync') {
         'details' => $summaryCounts,
         'remote_response' => $resData
     ]);
+    exit;
+}
+
+// =========================================================================
+// 5. GET PAYLOAD (FOR CLIENT-SIDE DIRECT BROWSER SYNC FALLBACK)
+// =========================================================================
+if ($action === 'get_payload') {
+    $webAppUrl = $config['web_app_url'];
+    $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
+    $mode   = trim($_GET['mode'] ?? ($_POST['mode'] ?? 'full'));
+
+    $targetsToProcess = [];
+    if ($target === 'all') {
+        $targetsToProcess = ['inventory', 'vas', 'inbound', 'outbound'];
+    } elseif (in_array($target, ['inventory', 'vas', 'inbound', 'outbound'])) {
+        $targetsToProcess = [$target];
+    } else {
+        $targetsToProcess = ['inventory', 'vas', 'inbound', 'outbound'];
+    }
+
+    $sheetsPayload = [];
+    $summaryCounts = [];
+
+    foreach ($targetsToProcess as $t) {
+        $lastSyncTime = $config['last_synced'][$t] ?? null;
+        $sheetData = buildSheetData($pdo, $t, $mode, $lastSyncTime);
+        $sheetsPayload[] = $sheetData;
+        $summaryCounts[$t] = count($sheetData['rows']);
+    }
+
+    $requestData = [
+        'action' => 'sync_packstock_data',
+        'mode'   => $mode,
+        'target' => $target,
+        'timestamp' => date('d/m/Y H:i:s'),
+        'timestamp_iso' => date('Y-m-d H:i:s'),
+        'user'   => $_SESSION['user_username'] ?? 'admin',
+        'sheets' => $sheetsPayload
+    ];
+
+    echo json_encode([
+        'success' => true,
+        'web_app_url' => $webAppUrl,
+        'request_data' => $requestData,
+        'summary_counts' => $summaryCounts
+    ]);
+    exit;
+}
+
+// =========================================================================
+// 6. MARK SYNCED (AFTER CLIENT-SIDE DIRECT BROWSER SYNC COMPLETES)
+// =========================================================================
+if ($action === 'mark_synced') {
+    $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
+    $targetsToProcess = ($target === 'all') ? ['inventory', 'vas', 'inbound', 'outbound'] : [$target];
+    $nowStr = date('Y-m-d H:i:s');
+
+    foreach ($targetsToProcess as $t) {
+        if (isset($config['last_synced'][$t])) {
+            $config['last_synced'][$t] = $nowStr;
+        }
+    }
+    saveGoogleSheetsConfig($configFile, $config);
+
+    echo json_encode(['success' => true, 'synced_at' => date('d/m/Y H:i:s')]);
     exit;
 }
 

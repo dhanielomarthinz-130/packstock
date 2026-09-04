@@ -11268,7 +11268,57 @@ async function triggerGoogleSheetsSync(mode = 'update') {
   }
 
   try {
-    const res = await App.fetchJson(`../api/google_sheets_sync.php?action=sync&target=${selectedTarget}&mode=${mode}`);
+    let res = await App.fetchJson(`../api/google_sheets_sync.php?action=sync&target=${selectedTarget}&mode=${mode}`);
+    
+    // Client-side fallback if server PHP cURL is blocked (InfinityFree hosting environment / cURL error)
+    if (!res.success && (res.is_curl_error || res.request_data || (res.message && res.message.toLowerCase().includes('curl')))) {
+      if (logDetails) {
+        logDetails.innerHTML += `<br><span class="text-amber-400 font-bold">[INFO] Host InfinityFree memblokir PHP cURL. Mengalihkan ke Direct Browser Sync...</span>`;
+      }
+      
+      let webAppUrl = res.web_app_url || googleSheetsCurrentConfig?.web_app_url;
+      let requestData = res.request_data;
+
+      if (!requestData) {
+        const payloadRes = await App.fetchJson(`../api/google_sheets_sync.php?action=get_payload&target=${selectedTarget}&mode=${mode}`);
+        if (payloadRes.success) {
+          requestData = payloadRes.request_data;
+          if (!webAppUrl) webAppUrl = payloadRes.web_app_url;
+        }
+      }
+
+      if (webAppUrl && requestData) {
+        try {
+          await fetch(webAppUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(requestData)
+          });
+
+          await App.fetchJson(`../api/google_sheets_sync.php?action=mark_synced&target=${selectedTarget}`);
+
+          const totalRowsAll = requestData.sheets ? requestData.sheets.reduce((acc, s) => acc + (s.rows ? s.rows.length : 0), 0) : 0;
+          const msgOk = `Berhasil melakukan ${modeText} ke Google Sheet via Direct Browser Sync! (Total: ${totalRowsAll} baris data diproses).`;
+
+          if (logDetails) {
+            logDetails.innerHTML += `<br><span class="text-emerald-400 font-bold">[OK] ${escapeHtml(msgOk)}</span>`;
+          }
+          App.toast(msgOk, 'success', '✅ Sync Google Sheet Berhasil');
+          await refreshMaintGoogleSheetsConfigUI();
+
+          setTimeout(() => {
+            if (progressBox) progressBox.classList.add('hidden');
+          }, 4000);
+          return;
+        } catch (clientErr) {
+          if (logDetails) {
+            logDetails.innerHTML += `<br><span class="text-rose-400 font-bold">[ERROR] Direct Browser Sync gagal: ${escapeHtml(clientErr.toString())}</span>`;
+          }
+        }
+      }
+    }
+
     if (res.success) {
       if (logDetails) {
         logDetails.innerHTML += `<br><span class="text-emerald-400 font-bold">[OK] ${escapeHtml(res.message)}</span>`;
