@@ -3379,7 +3379,7 @@ async function handleConsumableRequestSubmit() {
   const destination = destSelect ? destSelect.value.trim() : '';
 
   if (!destination) {
-    App.toast('Silakan pilih Tujuan Brand / Line Produksi (HANASUI, NCO, FYNE, EOMMA)!', 'warning');
+    App.toast('Silakan pilih Tujuan Brand / Line Produksi (HANASUI, FYNE, NCO, EOMMA, AFFILIATE)!', 'warning');
     destSelect?.focus();
     return;
   }

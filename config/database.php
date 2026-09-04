@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 3;
+    private const CURRENT_SCHEMA_VERSION = 4;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -155,6 +155,7 @@ class Database {
                 `rack_location` VARCHAR(100) DEFAULT 'Gudang Utama',
                 `min_stock` INT DEFAULT 20,
                 `current_stock` INT DEFAULT 0,
+                `vas_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
                 `description` TEXT,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -417,8 +418,35 @@ class Database {
             "ALTER TABLE `stock_opname_items` MODIFY COLUMN `final_qty` DECIMAL(12,2) NULL",
             "ALTER TABLE `stock_opname_items` MODIFY COLUMN `difference` DECIMAL(12,2) DEFAULT 0.00",
             "ALTER TABLE `stock_opname_item_stages` MODIFY COLUMN `count_qty` DECIMAL(12,2) NULL",
-            "ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'"
+            "ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'",
+            "ALTER TABLE `materials` ADD COLUMN `vas_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00"
         ];
+
+        foreach ($migrations as $mSql) {
+            try {
+                $pdo->exec($mSql);
+            } catch (Throwable $e) {
+                // Column already exists or migration applied
+            }
+        }
+
+        // VAS Transactions (Pencatatan Riwayat Transfer Stok Zone VAS)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `vas_transactions` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `vas_no` VARCHAR(60) NOT NULL UNIQUE,
+                `material_id` INT NOT NULL,
+                `type` ENUM('TRANSFER_IN', 'TRANSFER_OUT') NOT NULL,
+                `qty` DECIMAL(12,2) NOT NULL,
+                `reference_no` VARCHAR(100) NULL,
+                `notes` TEXT NULL,
+                `created_by` INT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX (`material_id`),
+                INDEX (`type`),
+                INDEX (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
 
         // Create performance indexes for MySQL
         $mysqlIndexes = [
@@ -430,7 +458,8 @@ class Database {
             "CREATE INDEX `idx_inb_date` ON `inbound_transactions` (`created_at`)",
             "CREATE INDEX `idx_outb_date` ON `outbound_transactions` (`created_at`)",
             "CREATE INDEX `idx_mat_cat_stock` ON `materials` (`category`, `current_stock`)",
-            "CREATE INDEX `idx_menu_perm_role_user` ON `menu_permissions` (`role`, `user_id`, `menu_key`)"
+            "CREATE INDEX `idx_menu_perm_role_user` ON `menu_permissions` (`role`, `user_id`, `menu_key`)",
+            "CREATE INDEX `idx_vas_mat_date` ON `vas_transactions` (`material_id`, `created_at`)"
         ];
         foreach ($mysqlIndexes as $idxSql) {
             try {
@@ -463,6 +492,7 @@ class Database {
                 rack_location TEXT DEFAULT 'Gudang Utama',
                 min_stock REAL DEFAULT 20.0,
                 current_stock REAL DEFAULT 0.0,
+                vas_stock REAL DEFAULT 0.0,
                 description TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -613,6 +643,17 @@ class Database {
                 notes TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+            CREATE TABLE IF NOT EXISTS vas_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                vas_no TEXT NOT NULL UNIQUE,
+                material_id INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                qty REAL NOT NULL,
+                reference_no TEXT NULL,
+                notes TEXT NULL,
+                created_by INTEGER NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
         ");
 
         // Schema migrations for SQLite
@@ -634,7 +675,8 @@ class Database {
             "ALTER TABLE handovers ADD COLUMN is_shared INTEGER DEFAULT 0",
             "ALTER TABLE handovers ADD COLUMN from_shift TEXT NULL",
             "ALTER TABLE handovers ADD COLUMN receiver_shift TEXT NULL",
-            "ALTER TABLE consumable_requests ADD COLUMN photos TEXT NULL"
+            "ALTER TABLE consumable_requests ADD COLUMN photos TEXT NULL",
+            "ALTER TABLE materials ADD COLUMN vas_stock REAL DEFAULT 0.0"
         ];
 
         foreach ($sqliteMigrations as $sql) {
@@ -820,6 +862,8 @@ class Database {
                 'dynamic_counting_detail' => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'vas'                     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'stock_transfer'          => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'mutations'               => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],

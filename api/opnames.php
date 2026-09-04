@@ -705,12 +705,33 @@ if ($action === 'counting_progress_summary') {
     $stmtLeaderboard->execute($lbParams);
     $leaderboard = $stmtLeaderboard->fetchAll();
 
-    // Separate Stock Opname and Dynamic Count sessions from the filtered $sessions
-    $soSessions = array_filter($sessions, function($s) { return $s['counting_type'] === 'STOCK_OPNAME'; });
-    $dynSessions = array_filter($sessions, function($s) { return $s['counting_type'] === 'DYNAMIC_COUNT'; });
+    // Fetch session IDs for Stock Opname chart
+    $soWhere = ["so.counting_type = 'STOCK_OPNAME'"];
+    $soParams = [];
+    if (!empty($date)) {
+        $soWhere[] = "DATE(so.created_at) = ?";
+        $soParams[] = $date;
+    }
+    $soWhere[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
+    $soWhereSql = implode(" AND ", $soWhere);
 
-    $soSessionIds = array_column($soSessions, 'id');
-    $dynSessionIds = array_column($dynSessions, 'id');
+    $stmtSoIds = $pdo->prepare("SELECT id FROM stock_opnames so WHERE {$soWhereSql}");
+    $stmtSoIds->execute($soParams);
+    $soSessionIds = $stmtSoIds->fetchAll(PDO::FETCH_COLUMN);
+
+    // Fetch session IDs for Dynamic Count chart
+    $dynWhere = ["so.counting_type = 'DYNAMIC_COUNT'"];
+    $dynParams = [];
+    if (!empty($date)) {
+        $dynWhere[] = "DATE(so.created_at) = ?";
+        $dynParams[] = $date;
+    }
+    $dynWhere[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
+    $dynWhereSql = implode(" AND ", $dynWhere);
+
+    $stmtDynIds = $pdo->prepare("SELECT id FROM stock_opnames so WHERE {$dynWhereSql}");
+    $stmtDynIds->execute($dynParams);
+    $dynSessionIds = $stmtDynIds->fetchAll(PDO::FETCH_COLUMN);
 
     // 1. Stock Opname Progress
     $opnameCountedSkus = 0;
@@ -718,9 +739,7 @@ if ($action === 'counting_progress_summary') {
     $opnameUncountedSkus = 0;
     $opnameProgressPct = 0;
 
-    $soTotalItems = array_sum(array_column($soSessions, 'total_items'));
-
-    if (!empty($soSessionIds) && $soTotalItems > 0) {
+    if (!empty($soSessionIds)) {
         $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0");
         $totalDbSkusPositive = (int)$stmtDbPos->fetchColumn();
 
@@ -742,9 +761,7 @@ if ($action === 'counting_progress_summary') {
     $dynamicPendingSkus = 0;
     $dynamicProgressPct = 0;
 
-    $dynTotalItems = array_sum(array_column($dynSessions, 'total_items'));
-
-    if (!empty($dynSessionIds) && $dynTotalItems > 0) {
+    if (!empty($dynSessionIds)) {
         $inClauseDyn = implode(',', array_map('intval', $dynSessionIds));
         $stmtDynAssign = $pdo->query("
             SELECT COUNT(*) 

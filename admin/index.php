@@ -74,62 +74,68 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
+          <!-- 1. Stock Inventory -->
           <button onclick="switchAdminTab('inventory')" id="nav-inventory" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">shelves</span>
-              <span class="sidebar-text truncate">Stock Kemas</span>
-            </div>
-            <span id="sidebarAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs">0</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Inventory">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0">shelves</span>
+            <span class="sidebar-text truncate">Stock Inventory</span>
           </button>
 
-          <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis (Lead Time 1 Minggu)">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
-              <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
-            </div>
-            <span id="sidebarReorderAlertBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-600 text-white shadow-xs animate-pulse">0</span>
+          <!-- 2. Stock VAS -->
+          <button onclick="switchAdminTab('vas')" id="nav-vas" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock VAS">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-purple-600">precision_manufacturing</span>
+            <span class="sidebar-text truncate">Stock VAS</span>
           </button>
 
+          <!-- 3. Barang Masuk -->
           <button onclick="switchAdminTab('inbound')" id="nav-inbound" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Masuk">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">move_to_inbox</span>
             <span class="sidebar-text truncate">Barang Masuk</span>
           </button>
 
+          <!-- 4. Barang Keluar -->
           <button onclick="switchAdminTab('outbound')" id="nav-outbound" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Keluar">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0">outbox</span>
             <span class="sidebar-text truncate">Barang Keluar</span>
           </button>
 
-          <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Consumable Operator & Approval ACC">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-amber-600">shopping_cart_checkout</span>
-              <span class="sidebar-text truncate">Request Consumable</span>
-            </div>
-            <span id="sidebarConsumableReqBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-xs">0</span>
+          <!-- 5. Stock Transfer -->
+          <button onclick="switchAdminTab('stock_transfer')" id="nav-stock_transfer" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Transfer (Stock Inventory <-> Stock VAS)">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-indigo-600">swap_horizontal_circle</span>
+            <span class="sidebar-text truncate">Stock Transfer</span>
           </button>
 
+          <!-- 6. Request Consumable -->
+          <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Consumable Operator & Approval ACC">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-amber-600">shopping_cart_checkout</span>
+            <span class="sidebar-text truncate">Request Consumable</span>
+          </button>
+
+          <!-- 7. Peringatan PO -->
+          <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
+            <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
+          </button>
+
+          <!-- 8. Handover Shift -->
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-rose-600">published_with_changes</span>
-              <span class="sidebar-text truncate">Handover Shift</span>
-            </div>
-            <span id="sidebarHandoverBadge" class="sidebar-badge hidden px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-rose-50 text-rose-700 border border-rose-200">0</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-rose-600">published_with_changes</span>
+            <span class="sidebar-text truncate">Handover Shift</span>
           </button>
 
           <?php if (Auth::isSuperAdmin()): ?>
+          <!-- 9. Audit Mutasi Stok -->
           <button onclick="switchAdminTab('mutations')" id="nav-mutations" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
-            <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">history_edu</span>
-              <span class="sidebar-text truncate">Audit Mutasi Stok</span>
-            </div>
-            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Audit</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0">history_edu</span>
+            <span class="sidebar-text truncate">Audit Mutasi Stok</span>
           </button>
           <?php endif; ?>
         </div>
@@ -1102,10 +1108,6 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Action Buttons (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button onclick="switchAdminTab('reorder_alerts')" class="h-[38px] px-3.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-extrabold cursor-pointer animate-pulse" title="Buka Rekomendasi Purchase Order & Stok Menipis (Lead Time 1 Minggu)">
-              <span class="material-symbols-outlined text-[18px]">notification_important</span>
-              <span>Peringatan PO (Stok Kritis)</span>
-            </button>
 
             <button onclick="loadMaterials()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Master">
               <span class="material-symbols-outlined text-[18px]">refresh</span>
@@ -1127,6 +1129,13 @@ require_once __DIR__ . '/../includes/header.php';
               <span>Export Master</span>
             </a>
 
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true)" class="h-[38px] px-3.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Data Stock Inventory ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
+              <span>Sync Google Sheet</span>
+            </button>
+            <?php endif; ?>
+
             <button onclick="openAddMaterialModal()" class="h-[38px] px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Tambah Material Packaging Baru">
               <span class="material-symbols-outlined text-[18px]">add_circle</span>
               <span>Tambah Material</span>
@@ -1147,6 +1156,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="p-3 text-center border-r border-white/20 font-bold">Total Masuk (+)</th>
                   <th class="p-3 text-center border-r border-white/20 font-bold">Total Keluar (-)</th>
                   <th class="p-3 text-center font-black border-r border-white/20">Sisa Stok Akhir</th>
+                  <th class="p-3 text-center font-black border-r border-white/20 bg-purple-800/90 text-amber-300" title="Kolom Virtual: Jumlah Stok yang saat ini tersimpan di Zone VAS">Stok Zone VAS</th>
                   <th class="p-3 text-center border-r border-white/20">Satuan (UOM)</th>
                   <th class="p-3 border-r border-white/20">Lokasi Rak</th>
                   <th class="p-3 border-r border-white/20">Status</th>
@@ -1933,8 +1943,14 @@ require_once __DIR__ . '/../includes/header.php';
 
             <div class="premium-datepicker-wrapper">
               <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
-              <input type="text" id="inboundDateFilter" value="<?= date('Y-m-d') ?>" onchange="loadInboundHistory()" placeholder="Filter Tanggal..." 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Filter Tanggal Inbound">
+              <input type="text" id="inboundFromDateFilter" onchange="loadInboundHistory()" placeholder="Mulai Dari..." 
+                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Mulai (From Date)">
+            </div>
+            <span class="text-slate-400 font-bold text-xs">s/d</span>
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
+              <input type="text" id="inboundToDateFilter" onchange="loadInboundHistory()" placeholder="Sampai Dengan..." 
+                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Akhir (To Date)">
             </div>
           </div>
 
@@ -1949,6 +1965,13 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
               <span>Export Inbound</span>
             </a>
+
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Riwayat Barang Masuk ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
+              <span>Sync Google Sheet</span>
+            </button>
+            <?php endif; ?>
 
             <button onclick="openAddInboundModal()" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Input Penerimaan Barang Masuk">
               <span class="material-symbols-outlined text-[18px]">add_box</span>
@@ -1983,9 +2006,10 @@ require_once __DIR__ . '/../includes/header.php';
       <div id="tab-outbound" class="hidden space-y-4">
 
         <!-- Outbound Control Bar -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-2 flex-1">
-            <div class="relative flex-1 min-w-[180px] max-w-md">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+          <!-- Row 1: Search & Action Buttons -->
+          <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+            <div class="relative flex-1 min-w-[240px]">
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                 <span class="material-symbols-outlined text-[18px]">search</span>
               </span>
@@ -1993,48 +2017,70 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
             </div>
 
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-amber-700">calendar_today</span>
-              <input type="text" id="outboundDateFilter" value="<?= date('Y-m-d') ?>" onchange="loadOutboundHistory()" placeholder="Filter Tanggal..." 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600" title="Filter Tanggal Outbound">
+            <!-- Action Buttons (Uniform 38px Height) -->
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button id="btnRefreshOutbound" onclick="loadOutboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Outbound">
+                <span class="material-symbols-outlined text-[18px]">refresh</span>
+                <span>Refresh</span>
+              </button>
+
+              <a href="export.php?type=outbound" target="_blank" class="h-[38px] px-3.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Riwayat Barang Keluar ke File Excel (.xlsx)">
+                <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
+                <span>Export Outbound</span>
+              </a>
+
+              <?php if (Auth::isAdmin()): ?>
+              <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Riwayat Barang Keluar ke Google Sheet">
+                <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
+                <span>Sync Google Sheet</span>
+              </button>
+              <?php endif; ?>
+
+              <button onclick="openAddOutboundModal()" class="h-[38px] px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Input Pengeluaran Manual Admin">
+                <span class="material-symbols-outlined text-[18px]">outbox</span>
+                <span>Keluar Manual</span>
+              </button>
+
+              <button onclick="switchAdminTab('tasks')" class="h-[38px] px-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Buka Form Penugasan Operator (Task Dispatch)">
+                <span class="material-symbols-outlined text-[18px]">assignment_add</span>
+                <span>Tugaskan Operator</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: Secondary Filters (Date Range & Select Dropdowns) -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+            <!-- Date Range Group -->
+            <div class="flex items-center gap-1.5 bg-slate-50/80 p-1 px-2.5 rounded-lg border border-slate-200/90">
+              <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-amber-700">date_range</span>
+                <span>Periode:</span>
+              </span>
+              <div class="premium-datepicker-wrapper">
+                <input type="text" id="outboundFromDateFilter" onchange="loadOutboundHistory()" placeholder="Mulai Dari..." 
+                  class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Mulai (From Date)">
+              </div>
+              <span class="text-slate-400 font-bold text-xs">s/d</span>
+              <div class="premium-datepicker-wrapper">
+                <input type="text" id="outboundToDateFilter" onchange="loadOutboundHistory()" placeholder="Sampai Dengan..." 
+                  class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Akhir (To Date)">
+              </div>
             </div>
 
-            <select id="outboundTypeFilter" onchange="loadOutboundHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+            <!-- Select Dropdown Filters -->
+            <select id="outboundTypeFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
               <option value="ALL">Semua Jenis Pengeluaran</option>
               <option value="TASK_PICKING">Pengambilan Line (Operator Task)</option>
               <option value="MANUAL_OUTBOUND">Pengeluaran Manual (Admin)</option>
             </select>
 
-            <select id="outboundStatusFilter" onchange="loadOutboundHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+            <select id="outboundStatusFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
               <option value="ALL">Semua Status Pengerjaan</option>
               <option value="IN_PROGRESS">On Proses / In Progress</option>
               <option value="PENDING">Pending (Menunggu)</option>
               <option value="COMPLETED">Selesai Dikerjakan</option>
               <option value="CANCELLED">Dibatalkan</option>
             </select>
-          </div>
-
-          <!-- Outbound Actions (Uniform 38px Height) -->
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button id="btnRefreshOutbound" onclick="loadOutboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Outbound">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-
-            <a href="export.php?type=outbound" target="_blank" class="h-[38px] px-3.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Riwayat Barang Keluar ke File Excel (.xlsx)">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
-              <span>Export Outbound</span>
-            </a>
-
-            <button onclick="openAddOutboundModal()" class="h-[38px] px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Input Pengeluaran Manual Admin">
-              <span class="material-symbols-outlined text-[18px]">outbox</span>
-              <span>Keluar Manual</span>
-            </button>
-
-            <button onclick="switchAdminTab('tasks')" class="h-[38px] px-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Buka Form Penugasan Operator (Task Dispatch)">
-              <span class="material-symbols-outlined text-[18px]">assignment_add</span>
-              <span>Tugaskan Operator</span>
-            </button>
           </div>
         </div>
 
@@ -2074,8 +2120,14 @@ require_once __DIR__ . '/../includes/header.php';
             <div class="flex items-center gap-1.5">
               <div class="premium-datepicker-wrapper">
                 <span class="material-symbols-outlined picker-icon text-amber-600">calendar_today</span>
-                <input type="text" id="adminConsumableDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Filter Tanggal..." 
-                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 cursor-pointer" title="Filter Tanggal Pengajuan">
+                <input type="text" id="adminConsumableFromDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Mulai Dari..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 cursor-pointer" title="Tanggal Mulai (From Date)">
+              </div>
+              <span class="text-slate-400 font-bold text-xs">s/d</span>
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-amber-600">calendar_today</span>
+                <input type="text" id="adminConsumableToDateFilter" onchange="loadAdminConsumableRequests()" placeholder="Sampai Dengan..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 cursor-pointer" title="Tanggal Akhir (To Date)">
               </div>
               <button type="button" onclick="clearConsumableDateFilter()" class="h-[38px] px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer" title="Hapus Filter Tanggal">
                 <span class="material-symbols-outlined text-[16px]">restart_alt</span>
@@ -2253,7 +2305,157 @@ require_once __DIR__ . '/../includes/header.php';
             </table>
           </div>
         </div>
+      </div>
 
+      <!-- ================= 4.1 TAB: ZONE VAS (VALUE ADDED SERVICE) ================= -->
+      <div id="tab-vas" class="hidden space-y-4">
+        <!-- Top Toolbar & Search -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 flex-1">
+            <div class="relative flex-1 min-w-[200px] max-w-md">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[18px]">search</span>
+              </span>
+              <input type="text" id="vasSearchInput" oninput="loadVasStock()" placeholder="Cari SKU Code, Nama Material, Rak..." 
+                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-purple-600 focus:bg-white transition-colors">
+            </div>
+
+            <select id="vasCategoryFilter" onchange="loadVasStock()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-purple-600">
+              <option value="all">Semua Kategori Material</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="loadVasStock()" class="h-[38px] px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 border border-slate-200 shadow-2xs">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh</span>
+            </button>
+
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true)" class="h-[38px] px-3.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Data Stock VAS ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px] text-purple-200">table_chart</span>
+              <span>Sync Google Sheet</span>
+            </button>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <!-- Stok Active Table Container -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-purple-50/40">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                <span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-slate-900 text-sm">Monitoring Stok di Zone VAS</h3>
+                <p class="text-[11px] text-slate-400">Klik Item No / Nama SKU untuk melihat detail riwayat mutasi masuk & keluar Zone VAS</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-purple-900 text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-purple-950 whitespace-nowrap">
+                <tr>
+                  <th class="p-3 border-r border-white/20">Item No (SKU)</th>
+                  <th class="p-3 border-r border-white/20">Item Description</th>
+                  <th class="p-3 border-r border-white/20">Kategori</th>
+                  <th class="p-3 border-r border-white/20">Lokasi Rak</th>
+                  <th class="p-3 text-center border-r border-white/20">Stok Inventory</th>
+                  <th class="p-3 text-center font-black border-r border-white/20 bg-purple-800 text-amber-300">Stok Zone VAS</th>
+                  <th class="p-3 text-center">Satuan (UOM)</th>
+                </tr>
+              </thead>
+              <tbody id="vasTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 4.2 TAB: STOCK TRANSFER (STOCK INVENTORY <-> ZONE VAS) ================= -->
+      <div id="tab-stock_transfer" class="hidden space-y-4">
+        <!-- Top Toolbar & Search -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 flex-1">
+            <div class="relative flex-1 min-w-[200px] max-w-md">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[18px]">search</span>
+              </span>
+              <input type="text" id="stSearchInput" oninput="loadStockTransferHistory()" placeholder="Cari No Transaksi, SKU Code, Nama Material, Catatan..." 
+                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
+            </div>
+
+            <select id="stTypeFilter" onchange="loadStockTransferHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-600">
+              <option value="ALL">Semua Arah Transfer</option>
+              <option value="TRANSFER_IN">Stock Inventory &rarr; Zone VAS (Masuk)</option>
+              <option value="TRANSFER_OUT">Zone VAS &rarr; Stock Inventory (Keluar Balik)</option>
+              <option value="VAS_OUTBOUND">Zone VAS &rarr; Outbound / Keluar (Disposal)</option>
+            </select>
+
+            <!-- From Date -->
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
+              <input type="text" id="stFromDateFilter" placeholder="Mulai Dari..." onchange="loadStockTransferHistory()" 
+                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Mulai (From Date)">
+            </div>
+
+            <span class="text-slate-400 font-bold text-xs">s/d</span>
+
+            <!-- To Date -->
+            <div class="premium-datepicker-wrapper">
+              <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
+              <input type="text" id="stToDateFilter" placeholder="Sampai Dengan..." onchange="loadStockTransferHistory()" 
+                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Akhir (To Date)">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="loadStockTransferHistory()" class="h-[38px] px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 border border-slate-200 shadow-2xs">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+              <span>Refresh Log</span>
+            </button>
+            <button type="button" onclick="openStockTransferModal('IN_VAS')" class="h-[38px] px-4 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-indigo-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">swap_horizontal_circle</span>
+              <span>Stock Transfer</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- History Table Container -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
+                <span class="material-symbols-outlined text-[20px]">swap_horizontal_circle</span>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-slate-900 text-sm">Riwayat Audit Stock Transfer</h3>
+                <p class="text-[11px] text-slate-400">Daftar lengkap pergerakan transfer stok antara Stock Inventory dan Zone VAS</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-slate-100/80 text-slate-700 uppercase font-extrabold text-[10px] tracking-wider border-b border-slate-200 whitespace-nowrap">
+                <tr>
+                  <th class="p-3">No Transaksi</th>
+                  <th class="p-3">Material / SKU</th>
+                  <th class="p-3 text-center">From (Asal)</th>
+                  <th class="p-3 text-center">To (Tujuan)</th>
+                  <th class="p-3 text-center">Qty Transfer</th>
+                  <th class="p-3">Catatan / Keterangan</th>
+                  <th class="p-3">Operator / User</th>
+                  <th class="p-3 text-right">Tanggal & Waktu</th>
+                </tr>
+              </thead>
+              <tbody id="stHistoryTableBody" class="divide-y divide-slate-100 text-xs">
+                <!-- Rows populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- ================= 5. TAB: MANAJEMEN PENUGASAN OPERATOR (TASK DISPATCH) ================= -->
@@ -2323,9 +2525,10 @@ require_once __DIR__ . '/../includes/header.php';
                   <select id="bulkHeaderDestination" onchange="syncBulkDestinationToRows()" 
                     class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 text-xs font-bold text-slate-800 shadow-2xs" data-no-search>
                     <option value="HANASUI" selected>HANASUI</option>
-                    <option value="NCO">NCO</option>
                     <option value="FYNE">FYNE</option>
+                    <option value="NCO">NCO</option>
                     <option value="EOMMA">EOMMA</option>
+                    <option value="AFFILIATE">AFFILIATE</option>
                   </select>
                 </div>
 
@@ -3096,6 +3299,70 @@ require_once __DIR__ . '/../includes/header.php';
               </button>
             </div>
 
+          </div>
+        <!-- Section 3: Google Sheets Sync Integration & Settings (Super Admin Only) -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 pt-2">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                <span class="material-symbols-outlined text-[22px]">table_chart</span>
+              </div>
+              <div>
+                <h3 class="font-extrabold text-slate-900 text-sm sm:text-base">Pengaturan Integrasi Google Sheets Sync</h3>
+                <p class="text-xs text-slate-500">Konfigurasi Web App URL dan kode script receiver Google Apps Script</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-900 border border-emerald-300">Live Sync Settings</span>
+          </div>
+
+          <!-- Web App URL Input Form -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <label class="block text-xs font-bold text-slate-800">Google Apps Script Web App URL <span class="text-rose-500">*</span></label>
+            <div class="flex items-center gap-2">
+              <input type="url" id="maintInputWebAppUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
+                class="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 outline-none focus:border-emerald-600 transition-colors">
+              
+              <button type="button" onclick="saveMaintGoogleSheetsUrlConfig()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs">
+                Simpan URL
+              </button>
+              
+              <button type="button" onclick="pingGoogleSheetsConnection()" class="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer border border-slate-200">
+                Tes Ping
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500">URL didapatkan setelah Anda memilih <b>Deploy > New deployment > Web app</b> di Google Apps Script Editor.</p>
+          </div>
+
+          <!-- Copy Code & Tutorial -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-emerald-600 text-[18px]">code</span>
+                <span>Kode Script Penerima (Google Apps Script)</span>
+              </h4>
+              <button type="button" onclick="copyGoogleAppsScriptTemplate()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-800 border border-emerald-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs">
+                <span class="material-symbols-outlined text-[15px] text-emerald-700">content_copy</span>
+                <span id="maintCopyBtnLabel">Salin Kode Script</span>
+              </button>
+            </div>
+
+            <div class="relative">
+              <textarea id="maintCodeTemplateArea" readonly rows="7" class="w-full p-3 bg-slate-900 text-emerald-300 rounded-xl text-[11px] font-mono leading-relaxed outline-none border border-slate-800 select-all"></textarea>
+            </div>
+
+            <!-- Step-by-step Setup Guide -->
+            <div class="pt-2 space-y-2 border-t border-slate-200">
+              <h5 class="text-xs font-bold text-slate-800">Panduan Setup 1 Menit:</h5>
+              <ol class="text-[11px] text-slate-600 space-y-1.5 pl-4 list-decimal leading-relaxed">
+                <li>Buka <a href="https://sheets.new" target="_blank" class="text-emerald-700 underline font-bold">Google Sheets Baru</a> di browser Anda.</li>
+                <li>Klik menu <b>Ekstensi</b> &rarr; <b>Apps Script</b>.</li>
+                <li>Hapus semua kode bawaan, lalu <b>PASTE (Tempel)</b> kode yang disalin di atas.</li>
+                <li>Klik tombol <b>Deploy</b> (Kanan Atas) &rarr; pilih <b>New Deployment</b>.</li>
+                <li>Pada opsi <i>Select type</i> (⚙️), pilih <b>Web App</b>.</li>
+                <li>Atur <b>Execute as</b>: <code class="bg-slate-200 px-1 rounded text-slate-800 font-bold">Me</code>, dan <b>Who has access</b>: <code class="bg-slate-200 px-1 rounded text-slate-800 font-bold">Anyone</code>.</li>
+                <li>Klik <b>Deploy</b>, berikan izin akses Google, lalu <b>Salin Web App URL</b> dan tempelkan di form atas.</li>
+              </ol>
+            </div>
           </div>
         </div>
 
@@ -4309,11 +4576,13 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="block font-bold text-slate-700 mb-1">Tujuan Brand / Line <span class="text-rose-500">*</span></label>
           <select id="editConsumableDestination" required class="w-full h-[38px] px-3 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:bg-white focus:border-blue-600 text-xs font-semibold">
             <option value="HANASUI">HANASUI</option>
+            <option value="FYNE">FYNE</option>
+            <option value="NCO">NCO</option>
+            <option value="EOMMA">EOMMA</option>
+            <option value="AFFILIATE">AFFILIATE</option>
             <option value="THE ORIGINOTE">THE ORIGINOTE</option>
             <option value="SKINTIFIC">SKINTIFIC</option>
             <option value="GLAD2GLOW">GLAD2GLOW</option>
-            <option value="FYNE">FYNE</option>
-            <option value="NCO">NCO</option>
             <option value="FEALI">FEALI</option>
             <option value="Line Packing 1">Line Packing 1</option>
             <option value="Line Packing 2">Line Packing 2</option>
@@ -4818,6 +5087,364 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <div class="w-full text-center text-white/80 text-xs px-2" id="adminViewerImageDesc"></div>
+  </div>
+</div>
+
+<!-- ================= MODAL: DETAIL RIWAYAT STOK ITEM ZONE VAS ================= -->
+<div id="modalVasItemHistory" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-6xl w-full xl:max-w-7xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col mx-auto my-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center border border-purple-200">
+          <span class="material-symbols-outlined text-[22px]">history</span>
+        </div>
+        <div>
+          <h3 id="vasItemHistoryTitle" class="font-extrabold text-slate-900 text-sm leading-tight">Riwayat Mutasi Zone VAS - SKU</h3>
+          <p id="vasItemHistorySubtitle" class="text-[11px] text-slate-400 font-medium">Log pergerakan stok masuk dan keluar khusus untuk material ini</p>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalVasItemHistory')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Stock Summary Header Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 gap-3 p-3 bg-purple-50/70 border border-purple-200 rounded-xl flex-shrink-0">
+      <div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-purple-100">
+        <span class="text-xs text-slate-600 font-semibold">Stok di Stock Inventory:</span>
+        <span id="vasItemHistMainStock" class="font-mono font-black text-amber-900 text-sm">0 Pcs</span>
+      </div>
+      <div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-purple-100">
+        <span class="text-xs text-slate-600 font-semibold">Stok di Zone VAS:</span>
+        <span id="vasItemHistVasStock" class="font-mono font-black text-purple-900 text-sm">0 Pcs</span>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="flex-1 overflow-y-auto border border-slate-200 rounded-xl bg-white min-h-[220px]">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead class="bg-slate-100 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+          <tr>
+            <th class="p-2.5">No Transaksi</th>
+            <th class="p-2.5 text-center">Tipe Mutasi</th>
+            <th class="p-2.5 text-center">Qty Mutasi</th>
+            <th class="p-2.5">Catatan</th>
+            <th class="p-2.5">Operator</th>
+            <th class="p-2.5 text-right">Tanggal & Waktu</th>
+          </tr>
+        </thead>
+        <tbody id="vasItemHistoryTableBody" class="divide-y divide-slate-100">
+          <!-- Dynamic rows -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex justify-end pt-2 border-t border-slate-100 flex-shrink-0">
+      <button type="button" onclick="App.closeModal('modalVasItemHistory')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: INPUT STOCK TRANSFER MULTI-ITEM (GUDANG UTAMA <-> ZONE VAS) ================= -->
+<div id="modalStockTransfer" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+  <div class="bg-white rounded-2xl max-w-5xl w-full xl:max-w-6xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col mx-auto my-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200/80 shadow-2xs">
+          <span class="material-symbols-outlined text-[22px]">swap_horizontal_circle</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-base leading-tight">Stock Transfer</h3>
+        </div>
+      </div>
+      <button type="button" onclick="App.closeModal('modalStockTransfer')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
+      <!-- Meta Information Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">From (Asal) <span class="text-rose-500">*</span></label>
+          <select id="stFormFrom" onchange="onStFromChange()" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
+            <option value="INVENTORY">Stock Inventory</option>
+            <option value="VAS">Zone VAS</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">To (Tujuan) <span class="text-rose-500">*</span></label>
+          <select id="stFormTo" onchange="onStToChange()" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
+            <option value="VAS">Zone VAS</option>
+            <option value="INVENTORY">Stock Inventory</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Tanggal Transfer</label>
+          <input type="text" id="stFormDateDisplay" readonly value="<?= date('d F Y - H:i') ?>" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed outline-none">
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Catatan Dokumen</label>
+          <input type="text" id="stGlobalNotes" placeholder="Keterangan / No SPK / Surat Jalan..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-indigo-600">
+        </div>
+      </div>
+
+      <!-- Items Table Container -->
+      <div class="flex-1 min-h-[240px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+            <tr>
+              <th class="p-2.5 w-12 text-center border-r border-slate-200/60">#</th>
+              <th class="p-2.5 min-w-[280px] border-r border-slate-200/60">Kemas / Material Packaging <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 w-40 min-w-[140px] text-center border-r border-slate-200/60">Sisa Stock Asal</th>
+              <th class="p-2.5 w-36 min-w-[120px] text-center border-r border-slate-200/60">Qty Transfer <span class="text-rose-500">*</span></th>
+              <th class="p-2.5 min-w-[180px] border-r border-slate-200/60">Catatan Item</th>
+              <th class="p-2.5 w-14 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="stItemsTableBody" class="divide-y divide-slate-100">
+            <!-- Dynamic rows inserted here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom Bar with Add Row and Total Summary -->
+      <div class="flex items-center justify-between pt-1 flex-shrink-0">
+        <button type="button" onclick="addStockTransferTableRow()" class="px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">add_circle</span>
+          <span>Tambah Baris (Enter)</span>
+        </button>
+
+        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+          <span>Total Qty Transfer:</span>
+          <span class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-950 border border-indigo-200 font-mono font-black text-sm" id="stTotalQtySummary">0</span>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
+        <button type="button" onclick="App.closeModal('modalStockTransfer')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+          Batal
+        </button>
+        <button type="submit" id="btnSubmitStockTransferBatch" class="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[17px]">swap_horiz</span>
+          <span>Catat & Process Transfer Stok</span>
+        </button>
+      </div>
+    </form>
+  <?php if (Auth::isAdmin()): ?>
+<!-- ================= MODAL: SINKRONISASI GOOGLE SHEETS ================= -->
+<div id="googleSheetsSyncModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+    
+    <!-- Modal Header -->
+    <div class="bg-gradient-to-r from-emerald-800 to-teal-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+          <span class="material-symbols-outlined text-2xl text-emerald-300">table_chart</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-base tracking-tight flex items-center gap-2">
+            <span>Sinkronisasi Google Sheets</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-700/80 text-emerald-100 border border-emerald-500/50">Live Sync</span>
+          </h3>
+          <p class="text-xs text-emerald-200/90">Kirim data ke Google Sheets dalam 1-Klik</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="text-emerald-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+
+    <!-- Modal Body Content -->
+    <div class="p-6 overflow-y-auto space-y-5 flex-1">
+      
+      <!-- Target Selector Box -->
+      <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-800">Pilih Target Menu yang Ingin Di-sync:</label>
+          <span id="gsLastSyncedBadge" class="text-[10px] font-semibold text-slate-500 bg-white px-2.5 py-1 rounded-md border border-slate-200">Terakhir Sync: -</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="inventory" class="w-4 h-4 text-emerald-600 accent-emerald-600" checked>
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-emerald-700">Stock Inventory</div>
+              <div class="text-[10px] text-slate-500">Katalog master stok kemasan</div>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-purple-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="vas" class="w-4 h-4 text-purple-600 accent-purple-600">
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-purple-700">Stock VAS</div>
+              <div class="text-[10px] text-slate-500">Stok kemasan aktif di Zone VAS</div>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="inbound" class="w-4 h-4 text-emerald-600 accent-emerald-600">
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-emerald-700">Barang Masuk</div>
+              <div class="text-[10px] text-slate-500">Riwayat penerimaan inbound</div>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="outbound" class="w-4 h-4 text-amber-600 accent-amber-600">
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-amber-700">Barang Keluar</div>
+              <div class="text-[10px] text-slate-500">Riwayat pengeluaran barang</div>
+            </div>
+          </label>
+        </div>
+
+        <label class="flex items-center gap-3 p-3 bg-emerald-50/70 border border-emerald-300 rounded-xl cursor-pointer hover:bg-emerald-50 transition-all group select-none mt-2">
+          <input type="radio" name="gsTargetRadio" value="all" class="w-4 h-4 text-emerald-700 accent-emerald-700">
+          <div>
+            <div class="font-black text-xs text-emerald-950">🔥 Sync Semua 4 Menu Sekaligus</div>
+            <div class="text-[10px] text-emerald-700">Otomatis mengirim data Stock Inventory, VAS, Barang Masuk & Keluar ke 4 tab terpisah</div>
+          </div>
+        </label>
+      </div>
+
+      <!-- Sync Mode Cards (2 Main Buttons) -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold text-slate-800">Klik Salah Satu Mode Untuk Menjalankan Sync:</label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Button 1: Incremental Update Only -->
+          <button type="button" onclick="triggerGoogleSheetsSync('update')" class="p-4 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-emerald-500">
+            <div class="flex items-center justify-between w-full">
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-900/60 text-emerald-200 border border-emerald-400/40">Dianjurkan</span>
+              <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">bolt</span>
+            </div>
+            <div class="mt-3">
+              <h4 class="font-black text-sm text-white flex items-center gap-1.5">
+                <span>⚡ Sync Update Terbaru</span>
+              </h4>
+              <p class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
+                Hanya mengirim data yang <b>berubah / baru</b> sejak sync terakhir.
+              </p>
+            </div>
+          </button>
+
+          <!-- Button 2: Full Sync Overhaul -->
+          <button type="button" onclick="triggerGoogleSheetsSync('full')" class="p-4 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 rounded-xl border border-slate-300 shadow-2xs transition-all flex flex-col justify-between text-left group cursor-pointer hover:border-slate-400">
+            <div class="flex items-center justify-between w-full">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">Reset Total</span>
+              <span class="material-symbols-outlined text-2xl text-slate-500 group-hover:rotate-180 transition-transform duration-500">sync</span>
+            </div>
+            <div class="mt-3">
+              <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                <span>🔄 Sync Full (Timpa Semua)</span>
+              </h4>
+              <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                Memperbarui seluruh data tabel dari awal dari baris pertama.
+              </p>
+            </div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Sync Progress / Log Output Box -->
+      <div id="gsSyncProgressBox" class="hidden p-4 bg-slate-900 text-slate-100 rounded-xl space-y-2 font-mono text-xs border border-slate-800">
+        <div class="flex items-center justify-between text-emerald-400 font-bold">
+          <span class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span id="gsSyncProgressStatus">Sedang mengirim data ke Google Sheets...</span>
+          </span>
+          <span id="gsSyncProgressSpinner" class="material-symbols-outlined text-lg animate-spin">sync</span>
+        </div>
+        <div id="gsSyncLogDetails" class="text-[11px] text-slate-300 leading-relaxed max-h-32 overflow-y-auto pt-1 border-t border-slate-800">
+          [SYS] Menyiapkan payload JSON PackStock WMS...
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+      <span class="text-[11px] text-slate-500 font-medium">💡 Pengaturan URL Web App & Script dapat dikelola di menu <b>Bersihkan Database (Maintenance)</b>.</span>
+      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer">
+        Tutup
+      </button>
+    </div>
+
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- ================= MODAL: TRANSFER BALIK STOK ZONE VAS KE GUDANG UTAMA ================= -->
+<div id="modalVasTransferBack" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl border border-slate-200 overflow-hidden transform transition-all">
+    <div class="bg-gradient-to-r from-purple-800 to-indigo-900 px-5 py-4 text-white flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <span class="material-symbols-outlined text-2xl text-amber-300">swap_horiz</span>
+        <div>
+          <h3 class="font-extrabold text-sm tracking-tight">Transfer Stok: Zone VAS &rarr; Inventory Utama</h3>
+          <p class="text-[10px] text-purple-200">Pengembalian stok material dari VAS kembali ke Gudang Utama</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeVasTransferModal()" class="text-purple-200 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+
+    <form id="formVasTransferBack" onsubmit="submitVasTransferToInventory(event)" class="p-5 space-y-4">
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Material Packaging <span class="text-rose-500">*</span></label>
+        <select id="vasTransferMaterialSelect" onchange="onVasTransferMaterialChange()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 outline-none focus:border-purple-600 focus:bg-white transition-colors">
+          <option value="">-- Pilih SKU yang Ada di Zone VAS --</option>
+        </select>
+      </div>
+
+      <div id="vasMaterialStockInfoBox" class="hidden p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-600 font-medium">Stok Saat Ini di Zone VAS:</span>
+          <span id="vasInfoVasStock" class="font-mono font-black text-purple-900 text-sm">0 Pcs</span>
+        </div>
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-600 font-medium">Stok di Gudang Utama:</span>
+          <span id="vasInfoMainStock" class="font-mono font-bold text-slate-700">0 Pcs</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Jumlah Qty Transfer Kembali <span class="text-rose-500">*</span></label>
+        <div class="relative">
+          <input type="number" step="0.01" min="0.01" id="vasTransferQtyInput" required placeholder="Contoh: 50" 
+            class="w-full p-2.5 pr-16 bg-slate-50 border border-slate-300 rounded-lg text-xs font-extrabold text-slate-900 outline-none focus:border-purple-600 focus:bg-white transition-colors">
+          <span id="vasTransferUnitBadge" class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">Pcs</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Catatan / Alasan Transfer (Opsional)</label>
+        <textarea id="vasTransferNotesInput" rows="2" placeholder="Selesai pengerjaan VAS / kembalikan sisa kemasan..." 
+          class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-purple-600 focus:bg-white transition-colors"></textarea>
+      </div>
+
+      <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+        <button type="button" onclick="closeVasTransferModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors">
+          Batal
+        </button>
+        <button type="submit" id="btnSubmitVasTransfer" class="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-purple-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+          <span>Proses Transfer Masuk</span>
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 

@@ -28,9 +28,9 @@ $MENUS_CATALOG = [
     ],
     [
         'key' => 'inventory',
-        'label' => 'Stock Kemas',
+        'label' => 'Stock Inventory',
         'icon' => 'shelves',
-        'description' => 'Katalog Stock Kemas, rumus stok akhir, kartu stok, dan upload Excel master.'
+        'description' => 'Katalog Stock Inventory, rumus stok akhir, kartu stok, dan upload Excel master.'
     ],
     [
         'key' => 'dynamic_count',
@@ -73,6 +73,18 @@ $MENUS_CATALOG = [
         'label' => 'Barang Keluar (Outbound)',
         'icon' => 'outbox',
         'description' => 'Pencatatan barang keluar manual dan monitoring pengeluaran material.'
+    ],
+    [
+        'key' => 'vas',
+        'label' => 'Stock VAS',
+        'icon' => 'precision_manufacturing',
+        'description' => 'Manajemen stok Area VAS dan monitoring persediaan.'
+    ],
+    [
+        'key' => 'stock_transfer',
+        'label' => 'Stock Transfer',
+        'icon' => 'swap_horizontal_circle',
+        'description' => 'Transfer stok barang multi-item antar Gudang Utama dan Zone VAS (Masuk & Keluar).'
     ],
     [
         'key' => 'consumable_requests',

@@ -88,13 +88,13 @@ class Auth {
             exit;
         }
 
-        // Inactivity timeout: 5 minutes (300 seconds)
-        $maxIdleSeconds = 300;
+        // Inactivity timeout: 1 hour (3600 seconds)
+        $maxIdleSeconds = 3600;
         if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $maxIdleSeconds)) {
             self::logout();
             if (self::isAjax()) {
                 http_response_code(401);
-                echo json_encode(['success' => false, 'message' => 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 5 menit.', 'timeout' => true]);
+                echo json_encode(['success' => false, 'message' => 'Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam.', 'timeout' => true]);
                 exit;
             }
             $base = self::getBaseUrl();
@@ -102,10 +102,8 @@ class Auth {
             exit;
         }
 
-        // Update last activity on non-ajax navigation
-        if (!self::isAjax()) {
-            $_SESSION['last_activity'] = time();
-        }
+        // Update last activity timestamp on active requests (both regular navigation & AJAX)
+        $_SESSION['last_activity'] = time();
 
         // Release session lock immediately for non-blocking concurrent parallel AJAX requests
         if (self::isAjax() && session_status() === PHP_SESSION_ACTIVE) {

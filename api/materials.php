@@ -94,6 +94,7 @@ if ($action === 'list') {
         $mat['total_inbound'] = (float)$mat['total_inbound'];
         $mat['total_outbound'] = (float)$mat['total_outbound'];
         $mat['current_stock'] = (float)$mat['current_stock'];
+        $mat['vas_stock'] = (float)($mat['vas_stock'] ?? 0);
         $mat['min_stock'] = (float)$mat['min_stock'];
 
         if ($mat['current_stock'] <= 0) {

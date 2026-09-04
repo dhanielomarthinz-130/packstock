@@ -61,6 +61,11 @@ const App = {
     }, 4000);
   },
 
+  showToast(message, type = 'success', title = '') {
+    const toastType = type === 'danger' ? 'error' : type;
+    return this.toast(message, toastType, title);
+  },
+
   // Universal In-App Confirmation Modal (Promise-based & Callback-compatible)
   confirm(arg1, callback, arg3) {
     let opts = {};
@@ -635,15 +640,15 @@ const App = {
     });
   },
 
-  // 5-MINUTE INACTIVITY AUTO-TIMEOUT SYSTEM (300 SECONDS)
+  // 1-HOUR INACTIVITY AUTO-TIMEOUT SYSTEM (3600 SECONDS)
   initInactivityTimeout() {
     const path = window.location.pathname.toLowerCase();
     if (path.endsWith('login') || path.endsWith('login.php') || path.endsWith('maintenance') || path.endsWith('maintenance.php')) {
       return;
     }
 
-    const IDLE_LIMIT_MS = 5 * 60 * 1000; // 5 Menit = 300.000 ms
-    const WARNING_MS = 30 * 1000;         // Tampilkan dialog peringatan 30 detik sebelum auto-logout
+    const IDLE_LIMIT_MS = 60 * 60 * 1000; // 1 Jam = 3.600.000 ms
+    const WARNING_MS = 60 * 1000;        // Tampilkan dialog peringatan 60 detik sebelum auto-logout
     let lastActivity = Date.now();
     let isWarningShown = false;
     let countdownTimer = null;
@@ -674,11 +679,11 @@ const App = {
             <div>
               <h3 class="font-black text-slate-900 text-base">Sesi Tidak Aktif</h3>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-                Tidak ada aktivitas selama hampir 5 menit. Anda akan otomatis keluar dalam:
+                Tidak ada aktivitas selama hampir 1 jam. Anda akan otomatis keluar dalam:
               </p>
               <div class="my-2.5 inline-flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-900 px-4 py-1.5 rounded-full">
                 <span class="material-symbols-outlined text-[18px] text-amber-600">hourglass_top</span>
-                <span id="inactivityCountdownSecs" class="font-mono font-black text-base text-amber-700">30</span>
+                <span id="inactivityCountdownSecs" class="font-mono font-black text-base text-amber-700">60</span>
                 <span class="text-xs font-bold">Detik</span>
               </div>
             </div>

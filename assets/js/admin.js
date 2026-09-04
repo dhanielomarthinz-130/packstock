@@ -110,9 +110,13 @@ function initPremiumPickers() {
   initDate('#opnameDateFilter', () => loadOpnameMatrix());
 
   // 4. Inbound Toolbar Filter
+  initDate('#inboundFromDateFilter', () => loadInboundHistory());
+  initDate('#inboundToDateFilter', () => loadInboundHistory());
   initDate('#inboundDateFilter', () => loadInboundHistory());
 
   // 5. Outbound Toolbar Filter
+  initDate('#outboundFromDateFilter', () => loadOutboundHistory());
+  initDate('#outboundToDateFilter', () => loadOutboundHistory());
   initDate('#outboundDateFilter', () => loadOutboundHistory());
 
   // 6. Audit Mutasi Stok Toolbar
@@ -138,15 +142,22 @@ function initPremiumPickers() {
   initDate('#adminHandoverDateFilter', () => filterAdminHandovers());
 
   // 13. Request Consumable Toolbar Filter
+  initDate('#adminConsumableFromDateFilter', () => loadAdminConsumableRequests());
+  initDate('#adminConsumableToDateFilter', () => loadAdminConsumableRequests());
   initDate('#adminConsumableDateFilter', () => loadAdminConsumableRequests());
+
+  // 14. Stock Transfer Log Toolbar Filter (From Date & To Date)
+  initDate('#stFromDateFilter', () => loadStockTransferHistory());
+  initDate('#stToDateFilter', () => loadStockTransferHistory());
 }
 
 function clearConsumableDateFilter() {
+  const elFrom = document.getElementById('adminConsumableFromDateFilter');
+  const elTo = document.getElementById('adminConsumableToDateFilter');
   const el = document.getElementById('adminConsumableDateFilter');
-  if (el) {
-    if (el._flatpickr) el._flatpickr.clear();
-    else el.value = '';
-  }
+  if (elFrom) { if (elFrom._flatpickr) elFrom._flatpickr.clear(); else elFrom.value = ''; }
+  if (elTo) { if (elTo._flatpickr) elTo._flatpickr.clear(); else elTo.value = ''; }
+  if (el) { if (el._flatpickr) el._flatpickr.clear(); else el.value = ''; }
   loadAdminConsumableRequests();
 }
 
@@ -156,18 +167,18 @@ function toggleAdminSidebar(forceState = null) {
   const icon = document.getElementById('iconToggleSidebar');
   if (!sidebar) return;
 
-  const willBeCollapsed = forceState !== null 
-    ? forceState 
+  const willBeCollapsed = forceState !== null
+    ? forceState
     : !sidebar.classList.contains('collapsed');
 
   if (willBeCollapsed) {
     sidebar.classList.add('collapsed');
     if (icon) icon.innerText = 'menu';
-    try { localStorage.setItem('packstock_sidebar_collapsed', '1'); } catch (e) {}
+    try { localStorage.setItem('packstock_sidebar_collapsed', '1'); } catch (e) { }
   } else {
     sidebar.classList.remove('collapsed');
     if (icon) icon.innerText = 'menu_open';
-    try { localStorage.setItem('packstock_sidebar_collapsed', '0'); } catch (e) {}
+    try { localStorage.setItem('packstock_sidebar_collapsed', '0'); } catch (e) { }
   }
 }
 
@@ -177,7 +188,7 @@ function initSidebarState() {
     if (isSavedCollapsed) {
       toggleAdminSidebar(true);
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // ================= 0.3 SIDEBAR SECTION COLLAPSE / EXPAND CONTROLLER =================
@@ -194,14 +205,14 @@ function toggleSidebarSection(sectionId, forceOpen = null) {
       const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
       collapsedMap[sectionId] = false;
       localStorage.setItem('packstock_collapsed_sections', JSON.stringify(collapsedMap));
-    } catch (e) {}
+    } catch (e) { }
   } else {
     section.classList.add('is-collapsed');
     try {
       const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
       collapsedMap[sectionId] = true;
       localStorage.setItem('packstock_collapsed_sections', JSON.stringify(collapsedMap));
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
@@ -212,7 +223,7 @@ function initSidebarSections() {
       const shouldCollapse = collapsedMap[sectionId];
       toggleSidebarSection(sectionId, !shouldCollapse);
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Listen to browser Back / Forward buttons
@@ -228,7 +239,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'vas', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -254,9 +265,9 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (updateUrl && tabName !== 'history') {
     window.location.hash = tabName;
   }
-  
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
-  
+
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'reorder_alerts', 'vas', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
     const navBtn = document.getElementById('nav-' + t);
@@ -294,6 +305,8 @@ function switchAdminTab(tabName, updateUrl = true) {
     counting_progress: 'Dashboard Live Progress Counting (Dynamic Count & Stock Opname)',
     inventory: 'Master Stok Packaging & Stok Akhir',
     reorder_alerts: 'Peringatan PO & Safety Stock (Lead Time 1 Minggu)',
+    vas: 'Zone VAS (Value Added Service - Monitoring Stok)',
+    stock_transfer: 'Stock Transfer (Stock Inventory <-> Zone VAS)',
     dynamic_count: 'Dynamic Counting (Penugasan SKU Terpilih)',
     dynamic_counting_detail: 'Detail Dynamic Count (Log Breakdown per Putaran)',
     opname: 'Stock Opname (Blank Count & Recount)',
@@ -318,6 +331,8 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'counting_progress') { loadCountingProgressDashboard(); }
   if (tabName === 'inventory') { loadMaterials(); }
   if (tabName === 'reorder_alerts') { loadReorderAlerts(); }
+  if (tabName === 'vas') { loadVasStock(); }
+  if (tabName === 'stock_transfer') { loadStockTransferHistory(); }
   if (tabName === 'dynamic_count') { loadDynamicSessions(); }
   if (tabName === 'dynamic_counting_detail') { loadDynamicCountingDetails(); }
   if (tabName === 'opname') { loadOpnames(); }
@@ -325,7 +340,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   if (tabName === 'counting_detail') { loadCountingDetails(); }
   if (tabName === 'handover') { loadAdminHandovers(); }
   if (tabName === 'consumable_requests') { loadAdminConsumableRequests(); }
-  if (tabName === 'inbound') { 
+  if (tabName === 'inbound') {
     const inDateEl = document.getElementById('inboundDateFilter');
     if (inDateEl && !inDateEl.value) {
       const now = new Date();
@@ -333,10 +348,10 @@ function switchAdminTab(tabName, updateUrl = true) {
       if (inDateEl._flatpickr) inDateEl._flatpickr.setDate(todayStr, false);
       else inDateEl.value = todayStr;
     }
-    populateMaterialSelects(); 
-    loadInboundHistory(); 
+    populateMaterialSelects();
+    loadInboundHistory();
   }
-  if (tabName === 'outbound') { 
+  if (tabName === 'outbound') {
     const outDateEl = document.getElementById('outboundDateFilter');
     if (outDateEl && !outDateEl.value) {
       const now = new Date();
@@ -344,8 +359,8 @@ function switchAdminTab(tabName, updateUrl = true) {
       if (outDateEl._flatpickr) outDateEl._flatpickr.setDate(todayStr, false);
       else outDateEl.value = todayStr;
     }
-    populateMaterialSelects(); 
-    loadOutboundHistory(); 
+    populateMaterialSelects();
+    loadOutboundHistory();
   }
   if (tabName === 'tasks') {
     populateMaterialSelects();
@@ -558,7 +573,7 @@ async function loadDashboardStockSummary() {
         elOut.innerText = `-${App.formatNumber(sum.total_outbound || 0)}`;
       }
     }
-    
+
     if (elAdj) {
       const adjVal = sum.total_adjustment || 0;
       const prefix = adjVal > 0 ? '+' : '';
@@ -855,16 +870,16 @@ function renderDashboardBarChart() {
           padding: 10,
           cornerRadius: 8,
           callbacks: {
-            title: function(context) {
+            title: function (context) {
               const item = sourceList[context[0]?.dataIndex];
               return item ? `${item.code} - ${item.name}` : (context[0]?.label || '');
             },
-            label: function(context) {
+            label: function (context) {
               const val = context.raw || 0;
               const unit = sourceList[context.dataIndex]?.unit || 'Pcs';
               return ` Total ${isInc ? 'Masuk' : 'Keluar'}: ${App.formatNumber(val)} ${unit}`;
             },
-            afterLabel: function(context) {
+            afterLabel: function (context) {
               const item = sourceList[context.dataIndex];
               if (!item) return '';
               return ` Sisa Stok Saat Ini: ${App.formatNumber(item.current_stock || 0)} ${item.unit || 'Pcs'}\n Rak: ${item.rack_location || '-'}`;
@@ -882,7 +897,7 @@ function renderDashboardBarChart() {
           ticks: {
             font: { size: 11 },
             color: '#64748b',
-            callback: function(value) {
+            callback: function (value) {
               if (value >= 1000000) return (value / 1000000) + 'M';
               if (value >= 1000) return (value / 1000) + 'K';
               return value;
@@ -918,7 +933,7 @@ function renderDashboardCategoryChart() {
   }
 
   const palette = [
-    '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', 
+    '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b',
     '#ec4899', '#06b6d4', '#64748b', '#14b8a6', '#f97316'
   ];
 
@@ -967,7 +982,7 @@ function renderDashboardCategoryChart() {
           padding: 10,
           cornerRadius: 8,
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               const val = context.raw || 0;
               const pct = totalStock > 0 ? ((val / totalStock) * 100).toFixed(1) : '0';
               return ` ${context.label}: ${App.formatNumber(val)} Pcs (${pct}%)`;
@@ -1390,7 +1405,7 @@ function renderMaterialsTable(materials) {
   if (materials.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" class="p-8 text-center text-slate-400">
+        <td colspan="12" class="p-8 text-center text-slate-400">
           <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">inventory_2</span>
           <p class="text-xs font-medium">Tidak ada packaging material yang ditemukan.</p>
         </td>
@@ -1439,11 +1454,22 @@ function renderMaterialsTable(materials) {
           ${m.total_outbound > 0 ? `-${App.formatNumber(m.total_outbound)}` : '0'}
         </td>
 
-        <!-- Sisa Stok Akhir (Calculated) -->
+        <!-- Sisa Stok Akhir (Gudang Utama) -->
         <td class="p-3 text-center whitespace-nowrap">
           <span class="font-black text-sm ${m.current_stock <= m.min_stock ? 'text-rose-600' : 'text-emerald-800'}">
             ${App.formatNumber(m.current_stock)}
           </span>
+        </td>
+
+        <!-- Stok Zone VAS (Kolom Virtual) -->
+        <td class="p-3 text-center whitespace-nowrap bg-purple-50/40">
+          ${(m.vas_stock && m.vas_stock > 0) ? `
+            <span class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-700 text-amber-300 shadow-2xs" title="Stok tersimpan di Zone VAS">
+              ${App.formatNumber(m.vas_stock)}
+            </span>
+          ` : `
+            <span class="text-xs font-semibold text-slate-400">0</span>
+          `}
         </td>
 
         <!-- Satuan (UOM) -->
@@ -1497,14 +1523,14 @@ async function openMaterialHistoryView(materialId, updateUrl = true) {
   if (itemCodeEl) itemCodeEl.innerText = m.code;
   const itemNameEl = document.getElementById('viewHistItemName');
   if (itemNameEl) itemNameEl.innerText = m.name;
-  
+
   const downloadBtn = document.getElementById('viewHistDownloadBtn');
   if (downloadBtn) downloadBtn.href = `export.php?type=material_history&id=${m.id}`;
 
   // Populate Header Info Card
   document.getElementById('viewHistBadgeCode').innerText = m.code;
   document.getElementById('viewHistBadgeCategory').innerText = m.category || 'Packaging';
-  
+
   let statusBadge = '';
   if (m.current_stock <= 0) {
     statusBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">STOK HABIS (0)</span>';
@@ -1560,6 +1586,10 @@ async function openMaterialHistoryView(materialId, updateUrl = true) {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">TASK PICKING</span>';
       } else if (h.type === 'ADJUSTMENT') {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">PENYESUAIAN STOK</span>';
+      } else if (h.type === 'TRANSFER_OUT' || h.type === 'TRANSFER_IN' || h.type === 'STOCK_TRANSFER') {
+        typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">STOCK TRANSFER</span>';
+      } else if (h.type === 'VAS_OUTBOUND') {
+        typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">VAS DISPOSAL</span>';
       } else {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">STOK AWAL</span>';
       }
@@ -1743,9 +1773,9 @@ function renderExcelPreview(res) {
       </td>
       <td class="p-2 text-slate-600 text-xs">${escapeHtml(item.rack_location)}</td>
       <td class="p-2 whitespace-nowrap">
-        ${item.status === 'NEW' 
-          ? '<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">BARU</span>'
-          : '<span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">UPDATE</span>'}
+        ${item.status === 'NEW'
+      ? '<span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">BARU</span>'
+      : '<span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 font-bold text-[10px]">UPDATE</span>'}
       </td>
     </tr>
   `).join('');
@@ -1790,7 +1820,7 @@ function populateCategoryFilters() {
   if (!catSelect) return;
   const cats = [...new Set(allMaterials.map(m => m.category).filter(Boolean))];
   const currentVal = catSelect.value;
-  catSelect.innerHTML = '<option value="all">Semua Kategori</option>' + 
+  catSelect.innerHTML = '<option value="all">Semua Kategori</option>' +
     cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
   catSelect.value = currentVal;
   App.syncSearchableSelect(catSelect);
@@ -1879,7 +1909,7 @@ function renderTasksTable(tasks) {
   }
 
   tbody.innerHTML = tasks.map(t => {
-    let priorityBadge = t.priority === 'URGENT' 
+    let priorityBadge = t.priority === 'URGENT'
       ? '<span class="badge-urgent px-2 py-0.5 rounded text-[10px] font-extrabold">URGENT</span>'
       : '<span class="badge-normal px-2 py-0.5 rounded text-[10px] font-bold">NORMAL</span>';
 
@@ -1972,9 +2002,9 @@ function renderDashboardTasksTable(tasks) {
       <td class="py-2.5 text-xs text-slate-700">${escapeHtml(t.destination)}</td>
       <td class="py-2.5 text-xs font-semibold text-slate-800">${escapeHtml(t.operator_name)}</td>
       <td class="py-2.5">
-        ${t.status === 'IN_PROGRESS' 
-          ? '<span class="badge-inprogress px-2 py-0.5 rounded text-[10px]">Proses</span>'
-          : '<span class="bg-blue-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200">Pending</span>'}
+        ${t.status === 'IN_PROGRESS'
+      ? '<span class="badge-inprogress px-2 py-0.5 rounded text-[10px]">Proses</span>'
+      : '<span class="bg-blue-50 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-semibold border border-blue-200">Pending</span>'}
       </td>
     </tr>
   `).join('');
@@ -2214,9 +2244,10 @@ function addBulkTaskRow(prefillMatId = null, prefillQty = 0) {
     <td class="p-2.5">
       <select class="bulk-dest-input w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-emerald-600 text-slate-800 shadow-2xs" data-no-search>
         <option value="HANASUI" ${defaultDest === 'HANASUI' ? 'selected' : ''}>HANASUI</option>
-        <option value="NCO" ${defaultDest === 'NCO' ? 'selected' : ''}>NCO</option>
         <option value="FYNE" ${defaultDest === 'FYNE' ? 'selected' : ''}>FYNE</option>
+        <option value="NCO" ${defaultDest === 'NCO' ? 'selected' : ''}>NCO</option>
         <option value="EOMMA" ${defaultDest === 'EOMMA' ? 'selected' : ''}>EOMMA</option>
+        <option value="AFFILIATE" ${defaultDest === 'AFFILIATE' ? 'selected' : ''}>AFFILIATE</option>
       </select>
     </td>
     <td class="p-2.5">
@@ -2417,17 +2448,17 @@ async function handleBulkTaskSubmit() {
     const tr = rows[i];
     const rowNum = i + 1;
     const matSelect = tr.querySelector('.bulk-material-select');
-    const qtyInput  = tr.querySelector('.bulk-qty-input');
+    const qtyInput = tr.querySelector('.bulk-qty-input');
     const destInput = tr.querySelector('.bulk-dest-input');
     const priSelect = tr.querySelector('.bulk-priority-select');
-    const notesInput= tr.querySelector('.bulk-notes-input');
+    const notesInput = tr.querySelector('.bulk-notes-input');
 
     const opt = matSelect?.options[matSelect.selectedIndex];
     const material_id = parseInt(matSelect?.value || 0);
-    const target_qty  = App.parseNumber(qtyInput?.value);
+    const target_qty = App.parseNumber(qtyInput?.value);
     const destination = destInput?.value.trim() || 'Line Packing';
-    const priority    = priSelect?.value || 'NORMAL';
-    const notes       = notesInput?.value.trim() || '';
+    const priority = priSelect?.value || 'NORMAL';
+    const notes = notesInput?.value.trim() || '';
 
     if (!material_id || material_id <= 0) {
       App.toast(`Silakan pilih Material Packaging pada baris ke-${rowNum}.`, 'warning');
@@ -2658,6 +2689,8 @@ async function loadMutations() {
       if (m.type === 'INBOUND') typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">BARANG MASUK</span>';
       else if (m.type === 'OUTBOUND') typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">BARANG KELUAR</span>';
       else if (m.type === 'TASK_PICKING') typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">PENGAMBILAN TASK</span>';
+      else if (m.type === 'TRANSFER_OUT' || m.type === 'TRANSFER_IN' || m.type === 'STOCK_TRANSFER') typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">STOCK TRANSFER</span>';
+      else if (m.type === 'VAS_OUTBOUND') typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">VAS DISPOSAL</span>';
       else typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">STOK AWAL</span>';
 
       const isPositive = m.qty_change > 0;
@@ -2769,9 +2802,9 @@ function renderImportPreview(res) {
       <td class="p-2 text-center font-bold text-emerald-700">${App.formatNumber(item.ending_stock)}</td>
       <td class="p-2 text-slate-600">${escapeHtml(item.rack_location || '-')}</td>
       <td class="p-2 whitespace-nowrap">
-        ${item.status === 'NEW' 
-          ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded font-bold text-[10px] border border-emerald-200">Baru</span>'
-          : `<span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px] border border-blue-200">Update (Lama: ${item.old_stock})</span>`}
+        ${item.status === 'NEW'
+      ? '<span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded font-bold text-[10px] border border-emerald-200">Baru</span>'
+      : `<span class="px-2 py-0.5 bg-blue-50 text-blue-800 rounded font-bold text-[10px] border border-blue-200">Update (Lama: ${item.old_stock})</span>`}
       </td>
     </tr>
   `).join('');
@@ -2831,7 +2864,7 @@ async function openEditMaterialModal(id) {
     document.getElementById('materialRackInput').value = m.rack_location;
     document.getElementById('materialMinStockInput').value = m.min_stock;
     document.getElementById('materialDescInput').value = m.description || '';
-    
+
     document.getElementById('materialInitialStockGroup').classList.add('hidden');
     App.openModal('modalMaterialForm');
   }
@@ -3008,12 +3041,12 @@ function openAddUserModal() {
   document.getElementById('modalUserTitle').innerText = 'Tambah Pengguna Baru';
   document.getElementById('userIdInput').value = '';
   document.getElementById('formUser').reset();
-  
+
   // Password is required for new user
   document.getElementById('userPasswordInput').required = true;
   document.getElementById('userPasswordRequiredTag').classList.remove('hidden');
   document.getElementById('userPasswordHint').classList.add('hidden');
-  
+
   App.openModal('modalUserForm');
 }
 
@@ -3026,7 +3059,7 @@ async function openEditUserModal(id) {
     document.getElementById('userUsernameInput').value = u.username;
     document.getElementById('userNameInput').value = u.name;
     document.getElementById('userRoleSelect').value = u.role;
-    
+
     const shiftSel = document.getElementById('userShiftInput');
     if (shiftSel) {
       const targetVal = u.shift || 'Gudang & Logistik';
@@ -3038,14 +3071,14 @@ async function openEditUserModal(id) {
       }
       shiftSel.value = targetVal;
     }
-    
+
     // Password optional on edit
     const passInput = document.getElementById('userPasswordInput');
     passInput.value = '';
     passInput.required = false;
     document.getElementById('userPasswordRequiredTag').classList.add('hidden');
     document.getElementById('userPasswordHint').classList.remove('hidden');
-    
+
     App.openModal('modalUserForm');
   }
 }
@@ -3110,9 +3143,11 @@ document.addEventListener('mousedown', (e) => {
 
 window.addEventListener('resize', hideFloatingDropdown);
 
-function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallback = null) {
+function setupCustomMaterialSearch(container, mode = false, onSelectCallback = null) {
   const searchInput = container.querySelector('.mat-search-input');
   const hiddenInput = container.querySelector('.mat-id-hidden');
+
+  if (!searchInput || !hiddenInput) return;
 
   let activeIndex = -1;
 
@@ -3123,9 +3158,10 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     const q = (query || '').toLowerCase().trim();
     let filtered = allMaterials || [];
     if (q) {
-      filtered = filtered.filter(m => 
-        (m.name && m.name.toLowerCase().includes(q)) || 
+      filtered = filtered.filter(m =>
+        (m.name && m.name.toLowerCase().includes(q)) ||
         (m.item_code && m.item_code.toLowerCase().includes(q)) ||
+        (m.code && m.code.toLowerCase().includes(q)) ||
         (m.rack_location && m.rack_location.toLowerCase().includes(q))
       );
     }
@@ -3142,14 +3178,28 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
     } else {
       dropdownEl.innerHTML = filtered.slice(0, 60).map((m, idx) => {
         const isSelected = (hiddenInput.value == m.id);
-        const stockBadge = isOutbound 
-          ? `<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${m.current_stock <= 0 ? 'bg-rose-100 text-rose-800' : (m.current_stock <= 50 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}">Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit)}</span>`
-          : `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
+
+        let stockVal = parseFloat(m.current_stock || 0);
+        if (mode === 'stock_transfer') {
+          const dir = typeof getStCurrentDirection === 'function' ? getStCurrentDirection() : 'IN_VAS';
+          stockVal = (dir === 'IN_VAS') ? parseFloat(m.current_stock || 0) : parseFloat(m.vas_stock || 0);
+        }
+
+        let stockBadge = '';
+        if (mode === true || mode === 'outbound' || mode === 'stock_transfer') {
+          const badgeColor = stockVal <= 0
+            ? 'bg-rose-100 text-rose-800 font-extrabold'
+            : (stockVal <= 50 ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-emerald-100 text-emerald-800 font-bold');
+          stockBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap ${badgeColor}">Stok: ${App.formatNumber(stockVal)} ${escapeHtml(m.unit || 'Pcs')}</span>`;
+        } else {
+          stockBadge = `<span class="text-[10px] text-slate-500 font-mono whitespace-nowrap bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Rak: ${escapeHtml(m.rack_location || '-')}</span>`;
+        }
+
         return `
-          <div class="custom-mat-dropdown-item p-2 hover:bg-emerald-50 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-emerald-100 text-emerald-900 font-bold' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-category="${escapeHtml(m.category || '-')}" data-stock="${m.current_stock}" data-unit="${escapeHtml(m.unit)}" data-rack="${escapeHtml(m.rack_location || '-')}">
+          <div class="custom-mat-dropdown-item p-2 hover:bg-emerald-50 rounded-lg cursor-pointer flex items-center justify-between gap-2 transition-colors ${isSelected ? 'bg-emerald-100 text-emerald-900 font-bold' : ''}" data-idx="${idx}" data-id="${m.id}" data-name="${escapeHtml(m.name)}" data-category="${escapeHtml(m.category || '-')}" data-stock="${stockVal}" data-unit="${escapeHtml(m.unit || 'Pcs')}" data-rack="${escapeHtml(m.rack_location || '-')}">
             <div class="flex-1 truncate mr-2">
               <span class="font-bold text-slate-800">${escapeHtml(m.name)}</span>
-              <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || '')}</span>
+              <span class="text-[10px] text-slate-400 ml-1">#${escapeHtml(m.item_code || m.code || '')}</span>
             </div>
             <div>${stockBadge}</div>
           </div>
@@ -3181,16 +3231,17 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
 
     hiddenInput.value = id;
     searchInput.setAttribute('data-selected-name', name);
-    searchInput.value = isOutbound ? `${name} (Stok: ${App.formatNumber(stock)} ${unit})` : name;
+    searchInput.value = name;
     hideFloatingDropdown();
 
+    const matObj = (allMaterials || []).find(m => m.id == id);
     if (onSelectCallback) {
-      onSelectCallback({ id: parseInt(id), name, category, stock: parseFloat(stock), unit, rack });
+      onSelectCallback(matObj || { id: parseInt(id), name, category, current_stock: parseFloat(stock), vas_stock: parseFloat(stock), unit, rack });
     }
 
     const tr = container.closest('tr');
     if (tr) {
-      const nextInput = isOutbound ? tr.querySelector('.outbound-row-qty') : tr.querySelector('.inbound-row-qty');
+      const nextInput = tr.querySelector('.st-row-qty') || tr.querySelector('.outbound-row-qty') || tr.querySelector('.inbound-row-qty');
       if (nextInput) nextInput.focus();
     }
   }
@@ -3206,7 +3257,31 @@ function setupCustomMaterialSearch(container, isOutbound = false, onSelectCallba
   });
 
   searchInput.addEventListener('input', () => {
-    hiddenInput.value = '';
+    const currSelectedName = searchInput.getAttribute('data-selected-name') || '';
+    if (searchInput.value && searchInput.value === currSelectedName && hiddenInput.value) {
+      renderFloatingList(searchInput.value);
+      return;
+    }
+
+    const q = (searchInput.value || '').trim().toLowerCase();
+    const exactMatch = q ? (allMaterials || []).find(m =>
+      (m.code && m.code.toLowerCase() === q) ||
+      (m.item_code && m.item_code.toLowerCase() === q) ||
+      (m.name && m.name.toLowerCase() === q)
+    ) : null;
+
+    if (exactMatch) {
+      hiddenInput.value = exactMatch.id;
+      searchInput.setAttribute('data-selected-name', exactMatch.name);
+      if (onSelectCallback) onSelectCallback(exactMatch);
+    } else {
+      hiddenInput.value = '';
+      searchInput.removeAttribute('data-selected-name');
+      const tr = container.closest('tr');
+      if (tr && typeof updateStRowStockState === 'function') {
+        updateStRowStockState(tr, null);
+      }
+    }
     renderFloatingList(searchInput.value);
   });
 
@@ -3377,7 +3452,7 @@ function openAddInboundModal() {
   inboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
   clearInboundPhotos();
-  
+
   const form = document.getElementById('inboundForm');
   if (form) form.reset();
 
@@ -3510,8 +3585,9 @@ async function loadInboundHistory(isManual = false) {
   if (icon) icon.classList.add('animate-spin');
 
   const search = document.getElementById('inboundSearchInput')?.value || '';
-  const date = document.getElementById('inboundDateFilter')?.value || '';
-  const query = new URLSearchParams({ action: 'list', search, date, limit: 150 });
+  const startDate = document.getElementById('inboundFromDateFilter')?.value || document.getElementById('inboundDateFilter')?.value || '';
+  const endDate = document.getElementById('inboundToDateFilter')?.value || '';
+  const query = new URLSearchParams({ action: 'list', search, start_date: startDate, end_date: endDate, date: startDate, limit: 150 });
 
   try {
     const res = await App.fetchJson(`../api/inbound.php?${query.toString()}`);
@@ -3554,20 +3630,20 @@ async function loadInboundHistory(isManual = false) {
 
 function renderInboundRows(data, tbody) {
   tbody.innerHTML = data.map((i, idx) => {
-      let photos = [];
-      if (i.photo_path) {
-        if (i.photo_path.startsWith('[')) {
-          try { photos = JSON.parse(i.photo_path); } catch(e) { photos = [i.photo_path]; }
-        } else {
-          photos = [i.photo_path];
-        }
+    let photos = [];
+    if (i.photo_path) {
+      if (i.photo_path.startsWith('[')) {
+        try { photos = JSON.parse(i.photo_path); } catch (e) { photos = [i.photo_path]; }
+      } else {
+        photos = [i.photo_path];
       }
+    }
 
-      const photoBadge = (photos.length > 0)
-        ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(i.inbound_no)}', '${App.escapeHtml(i.created_at)}', '${App.escapeHtml(i.receiver_name || 'Admin')}', 'INBOUND')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100/80 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-emerald-700">photo_library</span><span>${photos.length} Foto</span></button>`
-        : '';
+    const photoBadge = (photos.length > 0)
+      ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(i.inbound_no)}', '${App.escapeHtml(i.created_at)}', '${App.escapeHtml(i.receiver_name || 'Admin')}', 'INBOUND')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100/80 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-emerald-700">photo_library</span><span>${photos.length} Foto</span></button>`
+      : '';
 
-      return `
+    return `
       <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors">
         <!-- 1. Tanggal -->
         <td class="p-3 whitespace-nowrap">
@@ -3649,7 +3725,7 @@ function renderInboundRows(data, tbody) {
         </td>
       </tr>
       `;
-    }).join('');
+  }).join('');
 }
 
 // ================= 8.1 MODAL DETAIL & EDIT INBOUND =================
@@ -3670,7 +3746,7 @@ function openInboundDetailModal(idx) {
   let photos = [];
   if (i.photo_path) {
     if (i.photo_path.startsWith('[')) {
-      try { photos = JSON.parse(i.photo_path); } catch(e) { photos = [i.photo_path]; }
+      try { photos = JSON.parse(i.photo_path); } catch (e) { photos = [i.photo_path]; }
     } else {
       photos = [i.photo_path];
     }
@@ -3807,7 +3883,7 @@ function openEditInboundModalFromDetail() {
 function populateEditInboundMaterialSelect(selectedMaterialId = null) {
   const sel = document.getElementById('editInboundMaterialSelect');
   if (!sel) return;
-  
+
   sel.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' + (allMaterials || []).map(m => `
     <option value="${m.id}" data-stock="${m.current_stock}" data-unit="${m.unit || 'Pcs'}" data-rack="${m.rack_location || '-'}" ${selectedMaterialId && Number(selectedMaterialId) === Number(m.id) ? 'selected' : ''}>
       ${escapeHtml(m.name)} (${escapeHtml(m.code)}) - Stok: ${App.formatNumber(m.current_stock)} ${escapeHtml(m.unit || 'Pcs')}
@@ -3850,14 +3926,14 @@ async function openEditInboundModal(idx) {
   document.getElementById('editInboundId').value = i.id;
   document.getElementById('editInboundNoDisplay').innerText = i.inbound_no;
   document.getElementById('editInboundReceiverDisplay').innerText = i.receiver_name || i.received_by || 'Admin';
-  
+
   populateEditInboundMaterialSelect(i.material_id);
-  
+
   document.getElementById('editInboundQty').value = i.qty;
   document.getElementById('editInboundPoNumber').value = (i.po_number && i.po_number !== '-') ? i.po_number : '';
   document.getElementById('editInboundSupplier').value = (i.supplier && i.supplier !== '-') ? i.supplier : '';
   document.getElementById('editInboundNotes').value = (i.notes && i.notes !== '-') ? i.notes : '';
-  
+
   // Format datetime-local (YYYY-MM-DDTHH:mm)
   const rawDate = i.created_at || i.completed_at;
   if (rawDate) {
@@ -4067,7 +4143,7 @@ function openAddOutboundModal() {
   outboundModalStartTime = new Date().toISOString();
   populateMaterialSelects();
   clearOutboundPhotos();
-  
+
   const form = document.getElementById('outboundForm');
   if (form) form.reset();
 
@@ -4123,9 +4199,10 @@ function addOutboundTableRow(data = null, autoFocus = true) {
     <td class="p-2.5">
       <select required class="outbound-row-brand w-full h-[36px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:border-amber-600">
         <option value="HANASUI" ${data?.destination === 'HANASUI' ? 'selected' : ''}>HANASUI</option>
-        <option value="NCO" ${data?.destination === 'NCO' ? 'selected' : ''}>NCO</option>
         <option value="FYNE" ${data?.destination === 'FYNE' ? 'selected' : ''}>FYNE</option>
+        <option value="NCO" ${data?.destination === 'NCO' ? 'selected' : ''}>NCO</option>
         <option value="EOMMA" ${data?.destination === 'EOMMA' ? 'selected' : ''}>EOMMA</option>
+        <option value="AFFILIATE" ${data?.destination === 'AFFILIATE' ? 'selected' : ''}>AFFILIATE</option>
       </select>
     </td>
     <td class="p-2.5">
@@ -4223,8 +4300,9 @@ async function loadOutboundHistory(isManual = false) {
   const search = document.getElementById('outboundSearchInput')?.value || '';
   const typeFilter = document.getElementById('outboundTypeFilter')?.value || 'ALL';
   const statusFilter = document.getElementById('outboundStatusFilter')?.value || 'ALL';
-  const date = document.getElementById('outboundDateFilter')?.value || '';
-  const query = new URLSearchParams({ action: 'list', search, type: typeFilter, status: statusFilter, date, limit: 150 });
+  const startDate = document.getElementById('outboundFromDateFilter')?.value || document.getElementById('outboundDateFilter')?.value || '';
+  const endDate = document.getElementById('outboundToDateFilter')?.value || '';
+  const query = new URLSearchParams({ action: 'list', search, type: typeFilter, status: statusFilter, start_date: startDate, end_date: endDate, date: startDate, limit: 150 });
 
   try {
     const res = await App.fetchJson(`../api/outbound.php?${query.toString()}`);
@@ -4270,33 +4348,33 @@ function renderOutboundRows(data, tbody) {
   tbody.innerHTML = data.map((o, idx) => {
     const isTask = o.outbound_type === 'TASK_PICKING';
 
-      let photos = [];
-      if (o.photo_path) {
-        if (o.photo_path.startsWith('[')) {
-          try { photos = JSON.parse(o.photo_path); } catch(e) { photos = [o.photo_path]; }
-        } else {
-          photos = [o.photo_path];
-        }
-      }
-
-      const photoBadge = (photos.length > 0)
-        ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(o.outbound_no)}', '${App.escapeHtml(o.created_at)}', '${App.escapeHtml(o.issued_by || 'Admin')}', '${isTask ? 'TASK PICKING' : 'OUTBOUND'}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100/80 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-amber-700">photo_library</span><span>${photos.length} Foto</span></button>`
-        : '';
-
-      let statusBadge = '';
-      if (o.status === 'COMPLETED') {
-        statusBadge = '<span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Selesai</span>';
-      } else if (o.status === 'IN_PROGRESS') {
-        statusBadge = '<span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-50 text-amber-900 border border-amber-300 inline-flex items-center gap-1 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>On Proses</span>';
-      } else if (o.status === 'CANCELLED') {
-        statusBadge = '<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md text-[10px] font-bold">Dibatalkan</span>';
+    let photos = [];
+    if (o.photo_path) {
+      if (o.photo_path.startsWith('[')) {
+        try { photos = JSON.parse(o.photo_path); } catch (e) { photos = [o.photo_path]; }
       } else {
-        statusBadge = '<span class="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-600">schedule</span>Pending</span>';
+        photos = [o.photo_path];
       }
+    }
 
-      const adminUser = o.assigned_by_name || o.assigned_by_username || 'admin';
+    const photoBadge = (photos.length > 0)
+      ? `<button type="button" onclick="event.stopPropagation(); openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(o.outbound_no)}', '${App.escapeHtml(o.created_at)}', '${App.escapeHtml(o.issued_by || 'Admin')}', '${isTask ? 'TASK PICKING' : 'OUTBOUND'}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100/80 hover:bg-amber-200 text-amber-900 border border-amber-300 text-[10px] font-bold shadow-2xs transition-colors cursor-pointer" title="Klik untuk lihat ${photos.length} foto"><span class="material-symbols-outlined text-[13px] text-amber-700">photo_library</span><span>${photos.length} Foto</span></button>`
+      : '';
 
-      return `
+    let statusBadge = '';
+    if (o.status === 'COMPLETED') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-emerald-600">check_circle</span>Selesai</span>';
+    } else if (o.status === 'IN_PROGRESS') {
+      statusBadge = '<span class="px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-amber-50 text-amber-900 border border-amber-300 inline-flex items-center gap-1 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>On Proses</span>';
+    } else if (o.status === 'CANCELLED') {
+      statusBadge = '<span class="bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md text-[10px] font-bold">Dibatalkan</span>';
+    } else {
+      statusBadge = '<span class="bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1"><span class="material-symbols-outlined text-[12px] text-blue-600">schedule</span>Pending</span>';
+    }
+
+    const adminUser = o.assigned_by_name || o.assigned_by_username || 'admin';
+
+    return `
         <tr class="hover:bg-slate-50/90 border-b border-slate-100 text-xs transition-colors duration-150">
           <!-- 1. Tanggal -->
           <td class="py-3.5 px-3.5 align-middle whitespace-nowrap">
@@ -4394,7 +4472,7 @@ function renderOutboundRows(data, tbody) {
           </td>
         </tr>
       `;
-    }).join('');
+  }).join('');
 }
 
 // ================= 9.0 MODAL DETAIL OUTBOUND (ICON MATA) =================
@@ -4430,7 +4508,7 @@ function openOutboundDetailModal(idx) {
   let photos = [];
   if (o.photo_path) {
     if (o.photo_path.startsWith('[')) {
-      try { photos = JSON.parse(o.photo_path); } catch(e) { photos = [o.photo_path]; }
+      try { photos = JSON.parse(o.photo_path); } catch (e) { photos = [o.photo_path]; }
     } else {
       photos = [o.photo_path];
     }
@@ -4583,7 +4661,7 @@ async function openEditTaskModal(taskId) {
 
   document.getElementById('editTaskOperatorName').innerText = `${t.operator_name || '-'} (${t.operator_shift || 'Shift'})`;
   document.getElementById('editTaskDestinationDisplay').innerText = t.destination || '-';
-  
+
   const prioEl = document.getElementById('editTaskPriorityDisplay');
   if (prioEl) {
     prioEl.innerText = t.priority || 'NORMAL';
@@ -4601,13 +4679,13 @@ async function openEditTaskModal(taskId) {
 
 async function handleEditTaskSubmit(e) {
   e.preventDefault();
-  const taskId      = document.getElementById('editTaskId').value;
+  const taskId = document.getElementById('editTaskId').value;
   const material_id = document.getElementById('editTaskMaterialId').value;
-  const target_qty  = document.getElementById('editTaskTargetQty').value;
+  const target_qty = document.getElementById('editTaskTargetQty').value;
   const assigned_to = document.getElementById('editTaskAssignedTo').value;
   const destination = document.getElementById('editTaskDestination').value;
-  const priority    = document.getElementById('editTaskPriority').value;
-  const notes       = document.getElementById('editTaskNotes').value;
+  const priority = document.getElementById('editTaskPriority').value;
+  const notes = document.getElementById('editTaskNotes').value;
 
   if (App.parseNumber(target_qty) <= 0) {
     App.toast('Target Qty pengeluaran harus lebih dari 0', 'warning');
@@ -4836,8 +4914,8 @@ function renderMutationsTable() {
   if (!tbody) return;
 
   const search = (document.getElementById('mutationSearchInput')?.value || '').trim().toLowerCase();
-  const type   = document.getElementById('mutationTypeFilter')?.value || 'ALL';
-  const date   = (document.getElementById('mutationDateFilter')?.value || '').trim();
+  const type = document.getElementById('mutationTypeFilter')?.value || 'ALL';
+  const date = (document.getElementById('mutationDateFilter')?.value || '').trim();
 
   let filtered = allMutationsData;
 
@@ -4853,7 +4931,7 @@ function renderMutationsTable() {
     filtered = filtered.filter(m => {
       const matchCode = (m.material_code || '').toLowerCase().includes(search);
       const matchName = (m.material_name || '').toLowerCase().includes(search);
-      const matchRef  = (m.reference_no || '').toLowerCase().includes(search);
+      const matchRef = (m.reference_no || '').toLowerCase().includes(search);
       const matchNote = (m.notes || '').toLowerCase().includes(search);
       const matchUser = (m.user_name || m.user_role || '').toLowerCase().includes(search);
       return matchCode || matchName || matchRef || matchNote || matchUser;
@@ -4912,8 +4990,8 @@ function renderMutationsTable() {
 
 function exportMutationsExcel() {
   const search = (document.getElementById('mutationSearchInput')?.value || '').trim();
-  const type   = document.getElementById('mutationTypeFilter')?.value || 'ALL';
-  const date   = (document.getElementById('mutationDateFilter')?.value || '').trim();
+  const type = document.getElementById('mutationTypeFilter')?.value || 'ALL';
+  const date = (document.getElementById('mutationDateFilter')?.value || '').trim();
   let url = `export.php?type=mutations&mutation_type=${encodeURIComponent(type)}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (date) url += `&date=${encodeURIComponent(date)}`;
@@ -4936,6 +5014,9 @@ async function applyMyPermissions() {
       dashboard: 'nav-dashboard',
       counting_progress: 'nav-counting_progress',
       inventory: 'nav-inventory',
+      reorder_alerts: 'nav-reorder_alerts',
+      vas: 'nav-vas',
+      stock_transfer: 'nav-stock_transfer',
       dynamic_count: 'nav-dynamic_count',
       dynamic_counting_detail: 'nav-dynamic_counting_detail',
       opname: 'nav-opname',
@@ -5050,7 +5131,7 @@ function loadPermissionMatrix() {
       subEl.innerText = isSuperAdmin
         ? 'Teknisi Utama memiliki hak akses 100% penuh permanen ke seluruh menu sistem.'
         : `Role dasar: ${userObj.role.toUpperCase()} ${userObj.has_custom_override ? '(Memiliki Pengaturan Khusus)' : '(Menggunakan Standar Role)'}`;
-      
+
       if (btnReset) {
         if (!isSuperAdmin && userObj.has_custom_override) {
           btnReset.classList.remove('hidden');
@@ -5242,7 +5323,7 @@ function formatMatrixDate(dateStr) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' +
-         d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
 function getNoteBadge(diffNote, diffVal) {
@@ -5517,7 +5598,7 @@ function buildMatrixRowHtml(item, idx, maxStage, isDynamic = false) {
 
 function formatSessionOptionLabel(s) {
   let fullId = '';
-  
+
   if (s.opname_no) {
     const parts = s.opname_no.split('-');
     if (parts.length >= 4 && parts[2].startsWith('W')) {
@@ -5700,11 +5781,11 @@ async function confirmFinishDynamicSession() {
 
     if (res.success) {
       App.toast(res.message || 'Sesi Dynamic Count berhasil diselesaikan dan status berubah ke COMPLETED!', 'success', 'Selesai');
-      
+
       if (currentDynamicSession) {
         currentDynamicSession.status = 'COMPLETED';
       }
-      
+
       if (btnFinish) {
         btnFinish.className = 'h-[38px] px-3.5 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 text-xs font-black shrink-0 shadow-2xs cursor-default';
         btnFinish.disabled = true;
@@ -5801,7 +5882,7 @@ function filterDynamicSkuChecklist() {
   if (!tbody) return;
 
   const filtered = (allMaterials || []).filter(m => {
-    const matchSearch = !search || 
+    const matchSearch = !search ||
       (m.code && m.code.toLowerCase().includes(search)) ||
       (m.name && m.name.toLowerCase().includes(search)) ||
       (m.rack_location && m.rack_location.toLowerCase().includes(search));
@@ -6300,7 +6381,7 @@ function renderRecountItemsTable(targetItems, checkedOpIds) {
 
   tbody.innerHTML = targetItems.map((it, idx) => {
     const diff = parseFloat(it.final_difference) || 0;
-    const diffBadge = diff > 0 
+    const diffBadge = diff > 0
       ? `<span class="px-2 py-0.5 rounded font-black text-blue-800 bg-blue-100 border border-blue-300 text-[10px]">+${App.formatNumber(diff)}</span>`
       : `<span class="px-2 py-0.5 rounded font-black text-rose-800 bg-rose-100 border border-rose-300 text-[10px]">${App.formatNumber(diff)}</span>`;
 
@@ -6459,7 +6540,7 @@ function openEditOpnameItemModal(itemId, isDynamic = false) {
   document.getElementById('editOpnameItemRack').innerText = `Rak: ${item.material_rack || item.rack_location || '-'}`;
   document.getElementById('editOpnameUnitLabel').innerText = item.material_unit || 'Pcs';
   document.getElementById('editOpnameSysStock').innerText = App.formatNumber(item.system_stock);
-  
+
   const count1 = item.stages && item.stages[1] ? item.stages[1].count_qty : null;
   const count2 = item.stages && item.stages[2] ? item.stages[2].count_qty : null;
   document.getElementById('editOpnameCount1').innerText = count1 !== null ? App.formatNumber(count1) : '-';
@@ -6632,11 +6713,11 @@ async function openCountDetailView(opnameId, itemId) {
     stageRowsHtml = stages.map(st => {
       const stageLabel = getStageLabel(st.stage_number);
       const isFinal = st.is_final_source;
-      const statusBadge = st.status === 'COUNTED' 
+      const statusBadge = st.status === 'COUNTED'
         ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">COUNTED</span>'
         : st.status === 'PENDING'
-        ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
-        : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(st.status)}</span>`;
+          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
+          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(st.status)}</span>`;
 
       const countedTime = st.counted_at ? App.formatDate(st.counted_at) : '-';
 
@@ -6809,12 +6890,12 @@ async function loadCountingDetails() {
         const stageLabel = r.stage_label || `Round ${r.stage_number}`;
         const isFirst = r.stage_number === 1;
         const stageBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold ${isFirst ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">${escapeHtml(stageLabel)}</span>`;
-        
+
         const statusBadge = r.status === 'COUNTED'
           ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">COUNTED</span>'
           : r.status === 'PENDING'
-          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
-          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(r.status)}</span>`;
+            ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(r.status)}</span>`;
 
         const countedTime = r.counted_at ? App.formatDate(r.counted_at) : App.formatDate(r.created_at);
 
@@ -6994,12 +7075,12 @@ async function loadDynamicCountingDetails() {
         const stageLabel = r.stage_label || `Round ${r.stage_number}`;
         const isFirst = r.stage_number === 1;
         const stageBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold ${isFirst ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-purple-50 text-purple-800 border border-purple-200'}">${escapeHtml(stageLabel)}</span>`;
-        
+
         const statusBadge = r.status === 'COUNTED'
           ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">COUNTED</span>'
           : r.status === 'PENDING'
-          ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
-          : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(r.status)}</span>`;
+            ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">PENDING</span>'
+            : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(r.status)}</span>`;
 
         const countedTime = r.counted_at ? App.formatDate(r.counted_at) : App.formatDate(r.created_at);
 
@@ -7830,6 +7911,7 @@ function downloadAdjustExcelTemplate() {
 // =========================================================================
 async function loadDatabaseStats() {
   try {
+    refreshMaintGoogleSheetsConfigUI();
     const res = await App.fetchJson('../api/maintenance.php?action=stats');
     if (res && res.success && res.stats) {
       const s = res.stats;
@@ -7937,7 +8019,7 @@ async function submitCleanDatabase(e) {
     if (res && res.success) {
       App.toast(res.message || 'Pembersihan database berhasil diselesaikan!', 'success');
       App.closeModal('modalConfirmDbClean');
-      
+
       // Refresh DB stats and related modules
       loadDatabaseStats();
       if (typeof loadMaterials === 'function') loadMaterials();
@@ -7977,17 +8059,17 @@ async function toggleMaintenanceMode(active) {
 
     if (res && res.success) {
       App.toast(res.message, 'success');
-      
+
       // Update UI components dynamically
       const badge = document.getElementById('maintenanceBadge');
       if (badge) {
         badge.innerText = active ? 'AKTIF (SITUS DIKUNCI)' : 'NON-AKTIF';
-        badge.className = active 
+        badge.className = active
           ? 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200'
           : 'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200';
       }
 
-      btn.className = active 
+      btn.className = active
         ? 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer'
         : 'px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer';
 
@@ -8648,8 +8730,8 @@ function renderAdminHandoversTable(dataList) {
   let html = '';
   list.forEach((item, index) => {
     const isPending = item.status === 'PENDING';
-    const statusBadge = isPending 
-      ? '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING</span>' 
+    const statusBadge = isPending
+      ? '<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING</span>'
       : '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black uppercase">DONE</span>';
 
     const shareBadge = (Number(item.is_shared) === 1)
@@ -8660,7 +8742,7 @@ function renderAdminHandoversTable(dataList) {
     let photos = [];
     if (item.photo_path) {
       if (item.photo_path.startsWith('[')) {
-        try { photos = JSON.parse(item.photo_path); } catch(e) { photos = [item.photo_path]; }
+        try { photos = JSON.parse(item.photo_path); } catch (e) { photos = [item.photo_path]; }
       } else {
         photos = [item.photo_path];
       }
@@ -8676,7 +8758,7 @@ function renderAdminHandoversTable(dataList) {
       `;
     }
 
-    const receiverInfo = item.received_by_name 
+    const receiverInfo = item.received_by_name
       ? `<div class="leading-tight"><b class="text-emerald-700 font-bold">${App.escapeHtml(item.received_by_name)}</b><p class="text-[10px] font-mono text-slate-400">${App.escapeHtml(item.received_at || '')}</p></div>`
       : '<span class="text-slate-400 italic text-[11px]">-</span>';
 
@@ -8737,8 +8819,8 @@ function openAdminHandoverDetail(id) {
 
   // Badges
   const isPending = item.status === 'PENDING';
-  const statusBadge = isPending 
-    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING (Menunggu)</span>' 
+  const statusBadge = isPending
+    ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-black uppercase">PENDING (Menunggu)</span>'
     : '<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-black uppercase">DONE (Diterima)</span>';
   document.getElementById('admDetHandoverStatusBadge').innerHTML = statusBadge;
 
@@ -8761,7 +8843,7 @@ function openAdminHandoverDetail(id) {
   let photos = [];
   if (item.photo_path) {
     if (item.photo_path.startsWith('[')) {
-      try { photos = JSON.parse(item.photo_path); } catch(e) { photos = [item.photo_path]; }
+      try { photos = JSON.parse(item.photo_path); } catch (e) { photos = [item.photo_path]; }
     } else {
       photos = [item.photo_path];
     }
@@ -9135,7 +9217,7 @@ function openAdminRejectConsumableModal(id) {
 
   document.getElementById('rejectReqIdInput').value = req.id;
   document.getElementById('rejectReqNoSubtitle').innerText = `No. Request: #${req.request_no} (${req.destination}) - Pemohon: ${req.requester_name || 'Operator'}`;
-  
+
   const reasonInp = document.getElementById('rejectReasonInput');
   if (reasonInp) reasonInp.value = '';
 
@@ -9403,9 +9485,9 @@ function printConsumableRequestsReport() {
           </thead>
           <tbody>
             ${requests.map((r, idx) => {
-              const ho = r.handover_info || {};
-              const itemsSummary = (r.items || []).map(it => `${it.material_name} (${App.formatNumber(it.qty)} ${it.material_unit || 'Pcs'})`).join(', ');
-              return `
+      const ho = r.handover_info || {};
+      const itemsSummary = (r.items || []).map(it => `${it.material_name} (${App.formatNumber(it.qty)} ${it.material_unit || 'Pcs'})`).join(', ');
+      return `
                 <tr style="background-color: ${idx % 2 === 1 ? '#f8fafc' : '#ffffff'};">
                   <td style="border: 1px solid #cbd5e1; padding: 5px 8px; text-align: center; font-family: monospace; font-weight: 700;">${idx + 1}</td>
                   <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-family: monospace; white-space: nowrap;">${App.formatDate(r.created_at)}</td>
@@ -9418,7 +9500,7 @@ function printConsumableRequestsReport() {
                   <td style="border: 1px solid #cbd5e1; padding: 5px 8px; font-size: 10px; color: #475569;">${escapeHtml(ho.penyerah_name || r.approver_name || '-')}</td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
           </tbody>
           <tfoot>
             <tr style="background-color: #f1f5f9; font-weight: 900; border-top: 2px solid #94a3b8;">
@@ -9558,18 +9640,18 @@ async function openAdminEditConsumableModal(id) {
 
 async function handleAdminEditConsumableSubmit(e) {
   e.preventDefault();
-  const requestId   = document.getElementById('editConsumableReqId').value;
+  const requestId = document.getElementById('editConsumableReqId').value;
   const destination = document.getElementById('editConsumableDestination').value;
-  const priority    = document.getElementById('editConsumablePriority').value;
-  const notes       = document.getElementById('editConsumableNotes').value.trim();
+  const priority = document.getElementById('editConsumablePriority').value;
+  const notes = document.getElementById('editConsumableNotes').value.trim();
 
   const rows = document.querySelectorAll('#editConsumableItemsTableBody tr');
   const items = [];
 
   rows.forEach(r => {
     const matSelect = r.querySelector('.edit-cons-mat-select');
-    const qtyInput  = r.querySelector('.edit-cons-qty-input');
-    const notesInput= r.querySelector('.edit-cons-notes-input');
+    const qtyInput = r.querySelector('.edit-cons-qty-input');
+    const notesInput = r.querySelector('.edit-cons-notes-input');
 
     const material_id = parseInt(matSelect?.value || '0');
     const qty = App.parseNumber(qtyInput?.value || 0);
@@ -9675,7 +9757,7 @@ async function loadReorderAlerts() {
   }
 
   const res = await App.fetchJson(`../api/reorder_alerts.php?action=list&filter_type=${currentReorderFilterType}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`);
-  
+
   if (!res.success) {
     App.toast(res.message || 'Gagal memuat data peringatan PO', 'error');
     tbody.innerHTML = '<tr><td colspan="10" class="p-6 text-center text-rose-500 text-xs">Gagal memuat data peringatan PO.</td></tr>';
@@ -9904,13 +9986,13 @@ function openRecordPOModal(matId) {
 
 async function handleRecordPOSubmit(e) {
   e.preventDefault();
-  const material_id   = document.getElementById('poMaterialId').value;
-  const po_number     = document.getElementById('poNumberInput').value.trim();
+  const material_id = document.getElementById('poMaterialId').value;
+  const po_number = document.getElementById('poNumberInput').value.trim();
   const supplier_name = document.getElementById('poSupplierInput').value.trim();
-  const ordered_qty   = document.getElementById('poQtyInput').value;
-  const order_date    = document.getElementById('poOrderDateInput').value;
-  const eta_date      = document.getElementById('poEtaDateInput').value;
-  const notes         = document.getElementById('poNotesInput').value.trim();
+  const ordered_qty = document.getElementById('poQtyInput').value;
+  const order_date = document.getElementById('poOrderDateInput').value;
+  const eta_date = document.getElementById('poEtaDateInput').value;
+  const notes = document.getElementById('poNotesInput').value.trim();
 
   const submitBtn = document.getElementById('btnRecordPOSubmit');
   submitBtn.disabled = true;
@@ -10008,13 +10090,1209 @@ _Dibuat otomatis via PackStock WMS (Inventory Control System)_`;
 
   // Copy to clipboard
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(caption).catch(() => {});
+    navigator.clipboard.writeText(caption).catch(() => { });
   }
 
   const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
   window.open(waUrl, '_blank');
   App.toast('Format rekap PO telah disalin ke clipboard dan membuka WhatsApp', 'success', 'WhatsApp Share');
 }
+
+// ================= ZONE VAS FRONTEND LOGIC =================
+let allVasMaterials = [];
+
+async function loadVasStock() {
+  const search = document.getElementById('vasSearchInput')?.value || '';
+  const category = document.getElementById('vasCategoryFilter')?.value || 'all';
+  const showAll = document.getElementById('vasShowAllCheckbox')?.checked ? 1 : 0;
+
+  const params = new URLSearchParams({
+    action: 'list',
+    search: search,
+    category: category,
+    show_all: showAll
+  });
+
+  const res = await App.fetchJson(`../api/vas.php?${params.toString()}`);
+  if (res.success) {
+    allVasMaterials = res.data || [];
+    const metrics = res.metrics || {};
+
+    const elSkus = document.getElementById('vasKpiTotalSkus');
+    const elQty = document.getElementById('vasKpiTotalQty');
+    const elTx = document.getElementById('vasKpiTotalTx');
+    const elBadge = document.getElementById('sidebarVasBadge');
+
+    if (elSkus) elSkus.innerText = `${App.formatNumber(metrics.total_vas_skus || 0)} SKU`;
+    if (elQty) elQty.innerText = `${App.formatNumber(metrics.total_vas_qty || 0)}`;
+    if (elTx) elTx.innerText = `${App.formatNumber(metrics.total_transactions || 0)} Operasi`;
+
+    if (elBadge) {
+      if (metrics.total_vas_skus > 0) {
+        elBadge.innerText = metrics.total_vas_skus;
+        elBadge.classList.remove('hidden');
+      } else {
+        elBadge.classList.add('hidden');
+      }
+    }
+
+    renderVasTable(allVasMaterials);
+  }
+}
+
+function renderVasTable(materials) {
+  const tbody = document.getElementById('vasTableBody');
+  if (!tbody) return;
+
+  if (materials.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[36px] text-purple-300 mb-1">precision_manufacturing</span>
+          <p class="text-xs font-medium text-slate-600">Tidak ada stok packaging material yang tersimpan di Zone VAS saat ini.</p>
+          <p class="text-[11px] text-slate-400 mt-1">Stok otomatis masuk ke Zone VAS ketika dilakukan pengeluaran (Outbound) dengan Tujuan "Zone VAS".</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = materials.map(m => `
+    <tr class="hover:bg-purple-50/40 border-b border-slate-100 transition-colors">
+      <td class="p-3 whitespace-nowrap">
+        <button type="button" onclick="openVasItemHistoryModal(${m.id})" class="font-mono font-bold text-xs text-purple-900 bg-purple-100/80 hover:bg-purple-200 px-2 py-1 rounded border border-purple-300 transition-colors inline-flex items-center gap-1 cursor-pointer" title="Klik untuk lihat riwayat mutasi SKU ini">
+          <span class="material-symbols-outlined text-[14px]">history</span>
+          <span>${escapeHtml(m.code)}</span>
+        </button>
+      </td>
+      <td class="p-3">
+        <button type="button" onclick="openVasItemHistoryModal(${m.id})" class="font-bold text-slate-900 hover:text-purple-700 text-xs text-left cursor-pointer transition-colors block">
+          ${escapeHtml(m.name)}
+        </button>
+        <span class="text-[10px] text-slate-400">Deskripsi: ${escapeHtml(m.description || '-')}</span>
+      </td>
+      <td class="p-3 text-slate-600 text-xs font-medium">${escapeHtml(m.category || '-')}</td>
+      <td class="p-3 text-slate-700 text-xs font-medium whitespace-nowrap">${escapeHtml(m.rack_location || '-')}</td>
+      <td class="p-3 text-center font-mono font-bold text-slate-700 text-xs">${App.formatNumber(m.current_stock)}</td>
+      <td class="p-3 text-center whitespace-nowrap bg-purple-50">
+        <span class="px-2.5 py-1 rounded-full text-xs font-black bg-purple-800 text-amber-300 shadow-2xs">
+          ${App.formatNumber(m.vas_stock)}
+        </span>
+      </td>
+      <td class="p-3 text-center text-xs font-semibold text-slate-700 whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">${escapeHtml(m.unit || 'Pcs')}</span>
+      </td>
+      <td class="p-3 text-right whitespace-nowrap">
+        <button type="button" onclick="openVasItemHistoryModal(${m.id})" class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-900 rounded-lg text-xs font-bold transition-all border border-purple-300 inline-flex items-center gap-1.5 cursor-pointer shadow-2xs">
+          <span class="material-symbols-outlined text-[16px]">history</span>
+          <span>Riwayat VAS</span>
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function switchVasSubTab(sub) {
+  const elStock = document.getElementById('vasViewStock');
+  const elHist = document.getElementById('vasViewHistory');
+  const btnStock = document.getElementById('vasSubTabStock');
+  const btnHist = document.getElementById('vasSubTabHistory');
+
+  if (sub === 'stock') {
+    if (elStock) elStock.classList.remove('hidden');
+    if (elHist) elHist.classList.add('hidden');
+    if (btnStock) {
+      btnStock.className = 'px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-purple-700 text-purple-900 bg-white transition-all inline-flex items-center gap-2 cursor-pointer';
+    }
+    if (btnHist) {
+      btnHist.className = 'px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all inline-flex items-center gap-2 cursor-pointer';
+    }
+    loadVasStock();
+  } else {
+    if (elStock) elStock.classList.add('hidden');
+    if (elHist) elHist.classList.remove('hidden');
+    if (btnStock) {
+      btnStock.className = 'px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-all inline-flex items-center gap-2 cursor-pointer';
+    }
+    if (btnHist) {
+      btnHist.className = 'px-4 py-2 text-xs font-bold rounded-t-lg border-b-2 border-purple-700 text-purple-900 bg-white transition-all inline-flex items-center gap-2 cursor-pointer';
+    }
+    loadVasHistory();
+  }
+}
+
+async function loadVasHistory() {
+  const search = document.getElementById('vasSearchInput')?.value || '';
+  const type = document.getElementById('vasHistoryTypeFilter')?.value || 'ALL';
+  const date = document.getElementById('vasHistoryDateFilter')?.value || '';
+
+  const params = new URLSearchParams({
+    action: 'history',
+    search: search,
+    type: type,
+    date: date
+  });
+
+  const res = await App.fetchJson(`../api/vas.php?${params.toString()}`);
+  if (res.success) {
+    renderVasHistoryTable(res.data || []);
+  }
+}
+
+function renderVasHistoryTable(rows) {
+  const tbody = document.getElementById('vasHistoryTableBody');
+  if (!tbody) return;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">history</span>
+          <p class="text-xs font-medium">Belum ada riwayat transaksi transfer Zone VAS.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const isOut = r.type === 'TRANSFER_OUT';
+    const typeBadge = isOut
+      ? '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">VAS &rarr; Gudang Utama</span>'
+      : '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-purple-100 text-purple-900 border border-purple-300">Outbound &rarr; VAS</span>';
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs">
+        <td class="p-3 font-mono font-bold text-slate-900">${escapeHtml(r.vas_no)}</td>
+        <td class="p-3 font-semibold text-slate-800">
+          ${escapeHtml(r.material_name || '-')}
+          <span class="block text-[10px] text-slate-400 font-mono">${escapeHtml(r.material_code || '')}</span>
+        </td>
+        <td class="p-3 text-center whitespace-nowrap">${typeBadge}</td>
+        <td class="p-3 text-center font-mono font-black ${isOut ? 'text-emerald-700' : 'text-purple-900'} text-xs">
+          ${isOut ? '+' : ''}${App.formatNumber(r.qty)} ${escapeHtml(r.material_unit || 'Pcs')}
+        </td>
+        <td class="p-3 font-mono text-slate-600">${escapeHtml(r.reference_no || '-')}</td>
+        <td class="p-3 text-slate-600 max-w-xs truncate">${escapeHtml(r.notes || '-')}</td>
+        <td class="p-3 text-slate-700 font-medium">${escapeHtml(r.user_name || r.user_username || 'Admin')}</td>
+        <td class="p-3 text-right text-slate-500 font-mono text-[11px] whitespace-nowrap">${App.formatDate(r.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function openVasTransferModal(selectedMaterialId = null) {
+  const modal = document.getElementById('modalVasTransferBack');
+  const select = document.getElementById('vasTransferMaterialSelect');
+  if (!modal || !select) return;
+
+  // Populate options from all materials (fetch fresh list if empty)
+  if (allMaterials.length === 0) {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res.success) allMaterials = res.data || [];
+  }
+
+  select.innerHTML = '<option value="">-- Pilih SKU yang Ada di Zone VAS --</option>' +
+    allMaterials
+      .filter(m => (m.vas_stock && m.vas_stock > 0) || m.id == selectedMaterialId)
+      .map(m => `<option value="${m.id}" data-vas="${m.vas_stock || 0}" data-main="${m.current_stock || 0}" data-unit="${escapeHtml(m.unit || 'Pcs')}">${escapeHtml(m.code)} - ${escapeHtml(m.name)} (Stok VAS: ${App.formatNumber(m.vas_stock || 0)} ${escapeHtml(m.unit || 'Pcs')})</option>`)
+      .join('');
+
+  if (selectedMaterialId) {
+    select.value = selectedMaterialId;
+  } else {
+    select.value = '';
+  }
+
+  onVasTransferMaterialChange();
+
+  document.getElementById('vasTransferQtyInput').value = '';
+  document.getElementById('vasTransferNotesInput').value = '';
+
+  modal.classList.remove('hidden');
+}
+
+function closeVasTransferModal() {
+  const modal = document.getElementById('modalVasTransferBack');
+  if (modal) modal.classList.add('hidden');
+}
+
+function onVasTransferMaterialChange() {
+  const select = document.getElementById('vasTransferMaterialSelect');
+  const infoBox = document.getElementById('vasMaterialStockInfoBox');
+  const elVas = document.getElementById('vasInfoVasStock');
+  const elMain = document.getElementById('vasInfoMainStock');
+  const unitBadge = document.getElementById('vasTransferUnitBadge');
+
+  if (!select || !select.value) {
+    if (infoBox) infoBox.classList.add('hidden');
+    return;
+  }
+
+  const opt = select.options[select.selectedIndex];
+  if (!opt) return;
+
+  const vasStock = parseFloat(opt.getAttribute('data-vas') || '0');
+  const mainStock = parseFloat(opt.getAttribute('data-main') || '0');
+  const unit = opt.getAttribute('data-unit') || 'Pcs';
+
+  if (elVas) elVas.innerText = `${App.formatNumber(vasStock)} ${unit}`;
+  if (elMain) elMain.innerText = `${App.formatNumber(mainStock)} ${unit}`;
+  if (unitBadge) unitBadge.innerText = unit;
+
+  const qtyInput = document.getElementById('vasTransferQtyInput');
+  if (qtyInput) qtyInput.max = vasStock;
+
+  if (infoBox) infoBox.classList.remove('hidden');
+}
+
+async function submitVasTransferToInventory(e) {
+  e.preventDefault();
+  const select = document.getElementById('vasTransferMaterialSelect');
+  const qtyInput = document.getElementById('vasTransferQtyInput');
+  const notesInput = document.getElementById('vasTransferNotesInput');
+  const btn = document.getElementById('btnSubmitVasTransfer');
+
+  const materialId = parseInt(select?.value || '0');
+  const qty = parseFloat(qtyInput?.value || '0');
+  const notes = notesInput?.value?.trim() || '';
+
+  if (materialId <= 0 || qty <= 0) {
+    App.showToast('Material dan Qty transfer wajib diisi!', 'warning');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await App.fetchJson('../api/vas.php?action=transfer_to_inventory', {
+      method: 'POST',
+      body: JSON.stringify({
+        material_id: materialId,
+        qty: qty,
+        notes: notes
+      })
+    });
+
+    if (res.success) {
+      App.showToast(res.message, 'success');
+      closeVasTransferModal();
+      loadVasStock();
+      loadMaterials(); // Refresh main inventory table too
+    } else {
+      App.showToast(res.message || 'Gagal memproses transfer dari Zone VAS', 'danger');
+    }
+  } catch (err) {
+    App.showToast('Terjadi kesalahan koneksi server: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ================= STOCK TRANSFER MULTI-ITEM LOGIC =================
+let stRowCounter = 0;
+
+function getStCurrentDirection() {
+  const fromVal = document.getElementById('stFormFrom')?.value || 'INVENTORY';
+  const toVal = document.getElementById('stFormTo')?.value || 'VAS';
+
+  if (fromVal === 'INVENTORY') {
+    return 'IN_VAS';
+  }
+  if (fromVal === 'VAS') {
+    return (toVal === 'DISPOSAL') ? 'VAS_OUTBOUND' : 'OUT_VAS';
+  }
+  return 'IN_VAS';
+}
+
+function setStFormFromTo(dir) {
+  const elFrom = document.getElementById('stFormFrom');
+  const elTo = document.getElementById('stFormTo');
+
+  if (dir === 'IN_VAS') {
+    if (elFrom) elFrom.value = 'INVENTORY';
+    if (elTo) elTo.value = 'VAS';
+  } else if (dir === 'OUT_VAS') {
+    if (elFrom) elFrom.value = 'VAS';
+    if (elTo) elTo.value = 'INVENTORY';
+  } else if (dir === 'VAS_OUTBOUND') {
+    if (elFrom) elFrom.value = 'VAS';
+    if (elTo) elTo.value = 'DISPOSAL';
+  }
+}
+
+function onStFromChange() {
+  const elFrom = document.getElementById('stFormFrom');
+  const elTo = document.getElementById('stFormTo');
+  if (!elFrom || !elTo) return;
+
+  if (elFrom.value === 'INVENTORY') {
+    elTo.value = 'VAS';
+  } else {
+    elTo.value = 'INVENTORY';
+  }
+
+  onStGlobalDirectionChange();
+}
+
+function onStToChange() {
+  const elFrom = document.getElementById('stFormFrom');
+  const elTo = document.getElementById('stFormTo');
+  if (!elFrom || !elTo) return;
+
+  if (elTo.value === 'VAS') {
+    elFrom.value = 'INVENTORY';
+  } else {
+    elFrom.value = 'VAS';
+  }
+
+  onStGlobalDirectionChange();
+}
+
+async function openStockTransferModal(defaultDir = 'IN_VAS', initialMaterialId = null) {
+  const modal = document.getElementById('modalStockTransfer');
+  if (!modal) return;
+
+  if (allMaterials.length === 0) {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res.success) allMaterials = res.data || [];
+  }
+
+  setStFormFromTo(defaultDir);
+
+  const notesInput = document.getElementById('stGlobalNotes');
+  if (notesInput) notesInput.value = '';
+
+  const tbody = document.getElementById('stItemsTableBody');
+  if (tbody) tbody.innerHTML = '';
+  stRowCounter = 0;
+
+  addStockTransferTableRow(initialMaterialId, null, defaultDir);
+
+  modal.classList.remove('hidden');
+}
+
+function onStGlobalDirectionChange() {
+  document.querySelectorAll('#stItemsTableBody tr').forEach(tr => {
+    updateStRowStockState(tr);
+  });
+}
+
+function addStockTransferTableRow(preselectMaterialId = null, defaultQty = null) {
+  const tbody = document.getElementById('stItemsTableBody');
+  if (!tbody) return;
+
+  stRowCounter++;
+  const rowId = `stRow_${stRowCounter}`;
+
+  let preselectedMat = null;
+  if (preselectMaterialId) {
+    preselectedMat = allMaterials.find(m => m.id == preselectMaterialId);
+  }
+
+  const tr = document.createElement('tr');
+  tr.id = rowId;
+  tr.className = 'hover:bg-slate-50 border-b border-slate-100 text-xs transition-colors';
+  tr.innerHTML = `
+    <td class="p-2.5 text-center font-bold text-slate-400 st-row-index">1</td>
+    <td class="p-2.5">
+      <div class="custom-mat-search-box relative w-full">
+        <input type="text" class="mat-search-input st-row-search-input w-full h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 outline-none focus:bg-white focus:border-indigo-600 truncate cursor-pointer" placeholder="Cari Kemas / Consumable..." value="${preselectedMat ? escapeHtml(preselectedMat.name) : ''}" data-selected-name="${preselectedMat ? escapeHtml(preselectedMat.name) : ''}" autocomplete="off">
+        <input type="hidden" class="st-row-material mat-id-hidden" value="${preselectedMat ? preselectedMat.id : ''}" required>
+        <span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">arrow_drop_down</span>
+        <div class="custom-mat-dropdown hidden"></div>
+      </div>
+    </td>
+    <td class="p-2.5 text-center whitespace-nowrap st-row-available-stock">
+      <span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-400">-</span>
+    </td>
+    <td class="p-2.5 text-center">
+      <div class="relative">
+        <input type="number" step="0.01" min="0.01" value="${defaultQty || ''}" oninput="onStRowQtyInput(this)" placeholder="0" class="st-row-qty w-full p-2 pr-8 bg-slate-50 border border-slate-300 rounded-lg text-xs font-extrabold text-slate-900 text-center outline-none focus:border-indigo-600 focus:bg-white transition-colors" required>
+        <span class="st-row-unit absolute right-2 top-2 text-[10px] font-bold text-slate-400">Pcs</span>
+      </div>
+    </td>
+    <td class="p-2.5">
+      <input type="text" placeholder="Catatan item..." class="st-row-notes w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-xs outline-none focus:border-indigo-600 focus:bg-white transition-colors">
+    </td>
+    <td class="p-2.5 text-center">
+      <button type="button" onclick="removeStockTransferTableRow(this)" class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors inline-flex items-center justify-center cursor-pointer" title="Hapus Baris">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+      </button>
+    </td>
+  `;
+
+  tbody.appendChild(tr);
+
+  const searchBox = tr.querySelector('.custom-mat-search-box');
+  setupCustomMaterialSearch(searchBox, 'stock_transfer', (mat) => {
+    updateStRowStockState(tr, mat);
+  });
+
+  if (preselectedMat) {
+    updateStRowStockState(tr, preselectedMat);
+  }
+
+  updateStockTransferTableIndexes();
+  calculateStockTransferTotals();
+}
+
+// Close popovers when clicking outside
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.st-searchable-container')) {
+    document.querySelectorAll('.st-search-popover').forEach(p => p.classList.add('hidden'));
+  }
+});
+
+function removeStockTransferTableRow(btn) {
+  const tr = btn.closest('tr');
+  if (tr) {
+    tr.remove();
+    updateStockTransferTableIndexes();
+    calculateStockTransferTotals();
+  }
+}
+
+function updateStockTransferTableIndexes() {
+  const rows = document.querySelectorAll('#stItemsTableBody tr');
+  rows.forEach((r, idx) => {
+    const elIdx = r.querySelector('.st-row-index');
+    if (elIdx) elIdx.innerText = idx + 1;
+  });
+}
+
+function onStRowDirectionChange(selectEl) {
+  const tr = selectEl.closest('tr');
+  if (!tr) return;
+
+  const hiddenInput = tr.querySelector('.st-row-material');
+  const matId = parseInt(hiddenInput?.value || '0');
+  const mat = allMaterials.find(m => m.id == matId);
+
+  updateStRowStockState(tr, mat);
+}
+
+function updateStRowStockState(tr, preselectedMat = null) {
+  const hiddenInput = tr.querySelector('.st-row-material');
+  const cellAvail = tr.querySelector('.st-row-available-stock');
+  const unitSpan = tr.querySelector('.st-row-unit');
+  const inputQty = tr.querySelector('.st-row-qty');
+
+  const matId = parseInt(hiddenInput?.value || (preselectedMat?.id || '0'));
+  const mat = allMaterials.find(m => m.id == matId) || preselectedMat;
+
+  if (!mat) {
+    if (cellAvail) cellAvail.innerHTML = '<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-400">-</span>';
+    if (inputQty) {
+      inputQty.removeAttribute('max');
+      inputQty.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-900');
+    }
+    return;
+  }
+
+  const mainStock = parseFloat(mat.current_stock !== undefined ? mat.current_stock : (mat.stock !== undefined ? mat.stock : 0));
+  const vasStock = parseFloat(mat.vas_stock || 0);
+  const unit = mat.unit || 'Pcs';
+  const dir = getStCurrentDirection();
+
+  const availableStock = (dir === 'IN_VAS') ? mainStock : vasStock;
+  const sourceLabel = (dir === 'IN_VAS') ? 'Stock Inventory' : (dir === 'VAS_OUTBOUND' ? 'Zone VAS (Outbound Direct)' : 'Zone VAS');
+
+  if (unitSpan) unitSpan.innerText = unit;
+
+  if (cellAvail) {
+    const isOut = availableStock <= 0;
+    const badgeClass = isOut
+      ? 'bg-rose-100 text-rose-800 border-rose-300'
+      : (dir === 'IN_VAS' ? 'bg-amber-100 text-amber-900 border-amber-300' : (dir === 'VAS_OUTBOUND' ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-purple-100 text-purple-900 border-purple-300'));
+
+    cellAvail.innerHTML = `
+      <span class="px-2.5 py-1 rounded-lg text-xs font-black font-mono border shadow-2xs ${badgeClass}">
+        ${App.formatNumber(availableStock)} ${unit}
+      </span>
+      <span class="block text-[9px] text-slate-400 font-medium mt-0.5">${sourceLabel}</span>
+    `;
+  }
+
+  if (inputQty) {
+    inputQty.max = availableStock;
+    onStRowQtyInput(inputQty);
+  }
+}
+
+function onStRowQtyInput(inputEl) {
+  calculateStockTransferTotals();
+
+  const tr = inputEl.closest('tr');
+  if (!tr) return;
+
+  const hiddenInput = tr.querySelector('.st-row-material');
+  const matId = parseInt(hiddenInput?.value || '0');
+  const mat = allMaterials.find(m => m.id == matId);
+
+  if (!mat) return;
+
+  const mainStock = parseFloat(mat.current_stock || 0);
+  const vasStock = parseFloat(mat.vas_stock || 0);
+  const dir = getStCurrentDirection();
+  const availableStock = (dir === 'IN_VAS') ? mainStock : vasStock;
+
+  const qty = parseFloat(inputEl.value || '0');
+
+  if (qty > availableStock) {
+    inputEl.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+    inputEl.classList.remove('border-slate-300', 'bg-slate-50', 'text-slate-900');
+  } else {
+    inputEl.classList.remove('border-rose-500', 'bg-rose-50', 'text-rose-900');
+    inputEl.classList.add('border-slate-300', 'bg-slate-50', 'text-slate-900');
+  }
+}
+
+function calculateStockTransferTotals() {
+  let totalQty = 0;
+  document.querySelectorAll('#stItemsTableBody .st-row-qty').forEach(inp => {
+    const val = parseFloat(inp.value || '0');
+    if (!isNaN(val) && val > 0) totalQty += val;
+  });
+
+  const elSum = document.getElementById('stTotalQtySummary');
+  if (elSum) elSum.innerText = App.formatNumber(totalQty);
+}
+
+async function submitStockTransferBatch(e) {
+  e.preventDefault();
+  const globalNotes = document.getElementById('stGlobalNotes')?.value?.trim() || '';
+  const globalDirection = getStCurrentDirection();
+  const btn = document.getElementById('btnSubmitStockTransferBatch');
+
+  const rows = document.querySelectorAll('#stItemsTableBody tr');
+  if (rows.length === 0) {
+    App.showToast('Tabel transfer stok tidak boleh kosong! Tambahkan minimal 1 baris.', 'warning');
+    return;
+  }
+
+  const items = [];
+  let isValid = true;
+  let overStockErrorMsg = '';
+
+  rows.forEach((tr, idx) => {
+    const hiddenMat = tr.querySelector('.st-row-material');
+    const searchInp = tr.querySelector('.st-row-search-input');
+    const inputQty = tr.querySelector('.st-row-qty');
+    const inputNotes = tr.querySelector('.st-row-notes');
+
+    let matId = parseInt(hiddenMat?.value || '0');
+    if (matId <= 0 && searchInp?.value) {
+      const searchVal = searchInp.value.trim();
+      const matchMat = (allMaterials || []).find(m => m.name === searchVal || (m.code && m.code === searchVal) || (m.item_code && m.item_code === searchVal));
+      if (matchMat) {
+        matId = matchMat.id;
+        if (hiddenMat) hiddenMat.value = matId;
+      }
+    }
+
+    const dir = globalDirection;
+    const qty = parseFloat(inputQty?.value || '0');
+    const notes = inputNotes?.value?.trim() || '';
+
+    if (matId <= 0 || qty <= 0) {
+      isValid = false;
+      const searchInp = tr.querySelector('.st-row-search-input');
+      if (searchInp) searchInp.classList.add('border-rose-500');
+      inputQty?.classList.add('border-rose-500');
+      return;
+    }
+
+    const mat = allMaterials.find(m => m.id == matId);
+    const mainStock = parseFloat(mat?.current_stock || 0);
+    const vasStock = parseFloat(mat?.vas_stock || 0);
+    const unit = mat?.unit || 'Pcs';
+    const matName = mat?.name || `SKU #${matId}`;
+    const availableStock = (dir === 'IN_VAS') ? mainStock : vasStock;
+    const sourceLabel = (dir === 'IN_VAS') ? 'Stock Inventory' : 'Zone VAS';
+
+    if (qty > availableStock) {
+      isValid = false;
+      inputQty?.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+      if (!overStockErrorMsg) {
+        overStockErrorMsg = `Qty transfer (${App.formatNumber(qty)} ${unit}) untuk '${matName}' melebihi sisa ${sourceLabel} (${App.formatNumber(availableStock)} ${unit})!`;
+      }
+    } else {
+      items.push({
+        material_id: matId,
+        direction: dir,
+        qty: qty,
+        notes: notes
+      });
+    }
+  });
+
+  if (!isValid) {
+    if (overStockErrorMsg) {
+      App.showToast(overStockErrorMsg, 'danger');
+    } else {
+      App.showToast('Mohon lengkapi Material dan Qty Transfer yang valid pada semua baris!', 'warning');
+    }
+    return;
+  }
+
+  if (items.length === 0) {
+    App.showToast('Tidak ada item transfer stok yang valid!', 'warning');
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+
+  try {
+    const res = await App.fetchJson('../api/vas.php?action=batch_transfer', {
+      method: 'POST',
+      body: JSON.stringify({
+        notes: globalNotes,
+        direction: globalDirection,
+        items: items
+      })
+    });
+
+    if (res.success) {
+      App.showToast(res.message, 'success');
+      App.closeModal('modalStockTransfer');
+      loadVasStock();
+      loadMaterials();
+      loadStockTransferHistory();
+    } else {
+      App.showToast(res.message || 'Gagal memproses Stock Transfer', 'danger');
+    }
+  } catch (err) {
+    App.showToast('Terjadi kesalahan koneksi server: ' + err.message, 'danger');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ================= ZONE VAS MONITORING PAGE CONTROLLER =================
+async function loadVasStock() {
+  const search = document.getElementById('vasSearchInput')?.value?.trim() || '';
+  const category = document.getElementById('vasCategoryFilter')?.value || 'all';
+
+  const params = new URLSearchParams({
+    action: 'list',
+    search: search,
+    category: category,
+    show_all: 0 // Show items currently in VAS
+  });
+
+  const res = await App.fetchJson(`../api/vas.php?${params.toString()}`);
+  if (res.success) {
+    // Dynamically populate categories dropdown if empty
+    const catSelect = document.getElementById('vasCategoryFilter');
+    if (catSelect && catSelect.options.length <= 1) {
+      const matRes = await App.fetchJson('../api/materials.php?action=categories');
+      if (matRes.success && Array.isArray(matRes.data)) {
+        matRes.data.forEach(c => {
+          if (c) {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            catSelect.appendChild(opt);
+          }
+        });
+      }
+    }
+
+    renderVasTable(res.data || []);
+
+    // Update Sidebar Badge Count
+    const badge = document.getElementById('sidebarVasBadge');
+    if (badge) {
+      const totalSkus = res.metrics?.total_vas_skus || 0;
+      badge.innerText = totalSkus;
+      if (totalSkus > 0) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+  }
+}
+
+function renderVasTable(materials) {
+  const tbody = document.getElementById('vasTableBody');
+  if (!tbody) return;
+
+  if (materials.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="7" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[36px] text-purple-300 mb-1">precision_manufacturing</span>
+          <p class="text-xs font-medium text-slate-600">Tidak ada material dengan stok aktif di Zone VAS.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = materials.map(m => `
+    <tr class="hover:bg-purple-50/40 border-b border-slate-100 text-xs transition-colors">
+      <td class="p-3 font-mono font-bold whitespace-nowrap">
+        <button type="button" onclick="openVasItemHistoryModal(${m.id})" class="font-mono font-bold text-purple-700 hover:text-purple-900 hover:underline cursor-pointer inline-flex items-center gap-1.5 group bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg border border-purple-200 transition-colors" title="Klik Item No untuk lihat detail history mutasi VAS">
+          <span>${escapeHtml(m.code)}</span>
+          <span class="material-symbols-outlined text-[15px] text-purple-500 group-hover:text-purple-800">history</span>
+        </button>
+      </td>
+      <td class="p-3 font-bold text-slate-800">
+        <button type="button" onclick="openVasItemHistoryModal(${m.id})" class="text-left font-bold text-slate-800 hover:text-purple-700 hover:underline cursor-pointer" title="Klik Nama SKU untuk lihat detail history mutasi VAS">
+          ${escapeHtml(m.name)}
+        </button>
+        ${m.description ? `<span class="block text-[10px] text-slate-400 font-normal truncate max-w-xs">${escapeHtml(m.description)}</span>` : ''}
+      </td>
+      <td class="p-3 text-slate-600 font-medium whitespace-nowrap">${escapeHtml(m.category || '-')}</td>
+      <td class="p-3 text-slate-700 font-mono whitespace-nowrap">
+        <span class="px-2 py-0.5 rounded bg-slate-100 border border-slate-200">${escapeHtml(m.rack_location || '-')}</span>
+      </td>
+      <td class="p-3 text-center font-mono font-bold text-slate-700">
+        ${App.formatNumber(m.current_stock)}
+      </td>
+      <td class="p-3 text-center font-mono font-black bg-purple-50/70 text-purple-900">
+        <span class="px-3 py-1 rounded-lg bg-purple-100 border border-purple-300 shadow-2xs font-extrabold text-sm">
+          ${App.formatNumber(m.vas_stock)}
+        </span>
+      </td>
+      <td class="p-3 text-center font-semibold text-slate-600">${escapeHtml(m.unit || 'Pcs')}</td>
+    </tr>
+  `).join('');
+}
+
+// ================= STOCK TRANSFER HISTORY PAGE CONTROLLER =================
+async function loadStockTransferHistory() {
+  const search = document.getElementById('stSearchInput')?.value || '';
+  const type = document.getElementById('stTypeFilter')?.value || 'ALL';
+  const startDate = document.getElementById('stFromDateFilter')?.value || '';
+  const endDate = document.getElementById('stToDateFilter')?.value || '';
+
+  const params = new URLSearchParams({
+    action: 'history',
+    search: search,
+    type: type,
+    start_date: startDate,
+    end_date: endDate
+  });
+
+  const res = await App.fetchJson(`../api/vas.php?${params.toString()}`);
+  if (res.success) {
+    renderStockTransferHistoryTable(res.data || []);
+  }
+}
+
+function renderStockTransferHistoryTable(rows) {
+  const tbody = document.getElementById('stHistoryTableBody');
+  if (!tbody) return;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[36px] text-indigo-300 mb-1">swap_horizontal_circle</span>
+          <p class="text-xs font-medium text-slate-600">Belum ada riwayat transaksi Stock Transfer.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    let fromBadge = '';
+    let toBadge = '';
+    let qtyColor = 'text-slate-900';
+
+    if (r.type === 'TRANSFER_IN') {
+      fromBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">Stock Inventory</span>';
+      toBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">Zone VAS</span>';
+      qtyColor = 'text-amber-900';
+    } else if (r.type === 'VAS_OUTBOUND') {
+      fromBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">Zone VAS</span>';
+      toBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-rose-100 text-rose-900 border border-rose-300 shadow-2xs">Outbound / Disposal</span>';
+      qtyColor = 'text-rose-900';
+    } else {
+      fromBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">Zone VAS</span>';
+      toBadge = '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-100 text-emerald-900 border border-emerald-300 shadow-2xs">Stock Inventory</span>';
+      qtyColor = 'text-purple-900';
+    }
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs">
+        <td class="p-3 font-mono font-bold text-slate-900 whitespace-nowrap">${escapeHtml(r.vas_no)}</td>
+        <td class="p-3 font-semibold text-slate-800">
+          ${escapeHtml(r.material_name || '-')}
+          <span class="block text-[10px] text-slate-400 font-mono">${escapeHtml(r.material_code || '')}</span>
+        </td>
+        <td class="p-3 text-center whitespace-nowrap">${fromBadge}</td>
+        <td class="p-3 text-center whitespace-nowrap">${toBadge}</td>
+        <td class="p-3 text-center font-mono font-black ${qtyColor} text-xs">
+          ${App.formatNumber(r.qty)} ${escapeHtml(r.material_unit || 'Pcs')}
+        </td>
+        <td class="p-3 text-slate-600 max-w-xs truncate">${escapeHtml(r.notes || '-')}</td>
+        <td class="p-3 text-slate-700 font-medium">${escapeHtml(r.user_name || r.user_username || 'Admin')}</td>
+        <td class="p-3 text-right text-slate-500 font-mono text-[11px] whitespace-nowrap">${App.formatDate(r.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ================= ITEM HISTORY MODAL CONTROLLER =================
+async function openVasItemHistoryModal(materialId) {
+  const modal = document.getElementById('modalVasItemHistory');
+  if (!modal) return;
+
+  if (allMaterials.length === 0) {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res.success) allMaterials = res.data || [];
+  }
+
+  const mat = allMaterials.find(m => m.id == materialId);
+  const titleEl = document.getElementById('vasItemHistoryTitle');
+  const subTitleEl = document.getElementById('vasItemHistorySubtitle');
+  const mainStockEl = document.getElementById('vasItemHistMainStock');
+  const vasStockEl = document.getElementById('vasItemHistVasStock');
+
+  if (mat) {
+    if (titleEl) titleEl.innerHTML = `Riwayat Mutasi Zone VAS - <span class="font-mono text-purple-700">${escapeHtml(mat.code)}</span> (${escapeHtml(mat.name)})`;
+    if (subTitleEl) subTitleEl.innerText = `Kategori: ${mat.category || '-'} | Lokasi Rak: ${mat.rack_location || '-'}`;
+    if (mainStockEl) mainStockEl.innerText = `${App.formatNumber(mat.current_stock || 0)} ${mat.unit || 'Pcs'}`;
+    if (vasStockEl) vasStockEl.innerText = `${App.formatNumber(mat.vas_stock || 0)} ${mat.unit || 'Pcs'}`;
+  } else {
+    if (titleEl) titleEl.innerText = `Riwayat Mutasi Zone VAS - SKU #${materialId}`;
+  }
+
+  modal.classList.remove('hidden');
+
+  const res = await App.fetchJson(`../api/vas.php?action=history&material_id=${materialId}`);
+  if (res.success) {
+    renderVasItemHistoryTable(res.data || []);
+  }
+}
+
+function renderVasItemHistoryTable(rows) {
+  const tbody = document.getElementById('vasItemHistoryTableBody');
+  if (!tbody) return;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">history</span>
+          <p class="text-xs font-medium">Belum ada riwayat transaksi mutasi VAS untuk material ini.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    let typeBadge = '';
+    let prefixSign = '';
+    let qtyColor = 'text-slate-900';
+
+    if (r.type === 'TRANSFER_IN') {
+      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-900 border border-amber-300">Inventory &rarr; VAS</span>';
+      prefixSign = '+';
+      qtyColor = 'text-amber-900';
+    } else if (r.type === 'VAS_OUTBOUND') {
+      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-rose-100 text-rose-900 border border-rose-300">VAS Disposal</span>';
+      prefixSign = '-';
+      qtyColor = 'text-rose-900';
+    } else {
+      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-purple-100 text-purple-900 border border-purple-300">VAS &rarr; Inventory</span>';
+      prefixSign = '-';
+      qtyColor = 'text-purple-900';
+    }
+
+    return `
+      <tr class="hover:bg-slate-50 border-b border-slate-100 text-xs">
+        <td class="p-2.5 font-mono font-bold text-slate-900 whitespace-nowrap">${escapeHtml(r.vas_no)}</td>
+        <td class="p-2.5 text-center whitespace-nowrap">${typeBadge}</td>
+        <td class="p-2.5 text-center font-mono font-black ${qtyColor} text-xs whitespace-nowrap">
+          ${prefixSign}${App.formatNumber(r.qty)} ${escapeHtml(r.material_unit || 'Pcs')}
+        </td>
+        <td class="p-2.5 text-slate-600 max-w-xs truncate">${escapeHtml(r.notes || '-')}</td>
+        <td class="p-2.5 text-slate-700 font-medium">${escapeHtml(r.user_name || r.user_username || 'Admin')}</td>
+        <td class="p-2.5 text-right text-slate-500 font-mono text-[11px] whitespace-nowrap">${App.formatDate(r.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+
+// =========================================================================
+// GOOGLE SHEETS SYNC MODULE (FULL & INCREMENTAL/DELTA UPDATE)
+// =========================================================================
+
+const GOOGLE_APPS_SCRIPT_TEMPLATE = `/**
+ * PackStock WMS - Google Sheets Receiver Script (Full & Incremental/Delta)
+ * Deploy as Web App: Execute as "Me", Access: "Anyone"
+ */
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetsData = data.sheets || [];
+    var syncMode = data.mode || "full";
+    
+    for (var i = 0; i < sheetsData.length; i++) {
+      var item = sheetsData[i];
+      var sheetName = item.name;
+      var headers = item.headers;
+      var rows = item.rows;
+      var keyColIndex = item.key_index !== undefined ? item.key_index : 0;
+      
+      var sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+        syncMode = "full";
+      }
+      
+      // Auto-detect and clear old header text rows if present in cell A1
+      var valA1 = String(sheet.getRange(1, 1).getValue() || "");
+      if (valA1.indexOf("PackStock WMS") !== -1) {
+        sheet.clear();
+        syncMode = "full";
+      }
+
+      if (syncMode === "full") {
+        sheet.clear();
+        
+        // Row 1: Header Tabel
+        if (headers && headers.length > 0) {
+          var headerRange = sheet.getRange(1, 1, 1, headers.length);
+          headerRange.setValues([headers]);
+          headerRange.setBackground("#065f46").setFontColor("#ffffff").setFontWeight("bold");
+          sheet.setFrozenRows(1);
+        }
+        
+        // Row 2+: Data Baris
+        if (rows && rows.length > 0) {
+          sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+        }
+      } else {
+        // Delta / Incremental Update Mode
+        if (sheet.getLastRow() < 1 && headers && headers.length > 0) {
+          var headerRange = sheet.getRange(1, 1, 1, headers.length);
+          headerRange.setValues([headers]);
+          headerRange.setBackground("#065f46").setFontColor("#ffffff").setFontWeight("bold");
+          sheet.setFrozenRows(1);
+        }
+
+        if (rows && rows.length > 0) {
+          var lastRow = sheet.getLastRow();
+          var existingKeys = {};
+          
+          if (lastRow >= 2) {
+            var existingData = sheet.getRange(2, keyColIndex + 1, lastRow - 1, 1).getValues();
+            for (var r = 0; r < existingData.length; r++) {
+              var keyVal = String(existingData[r][0]).trim();
+              if (keyVal) {
+                existingKeys[keyVal] = 2 + r;
+              }
+            }
+          }
+          
+          for (var k = 0; k < rows.length; k++) {
+            var rowData = rows[k];
+            var keyVal = String(rowData[keyColIndex]).trim();
+            
+            if (keyVal && existingKeys[keyVal]) {
+              var targetRow = existingKeys[keyVal];
+              sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+            } else {
+              sheet.appendRow(rowData);
+            }
+          }
+        }
+      }
+      
+      if (headers && headers.length > 0) {
+        sheet.autoResizeColumns(1, headers.length);
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      message: "Sync (" + syncMode + ") berhasil!",
+      count: sheetsData.length
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+let googleSheetsCurrentConfig = null;
+
+async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = true) {
+  const modal = document.getElementById('googleSheetsSyncModal');
+  if (!modal) {
+    App.toast('Modal Google Sheets tidak ditemukan.', 'error');
+    return;
+  }
+
+  const radios = document.querySelectorAll('input[name="gsTargetRadio"]');
+  radios.forEach(r => {
+    r.checked = (r.value === target);
+  });
+
+  const progressBox = document.getElementById('gsSyncProgressBox');
+  if (progressBox) progressBox.classList.add('hidden');
+
+  App.openModal('googleSheetsSyncModal');
+
+  await refreshMaintGoogleSheetsConfigUI();
+
+  if (autoRun) {
+    await triggerGoogleSheetsSync('update');
+  }
+}
+
+function closeGoogleSheetsSyncModal() {
+  App.closeModal('googleSheetsSyncModal');
+}
+
+async function refreshMaintGoogleSheetsConfigUI() {
+  const maintInputUrl = document.getElementById('maintInputWebAppUrl');
+  const maintCodeArea = document.getElementById('maintCodeTemplateArea');
+
+  if (maintCodeArea) maintCodeArea.value = GOOGLE_APPS_SCRIPT_TEMPLATE;
+
+  const res = await App.fetchJson('../api/google_sheets_sync.php?action=get_config');
+  if (res.success && res.config) {
+    googleSheetsCurrentConfig = res.config;
+    const url = res.config.web_app_url || '';
+    if (maintInputUrl) maintInputUrl.value = url;
+
+    // Update last sync badge if available
+    const badge = document.getElementById('gsLastSyncedBadge');
+    if (badge && res.config.last_synced_at) {
+      badge.innerText = `Terakhir Sync: ${res.config.last_synced_at}`;
+    }
+  }
+}
+
+async function saveMaintGoogleSheetsUrlConfig() {
+  const inputUrl = document.getElementById('maintInputWebAppUrl');
+  const url = inputUrl ? inputUrl.value.trim() : '';
+
+  if (!url) {
+    App.toast('Mohon masukkan Google Apps Script Web App URL!', 'warning');
+    return;
+  }
+
+  const res = await App.fetchJson('../api/google_sheets_sync.php?action=save_config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ web_app_url: url })
+  });
+  if (res.success) {
+    App.toast(res.message, 'success');
+    await refreshMaintGoogleSheetsConfigUI();
+  } else {
+    App.toast(res.message || 'Gagal menyimpan konfigurasi.', 'error');
+  }
+}
+
+async function saveGoogleSheetsUrlConfig() {
+  return saveMaintGoogleSheetsUrlConfig();
+}
+
+async function pingGoogleSheetsConnection() {
+  App.toast('Mengirim tes ping ke Google Apps Script Web App...', 'info');
+  const res = await App.fetchJson('../api/google_sheets_sync.php?action=ping');
+  if (res.success) {
+    App.toast(res.message, 'success');
+  } else {
+    App.toast(res.message || 'Ping gagal. Periksa kembali Web App URL Anda.', 'error');
+  }
+}
+
+function copyGoogleAppsScriptTemplate() {
+  const area = document.getElementById('maintCodeTemplateArea') || document.getElementById('gsCodeTemplateArea');
+  const label = document.getElementById('maintCopyBtnLabel') || document.getElementById('gsCopyBtnLabel');
+  if (!area) return;
+
+  if (!area.value) area.value = GOOGLE_APPS_SCRIPT_TEMPLATE;
+  area.select();
+  navigator.clipboard.writeText(area.value).then(() => {
+    App.toast('Kode Google Apps Script berhasil disalin ke clipboard!', 'success');
+    if (label) {
+      label.innerText = 'Tersalin!';
+      setTimeout(() => { label.innerText = 'Salin Kode Script'; }, 2500);
+    }
+  }).catch(() => {
+    document.execCommand('copy');
+    App.toast('Kode disalin!', 'success');
+  });
+}
+
+async function triggerGoogleSheetsSync(mode = 'update') {
+  const selectedTarget = document.querySelector('input[name="gsTargetRadio"]:checked')?.value || 'inventory';
+  const progressBox = document.getElementById('gsSyncProgressBox');
+  const progressStatus = document.getElementById('gsSyncProgressStatus');
+  const logDetails = document.getElementById('gsSyncLogDetails');
+
+  if (googleSheetsCurrentConfig && !googleSheetsCurrentConfig.web_app_url) {
+    App.toast('URL Google Apps Script belum dikonfigurasi! Silakan atur URL di menu Bersihkan Database (Maintenance).', 'warning', 'Konfigurasi Belum Diisi');
+    return;
+  }
+
+  const modeText = (mode === 'update') ? '⚡ Update Terbaru (Delta)' : '🔄 Full Sync (Timpa Semua)';
+  const targetLabelMap = {
+    'inventory': 'Stock Inventory',
+    'vas': 'Stock VAS',
+    'inbound': 'Barang Masuk',
+    'outbound': 'Barang Keluar',
+    'all': 'Semua 4 Menu'
+  };
+  const targetLabel = targetLabelMap[selectedTarget] || selectedTarget.toUpperCase();
+
+  // Instant Toast Progress
+  App.toast(`Mengunggah data [${targetLabel}] ke Google Sheets (${modeText})...`, 'info', '⏳ Memproses Sync Google Sheet', 8000);
+
+  if (progressBox) progressBox.classList.remove('hidden');
+
+  if (progressStatus) progressStatus.innerText = `Menjalankan ${modeText} untuk [${targetLabel}]...`;
+  if (logDetails) {
+    logDetails.innerHTML = `
+      [SYS] Menyiapkan payload JSON PackStock...<br>
+      [SYS] Mode: ${mode} | Target: ${selectedTarget} (${targetLabel})<br>
+      [SYS] Mengirim HTTP POST request ke Google Apps Script Web App...
+    `;
+  }
+
+  try {
+    const res = await App.fetchJson(`../api/google_sheets_sync.php?action=sync&target=${selectedTarget}&mode=${mode}`);
+    if (res.success) {
+      if (logDetails) {
+        logDetails.innerHTML += `<br><span class="text-emerald-400 font-bold">[OK] ${escapeHtml(res.message)}</span>`;
+      }
+      App.toast(res.message, 'success', '✅ Sync Google Sheet Berhasil');
+      await refreshMaintGoogleSheetsConfigUI();
+
+      setTimeout(() => {
+        if (progressBox) progressBox.classList.add('hidden');
+      }, 4000);
+    } else {
+      if (logDetails) {
+        logDetails.innerHTML += `<br><span class="text-rose-400 font-bold">[ERROR] ${escapeHtml(res.message || 'Gagal sync')}</span>`;
+      }
+      App.toast(res.message || 'Proses sync gagal.', 'error', '❌ Error Sync Google Sheet');
+    }
+  } catch (err) {
+    if (logDetails) {
+      logDetails.innerHTML += `<br><span class="text-rose-400 font-bold">[EXC] ${escapeHtml(err.toString())}</span>`;
+    }
+    App.toast('Terjadi kesalahan jaringan saat sync ke Google Sheet.', 'error', '❌ Kesalahan Koneksi');
+  }
+}
+
 
 
 

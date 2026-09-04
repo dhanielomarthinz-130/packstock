@@ -29,8 +29,10 @@ if ($action === 'list') {
     ";
     $params = [];
 
-    $date = trim($_GET['date'] ?? '');
-    $time = trim($_GET['time'] ?? '');
+    $date      = trim($_GET['date'] ?? '');
+    $startDate = trim($_GET['start_date'] ?? $_GET['from_date'] ?? '');
+    $endDate   = trim($_GET['end_date'] ?? $_GET['to_date'] ?? '');
+    $time      = trim($_GET['time'] ?? '');
 
     if (!empty($search)) {
         $query .= " AND (i.inbound_no LIKE ? OR i.po_number LIKE ? OR i.supplier LIKE ? OR m.name LIKE ? OR m.code LIKE ? OR u.name LIKE ?)";
@@ -38,7 +40,17 @@ if ($action === 'list') {
         $params = [$term, $term, $term, $term, $term, $term];
     }
 
-    if (!empty($date)) {
+    if (!empty($startDate)) {
+        $query .= " AND DATE(i.created_at) >= ?";
+        $params[] = $startDate;
+    }
+
+    if (!empty($endDate)) {
+        $query .= " AND DATE(i.created_at) <= ?";
+        $params[] = $endDate;
+    }
+
+    if (!empty($date) && empty($startDate) && empty($endDate)) {
         $query .= " AND i.created_at LIKE ?";
         $params[] = "{$date}%";
     }

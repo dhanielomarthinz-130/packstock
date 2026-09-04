@@ -130,7 +130,7 @@ require_once __DIR__ . '/includes/header.php';
             <div>
               <span class="font-black text-amber-950 block text-xs">Sesi Berakhir (Inactivity Timeout)</span>
               <span class="text-[11px] text-amber-800 leading-tight block mt-0.5">
-                Sistem otomatis keluar demi keamanan akun karena tidak ada aktivitas selama 5 menit. Silakan masukkan kredensial untuk masuk kembali.
+                Sistem otomatis keluar demi keamanan akun karena tidak ada aktivitas selama 1 jam. Silakan masukkan kredensial untuk masuk kembali.
               </span>
             </div>
           </div>

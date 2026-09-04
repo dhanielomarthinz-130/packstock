@@ -78,8 +78,10 @@ if ($action === 'list') {
     ";
     $params = [];
 
-    $date = trim($_GET['date'] ?? '');
-    $time = trim($_GET['time'] ?? '');
+    $date      = trim($_GET['date'] ?? '');
+    $startDate = trim($_GET['start_date'] ?? $_GET['from_date'] ?? '');
+    $endDate   = trim($_GET['end_date'] ?? $_GET['to_date'] ?? '');
+    $time      = trim($_GET['time'] ?? '');
 
     if (!empty($search)) {
         $query .= " AND (outbound_no LIKE ? OR destination LIKE ? OR reason LIKE ? OR material_name LIKE ? OR material_code LIKE ? OR issued_by LIKE ?)";
@@ -87,7 +89,17 @@ if ($action === 'list') {
         $params = [$term, $term, $term, $term, $term, $term];
     }
 
-    if (!empty($date)) {
+    if (!empty($startDate)) {
+        $query .= " AND DATE(created_at) >= ?";
+        $params[] = $startDate;
+    }
+
+    if (!empty($endDate)) {
+        $query .= " AND DATE(created_at) <= ?";
+        $params[] = $endDate;
+    }
+
+    if (!empty($date) && empty($startDate) && empty($endDate)) {
         $query .= " AND created_at LIKE ?";
         $params[] = "{$date}%";
     }
@@ -277,6 +289,22 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtUpdateMat->execute([$stockAfter, $materialId]);
 
+        // Transfer to Zone VAS if destination or reason contains VAS
+        if (str_contains(strtolower($destination), 'vas') || str_contains(strtolower($reason), 'vas')) {
+            $stmtUpVas = $pdo->prepare("UPDATE materials SET vas_stock = COALESCE(vas_stock, 0) + ? WHERE id = ?");
+            $stmtUpVas->execute([$qty, $materialId]);
+
+            $vasTxNo = 'VAS-IN-' . date('Ym') . '-' . substr(md5(uniqid() . $outboundNo), 0, 6);
+            $vasNotes = "Transfer Masuk dari Outbound #{$outboundNo} ke {$destination} ({$reason})";
+            if (!empty($notes)) $vasNotes .= " - " . $notes;
+
+            $stmtVasTx = $pdo->prepare("
+                INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at)
+                VALUES (?, ?, 'TRANSFER_IN', ?, ?, ?, ?, ?)
+            ");
+            $stmtVasTx->execute([$vasTxNo, $materialId, $qty, $outboundNo, $vasNotes, Auth::id(), $now]);
+        }
+
         // Insert Stock Mutation
         $stmtMut = $pdo->prepare("
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
@@ -409,6 +437,22 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration, $now]);
             $stmtUpdateMat->execute([$stockAfter, $materialId]);
+
+            // Transfer to Zone VAS if destination or reason contains VAS
+            if (str_contains(strtolower($destination), 'vas') || str_contains(strtolower($reason), 'vas')) {
+                $stmtUpVas = $pdo->prepare("UPDATE materials SET vas_stock = COALESCE(vas_stock, 0) + ? WHERE id = ?");
+                $stmtUpVas->execute([$qty, $materialId]);
+
+                $vasTxNo = 'VAS-IN-' . date('Ym') . '-' . substr(md5(uniqid() . $outboundNo), 0, 6);
+                $vasNotes = "Transfer Masuk dari Batch Outbound #{$outboundNo} ke {$destination} ({$reason})";
+                if (!empty($combinedNotes)) $vasNotes .= " - " . $combinedNotes;
+
+                $stmtVasTx = $pdo->prepare("
+                    INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at)
+                    VALUES (?, ?, 'TRANSFER_IN', ?, ?, ?, ?, ?)
+                ");
+                $stmtVasTx->execute([$vasTxNo, $materialId, $qty, $outboundNo, $vasNotes, Auth::id(), $now]);
+            }
 
             $mutNotes = "Pengeluaran ke: {$destination} ({$reason})";
             if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";

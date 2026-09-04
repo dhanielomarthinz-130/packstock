@@ -797,14 +797,15 @@ require_once __DIR__ . '/../includes/header.php';
             <div>
               <label class="block font-bold text-slate-800 mb-1 text-xs flex items-center justify-between">
                 <span>Tujuan Brand / Line <span class="text-rose-500">*</span></span>
-                <span class="text-[10px] text-amber-700 font-bold">4 Brand Utama</span>
+                <span class="text-[10px] text-amber-700 font-bold">5 Brand Utama</span>
               </label>
               <select id="opReqDestinationSelect" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors" data-no-search>
-                <option value="">-- Pilih Brand (HANASUI / NCO / FYNE / EOMMA) --</option>
+                <option value="">-- Pilih Brand (HANASUI / FYNE / NCO / EOMMA / AFFILIATE) --</option>
                 <option value="HANASUI">HANASUI</option>
-                <option value="NCO">NCO</option>
                 <option value="FYNE">FYNE</option>
+                <option value="NCO">NCO</option>
                 <option value="EOMMA">EOMMA</option>
+                <option value="AFFILIATE">AFFILIATE</option>
               </select>
             </div>
 
