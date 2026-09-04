@@ -1130,7 +1130,7 @@ require_once __DIR__ . '/../includes/header.php';
             </a>
 
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true)" class="h-[38px] px-3.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Data Stock Inventory ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true, this)" class="h-[38px] px-3.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Inventory ke Google Sheet">
               <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -1967,7 +1967,7 @@ require_once __DIR__ . '/../includes/header.php';
             </a>
 
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Riwayat Barang Masuk ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true, this)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Masuk ke Google Sheet">
               <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -2030,7 +2030,7 @@ require_once __DIR__ . '/../includes/header.php';
               </a>
 
               <?php if (Auth::isAdmin()): ?>
-              <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Riwayat Barang Keluar ke Google Sheet">
+              <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true, this)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Keluar ke Google Sheet">
                 <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
                 <span>Sync Google Sheet</span>
               </button>
@@ -2332,7 +2332,7 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
 
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true)" class="h-[38px] px-3.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Data Stock VAS ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true, this)" class="h-[38px] px-3.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock VAS ke Google Sheet">
               <span class="material-symbols-outlined text-[18px] text-purple-200">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -5323,14 +5323,14 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           
           <!-- Button 1: Incremental Update Only -->
-          <button type="button" onclick="triggerGoogleSheetsSync('update')" class="p-4 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-emerald-500">
+          <button id="btnGsSyncUpdate" type="button" onclick="triggerGoogleSheetsSync('update', this)" class="p-4 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
               <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-900/60 text-emerald-200 border border-emerald-400/40">Dianjurkan</span>
-              <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">bolt</span>
+              <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform gs-btn-icon">bolt</span>
             </div>
             <div class="mt-3">
               <h4 class="font-black text-sm text-white flex items-center gap-1.5">
-                <span>⚡ Sync Update Terbaru</span>
+                <span class="gs-btn-title">⚡ Sync Update Terbaru</span>
               </h4>
               <p class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
                 Hanya mengirim data yang <b>berubah / baru</b> sejak sync terakhir.
@@ -5339,14 +5339,14 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <!-- Button 2: Full Sync Overhaul -->
-          <button type="button" onclick="triggerGoogleSheetsSync('full')" class="p-4 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 rounded-xl border border-slate-300 shadow-2xs transition-all flex flex-col justify-between text-left group cursor-pointer hover:border-slate-400">
+          <button id="btnGsSyncFull" type="button" onclick="triggerGoogleSheetsSync('full', this)" class="p-4 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 rounded-xl border border-slate-300 shadow-2xs transition-all flex flex-col justify-between text-left group cursor-pointer hover:border-slate-400 disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">Reset Total</span>
-              <span class="material-symbols-outlined text-2xl text-slate-500 group-hover:rotate-180 transition-transform duration-500">sync</span>
+              <span class="material-symbols-outlined text-2xl text-slate-500 group-hover:rotate-180 transition-transform duration-500 gs-btn-icon">sync</span>
             </div>
             <div class="mt-3">
               <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                <span>🔄 Sync Full (Timpa Semua)</span>
+                <span class="gs-btn-title">🔄 Sync Full (Timpa Semua)</span>
               </h4>
               <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
                 Memperbarui seluruh data tabel dari awal dari baris pertama.

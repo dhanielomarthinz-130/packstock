@@ -11129,7 +11129,7 @@ function doPost(e) {
 
 let googleSheetsCurrentConfig = null;
 
-async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = true) {
+async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = true, btnElement = null) {
   const modal = document.getElementById('googleSheetsSyncModal');
   if (!modal) {
     App.toast('Modal Google Sheets tidak ditemukan.', 'error');
@@ -11149,7 +11149,7 @@ async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = true) {
   await refreshMaintGoogleSheetsConfigUI();
 
   if (autoRun) {
-    await triggerGoogleSheetsSync('update');
+    await triggerGoogleSheetsSync('update', btnElement);
   }
 }
 
@@ -11232,7 +11232,7 @@ function copyGoogleAppsScriptTemplate() {
   });
 }
 
-async function triggerGoogleSheetsSync(mode = 'update') {
+async function triggerGoogleSheetsSync(mode = 'update', btnElement = null) {
   const selectedTarget = document.querySelector('input[name="gsTargetRadio"]:checked')?.value || 'inventory';
   const progressBox = document.getElementById('gsSyncProgressBox');
   const progressStatus = document.getElementById('gsSyncProgressStatus');
@@ -11241,6 +11241,46 @@ async function triggerGoogleSheetsSync(mode = 'update') {
   if (googleSheetsCurrentConfig && !googleSheetsCurrentConfig.web_app_url) {
     App.toast('URL Google Apps Script belum dikonfigurasi! Silakan atur URL di menu Bersihkan Database (Maintenance).', 'warning', 'Konfigurasi Belum Diisi');
     return;
+  }
+
+  const btnUpdate = document.getElementById('btnGsSyncUpdate');
+  const btnFull = document.getElementById('btnGsSyncFull');
+  const targetBtn = mode === 'full' ? btnFull : btnUpdate;
+  
+  // Track buttons to disable & animate
+  const buttonsToDisable = [btnUpdate, btnFull, btnElement].filter(Boolean);
+  const origContentMap = new Map();
+
+  buttonsToDisable.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+    origContentMap.set(btn, btn.innerHTML);
+  });
+
+  // Show spinner on target modal card button
+  if (targetBtn) {
+    const iconEl = targetBtn.querySelector('.gs-btn-icon');
+    const titleEl = targetBtn.querySelector('.gs-btn-title');
+    if (iconEl) {
+      iconEl.className = 'material-symbols-outlined text-2xl animate-spin text-amber-300 gs-btn-icon';
+      iconEl.innerText = 'progress_activity';
+    }
+    if (titleEl) {
+      titleEl.innerHTML = '<span class="animate-pulse text-amber-200">⏳ Sedang Syncing...</span>';
+    }
+  }
+
+  // Show spinner on header trigger button if provided
+  if (btnElement && btnElement !== targetBtn) {
+    const iconEl = btnElement.querySelector('.material-symbols-outlined');
+    const textEl = btnElement.querySelector('span:not(.material-symbols-outlined)');
+    if (iconEl) {
+      iconEl.classList.add('animate-spin');
+      iconEl.innerText = 'progress_activity';
+    }
+    if (textEl) {
+      textEl.innerText = 'Syncing...';
+    }
   }
 
   const modeText = (mode === 'update') ? '⚡ Update Terbaru (Delta)' : '🔄 Full Sync (Timpa Semua)';
@@ -11340,6 +11380,14 @@ async function triggerGoogleSheetsSync(mode = 'update') {
       logDetails.innerHTML += `<br><span class="text-rose-400 font-bold">[EXC] ${escapeHtml(err.toString())}</span>`;
     }
     App.toast('Terjadi kesalahan jaringan saat sync ke Google Sheet.', 'error', '❌ Kesalahan Koneksi');
+  } finally {
+    buttonsToDisable.forEach(btn => {
+      btn.disabled = false;
+      btn.classList.remove('opacity-75', 'cursor-not-allowed');
+      if (origContentMap.has(btn)) {
+        btn.innerHTML = origContentMap.get(btn);
+      }
+    });
   }
 }
 
