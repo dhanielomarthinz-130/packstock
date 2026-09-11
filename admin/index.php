@@ -4271,18 +4271,33 @@ require_once __DIR__ . '/../includes/header.php';
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             
-            <!-- 1. Materials Table Card -->
+            <!-- 1. Materials Table Card (Stock Kemas) -->
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
               <div class="space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">materials</span>
+                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">materials (kemas)</span>
                   <span id="statMaint_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 SKU</span>
                 </div>
                 <h5 class="font-bold text-slate-900 text-xs">Master Stok Kemas</h5>
               </div>
-              <button type="button" onclick="openCleanTableModal('materials', 'Master Stok Material (materials)', document.getElementById('statMaint_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+              <button type="button" onclick="openCleanTableModal('materials', 'Master Stok Material Kemas (materials)', document.getElementById('statMaint_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Master Material</span>
+                <span>Kosongkan Master Kemas</span>
+              </button>
+            </div>
+
+            <!-- 2. Gimmick Table Card (Stock Gimmick) -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+              <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-purple-100/60 text-purple-700 px-2 py-0.5 rounded">materials (gimmick)</span>
+                  <span id="statMaint_gimmick" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 SKU</span>
+                </div>
+                <h5 class="font-bold text-slate-900 text-xs">Master Stok Gimmick</h5>
+              </div>
+              <button type="button" onclick="openCleanTableModal('gimmick', 'Master Stok Gimmick (materials & material_batches)', document.getElementById('statMaint_gimmick').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                <span>Kosongkan Master Gimmick</span>
               </button>
             </div>
 

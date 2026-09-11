@@ -118,6 +118,7 @@ if ($action === 'stats') {
         
         $tables = [
             'materials'            => 'Stock Kemas',
+            'gimmick'              => 'Stock Gimmick',
             'inbound_transactions' => 'Riwayat Barang Masuk',
             'outbound_transactions'=> 'Riwayat Barang Keluar',
             'tasks'                => 'Penugasan Task Operator',
@@ -131,7 +132,13 @@ if ($action === 'stats') {
 
         foreach ($tables as $t => $label) {
             try {
-                $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM `{$t}`");
+                if ($t === 'materials') {
+                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''");
+                } elseif ($t === 'gimmick') {
+                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM materials WHERE item_type = 'GIMMICK'");
+                } else {
+                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM `{$t}`");
+                }
                 $stats[$t] = [
                     'label' => $label,
                     'count' => (int)$stmt->fetchColumn()
@@ -180,9 +187,25 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         switch ($tableKey) {
             case 'materials':
-                $count = (int)$pdo->query("SELECT COUNT(*) FROM materials")->fetchColumn();
-                clearTable($pdo, 'materials', $isSqlite);
-                $clearedInfo = "Master Stok Material ({$count} item)";
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''")->fetchColumn();
+                $pkgIds = $pdo->query("SELECT id FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''")->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($pkgIds)) {
+                    $placeholders = implode(',', array_fill(0, count($pkgIds), '?'));
+                    $pdo->prepare("DELETE FROM material_batches WHERE material_id IN ($placeholders)")->execute($pkgIds);
+                    $pdo->prepare("DELETE FROM materials WHERE id IN ($placeholders)")->execute($pkgIds);
+                }
+                $clearedInfo = "Master Stok Kemas ({$count} item)";
+                break;
+
+            case 'gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM materials WHERE item_type = 'GIMMICK'")->fetchColumn();
+                $gimmickIds = $pdo->query("SELECT id FROM materials WHERE item_type = 'GIMMICK'")->fetchAll(PDO::FETCH_COLUMN);
+                if (!empty($gimmickIds)) {
+                    $placeholders = implode(',', array_fill(0, count($gimmickIds), '?'));
+                    $pdo->prepare("DELETE FROM material_batches WHERE material_id IN ($placeholders)")->execute($gimmickIds);
+                    $pdo->prepare("DELETE FROM materials WHERE id IN ($placeholders)")->execute($gimmickIds);
+                }
+                $clearedInfo = "Master Stok Gimmick ({$count} item & batch)";
                 break;
 
             case 'inbound':
@@ -326,6 +349,8 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         setForeignKeyChecks($pdo, false, $isSqlite);
 
         clearTable($pdo, 'materials', $isSqlite);
+        clearTable($pdo, 'material_batches', $isSqlite);
+        clearTable($pdo, 'vas_transactions', $isSqlite);
         clearTable($pdo, 'inbound_transactions', $isSqlite);
         clearTable($pdo, 'outbound_transactions', $isSqlite);
         clearTable($pdo, 'tasks', $isSqlite);

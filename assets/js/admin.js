@@ -9329,6 +9329,7 @@ async function loadDatabaseStats() {
       };
 
       setBadge('statMaint_materials', s.materials ? s.materials.count : 0, 'SKU');
+      setBadge('statMaint_gimmick', s.gimmick ? s.gimmick.count : 0, 'SKU');
       setBadge('statMaint_inbound_transactions', s.inbound_transactions ? s.inbound_transactions.count : 0, 'Transaksi');
       setBadge('statMaint_outbound_transactions', s.outbound_transactions ? s.outbound_transactions.count : 0, 'Transaksi');
       setBadge('statMaint_tasks', s.tasks ? s.tasks.count : 0, 'Task');
@@ -9369,14 +9370,13 @@ function openBulkCleanModal(actionType) {
   document.getElementById('cleanSuperAdminPassword').value = '';
 
   if (actionType === 'clean_all_transactions') {
-    const resetStock = document.getElementById('maintResetStockZero')?.checked;
-    document.getElementById('cleanModalTargetTitle').innerText = 'Tindakan Pembersihan:';
-    document.getElementById('cleanModalTargetDesc').innerText = `KOSONGKAN SEMUA TRANSAKSI (Inbound, Outbound, Tasks, Opname, Mutasi)${resetStock ? ' + Reset Current Stock ke 0' : ''}`;
-    document.getElementById('btnSubmitCleanDbText').innerText = 'Ya, Bersihkan Semua Transaksi';
+    document.getElementById('cleanModalTargetTitle').innerText = 'Tindakan: Kosongkan Seluruh Riwayat Transaksi';
+    document.getElementById('cleanModalTargetDesc').innerText = 'Semua transaksi Inbound, Outbound, Task, Opname, Mutasi, dan Request Consumable akan dihapus permanen. Master Kemas, Gimmick, dan User tetap aman.';
+    document.getElementById('btnSubmitCleanDbText').innerText = 'Ya, Bersihkan Seluruh Transaksi';
   } else if (actionType === 'factory_reset') {
-    document.getElementById('cleanModalTargetTitle').innerText = 'Tindakan Pembersihan:';
-    document.getElementById('cleanModalTargetDesc').innerText = 'RESET DATABASE PENUH (FACTORY RESET) - Menghapus Semua Master Stok & Seluruh Transaksi!';
-    document.getElementById('btnSubmitCleanDbText').innerText = 'Ya, Reset Database Penuh Sekarang';
+    document.getElementById('cleanModalTargetTitle').innerText = 'PERINGATAN TINGGI: Reset Database Penuh (Factory Reset)';
+    document.getElementById('cleanModalTargetDesc').innerText = 'Seluruh data master stok (Kemas & Gimmick) beserta seluruh transaksi riwayat akan DIHAPUS TOTAL secara permanen! Hanya akun Super Admin/User yang disisakan.';
+    document.getElementById('btnSubmitCleanDbText').innerText = 'Ya, Lakukan Factory Reset';
   }
 
   App.openModal('modalConfirmDbClean');
@@ -9429,6 +9429,7 @@ async function submitCleanDatabase(e) {
       // Refresh DB stats and related modules
       loadDatabaseStats();
       if (typeof loadMaterials === 'function') loadMaterials();
+      if (typeof loadGimmickStock === 'function') loadGimmickStock();
       if (typeof loadMutations === 'function') loadMutations(true);
       if (typeof loadStats === 'function') loadStats(true);
       if (typeof loadInboundHistory === 'function') loadInboundHistory();
