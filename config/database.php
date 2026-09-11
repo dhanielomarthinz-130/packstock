@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 10;
+    private const CURRENT_SCHEMA_VERSION = 11;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -170,6 +170,100 @@ class Database {
                 }
             } catch (Throwable $e) {
                 // Ignore cleanup error if table doesn't exist or already clean
+            }
+
+            // Migration to Schema 11: Auto-convert accidental Putaway entries recorded as RACK_MOVEMENT
+            try {
+                $stmtMvt = $pdo->query("
+                    SELECT t.*, m.name as mat_name, m.code as mat_code, m.unit as mat_unit 
+                    FROM tasks t 
+                    JOIN materials m ON t.material_id = m.id
+                    WHERE t.task_type = 'RACK_MOVEMENT' 
+                      AND (t.task_no IN ('MVT-202609-0001', 'MVT-202609-0002', 'MVT-202609-0003') OR t.destination = 'Kemas')
+                ");
+                if ($stmtMvt) {
+                    $mvtTasks = $stmtMvt->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($mvtTasks as $t) {
+                        $qty = max(0, (float)($t['actual_qty'] > 0 ? $t['actual_qty'] : $t['target_qty']));
+                        if ($qty <= 0) continue;
+                        $matId = (int)$t['material_id'];
+                        $refNo = trim($t['reference_no'] ?? '');
+                        if (empty($refNo)) {
+                            if (preg_match('/SJ[:\s]+([^\s\)\|\,]+)/i', $t['completion_notes'] ?? '', $m)) {
+                                $refNo = $m[1];
+                            }
+                        }
+                        $poNum = !empty($refNo) ? $refNo : '-';
+                        $supplier = 'SPX / Supplier';
+                        $location = !empty($t['from_location']) ? $t['from_location'] : 'Gudang Kecil';
+                        $photoPath = $t['photo_path'] ?? null;
+                        $receivedBy = $t['assigned_to'] ?? 1;
+                        $createdAt = $t['created_at'] ?? date('Y-m-d H:i:s');
+                        $startedAt = $t['started_at'] ?? $createdAt;
+                        $completedAt = $t['completed_at'] ?? $createdAt;
+                        $dur = (int)($t['duration_seconds'] ?? 60);
+
+                        // Generate unique inbound_no
+                        $prefix = 'INB-' . date('Ym', strtotime($createdAt)) . '-';
+                        $stmtLastIn = $pdo->prepare("SELECT inbound_no FROM inbound_transactions WHERE inbound_no LIKE ? ORDER BY LENGTH(inbound_no) DESC, inbound_no DESC LIMIT 1");
+                        $stmtLastIn->execute([$prefix . '%']);
+                        $lastInNo = $stmtLastIn->fetchColumn();
+                        $nextNum = 1;
+                        if ($lastInNo) {
+                            $parts = explode('-', $lastInNo);
+                            $lastSuffix = end($parts);
+                            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+                        }
+                        $stmtCheckIn = $pdo->prepare("SELECT 1 FROM inbound_transactions WHERE inbound_no = ? LIMIT 1");
+                        do {
+                            $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                            $stmtCheckIn->execute([$inboundNo]);
+                        } while ($stmtCheckIn->fetchColumn());
+
+                        // 1. Insert into inbound_transactions
+                        $stmtIn = $pdo->prepare("
+                            INSERT INTO inbound_transactions (
+                                inbound_no, po_number, supplier, material_id, qty, notes, 
+                                photo_path, received_by, started_at, completed_at, duration_seconds, 
+                                created_at, location, batch_no, exp_date
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ");
+                        $inNotes = "Penerimaan Barang Masuk (Putaway)";
+                        if (!empty($t['notes'])) $inNotes .= " - {$t['notes']}";
+                        $stmtIn->execute([
+                            $inboundNo, $poNum, $supplier, $matId, $qty, $inNotes,
+                            $photoPath, $receivedBy, $startedAt, $completedAt, $dur,
+                            $createdAt, $location, $t['batch_no'] ?? null, $t['exp_date'] ?? null
+                        ]);
+
+                        // 2. Add Stock to Material master & restore location
+                        $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+                        $stmtMat->execute([$matId]);
+                        $stockBefore = (float)$stmtMat->fetchColumn();
+                        $stockAfter = $stockBefore + $qty;
+
+                        $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ?, rack_location = ? WHERE id = ?");
+                        $stmtUpMat->execute([$stockAfter, $location, $matId]);
+
+                        // 3. Delete old TRANSFER_LOCATION mutation
+                        $stmtDelMut = $pdo->prepare("DELETE FROM stock_mutations WHERE reference_no = ? AND type = 'TRANSFER_LOCATION'");
+                        $stmtDelMut->execute([$t['task_no']]);
+
+                        // 4. Insert INBOUND stock mutation
+                        $stmtMut = $pdo->prepare("
+                            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                            VALUES (?, 'INBOUND', ?, ?, ?, ?, ?, ?, ?)
+                        ");
+                        $mutNotes = "Penerimaan Barang Masuk (PO/SJ: {$poNum}) [Lokasi: {$location}]";
+                        $stmtMut->execute([$matId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $receivedBy, $createdAt]);
+
+                        // 5. Delete from tasks
+                        $stmtDelTask = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+                        $stmtDelTask->execute([$t['id']]);
+                    }
+                }
+            } catch (Throwable $e) {
+                error_log('[PackStock] Auto-migration tasks to inbound error: ' . $e->getMessage());
             }
 
             $stmtVer = $pdo->prepare("INSERT OR REPLACE INTO `_schema_version` (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)");

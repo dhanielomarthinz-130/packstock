@@ -12771,17 +12771,83 @@ function renderLocationTransferHistory(tasks) {
         </td>
         <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
         <td class="p-3 text-center whitespace-nowrap">
-          ${t.status === 'PENDING' ? `
-            <button type="button" onclick="cancelAdminTask(${t.id})" class="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-bold transition-colors cursor-pointer" title="Batalkan Perintah Movement">
-              Batal
+          <div class="flex items-center justify-center gap-1.5">
+            ${t.status === 'PENDING' ? `
+              <button type="button" onclick="cancelLocationTransferTask(${t.id})" class="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 border border-rose-200 text-xs font-bold transition-colors cursor-pointer" title="Batalkan Perintah Movement">
+                Batal
+              </button>
+            ` : ''}
+            <button type="button" onclick="convertTransferToInbound(${t.id}, '${escapeHtml(t.task_no)}')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-300 text-[11px] font-bold transition-all shadow-2xs cursor-pointer" title="Pindahkan ke Penerimaan Barang Masuk (Putaway) & Tambah Stok Master">
+              <span class="material-symbols-outlined text-[13px]">move_to_inbox</span> Pindah ke Inbound
             </button>
-          ` : `
-            <span class="text-slate-300 text-xs font-mono">-</span>
-          `}
+            <button type="button" onclick="deleteLocationTransferTask(${t.id}, '${escapeHtml(t.task_no)}')" class="p-1 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 border border-rose-200 transition-colors cursor-pointer" title="Hapus Tugas Movement Ini">
+              <span class="material-symbols-outlined text-[15px]">delete</span>
+            </button>
+          </div>
         </td>
       </tr>
     `;
   }).join('');
+}
+
+async function cancelLocationTransferTask(taskId) {
+  if (!confirm('Apakah Anda yakin ingin membatalkan tugas movement ini?')) return;
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=cancel', {
+      method: 'POST',
+      body: JSON.stringify({ task_id: taskId })
+    });
+    if (res.success) {
+      App.showToast('Tugas berhasil dibatalkan', 'info');
+      loadLocationTransferHistory();
+    } else {
+      App.showToast(res.message || 'Gagal membatalkan tugas', 'danger');
+    }
+  } catch (err) {
+    App.showToast('Kesalahan server: ' + err.message, 'danger');
+  }
+}
+
+async function convertTransferToInbound(taskId, taskNo) {
+  if (!confirm(`Pindahkan tugas movement #${taskNo} ke Penerimaan Barang Masuk (Putaway / Inbound)?\n\n- Transaksi akan dicatat sebagai Barang Masuk\n- Stok produk di master akan bertambah (+qty)\n- Tugas movement ini akan dihapus dari Transfer Antar Lokasi.`)) {
+    return;
+  }
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=convert_to_inbound', {
+      method: 'POST',
+      body: JSON.stringify({ task_id: taskId, task_no: taskNo })
+    });
+    if (res.success) {
+      App.showToast(res.message, 'success');
+      loadLocationTransferHistory();
+      if (typeof loadMaterials === 'function') loadMaterials();
+      if (typeof loadInboundHistory === 'function') loadInboundHistory();
+    } else {
+      App.showToast(res.message || 'Gagal memindahkan tugas ke inbound', 'danger');
+    }
+  } catch (err) {
+    App.showToast('Kesalahan server: ' + err.message, 'danger');
+  }
+}
+
+async function deleteLocationTransferTask(taskId, taskNo) {
+  if (!confirm(`Hapus catatan tugas movement #${taskNo}?`)) {
+    return;
+  }
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ task_id: taskId, task_no: taskNo })
+    });
+    if (res.success) {
+      App.showToast(res.message, 'success');
+      loadLocationTransferHistory();
+    } else {
+      App.showToast(res.message || 'Gagal menghapus tugas movement', 'danger');
+    }
+  } catch (err) {
+    App.showToast('Kesalahan server: ' + err.message, 'danger');
+  }
 }
 
 function switchStockTransferSubView(view = 'history') {
