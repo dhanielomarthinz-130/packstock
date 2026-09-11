@@ -3260,7 +3260,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div id="tab-stock_transfer" class="hidden space-y-4">
         
         <!-- Header -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <button type="button" onclick="window.history.length > 1 ? window.history.back() : switchAdminTab('dashboard')" class="h-[38px] w-[38px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center justify-center text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali">
               <span class="material-symbols-outlined text-[19px]">arrow_back</span>
@@ -3273,27 +3273,24 @@ require_once __DIR__ . '/../includes/header.php';
               <p class="text-[11px] text-slate-500 font-medium">Pencatatan transfer stok barang antara Gudang Besar dan Area VAS</p>
             </div>
           </div>
+
+          <!-- Sub-tab buttons -->
+          <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold self-start sm:self-auto gap-1">
+            <button type="button" id="subtab-st-form-btn" onclick="switchStockTransferSubView('form')" 
+              class="h-[34px] px-3.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-semibold flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">add_circle</span>
+              <span>Input Transfer Baru</span>
+            </button>
+            <button type="button" id="subtab-st-history-btn" onclick="switchStockTransferSubView('history')" 
+              class="h-[34px] px-3.5 rounded-lg bg-white text-indigo-700 shadow-2xs font-bold transition-all flex items-center gap-1.5 border border-slate-200/60 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">history</span>
+              <span>Riwayat Log Transfer</span>
+            </button>
+          </div>
         </div>
 
         <!-- VIEW 1: FULL-PAGE FORM INPUT TRANSFER STOK -->
         <div id="stFormViewContainer" class="hidden space-y-4">
-          <!-- Form Header with Back Button & Type Selector -->
-          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              <button type="button" onclick="switchStockTransferSubView('history')" class="h-[38px] px-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali ke Riwayat Log Transfer">
-                <span class="material-symbols-outlined text-[19px]">arrow_back</span>
-                <span>Kembali ke Riwayat</span>
-              </button>
-              <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0 border border-indigo-200 shadow-2xs">
-                <span class="material-symbols-outlined text-[22px]">swap_horizontal_circle</span>
-              </div>
-              <div>
-                <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Form Input Stock Transfer (Gudang Besar ⇋ Zone VAS)</h2>
-                <p class="text-[11px] text-slate-500 font-medium">Transfer stok barang multi-item antara Gudang Besar dan Zone VAS</p>
-              </div>
-            </div>
-          </div>
-
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
             
             <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
@@ -3303,6 +3300,10 @@ require_once __DIR__ . '/../includes/header.php';
                 </span>
                 <span class="text-xs text-slate-500 font-medium">Input mutasi transfer barang keluar/masuk antar lokasi gudang &amp; VAS</span>
               </div>
+              <button type="button" onclick="switchStockTransferSubView('history')" class="h-[32px] px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Kembali ke Riwayat</span>
+              </button>
             </div>
 
             <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-4 text-xs">
