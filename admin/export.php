@@ -346,7 +346,7 @@ if ($type === 'all_gimmicks' || $type === 'gimmick' || $type === 'gimmicks') {
 // =========================================================================
 if ($type === 'gimmick_template') {
     $filename = "Template_Import_Stok_Gimmick.xlsx";
-    $title = "TEMPLATE IMPORT DATABASE STOK GIMMICK";
+    $title = ""; // Kosongkan agar template langsung dimulai dari Row 1 Header Tabel tanpa judul di atasnya
 
     $headers = [
         'SKU',
@@ -356,17 +356,16 @@ if ($type === 'gimmick_template') {
         'Barcode',
         'Barcode BPOM',
         'Kategori',
-        'Qty Gudang Kecil',
         'Qty Gudang Besar',
         'Total On Hand',
         'Status Aktif'
     ];
 
-    $colWidths = [28, 45, 12, 16, 18, 26, 14, 16, 16, 15, 14];
+    $colWidths = [28, 45, 12, 16, 18, 26, 14, 18, 16, 14];
     $rows = [
-        ['GIMMICK-AMPLOP-HANASUI', '[NOT FOR SALE] Hanasui Amplop Cantik', 'Pusat', '7000050037', '126', '126', 'Gimmick', 1831, 0, 1831, 'AKTIF'],
-        ['GIMMICK-BAR-SOAP-CHARCOAL', '[NOT FOR SALE] Hanasui Sheet Mask & Stick Mask Bar Soap Charcoal', 'Pusat', '', '212', '(90)NA18210500451', 'Gimmick', 50, 0, 50, 'AKTIF'],
-        ['GIMMICK-BOBA-DOLL', '[NOT FOR SALE] HANASUI Boba Doll', 'Pusat', '7000050040', '149', '149', 'Gimmick', 4, 0, 4, 'AKTIF'],
+        ['GIMMICK-AMPLOP-HANASUI', '[NOT FOR SALE] Hanasui Amplop Cantik', 'Pusat', '7000050037', '126', '126', 'Gimmick', 1831, 1831, 'AKTIF'],
+        ['GIMMICK-BAR-SOAP-CHARCOAL', '[NOT FOR SALE] Hanasui Sheet Mask & Stick Mask Bar Soap Charcoal', 'Pusat', '', '212', '(90)NA18210500451', 'Gimmick', 50, 50, 'AKTIF'],
+        ['GIMMICK-BOBA-DOLL', '[NOT FOR SALE] HANASUI Boba Doll', 'Pusat', '7000050040', '149', '149', 'Gimmick', 4, 4, 'AKTIF'],
     ];
 
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
@@ -764,7 +763,7 @@ if ($type === 'stock_opname' || $type === 'opname') {
 // =========================================================================
 if ($type === 'adjust_template') {
     $filename = "Template_Penyesuaian_Stok_Adjust_" . date('Ymd') . ".xlsx";
-    $title = "TEMPLATE FORMAT PENYESUAIAN STOK KEMAS (ADJUST PLUS / MINUS)";
+    $title = ""; // Kosongkan agar template langsung dimulai dari Row 1 Header Tabel tanpa judul di atasnya
 
     $headers = [
         'No',
@@ -1106,7 +1105,7 @@ if ($type === 'counting_detail' || $type === 'dynamic_counting_detail') {
 // =========================================================================
 if ($type === 'inventory_template') {
     $filename = "Template_Import_Master_Stok_Packaging.xlsx";
-    $title = "TEMPLATE IMPORT DATABASE MASTER STOK PACKAGING (KATEGORI OTOMATIS OLEH SISTEM)";
+    $title = ""; // Kosongkan agar template langsung dimulai dari Row 1 Header Tabel tanpa judul di atasnya
 
     $headers = [
         'No',

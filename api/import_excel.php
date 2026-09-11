@@ -579,6 +579,42 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
         if ($ext === 'xlsx') {
             $rows = parseNativeXlsx($tmp);
+        } elseif ($ext === 'csv') {
+            $handle = fopen($tmp, 'r');
+            if ($handle !== false) {
+                $firstLine = fgets($handle);
+                rewind($handle);
+                $delimiter = ',';
+                if (substr_count($firstLine, ';') > substr_count($firstLine, ',')) {
+                    $delimiter = ';';
+                } elseif (substr_count($firstLine, "\t") > substr_count($firstLine, ',')) {
+                    $delimiter = "\t";
+                }
+                while (($data = fgetcsv($handle, 4096, $delimiter)) !== false) {
+                    if (empty(array_filter($data, 'strlen'))) continue;
+                    $rows[] = $data;
+                }
+                fclose($handle);
+            }
+        }
+    } else {
+        $rawInput = file_get_contents('php://input');
+        $input = !empty($rawInput) ? json_decode($rawInput, true) : $_POST;
+        $rawText = trim($input['raw_text'] ?? '');
+        if (!empty($rawText)) {
+            $lines = explode("\n", $rawText);
+            foreach ($lines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                if (strpos($line, "\t") !== false) {
+                    $cols = explode("\t", $line);
+                } elseif (strpos($line, ";") !== false) {
+                    $cols = str_getcsv($line, ';');
+                } else {
+                    $cols = str_getcsv($line, ',');
+                }
+                $rows[] = array_map('trim', $cols);
+            }
         }
     }
 
@@ -588,12 +624,22 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $header = $rows[0];
+    // Dynamically detect header row in the top 10 rows
+    $headerRowIdx = 0;
+    for ($r = 0; $r < min(10, count($rows)); $r++) {
+        $lineUpper = strtoupper(implode(' ', array_map('strval', $rows[$r])));
+        if (strpos($lineUpper, 'SKU') !== false || strpos($lineUpper, 'NAMA BARANG') !== false || strpos($lineUpper, 'KODE BARANG') !== false || strpos($lineUpper, 'KODE ITEM') !== false || strpos($lineUpper, 'ITEM NO') !== false || strpos($lineUpper, 'SAP CODE') !== false) {
+            $headerRowIdx = $r;
+            break;
+        }
+    }
+
+    $header = $rows[$headerRowIdx];
     $skuIdx = -1; $nameIdx = -1; $areaIdx = -1; $sapIdx = -1; $barcodeIdx = -1; $bpomIdx = -1;
     $catIdx = -1; $onHandIdx = -1; $availIdx = -1; $kecilIdx = -1; $besarIdx = -1; $statusIdx = -1; $reserveIdx = -1;
 
     foreach ($header as $colIdx => $colName) {
-        $c = strtoupper(trim($colName));
+        $c = strtoupper(trim((string)$colName));
         if (strpos($c, 'BPOM') !== false) $bpomIdx = $colIdx;
         elseif (strpos($c, 'BARCODE') !== false || strpos($c, 'EAN') !== false) $barcodeIdx = $colIdx;
         elseif ($c === 'SKU' || strpos($c, 'KODE BARANG') !== false || strpos($c, 'KODE ITEM') !== false || $c === 'ITEM NO') $skuIdx = $colIdx;
@@ -601,10 +647,10 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         elseif ($c === 'AREA') $areaIdx = $colIdx;
         elseif (strpos($c, 'SAP') !== false) $sapIdx = $colIdx;
         elseif (strpos($c, 'KATEGORI') !== false) $catIdx = $colIdx;
-        elseif (strpos($c, 'ON HAND') !== false || strpos($c, 'QTY ON HAND') !== false) $onHandIdx = $colIdx;
+        elseif (strpos($c, 'ON HAND') !== false || strpos($c, 'TOTAL ON HAND') !== false || strpos($c, 'QTY ON HAND') !== false || $c === 'TOTAL') $onHandIdx = $colIdx;
         elseif (strpos($c, 'AVAILABLE') !== false) $availIdx = $colIdx;
         elseif (strpos($c, 'KECIL') !== false) $kecilIdx = $colIdx;
-        elseif (strpos($c, 'BESAR') !== false) $besarIdx = $colIdx;
+        elseif (strpos($c, 'BESAR') !== false || strpos($c, 'GUDANG BESAR') !== false) $besarIdx = $colIdx;
         elseif (strpos($c, 'STATUS') !== false) $statusIdx = $colIdx;
         elseif (strpos($c, 'RESERVE') !== false) $reserveIdx = $colIdx;
     }
@@ -636,28 +682,39 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $newCount = 0;
     $updateCount = 0;
 
-    for ($i = 1; $i < count($rows); $i++) {
+    for ($i = $headerRowIdx + 1; $i < count($rows); $i++) {
         $r = $rows[$i];
-        $sku = strtoupper(trim($r[$skuIdx] ?? ''));
-        $name = trim($r[$nameIdx] ?? '');
+        $sku = strtoupper(trim((string)($r[$skuIdx] ?? '')));
+        $name = trim((string)($r[$nameIdx] ?? ''));
         if (empty($sku) && empty($name)) continue;
-        if ($sku === 'SKU' || $sku === 'ITEM NO') continue;
+        if ($sku === 'SKU' || $sku === 'ITEM NO' || $sku === 'KODE BARANG') continue;
+        if (strpos($sku, 'DIEKSPOR PADA') !== false || strpos($sku, 'TEMPLATE') !== false) continue;
         if (empty($sku)) $sku = 'GIMMICK-' . str_pad($i, 4, '0', STR_PAD_LEFT);
         if (empty($name)) $name = $sku;
 
-        $area = ($areaIdx !== -1 && !empty($r[$areaIdx])) ? trim($r[$areaIdx]) : 'Pusat';
-        $sapCode = ($sapIdx !== -1 && !empty($r[$sapIdx])) ? trim($r[$sapIdx]) : '';
+        $area = ($areaIdx !== -1 && !empty($r[$areaIdx])) ? trim((string)$r[$areaIdx]) : 'Pusat';
+        $sapCode = ($sapIdx !== -1 && !empty($r[$sapIdx])) ? trim((string)$r[$sapIdx]) : '';
         if ($sapCode === '0') $sapCode = '';
-        $barcode = ($barcodeIdx !== -1 && !empty($r[$barcodeIdx])) ? trim($r[$barcodeIdx]) : '';
-        $barcodeBpom = ($bpomIdx !== -1 && !empty($r[$bpomIdx])) ? trim($r[$bpomIdx]) : '';
+        $barcode = ($barcodeIdx !== -1 && !empty($r[$barcodeIdx])) ? trim((string)$r[$barcodeIdx]) : '';
+        $barcodeBpom = ($bpomIdx !== -1 && !empty($r[$bpomIdx])) ? trim((string)$r[$bpomIdx]) : '';
 
-        $cat = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim($r[$catIdx]) : 'Gimmick';
+        $cat = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim((string)$r[$catIdx]) : 'Gimmick';
         $onHand = ($onHandIdx !== -1 && isset($r[$onHandIdx])) ? parseGimmickExcelQty($r[$onHandIdx]) : 0;
         $avail = ($availIdx !== -1 && isset($r[$availIdx])) ? parseGimmickExcelQty($r[$availIdx]) : $onHand;
         $kecil = ($kecilIdx !== -1 && isset($r[$kecilIdx])) ? parseGimmickExcelQty($r[$kecilIdx]) : 0;
         $besar = ($besarIdx !== -1 && isset($r[$besarIdx])) ? parseGimmickExcelQty($r[$besarIdx]) : 0;
-        $statusActive = ($statusIdx !== -1 && !empty($r[$statusIdx])) ? strtoupper(trim($r[$statusIdx])) : 'AKTIF';
-        $underReserve = ($reserveIdx !== -1 && !empty($r[$reserveIdx])) ? strtoupper(trim($r[$reserveIdx])) : 'TIDAK';
+
+        // If user didn't use Gudang Kecil:
+        if ($onHand <= 0 && $besar > 0) {
+            $onHand = $besar;
+            $avail = $besar;
+        }
+        if ($besar <= 0 && $onHand > 0) {
+            $besar = $onHand;
+        }
+
+        $statusActive = ($statusIdx !== -1 && !empty($r[$statusIdx])) ? strtoupper(trim((string)$r[$statusIdx])) : 'AKTIF';
+        $underReserve = ($reserveIdx !== -1 && !empty($r[$reserveIdx])) ? strtoupper(trim((string)$r[$reserveIdx])) : 'TIDAK';
         $isReserved = ($underReserve === 'YA' || $underReserve === 'YES' || $underReserve === '1') ? 1 : 0;
 
         $isExisting = isset($existing[$sku]);
@@ -757,6 +814,8 @@ if ($action === 'commit_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $barcodeBpom = trim($item['barcode_bpom'] ?? '');
             $kecil = parseGimmickExcelQty($item['qty_gudang_kecil'] ?? 0);
             $besar = parseGimmickExcelQty($item['qty_gudang_besar'] ?? 0);
+            if ($stock <= 0 && $besar > 0) $stock = $besar;
+            if ($besar <= 0 && $stock > 0) $besar = $stock;
             $statusActiveStr = strtoupper(trim($item['status_active'] ?? 'AKTIF'));
             $statusActive = ($statusActiveStr === 'AKTIF' || $statusActiveStr === '1' || $statusActiveStr === 'ACTIVE') ? 1 : 0;
             $isReserved = !empty($item['is_reserved']) ? 1 : 0;

@@ -4895,7 +4895,7 @@ require_once __DIR__ . '/../includes/header.php';
         <input type="file" id="gimmickExcelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleGimmickExcelFileSelect(this)">
         <span class="material-symbols-outlined text-[36px] text-amber-600 mb-1">cloud_upload</span>
         <p class="text-xs font-bold text-slate-800">Pilih berkas Excel (.xlsx) atau CSV dari komputer</p>
-        <p class="text-[10px] text-slate-400 mt-0.5">Mendukung kolom Barcode, Item Description, QTY Gudang Kecil, QTY Gudang Besar, Kode SAP, Total On Hand</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Mendukung kolom SKU, Nama Barang, Barcode, Barcode BPOM, SAP Code, QTY Gudang Besar, Total On Hand</p>
         <button type="button" onclick="document.getElementById('gimmickExcelFileInput').click()" class="mt-3 px-4 py-2 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">folder_open</span>
           <span>Telusuri File...</span>
