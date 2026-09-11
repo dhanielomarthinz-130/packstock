@@ -1382,9 +1382,9 @@ require_once __DIR__ . '/../includes/header.php';
               <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
             </div>
             <div>
-              <h1 class="font-black text-lg uppercase tracking-tight text-slate-900 leading-tight">IMS</h1>
-              <p class="text-xs font-bold text-slate-600">Inventory Management System</p>
-              <p class="text-[10px] text-slate-400">Kartu Riwayat Mutasi Stok Gudang</p>
+              <h1 class="font-black text-lg uppercase tracking-tight text-slate-900 leading-tight">IEG</h1>
+              <p class="text-xs font-bold text-slate-600">INVENTORY MANAGEMENT SYSTEM</p>
+              <p class="text-[10px] text-slate-400">Inventory Kemas/Consumable &bull; Kartu Riwayat Mutasi Stok</p>
             </div>
           </div>
           <div class="text-right text-xs">

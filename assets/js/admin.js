@@ -10736,9 +10736,9 @@ function printSingleConsumableRequest(id) {
               <img src="../assets/img/logo-IEG.png" alt="IEG Logo" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <div>
-              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IMS</h1>
-              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System</p>
-              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Warehouse Fulfillment & Stock Control System</p>
+              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IEG</h1>
+              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">INVENTORY MANAGEMENT SYSTEM</p>
+              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Inventory Kemas/Consumable</p>
             </div>
           </div>
           <div style="text-align: right;">
@@ -10885,8 +10885,9 @@ function printConsumableRequestsReport() {
               <img src="../assets/img/logo-IEG.png" alt="IEG Logo" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <div>
-              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IMS</h1>
-              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System &bull; Laporan Rekapitulasi Material</p>
+              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IEG</h1>
+              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">INVENTORY MANAGEMENT SYSTEM &bull; Laporan Rekapitulasi Material</p>
+              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Inventory Kemas/Consumable</p>
             </div>
           </div>
           <div style="text-align: right;">
