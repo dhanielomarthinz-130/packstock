@@ -10732,13 +10732,13 @@ function printSingleConsumableRequest(id) {
         <!-- 1. Header Perusahaan & No Request -->
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-              PS
+            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #ffffff; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; padding: 4px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;">
+              <img src="../assets/img/logo-IEG.png" alt="IEG Logo" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <div>
-              <h1 style="font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">PACKSTOCK WMS</h1>
-              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System Kemas/Consumable</p>
-              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Warehouse Fulfillment & Consumable Control System</p>
+              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IMS</h1>
+              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System</p>
+              <p style="font-size: 9.5px; color: #94a3b8; margin: 1px 0 0 0;">Warehouse Fulfillment & Stock Control System</p>
             </div>
           </div>
           <div style="text-align: right;">
@@ -10881,12 +10881,12 @@ function printConsumableRequestsReport() {
         <!-- Header -->
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 16px;">
           <div style="display: flex; align-items: center; gap: 14px;">
-            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #b45309; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 20px; flex-shrink: 0;">
-              PS
+            <div style="width: 48px; height: 48px; border-radius: 12px; background-color: #ffffff; border: 1px solid #cbd5e1; display: flex; align-items: center; justify-content: center; padding: 4px; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); overflow: hidden;">
+              <img src="../assets/img/logo-IEG.png" alt="IEG Logo" style="width: 100%; height: 100%; object-fit: contain;">
             </div>
             <div>
-              <h1 style="font-weight: 900; font-size: 17px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">PACKSTOCK WMS</h1>
-              <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">LAPORAN REKAPITULASI PERMINTAAN CONSUMABLE MATERIAL</p>
+              <h1 style="font-weight: 900; font-size: 18px; text-transform: uppercase; letter-spacing: -0.025em; color: #0f172a; margin: 0;">IMS</h1>
+              <p style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; margin: 2px 0 0 0;">Inventory Management System &bull; Laporan Rekapitulasi Material</p>
             </div>
           </div>
           <div style="text-align: right;">

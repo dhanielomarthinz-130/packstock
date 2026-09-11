@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 Auth::requireAdmin();
 
-$pageTitle = "Admin Control - PackStock WMS";
+$pageTitle = "Admin Control - IMS (Inventory Management System)";
 $baseUrl = Auth::getBaseUrl();
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -19,8 +19,8 @@ require_once __DIR__ . '/../includes/header.php';
           <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
         </div>
         <div class="sidebar-brand-text truncate">
-          <h2 class="sidebar-brand-title font-extrabold text-white text-sm tracking-tight">PackStock</h2>
-          <p class="sidebar-brand-subtitle text-[10px] text-indigo-200/80 font-medium tracking-wide">Stock Control Panel</p>
+          <h2 class="sidebar-brand-title font-extrabold text-white text-sm tracking-tight">IMS</h2>
+          <p class="sidebar-brand-subtitle text-[10px] text-indigo-200/80 font-medium tracking-wide">Inventory Management System</p>
         </div>
       </div>
       <button type="button" onclick="toggleAdminSidebar()" class="sidebar-brand-text p-1.5 rounded-lg text-indigo-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" title="Minimize Sidebar">
@@ -1375,6 +1375,23 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
+        <!-- Official Print Header (Visible only on Print) -->
+        <div class="hidden print:flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-white border border-slate-300 flex items-center justify-center p-1 shrink-0">
+              <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
+            </div>
+            <div>
+              <h1 class="font-black text-lg uppercase tracking-tight text-slate-900 leading-tight">IMS</h1>
+              <p class="text-xs font-bold text-slate-600">Inventory Management System</p>
+              <p class="text-[10px] text-slate-400">Kartu Riwayat Mutasi Stok Gudang</p>
+            </div>
+          </div>
+          <div class="text-right text-xs">
+            <p class="text-[10px] text-slate-500 mt-1">Dicetak: <?= date('d/m/Y H:i') ?> WIB</p>
+          </div>
+        </div>
+
         <!-- 1. Header Information Card -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-start gap-3.5">
@@ -1509,7 +1526,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
           <div class="mt-6 text-center text-[10px] text-slate-400 border-t border-slate-200 pt-2">
-            Dokumen resmi dicetak dari Sistem PackStock WMS &bull; Tanggal Cetak: <?= date('d/m/Y H:i:s') ?> WIB
+            Dokumen resmi dicetak dari Sistem IMS (Inventory Management System) &bull; Tanggal Cetak: <?= date('d/m/Y H:i:s') ?> WIB
           </div>
         </div>
       </div>

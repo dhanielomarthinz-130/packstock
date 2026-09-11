@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 Auth::requireOperator();
 
-$pageTitle = "Panel Operator - PackStock Mobile App";
+$pageTitle = "Panel Operator - IMS Mobile (Inventory Management System)";
 $baseUrl = Auth::getBaseUrl();
 $user = Auth::user();
 require_once __DIR__ . '/../includes/header.php';
@@ -1505,12 +1505,12 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Drawer App Brand & Close -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white shadow-xs">
-              <span class="material-symbols-outlined text-[20px]">package_2</span>
+            <div class="w-8 h-8 rounded-xl bg-white border border-slate-700 p-1 flex items-center justify-center shadow-xs overflow-hidden">
+              <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
             </div>
             <div>
-              <h3 class="font-black text-xs tracking-tight text-white uppercase">PackStock Mobile</h3>
-              <p class="text-[9px] text-emerald-400 font-semibold">Warehouse Operations</p>
+              <h3 class="font-black text-xs tracking-tight text-white uppercase">IMS Mobile</h3>
+              <p class="text-[9px] text-emerald-400 font-semibold">Inventory Management System</p>
             </div>
           </div>
           <button onclick="closeOperatorDrawer()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
@@ -1722,7 +1722,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
         <div>
           <h3 class="font-black text-slate-900 text-xs uppercase tracking-wider">About Application</h3>
-          <p class="text-[10px] text-slate-500">Tentang Sistem PackStock Mobile</p>
+          <p class="text-[10px] text-slate-500">Tentang Sistem IMS Mobile</p>
         </div>
       </div>
       <button onclick="App.closeModal('modalOperatorAbout')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
@@ -1732,11 +1732,11 @@ require_once __DIR__ . '/../includes/header.php';
 
     <!-- App Info Banner -->
     <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 text-white p-5 rounded-2xl shadow-sm text-center space-y-2">
-      <div class="w-14 h-14 rounded-2xl bg-white/10 mx-auto flex items-center justify-center border border-white/20 shadow-inner">
-        <span class="material-symbols-outlined text-[32px] text-emerald-200">package_2</span>
+      <div class="w-14 h-14 rounded-2xl bg-white p-1.5 mx-auto flex items-center justify-center border border-white/20 shadow-inner overflow-hidden">
+        <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
       </div>
       <div>
-        <h4 class="font-black text-base tracking-tight">PackStock Mobile WMS</h4>
+        <h4 class="font-black text-base tracking-tight">IMS Mobile (Inventory Management System)</h4>
         <p class="text-[11px] text-emerald-200 font-mono mt-0.5">Versi 2.4.0 (Enterprise Edition)</p>
         <p class="text-[10px] text-emerald-100 font-bold tracking-wide mt-1">Dibuat oleh: dhanielo-marthinz IMS</p>
       </div>
@@ -2146,7 +2146,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 z-10 text-[9px] font-mono tracking-wider font-extrabold uppercase select-none">
         <!-- Top Row Watermark -->
         <div class="flex justify-between items-center text-white/50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] bg-black/35 px-2 py-0.5 rounded-md">
-          <span id="wmTopLeft">PACKSTOCK MOBILE WMS</span>
+          <span id="wmTopLeft">IMS MOBILE WMS</span>
           <span id="wmTopRight">SERAH TERIMA SHIFT</span>
         </div>
         

@@ -167,11 +167,29 @@ require_once __DIR__ . '/../includes/header.php';
   <!-- Main Content Container -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 space-y-5 w-full">
     
+    <!-- Official Print Header (Visible only on Print) -->
+    <div class="hidden print:flex items-center justify-between border-b-2 border-slate-900 pb-3 mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-xl bg-white border border-slate-300 flex items-center justify-center p-1 shrink-0">
+          <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
+        </div>
+        <div>
+          <h1 class="font-black text-lg uppercase tracking-tight text-slate-900 leading-tight">IMS</h1>
+          <p class="text-xs font-bold text-slate-600">Inventory Management System</p>
+          <p class="text-[10px] text-slate-400">Kartu Riwayat Mutasi Stok Gudang</p>
+        </div>
+      </div>
+      <div class="text-right text-xs">
+        <span class="font-mono font-bold text-slate-700 bg-slate-100 px-2 py-1 rounded border border-slate-300"><?= htmlspecialchars($material['code']) ?></span>
+        <p class="text-[10px] text-slate-500 mt-1">Dicetak: <?= date('d/m/Y H:i') ?> WIB</p>
+      </div>
+    </div>
+
     <!-- 1. Header Information Card -->
     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-start gap-3.5">
-        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold flex-shrink-0 border border-emerald-200">
-          <span class="material-symbols-outlined text-[28px]">inventory_2</span>
+        <div class="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center p-1 font-bold flex-shrink-0 shadow-2xs">
+          <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
         </div>
         <div>
           <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -366,7 +384,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
       <div class="mt-6 text-center text-[10px] text-slate-400 border-t border-slate-200 pt-2">
-        Dokumen resmi dicetak dari Sistem PackStock WMS &bull; Tanggal Cetak: <?= date('d/m/Y H:i:s') ?> WIB
+        Dokumen resmi dicetak dari Sistem IMS (Inventory Management System) &bull; Tanggal Cetak: <?= date('d/m/Y H:i:s') ?> WIB
       </div>
     </div>
 

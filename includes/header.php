@@ -1,7 +1,7 @@
 <?php
 // includes/header.php - White & Green Enterprise Theme with Google Material Symbols
 if (!isset($pageTitle)) {
-    $pageTitle = 'PackStock WMS - Stock Kemas & Task Assignment';
+    $pageTitle = 'IMS - Inventory Management System';
 }
 $baseUrl = Auth::getBaseUrl();
 $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favicon.svg';

@@ -12,7 +12,7 @@ if (Auth::check()) {
     }
 }
 
-$pageTitle = "Login Portal - PackStock WMS Enterprise";
+$pageTitle = "Login Portal - IMS (Inventory Management System)";
 require_once __DIR__ . '/includes/header.php';
 ?>
 
@@ -48,15 +48,12 @@ require_once __DIR__ . '/includes/header.php';
 
         <!-- Logo & Title -->
         <div class="flex items-center gap-3">
-          <!-- Stylized "D" Monogram Logo Badge -->
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-400 via-blue-600 to-indigo-800 p-0.5 shadow-lg shadow-blue-600/30 flex-shrink-0 flex items-center justify-center">
-            <div class="w-full h-full rounded-[14px] bg-slate-950 flex items-center justify-center">
-              <span class="font-black text-2xl tracking-tighter bg-gradient-to-br from-white via-blue-200 to-blue-400 bg-clip-text text-transparent">D</span>
-            </div>
+          <div class="w-12 h-12 rounded-2xl bg-white border border-slate-700/60 p-1.5 shadow-lg shadow-blue-600/30 flex-shrink-0 flex items-center justify-center overflow-hidden">
+            <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
           </div>
           <div>
-            <h1 class="text-2xl font-black tracking-tight text-white leading-tight">PackStock</h1>
-            <p class="text-[10.5px] text-blue-300 font-bold tracking-wide">Stock Kemas / Consumable Control & Dispatch</p>
+            <h1 class="text-2xl font-black tracking-tight text-white leading-tight">IMS</h1>
+            <p class="text-[10.5px] text-blue-300 font-bold tracking-wide">Inventory Management System</p>
           </div>
         </div>
 
@@ -207,7 +204,7 @@ require_once __DIR__ . '/includes/header.php';
       <!-- Footer Branding & Copyright -->
       <div class="pt-6 mt-4 border-t border-slate-100 text-center space-y-1">
         <p class="text-[11px] text-slate-400 font-medium">
-          PackStock WMS &bull; Enterprise Stock Control Panel &copy; <?= date('Y') ?>
+          IMS &bull; Inventory Management System &copy; <?= date('Y') ?>
         </p>
         <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
           Powered By <span class="text-blue-600 font-black">Dhanielo-Marthinz IMS</span>
