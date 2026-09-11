@@ -2,6 +2,7 @@
 // api/outbound.php - Comprehensive Outbound Goods API (Operator Task Picking & Manual Outbound)
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/batch_helper.php';
 
 Auth::requireLogin();
 $pdo = Database::getConnection();
@@ -39,7 +40,8 @@ if ($action === 'list') {
                 COALESCE(t.completed_at, t.created_at) as completed_at,
                 COALESCE(t.duration_seconds, 0) as duration_seconds,
                 t.created_at,
-                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location
+                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+                COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code
             FROM tasks t
             JOIN materials m ON t.material_id = m.id
             JOIN users u_to ON t.assigned_to = u_to.id
@@ -70,7 +72,8 @@ if ($action === 'list') {
                 COALESCE(o.completed_at, o.created_at) as completed_at,
                 COALESCE(o.duration_seconds, 0) as duration_seconds,
                 o.created_at,
-                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location
+                m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+                COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code
             FROM outbound_transactions o
             JOIN materials m ON o.material_id = m.id
         ) combined_outbound
@@ -78,15 +81,22 @@ if ($action === 'list') {
     ";
     $params = [];
 
+    $itemTypeFilter = trim($_GET['item_type'] ?? '');
+    if ($itemTypeFilter === 'GIMMICK') {
+        $query .= " AND material_item_type = 'GIMMICK'";
+    } elseif ($itemTypeFilter === 'PACKAGING') {
+        $query .= " AND (material_item_type = 'PACKAGING' OR material_item_type IS NULL OR material_item_type = '')";
+    }
+
     $date      = trim($_GET['date'] ?? '');
     $startDate = trim($_GET['start_date'] ?? $_GET['from_date'] ?? '');
     $endDate   = trim($_GET['end_date'] ?? $_GET['to_date'] ?? '');
     $time      = trim($_GET['time'] ?? '');
 
     if (!empty($search)) {
-        $query .= " AND (outbound_no LIKE ? OR destination LIKE ? OR reason LIKE ? OR material_name LIKE ? OR material_code LIKE ? OR issued_by LIKE ?)";
+        $query .= " AND (outbound_no LIKE ? OR destination LIKE ? OR reason LIKE ? OR material_name LIKE ? OR material_code LIKE ? OR material_sap_code LIKE ? OR material_barcode LIKE ? OR issued_by LIKE ?)";
         $term = "%{$search}%";
-        $params = [$term, $term, $term, $term, $term, $term];
+        $params = [$term, $term, $term, $term, $term, $term, $term, $term];
     }
 
     if (!empty($startDate)) {
@@ -175,7 +185,7 @@ function handleUploadedOutboundPhotos(): ?string {
 
     $uploadDir = __DIR__ . '/../uploads/outbound/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+        mkdir($uploadDir, 0755, true);
     }
 
     $photoPaths = [];
@@ -185,9 +195,8 @@ function handleUploadedOutboundPhotos(): ?string {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
             $fileTmpPath = $files['tmp_name'][$i];
             $fileName = $files['name'][$i];
-            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-            if (in_array($ext, $allowedExtensions)) {
+            $ext = validateUploadedPhoto($fileTmpPath, $fileName, (int)($files['size'][$i] ?? 0));
+            if ($ext !== null) {
                 $newFileName = 'outbound_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
                 $destPath = $uploadDir . $newFileName;
                 if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -211,8 +220,21 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $reason      = trim($input['reason'] ?? 'Pemakaian Reguler');
     $notes       = trim($input['notes'] ?? '');
     $startedAt   = trim($input['started_at'] ?? '');
+    $batchId     = (int)($input['batch_id'] ?? 0);
+    $batchNo     = trim($input['batch_no'] ?? '');
+    $expDate     = trim($input['exp_date'] ?? '');
+    $location    = trim($input['location'] ?? 'Gudang Besar');
+    if (empty($location) || strtolower($location) === 'pusat' || $location === 'Gudang Kecil') {
+        $location = 'Gudang Besar';
+    }
     $photoPathValue = handleUploadedOutboundPhotos();
     $issuedBy    = Auth::name() ?? 'Admin Gudang';
+
+    if ($qtyError = validateQtyRange($qty, 'Qty Keluar')) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $qtyError]);
+        exit;
+    }
 
     if ($materialId <= 0 || $qty <= 0 || empty($destination) || empty($reason)) {
         http_response_code(400);
@@ -235,7 +257,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->beginTransaction();
 
         // Check stock
-        $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
+        $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?" . rowLockClause($pdo));
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 
@@ -278,16 +300,19 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $startTime = !empty($startedAt) ? date('Y-m-d H:i:s', strtotime($startedAt)) : date('Y-m-d H:i:s', time() - 150);
         $durationSeconds = max(1, strtotime($now) - strtotime($startTime));
 
-        // Insert Outbound record
+        // Insert Outbound record with batch_no, exp_date, and location
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at, batch_no, exp_date, location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $photoPathValue, $startTime, $now, $durationSeconds, $now]);
+        $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $notes, $photoPathValue, $startTime, $now, $durationSeconds, $now, $batchNo ?: null, $expDate ?: null, $location]);
 
         // Update Material Stock
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtUpdateMat->execute([$stockAfter, $materialId]);
+
+        // Decrement from material_batches
+        recordBatchOutbound($pdo, $materialId, $batchId, $batchNo, $location, $qty);
 
         // Transfer to Zone VAS if destination or reason contains VAS
         if (str_contains(strtolower($destination), 'vas') || str_contains(strtolower($reason), 'vas')) {
@@ -326,7 +351,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses barang keluar: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses barang keluar.');
     }
     exit;
 }
@@ -380,8 +405,8 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $itemDuration = max(1, (int)round($totalDuration / max(1, $itemCount)));
 
         $stmtOut = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, photo_path, started_at, completed_at, duration_seconds, created_at, batch_no, exp_date, location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtMut = $pdo->prepare("
@@ -399,8 +424,22 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $destination = trim($item['destination'] ?? 'HANASUI');
             $reason      = trim($item['reason'] ?? 'Kebutuhan Produksi');
             $itemNotes   = trim($item['notes'] ?? '');
+            $batchId     = (int)($item['batch_id'] ?? 0);
+            $batchNo     = trim($item['batch_no'] ?? '');
+            $expDate     = trim($item['exp_date'] ?? '');
+            $location    = trim($item['location'] ?? 'Gudang Besar');
+            if (empty($location) || strtolower($location) === 'pusat' || $location === 'Gudang Kecil') {
+                $location = 'Gudang Besar';
+            }
 
             if ($materialId <= 0 || $qty <= 0) continue;
+
+            if ($qtyError = validateQtyRange($qty, 'Qty Keluar')) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => $qtyError]);
+                exit;
+            }
 
             // Validasi Pembekuan (Freeze) SKU saat batch outbound
             $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
@@ -414,7 +453,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
 
-            $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?");
+            $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, unit FROM materials WHERE id = ?" . rowLockClause($pdo));
             $stmtMat->execute([$materialId]);
             $mat = $stmtMat->fetch();
             if (!$mat) continue;
@@ -435,8 +474,11 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $combinedNotes = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
-            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration, $now]);
+            $stmtOut->execute([$outboundNo, $materialId, $qty, $destination, $issuedBy, $reason, $combinedNotes, $photoPathValue, $startTime, $now, $itemDuration, $now, $batchNo ?: null, $expDate ?: null, $location]);
             $stmtUpdateMat->execute([$stockAfter, $materialId]);
+
+            // Decrement from material_batches
+            recordBatchOutbound($pdo, $materialId, $batchId, $batchNo, $location, $qty);
 
             // Transfer to Zone VAS if destination or reason contains VAS
             if (str_contains(strtolower($destination), 'vas') || str_contains(strtolower($reason), 'vas')) {
@@ -482,7 +524,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses pengeluaran batch: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses pengeluaran batch.');
     }
     exit;
 }
@@ -515,7 +557,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $matId = (int)$out['material_id'];
             $qty = (float)$out['qty'];
 
-            $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+            $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?" . rowLockClause($pdo));
             $stmtMat->execute([$matId]);
             $currentStock = (float)$stmtMat->fetchColumn();
             $newStock = $currentStock + $qty;
@@ -540,7 +582,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus pengeluaran: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus pengeluaran.');
     }
     exit;
 }

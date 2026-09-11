@@ -103,7 +103,7 @@ if ($action === 'list') {
             ) t2 ON t1.id = t2.max_id
             GROUP BY t1.material_id
         ) po_active ON m.id = po_active.material_id
-        WHERE 1=1
+        WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
     ";
     $params = [];
 
@@ -300,7 +300,7 @@ if ($action === 'mark_ordered' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => true, 'message' => "Pengajuan PO #{$poNumber} berhasil dicatat! Estimasi kedatangan: " . date('d M Y', strtotime($etaDate))]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal mencatat PO: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal mencatat PO.');
     }
     exit;
 }
@@ -323,18 +323,17 @@ if ($action === 'clear_po' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// 4. EXPORT REORDER ALERTS TO CSV
+// 4. EXPORT REORDER ALERTS TO GENUINE EXCEL (.xlsx)
 if ($action === 'export') {
-    $filename = "Rekap_Peringatan_PO_Stok_Kemas_" . date('Ymd_His') . ".csv";
-    header('Content-Type: text/csv; charset=utf-8');
-    header("Content-Disposition: attachment; filename=\"{$filename}\"");
+    require_once __DIR__ . '/../includes/xlsx_writer.php';
 
-    $output = fopen('php://output', 'w');
-    fputs($output, "\xEF\xBB\xBF"); // UTF-8 BOM
+    $filename = "Rekap_Reorder_Kemas_PO_" . date('Ymd_His') . ".xlsx";
+    $title = "REKAP REORDER KEMAS & REKOMENDASI PO (LEAD TIME 1 MINGGU)";
 
-    fputcsv($output, [
+    $headers = [
+        'No',
         'Kode Item / SKU',
-        'Nama Material Kemas',
+        'Nama Kemas',
         'Kategori',
         'Lokasi Rak',
         'Stok Fisik Saat Ini',
@@ -350,7 +349,11 @@ if ($action === 'export') {
         'No. PO Terakhir',
         'Supplier',
         'Estimasi Tiba (ETA)'
-    ]);
+    ];
+
+    $colWidths = [6, 16, 38, 16, 14, 15, 15, 10, 16, 16, 15, 20, 16, 18, 15, 16, 20, 16];
+    $rows = [];
+    $no = 1;
 
     $stmt = $pdo->query("
         SELECT m.*,
@@ -383,7 +386,8 @@ if ($action === 'export') {
             ) t2 ON t1.id = t2.max_id
             GROUP BY t1.material_id
         ) po_active ON m.id = po_active.material_id
-        WHERE m.current_stock <= m.min_stock OR m.current_stock <= 0
+        WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
+          AND (m.current_stock <= m.min_stock OR m.current_stock <= 0)
         ORDER BY (m.current_stock <= 0) DESC, m.name ASC
     ");
 
@@ -399,10 +403,17 @@ if ($action === 'export') {
         if ($stock <= 0) $urgency = 'STOK HABIS (0)';
         elseif ($stock <= $leadTimeDemand) $urgency = 'HARUS PO SEGERA (Kritis)';
 
-        $runwayText = $stock <= 0 ? '0 Hari' : ($dailyUsage > 0 ? round($stock / $dailyUsage, 1) . ' Hari' : 'Statis');
+        $runwayText = $stock <= 0 ? '0 Hari (Habis)' : ($dailyUsage > 0 ? round($stock / $dailyUsage, 1) . ' Hari' : 'Statis');
         $suggestedQty = max(1, ceil(($minStock * 2) - $stock));
 
-        fputcsv($output, [
+        $etaFormatted = '-';
+        if (!empty($r['latest_po_eta'])) {
+            $t = strtotime($r['latest_po_eta']);
+            if ($t) $etaFormatted = date('d/m/Y', $t);
+        }
+
+        $rows[] = [
+            $no++,
             $r['code'],
             $r['name'],
             $r['category'] ?: 'Umum',
@@ -419,10 +430,10 @@ if ($action === 'export') {
             $r['active_po_count'] > 0 ? 'Sedang Dipesan' : 'Belum Ada PO',
             $r['latest_po_number'] ?: '-',
             $r['latest_supplier'] ?: '-',
-            $r['latest_po_eta'] ?: '-'
-        ]);
+            $etaFormatted
+        ];
     }
 
-    fclose($output);
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
     exit;
 }

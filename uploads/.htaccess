@@ -1,0 +1,48 @@
+# uploads/.htaccess - Folder ini hanya boleh menyajikan gambar, tidak pernah menjalankan kode.
+#
+# Meski unggahan sudah divalidasi berdasarkan isi berkas, lapisan ini memastikan
+# sebuah berkas yang lolos tetap tidak akan pernah dieksekusi sebagai skrip.
+#
+# KETAHANAN: setiap direktif dibungkus penjaga <IfModule>. Direktif seperti
+# RemoveHandler dan Options membutuhkan AllowOverride tertentu di sisi server;
+# bila hosting tidak mengizinkannya, seluruh situs bisa balas 500. Karena itu
+# pertahanan utama di sini adalah aturan rewrite yang hanya mengizinkan gambar —
+# bukan mematikan handler, yang sifatnya hanya pelengkap.
+
+# --- Lapis utama: hanya berkas gambar yang boleh dilayani -------------------
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# Apa pun yang bukan gambar ditolak, termasuk .php, .phtml, .pl, .py, dan
+# berkas tanpa ekstensi. Ini menutup jalur eksekusi tanpa menyentuh handler.
+RewriteRule !\.(?i:jpe?g|png|webp|gif)$ - [F,L]
+</IfModule>
+
+# --- Lapis pelengkap: matikan penanganan skrip ------------------------------
+# mod_php umumnya TIDAK aktif di hosting yang menjalankan PHP sebagai CGI/FastCGI,
+# sehingga blok ini akan dilewati dengan aman di sana.
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Sajikan berkas skrip sebagai teks biasa, bukan dieksekusi.
+# mod_mime praktis selalu ada; penjaga dipasang untuk berjaga-jaga.
+<IfModule mod_mime.c>
+    RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .pl .py .cgi .asp .aspx .shtml .sh
+    AddType text/plain .php .phtml .php3 .php4 .php5 .php7 .php8 .pl .py .cgi .asp .aspx .shtml .sh
+</IfModule>
+
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set Content-Disposition "inline"
+</IfModule>

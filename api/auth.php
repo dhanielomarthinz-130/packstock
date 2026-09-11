@@ -18,6 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
     }
 
     $res = Auth::login($username, $password, $shift);
+
+    // Login gagal harus terbaca sebagai gagal oleh klien, proxy, dan log — bukan HTTP 200.
+    if (empty($res['success'])) {
+        http_response_code(!empty($res['locked']) ? 429 : 401);
+    }
+
     echo json_encode($res);
     exit;
 }
@@ -74,11 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update_profile') {
             exit;
         }
 
-        // Verify current password
+        // Verifikasi password saat ini. Hanya lewat hash — cadangan perbandingan
+        // teks polos dihapus karena menerima password yang tersimpan tanpa hash.
         $isCurrentValid = password_verify($currentPassword, $currentUser['password']);
-        if (!$isCurrentValid && $currentPassword === $currentUser['password']) {
-            $isCurrentValid = true;
-        }
 
         if (!$isCurrentValid) {
             http_response_code(400);
@@ -86,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update_profile') {
             exit;
         }
 
-        if (strlen($newPassword) < 5) {
+        if ($pwError = validatePasswordStrength($newPassword, $currentUser['username'] ?? '')) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Password baru minimal 5 karakter!']);
+            echo json_encode(['success' => false, 'message' => $pwError]);
             exit;
         }
 

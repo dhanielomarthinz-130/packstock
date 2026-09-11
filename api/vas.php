@@ -2,6 +2,7 @@
 // api/vas.php - Value Added Service (Zone VAS) Management & Stock Transfer API
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/batch_helper.php';
 
 Auth::requireLogin();
 $pdo = Database::getConnection();
@@ -222,8 +223,8 @@ if ($action === 'transfer_to_inventory' && $_SERVER['REQUEST_METHOD'] === 'POST'
         if (!empty($notes)) $vasNotes .= " - " . $notes;
 
         $stmtVasTx = $pdo->prepare("
-            INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at)
-            VALUES (?, ?, 'TRANSFER_OUT', ?, ?, ?, ?, ?)
+            INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at, from_location, to_location)
+            VALUES (?, ?, 'TRANSFER_OUT', ?, ?, ?, ?, ?, 'VAS', 'Gudang Besar')
         ");
         $stmtVasTx->execute([$vasNo, $materialId, $qty, $vasNo, $vasNotes, $userId, $now]);
 
@@ -249,7 +250,7 @@ if ($action === 'transfer_to_inventory' && $_SERVER['REQUEST_METHOD'] === 'POST'
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses transfer stok dari VAS: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses transfer stok dari VAS.');
     }
     exit;
 }
@@ -289,8 +290,8 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, COALESCE(vas_stock, 0) as vas_stock, unit FROM materials WHERE id = ?");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ?, vas_stock = ? WHERE id = ?");
         $stmtVasTx = $pdo->prepare("
-            INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO vas_transactions (vas_no, material_id, type, qty, reference_no, notes, created_by, created_at, batch_no, exp_date, from_location, to_location)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmtMut = $pdo->prepare("
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
@@ -301,7 +302,12 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $materialId = (int)($item['material_id'] ?? 0);
             $qty        = max(0, parseNumberDecimal($item['qty'] ?? 0));
             $itemNotes  = trim($item['notes'] ?? '');
-            $direction  = trim($item['direction'] ?? $globalDirection); // 'IN_VAS' or 'OUT_VAS'
+            $direction  = trim($item['direction'] ?? $globalDirection); // 'IN_VAS', 'OUT_VAS', 'LOCATION_TRANSFER'
+            $batchId    = (int)($item['batch_id'] ?? 0);
+            $batchNo    = trim($item['batch_no'] ?? '');
+            $expDate    = trim($item['exp_date'] ?? '');
+            $fromLoc    = trim($item['from_location'] ?? '');
+            $toLoc      = trim($item['to_location'] ?? '');
 
             if ($materialId <= 0 || $qty <= 0) continue;
 
@@ -318,7 +324,43 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $currentVasStock  = (float)$mat['vas_stock'];
             $combinedNotes    = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
 
-            if ($direction === 'IN_VAS') {
+            if ($batchId > 0 && (empty($batchNo) || empty($expDate))) {
+                $stmtB = $pdo->prepare("SELECT batch_no, exp_date, location FROM material_batches WHERE id = ?");
+                $stmtB->execute([$batchId]);
+                $bInfo = $stmtB->fetch(PDO::FETCH_ASSOC);
+                if ($bInfo) {
+                    if (empty($batchNo)) $batchNo = $bInfo['batch_no'];
+                    if (empty($expDate)) $expDate = $bInfo['exp_date'];
+                    if (empty($fromLoc)) $fromLoc = $bInfo['location'];
+                }
+            }
+
+            if ($direction === 'LOCATION_TRANSFER' || (!empty($fromLoc) && !empty($toLoc) && $fromLoc !== 'VAS' && $toLoc !== 'VAS')) {
+                // Transfer antar lokasi internal (e.g. Gudang Besar <-> Rak / Antar Rak)
+                if (empty($fromLoc) || $fromLoc === 'Gudang Kecil') $fromLoc = 'Gudang Besar';
+                if (empty($toLoc) || $toLoc === 'Gudang Kecil') $toLoc = 'Gudang Besar';
+
+                // Check source batch or warehouse stock
+                $hasTransferred = recordBatchTransfer($pdo, $materialId, $batchId, $batchNo, $fromLoc, $toLoc, $qty);
+                if (!$hasTransferred) {
+                    // Update location field directly if no batches exist
+                    if (!empty($toLoc) && $toLoc !== 'VAS' && strtolower($toLoc) !== 'pusat') {
+                        $pdo->prepare("UPDATE materials SET rack_location = ? WHERE id = ?")
+                            ->execute([$toLoc, $materialId]);
+                    }
+                }
+
+                $prefix = 'TRF-' . date('Ym') . '-';
+                $vasNo  = $prefix . substr(md5(uniqid() . $index . $materialId), 0, 6);
+
+                $vasNotes = "Transfer Antar Lokasi dari {$fromLoc} ke {$toLoc}";
+                if (!empty($batchNo)) $vasNotes .= " [Batch: {$batchNo}]";
+                if (!empty($combinedNotes)) $vasNotes .= " - " . $combinedNotes;
+
+                $stmtVasTx->execute([$vasNo, $materialId, 'LOCATION_TRANSFER', $qty, $vasNo, $vasNotes, $userId, $now, $batchNo, $expDate, $fromLoc, $toLoc]);
+                $stmtMut->execute([$materialId, 'TRANSFER_LOCATION', 0, $currentMainStock, $currentMainStock, $vasNo, $vasNotes, $userId, $now]);
+
+            } elseif ($direction === 'IN_VAS') {
                 // Gudang Utama -> Zone VAS
                 if ($qty > $currentMainStock) {
                     $pdo->rollBack();
@@ -337,10 +379,11 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $vasNo  = $prefix . substr(md5(uniqid() . $index . $materialId), 0, 6);
 
                 $stmtUpdateMat->execute([$newMainStock, $newVasStock, $materialId]);
+                recordBatchOutbound($pdo, $materialId, $batchId, $batchNo, ($fromLoc && $fromLoc !== 'Gudang Kecil') ? $fromLoc : 'Gudang Besar', $qty);
 
                 $vasNotes = "Transfer Masuk Ke Zone VAS";
                 if (!empty($combinedNotes)) $vasNotes .= " - " . $combinedNotes;
-                $stmtVasTx->execute([$vasNo, $materialId, 'TRANSFER_IN', $qty, $vasNo, $vasNotes, $userId, $now]);
+                $stmtVasTx->execute([$vasNo, $materialId, 'TRANSFER_IN', $qty, $vasNo, $vasNotes, $userId, $now, $batchNo, $expDate, $fromLoc ?: 'Gudang Besar', 'VAS']);
 
                 $mutNotes = "Pengeluaran Transfer Ke Zone VAS (#{$vasNo})";
                 if (!empty($combinedNotes)) $mutNotes .= " - " . $combinedNotes;
@@ -368,7 +411,7 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $vasNotes = "Pengeluaran / Disposal Stok Langsung Dari Zone VAS";
                 if (!empty($combinedNotes)) $vasNotes .= " - " . $combinedNotes;
-                $stmtVasTx->execute([$vasNo, $materialId, 'VAS_OUTBOUND', $qty, $vasNo, $vasNotes, $userId, $now]);
+                $stmtVasTx->execute([$vasNo, $materialId, 'VAS_OUTBOUND', $qty, $vasNo, $vasNotes, $userId, $now, $batchNo, $expDate, 'VAS', 'OUTBOUND']);
 
                 $mutNotes = "Pengeluaran Stok Langsung Dari Zone VAS (#{$vasNo})";
                 if (!empty($combinedNotes)) $mutNotes .= " - " . $combinedNotes;
@@ -392,11 +435,13 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $prefix = 'VAS-RET-' . date('Ym') . '-';
                 $vasNo  = $prefix . substr(md5(uniqid() . $index . $materialId), 0, 6);
 
+                $targetLoc = ($toLoc && $toLoc !== 'Gudang Kecil') ? $toLoc : 'Gudang Besar';
                 $stmtUpdateMat->execute([$newMainStock, $newVasStock, $materialId]);
+                recordBatchInbound($pdo, $materialId, $batchNo, $expDate, $targetLoc, $qty, $combinedNotes);
 
                 $vasNotes = "Transfer Keluar Dari Zone VAS Ke Gudang Utama";
                 if (!empty($combinedNotes)) $vasNotes .= " - " . $combinedNotes;
-                $stmtVasTx->execute([$vasNo, $materialId, 'TRANSFER_OUT', $qty, $vasNo, $vasNotes, $userId, $now]);
+                $stmtVasTx->execute([$vasNo, $materialId, 'TRANSFER_OUT', $qty, $vasNo, $vasNotes, $userId, $now, $batchNo, $expDate, 'VAS', $targetLoc]);
 
                 $mutNotes = "Transfer Masuk Kembali Dari Zone VAS (#{$vasNo})";
                 if (!empty($combinedNotes)) $mutNotes .= " - " . $combinedNotes;
@@ -427,7 +472,7 @@ if ($action === 'batch_transfer' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses batch transfer stok: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses batch transfer stok.');
     }
     exit;
 }

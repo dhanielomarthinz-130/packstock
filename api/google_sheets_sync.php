@@ -77,8 +77,14 @@ if ($action === 'save_config') {
         $webAppUrl = 'https://script.google.com/macros/s/AKfycby-dXY-qbOS6e9G5L-x_X0hokw0EO8WJo0VzXnVbhRJwMJlsPhP97eCdqqTrIagrEJT2A/exec';
     }
 
+    $urlLama = $config['web_app_url'] ?? '(kosong)';
     $config['web_app_url'] = $webAppUrl;
     if (saveGoogleSheetsConfig($configFile, $config)) {
+        // Mengubah URL tujuan berarti mengubah ke mana seluruh data stok dikirim.
+        // Perubahan sepenting itu harus meninggalkan jejak.
+        if ($urlLama !== $webAppUrl) {
+            Auth::audit('SHEETS_URL_CHANGED', $webAppUrl, "Sebelumnya: {$urlLama}");
+        }
         echo json_encode(['success' => true, 'message' => 'Pengaturan Google Sheets berhasil disimpan!', 'config' => $config]);
     } else {
         echo json_encode(['success' => false, 'message' => 'Gagal menyimpan konfigurasi ke file server.']);
@@ -228,6 +234,13 @@ if ($action === 'sync') {
     $msgMode = ($mode === 'update') ? 'Update Terbaru' : 'Full Sync';
     $totalRowsAll = array_sum($summaryCounts);
 
+    // Data stok keluar ke pihak ketiga — catat siapa, ke mana, dan berapa banyak.
+    Auth::audit(
+        'SHEETS_SYNC',
+        $config['web_app_url'] ?? '-',
+        "Mode {$msgMode}, target: " . implode(', ', $targetsToProcess) . ", total {$totalRowsAll} baris"
+    );
+
     echo json_encode([
         'success' => true,
         'message' => "Berhasil melakukan {$msgMode} ke Google Sheet! (Total: {$totalRowsAll} baris data diproses).",
@@ -300,6 +313,8 @@ if ($action === 'mark_synced') {
     }
     saveGoogleSheetsConfig($configFile, $config);
 
+    Auth::audit('SHEETS_SYNC_MANUAL', implode(', ', $targetsToProcess), 'Ditandai tersinkron dari browser (Direct Browser Sync)');
+
     echo json_encode(['success' => true, 'synced_at' => date('d/m/Y H:i:s')]);
     exit;
 }
@@ -363,7 +378,7 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
             $rows[] = [
                 $r['code'], // Key at col 0
                 $r['name'],
-                $r['category'] ?: 'Packaging Material',
+                $r['category'] ?: 'Kemas',
                 (float)$r['initial_upload_stock'],
                 (float)$r['total_inbound'],
                 (float)$r['total_outbound'],
@@ -423,7 +438,7 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
             $rows[] = [
                 $r['code'], // Primary Key
                 $r['name'],
-                $r['category'] ?: 'Packaging Material',
+                $r['category'] ?: 'Kemas',
                 $r['rack_location'] ?: '-',
                 (float)$r['current_stock'],
                 (float)$r['vas_stock'],
@@ -529,7 +544,7 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 'No. PO',
                 'Supplier',
                 'Item No (SKU)',
-                'Nama Packaging Material',
+                'Nama Kemas',
                 'Qty In (+)',
                 'Satuan',
                 'Lokasi Rak',
@@ -654,7 +669,7 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 'Tipe Outbound',
                 'Status',
                 'Item No (SKU)',
-                'Nama Packaging Material',
+                'Nama Kemas',
                 'Qty Out (-)',
                 'Satuan',
                 'Lokasi Rak',

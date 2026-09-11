@@ -14,6 +14,32 @@ jobs:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
+      # Cegat berkas yang di-require tapi lupa di-commit. Tanpa langkah ini,
+      # sebuah dependensi yang hilang baru ketahuan setelah produksi mati.
+      - name: 🔍 Periksa sintaks PHP & dependensi yang hilang
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq php-cli >/dev/null
+          echo "--- Pemeriksaan sintaks ---"
+          find . -name '*.php' -not -path './.git/*' -not -path './scratch/*' \
+            -exec php -l {} \; | grep -v '^No syntax errors' && exit 1
+          echo "Sintaks seluruh berkas PHP: OK"
+
+          echo "--- Pemeriksaan require_once ---"
+          gagal=0
+          for f in $(find . -name '*.php' -not -path './.git/*' -not -path './scratch/*'); do
+            for dep in $(grep -oP "require_once __DIR__ \. '\K[^']+" "$f" 2>/dev/null); do
+              target="$(dirname "$f")$dep"
+              if [ ! -f "$target" ]; then
+                echo "HILANG: $f membutuhkan $dep (tidak ada di repositori)"
+                gagal=1
+              fi
+            done
+          done
+          [ "$gagal" -eq 0 ] && echo "Seluruh dependensi require_once ada di repositori" || exit 1
+
+      - name: 🧪 Uji unit fungsi inti
+        run: php scripts/unit_test.php
+
       - name: 📂 Sync files via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -26,5 +52,17 @@ jobs:
             **/.git*/**
             **/config/env.php
             **/config/*.sqlite*
+            **/config/backups/**
             **/scratch/**
+            **/node_modules/**
             **/README.md
+            # Berkas data mentah & catatan internal — tidak dipakai aplikasi,
+            # dan tidak ada alasan untuk berada di server publik.
+            **/*.xlsx
+            **/*.xls
+            **/*.csv
+            **/Text.txt
+            # Sumber build Tailwind. Yang dipakai aplikasi hanya hasilnya
+            # (assets/css/tailwind.css), yang tetap ikut ter-deploy.
+            **/tailwind.config.js
+            **/assets/css/tailwind.input.css

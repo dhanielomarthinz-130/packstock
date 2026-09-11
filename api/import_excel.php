@@ -461,7 +461,7 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $code = strtoupper(trim($item['item_no']));
             $name = trim($item['item_description']);
             $stock = max(0, parseExcelNumeric($item['ending_stock'] ?? 0));
-            $cat = trim($item['category'] ?? 'Packaging Material');
+            $cat = trim($item['category'] ?? 'Kemas');
             $unit = trim($item['unit'] ?? 'Pcs');
             $rack = trim($item['rack_location'] ?? 'Gudang Utama');
             $minStock = max(0, parseExcelNumeric($item['min_stock'] ?? 50));
@@ -518,7 +518,305 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses import: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses import.');
+    }
+    exit;
+}
+
+/**
+ * Helper: Parse Gimmick Qty specifically for Gimmick Excel formats
+ */
+function parseGimmickExcelQty($val) {
+    if ($val === null || $val === '' || $val === false) return 0.0;
+    if (is_numeric($val)) {
+        $f = (float)$val;
+        if (floor($f) != $f) {
+            return round($f * 1000, 2);
+        }
+        return $f;
+    }
+    $str = trim((string)$val);
+    $str = str_replace(',', '', $str);
+    if (is_numeric($str)) {
+        $f = (float)$str;
+        if (strpos($str, '.') !== false) {
+            return round($f * 1000, 2);
+        }
+        return $f;
+    }
+    return 0.0;
+}
+
+// 5. DETECT LOCAL GIMMICK FILE IN WORKSPACE
+if ($action === 'detect_gimmick_file') {
+    $localFile = __DIR__ . '/../Data stock Gimmick.xlsx';
+    if (file_exists($localFile)) {
+        $rows = parseNativeXlsx($localFile);
+        $totalItems = $rows ? max(0, count($rows) - 1) : 0;
+        echo json_encode([
+            'success' => true,
+            'file_exists' => true,
+            'filename' => 'Data stock Gimmick.xlsx',
+            'total_items' => $totalItems,
+            'filesize' => filesize($localFile)
+        ]);
+    } else {
+        echo json_encode(['success' => true, 'file_exists' => false]);
+    }
+    exit;
+}
+
+// 6. PREVIEW GIMMICK EXCEL
+if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rows = [];
+    $isLocalFile = ($_POST['source'] ?? '') === 'local_file' || ($_GET['source'] ?? '') === 'local_file';
+
+    if ($isLocalFile) {
+        $localFile = __DIR__ . '/../Data stock Gimmick.xlsx';
+        $rows = parseNativeXlsx($localFile);
+    } elseif (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $tmp = $_FILES['file']['tmp_name'];
+        $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
+        if ($ext === 'xlsx') {
+            $rows = parseNativeXlsx($tmp);
+        }
+    }
+
+    if (empty($rows) || count($rows) < 2) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'File Excel Gimmick kosong atau format tidak dapat dibaca.']);
+        exit;
+    }
+
+    $header = $rows[0];
+    $skuIdx = -1; $nameIdx = -1; $areaIdx = -1; $sapIdx = -1; $barcodeIdx = -1; $bpomIdx = -1;
+    $catIdx = -1; $onHandIdx = -1; $availIdx = -1; $kecilIdx = -1; $besarIdx = -1; $statusIdx = -1; $reserveIdx = -1;
+
+    foreach ($header as $colIdx => $colName) {
+        $c = strtoupper(trim($colName));
+        if (strpos($c, 'BPOM') !== false) $bpomIdx = $colIdx;
+        elseif (strpos($c, 'BARCODE') !== false || strpos($c, 'EAN') !== false) $barcodeIdx = $colIdx;
+        elseif ($c === 'SKU' || strpos($c, 'KODE BARANG') !== false || strpos($c, 'KODE ITEM') !== false || $c === 'ITEM NO') $skuIdx = $colIdx;
+        elseif (strpos($c, 'NAMA BARANG') !== false || strpos($c, 'NAMA ITEM') !== false || strpos($c, 'DESCRIPTION') !== false) $nameIdx = $colIdx;
+        elseif ($c === 'AREA') $areaIdx = $colIdx;
+        elseif (strpos($c, 'SAP') !== false) $sapIdx = $colIdx;
+        elseif (strpos($c, 'KATEGORI') !== false) $catIdx = $colIdx;
+        elseif (strpos($c, 'ON HAND') !== false || strpos($c, 'QTY ON HAND') !== false) $onHandIdx = $colIdx;
+        elseif (strpos($c, 'AVAILABLE') !== false) $availIdx = $colIdx;
+        elseif (strpos($c, 'KECIL') !== false) $kecilIdx = $colIdx;
+        elseif (strpos($c, 'BESAR') !== false) $besarIdx = $colIdx;
+        elseif (strpos($c, 'STATUS') !== false) $statusIdx = $colIdx;
+        elseif (strpos($c, 'RESERVE') !== false) $reserveIdx = $colIdx;
+    }
+
+    // Default column fallback indices if headers match exact 6-column layout (Data stock Gimmick.xlsx)
+    if (count($header) <= 6 && $barcodeIdx === -1 && $bpomIdx === -1) {
+        $skuIdx = 0;
+        $nameIdx = 1;
+        $areaIdx = 2;
+        $sapIdx = 3;
+        $barcodeIdx = 4;
+        $bpomIdx = 5;
+    } else {
+        if ($skuIdx === -1) $skuIdx = 0;
+        if ($nameIdx === -1) $nameIdx = 1;
+        if ($areaIdx === -1) $areaIdx = 2;
+        if ($sapIdx === -1) $sapIdx = 3;
+    }
+
+    // Fetch existing materials
+    $stmtExist = $pdo->query("SELECT id, code, current_stock, item_type FROM materials");
+    $existing = [];
+    while ($row = $stmtExist->fetch()) {
+        $existing[strtoupper(trim($row['code']))] = $row;
+    }
+
+    $parsedItems = [];
+    $validCount = 0;
+    $newCount = 0;
+    $updateCount = 0;
+
+    for ($i = 1; $i < count($rows); $i++) {
+        $r = $rows[$i];
+        $sku = strtoupper(trim($r[$skuIdx] ?? ''));
+        $name = trim($r[$nameIdx] ?? '');
+        if (empty($sku) && empty($name)) continue;
+        if ($sku === 'SKU' || $sku === 'ITEM NO') continue;
+        if (empty($sku)) $sku = 'GIMMICK-' . str_pad($i, 4, '0', STR_PAD_LEFT);
+        if (empty($name)) $name = $sku;
+
+        $area = ($areaIdx !== -1 && !empty($r[$areaIdx])) ? trim($r[$areaIdx]) : 'Pusat';
+        $sapCode = ($sapIdx !== -1 && !empty($r[$sapIdx])) ? trim($r[$sapIdx]) : '';
+        if ($sapCode === '0') $sapCode = '';
+        $barcode = ($barcodeIdx !== -1 && !empty($r[$barcodeIdx])) ? trim($r[$barcodeIdx]) : '';
+        $barcodeBpom = ($bpomIdx !== -1 && !empty($r[$bpomIdx])) ? trim($r[$bpomIdx]) : '';
+
+        $cat = ($catIdx !== -1 && !empty($r[$catIdx])) ? trim($r[$catIdx]) : 'Gimmick';
+        $onHand = ($onHandIdx !== -1 && isset($r[$onHandIdx])) ? parseGimmickExcelQty($r[$onHandIdx]) : 0;
+        $avail = ($availIdx !== -1 && isset($r[$availIdx])) ? parseGimmickExcelQty($r[$availIdx]) : $onHand;
+        $kecil = ($kecilIdx !== -1 && isset($r[$kecilIdx])) ? parseGimmickExcelQty($r[$kecilIdx]) : 0;
+        $besar = ($besarIdx !== -1 && isset($r[$besarIdx])) ? parseGimmickExcelQty($r[$besarIdx]) : 0;
+        $statusActive = ($statusIdx !== -1 && !empty($r[$statusIdx])) ? strtoupper(trim($r[$statusIdx])) : 'AKTIF';
+        $underReserve = ($reserveIdx !== -1 && !empty($r[$reserveIdx])) ? strtoupper(trim($r[$reserveIdx])) : 'TIDAK';
+        $isReserved = ($underReserve === 'YA' || $underReserve === 'YES' || $underReserve === '1') ? 1 : 0;
+
+        $isExisting = isset($existing[$sku]);
+        if ($isExisting) {
+            $updateCount++;
+            $statusType = 'UPDATE';
+            $oldStock = (float)$existing[$sku]['current_stock'];
+        } else {
+            $newCount++;
+            $statusType = 'NEW';
+            $oldStock = 0;
+        }
+
+        $parsedItems[] = [
+            'row_num' => $i + 1,
+            'item_no' => $sku,
+            'code' => $sku,
+            'item_description' => $name,
+            'name' => $name,
+            'barcode' => $barcode,
+            'barcode_bpom' => $barcodeBpom,
+            'area' => $area,
+            'sap_code' => $sapCode,
+            'category' => $cat,
+            'unit' => 'Pcs',
+            'rack_location' => 'Gudang Gimmick ' . $area,
+            'ending_stock' => $onHand,
+            'available_qty' => $avail,
+            'qty_gudang_kecil' => $kecil,
+            'qty_gudang_besar' => $besar,
+            'status_active' => $statusActive,
+            'is_reserved' => $isReserved,
+            'old_stock' => $oldStock,
+            'status' => $statusType
+        ];
+        $validCount++;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'summary' => [
+            'total_rows' => $validCount,
+            'new_items' => $newCount,
+            'update_items' => $updateCount
+        ],
+        'items' => $parsedItems
+    ]);
+    exit;
+}
+
+// 7. COMMIT GIMMICK IMPORT
+if ($action === 'commit_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $items = $input['items'] ?? [];
+
+    if (empty($items)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Tidak ada data item Gimmick untuk diimpor.']);
+        exit;
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmtCheck = $pdo->prepare("SELECT id, current_stock FROM materials WHERE code = ?");
+        $stmtInsert = $pdo->prepare("
+            INSERT INTO materials (
+                code, name, item_type, category, unit, rack_location, min_stock, current_stock, description,
+                sap_code, barcode, barcode_bpom, area, qty_gudang_kecil, qty_gudang_besar, status_active, is_reserved
+            ) VALUES (?, ?, 'GIMMICK', ?, ?, ?, 10, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmtUpdate = $pdo->prepare("
+            UPDATE materials SET 
+                name = ?, item_type = 'GIMMICK', category = ?, unit = ?, rack_location = ?, current_stock = ?,
+                sap_code = ?, barcode = ?, barcode_bpom = ?, area = ?, qty_gudang_kecil = ?, qty_gudang_besar = ?, status_active = ?, is_reserved = ?
+            WHERE id = ?
+        ");
+        $stmtMut = $pdo->prepare("INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id) VALUES (?, 'INITIAL_IMPORT', ?, ?, ?, ?, ?, ?)");
+
+        $inserted = 0;
+        $updated = 0;
+        $userId = Auth::id();
+
+        foreach ($items as $item) {
+            $code = strtoupper(trim($item['item_no'] ?? $item['code'] ?? ''));
+            $name = trim($item['item_description'] ?? $item['name'] ?? '');
+            if (empty($code)) continue;
+            if (empty($name)) $name = $code;
+
+            $stock = parseGimmickExcelQty($item['ending_stock'] ?? $item['current_stock'] ?? 0);
+            $cat = trim($item['category'] ?? 'Gimmick');
+            $unit = trim($item['unit'] ?? 'Pcs');
+            $area = trim($item['area'] ?? 'Pusat');
+            $rack = trim($item['rack_location'] ?? ('Gudang Gimmick ' . $area));
+            $sapCode = trim($item['sap_code'] ?? '');
+            $barcode = trim($item['barcode'] ?? '');
+            $barcodeBpom = trim($item['barcode_bpom'] ?? '');
+            $kecil = parseGimmickExcelQty($item['qty_gudang_kecil'] ?? 0);
+            $besar = parseGimmickExcelQty($item['qty_gudang_besar'] ?? 0);
+            $statusActiveStr = strtoupper(trim($item['status_active'] ?? 'AKTIF'));
+            $statusActive = ($statusActiveStr === 'AKTIF' || $statusActiveStr === '1' || $statusActiveStr === 'ACTIVE') ? 1 : 0;
+            $isReserved = !empty($item['is_reserved']) ? 1 : 0;
+
+            $stmtCheck->execute([$code]);
+            $existing = $stmtCheck->fetch();
+
+            if ($existing) {
+                $matId = (int)$existing['id'];
+                $stmtUpdate->execute([
+                    $name, $cat, $unit, $rack, $stock,
+                    $sapCode, $barcode, $barcodeBpom, $area, $kecil, $besar, $statusActive, $isReserved,
+                    $matId
+                ]);
+                $updated++;
+
+                $pdo->prepare("DELETE FROM stock_mutations WHERE material_id = ? AND type = 'INITIAL_IMPORT'")->execute([$matId]);
+
+                $stmtMut->execute([
+                    $matId,
+                    $stock,
+                    0,
+                    $stock,
+                    'GIMMICK-IMPORT',
+                    "Stok Awal dari Data Stock Gimmick (SKU: {$code})",
+                    $userId
+                ]);
+            } else {
+                $stmtInsert->execute([
+                    $code, $name, $cat, $unit, $rack, $stock, $name,
+                    $sapCode, $barcode, $barcodeBpom, $area, $kecil, $besar, $statusActive, $isReserved
+                ]);
+                $matId = (int)$pdo->lastInsertId();
+                $inserted++;
+
+                $stmtMut->execute([
+                    $matId,
+                    $stock,
+                    0,
+                    $stock,
+                    'GIMMICK-IMPORT',
+                    "Stok Awal dari Data Stock Gimmick (SKU: {$code})",
+                    $userId
+                ]);
+            }
+        }
+
+        Database::autoReconcileStockMutations($pdo);
+
+        $pdo->commit();
+        echo json_encode([
+            'success' => true,
+            'message' => "Import Gimmick Berhasil! {$inserted} item baru ditambahkan, {$updated} item diperbarui. Saldo stok Gimmick telah disinkronkan!",
+            'inserted' => $inserted,
+            'updated' => $updated
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        apiFail($e, 'Gagal memproses import Gimmick.');
     }
     exit;
 }

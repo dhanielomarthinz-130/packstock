@@ -45,7 +45,7 @@ if ($action === 'list') {
         $handovers = $stmt->fetchAll(PDO::FETCH_ASSOC);
         echo json_encode(['success' => true, 'data' => $handovers]);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        apiFail($e);
     }
     exit;
 }
@@ -84,14 +84,12 @@ if ($action === 'submit') {
             if ($files['error'][$i] === UPLOAD_ERR_OK) {
                 $fileTmpPath = $files['tmp_name'][$i];
                 $fileName = $files['name'][$i];
-                $fileNameCmps = explode(".", $fileName);
-                $fileExtension = strtolower(end($fileNameCmps));
-                
-                $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-                if (in_array($fileExtension, $allowedExtensions)) {
+                // Ekstensi ditentukan dari isi berkas, bukan dari nama kiriman klien.
+                $fileExtension = validateUploadedPhoto($fileTmpPath, $fileName, (int)($files['size'][$i] ?? 0));
+                if ($fileExtension !== null) {
                     $uploadFileDir = __DIR__ . '/../uploads/handovers/';
                     if (!is_dir($uploadFileDir)) {
-                        mkdir($uploadFileDir, 0777, true);
+                        mkdir($uploadFileDir, 0755, true);
                     }
                     $newFileName = 'handover_' . time() . '_' . md5(uniqid() . $i) . '.' . $fileExtension;
                     $dest_path = $uploadFileDir . $newFileName;
@@ -129,7 +127,7 @@ if ($action === 'submit') {
             'handover_no' => $handoverNo
         ]);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        apiFail($e);
     }
     exit;
 }
@@ -168,7 +166,7 @@ if ($action === 'receive') {
             echo json_encode(['success' => false, 'message' => 'Handover sudah pernah diterima sebelumnya atau tidak ditemukan.']);
         }
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        apiFail($e);
     }
     exit;
 }
@@ -191,7 +189,7 @@ if ($action === 'mark_shared') {
         $stmt->execute([$id]);
         echo json_encode(['success' => true, 'message' => 'Handover marked as shared.']);
     } catch (Exception $e) {
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        apiFail($e);
     }
     exit;
 }

@@ -396,27 +396,29 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $refNo = 'ADJ-' . date('Ymd-His');
+    // Sufiks acak mencegah tabrakan bila dua commit massal terjadi pada detik yang sama.
+    // (Antar item di dalam satu commit sudah dibedakan oleh $itemRefNo di bawah.)
+    $refNo = 'ADJ-' . date('Ymd-His') . '-' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
     $userId = Auth::id();
 
     try {
         $pdo->beginTransaction();
 
-        $stmtGetMatById = $pdo->prepare("SELECT id, code, name, current_stock FROM materials WHERE id = ?");
+        $stmtGetMatById = $pdo->prepare("SELECT id, code, name, current_stock FROM materials WHERE id = ?" . rowLockClause($pdo));
         $stmtGetMatByCode = $pdo->prepare("SELECT id, code, name, current_stock FROM materials WHERE code = ?");
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtMut = $pdo->prepare("
-            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id)
-            VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?)
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'ADJUSTMENT', ?, ?, ?, ?, ?, ?, ?)
         ");
         $now = date('Y-m-d H:i:s');
         $stmtInsertInbound = $pdo->prepare("
-            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds)
-            VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0)
+            INSERT INTO inbound_transactions (inbound_no, po_number, supplier, material_id, qty, notes, received_by, started_at, completed_at, duration_seconds, created_at)
+            VALUES (?, 'ADJUSTMENT', 'SYSTEM', ?, ?, ?, ?, ?, ?, 0, ?)
         ");
         $stmtInsertOutbound = $pdo->prepare("
-            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds)
-            VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0)
+            INSERT INTO outbound_transactions (outbound_no, material_id, qty, destination, issued_by, reason, notes, started_at, completed_at, duration_seconds, created_at)
+            VALUES (?, ?, ?, 'SYSTEM', ?, 'ADJUSTMENT', ?, ?, ?, 0, ?)
         ");
 
         $appliedCount = 0;
@@ -454,7 +456,8 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stockAfter,
                 $refNo,
                 $notes,
-                $userId
+                $userId,
+                $now
             ]);
 
             $itemRefNo = $refNo . '-' . ($appliedCount + 1);
@@ -467,6 +470,7 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     $notes,
                     $userName,
                     $now,
+                    $now,
                     $now
                 ]);
             } else {
@@ -476,6 +480,7 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     abs($qtyAdjust),
                     $userName,
                     $notes,
+                    $now,
                     $now,
                     $now
                 ]);
@@ -488,14 +493,14 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         echo json_encode([
             'success' => true,
-            'message' => "Penyesuaian stok berhasil disimpan! {$appliedCount} packaging material telah disesuaikan.",
+            'message' => "Penyesuaian stok berhasil disimpan! {$appliedCount} kemas telah disesuaikan.",
             'applied_count' => $appliedCount,
             'reference_no' => $refNo
         ]);
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses penyesuaian stok: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses penyesuaian stok.');
     }
     exit;
 }
@@ -516,20 +521,32 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($qtyError = validateQtyRange($adjustQty, 'Jumlah penyesuaian')) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $qtyError]);
+        exit;
+    }
+
     $delta = ($adjustType === 'MINUS') ? -$adjustQty : $adjustQty;
-    $refNo = 'ADJ-' . ($adjustType === 'MINUS' ? 'MIN-' : 'PLS-') . date('Ymd-His');
+
+    // Nomor referensi harus unik. Sebelumnya hanya berbasis detik, sehingga dua
+    // penyesuaian pada detik yang sama menghasilkan nomor identik dan yang kedua
+    // gagal karena UNIQUE constraint pada inbound_transactions.inbound_no —
+    // persis yang terjadi saat mengoreksi beberapa SKU sekaligus.
+    $refNo = 'ADJ-' . ($adjustType === 'MINUS' ? 'MIN-' : 'PLS-') . date('Ymd-His')
+           . '-' . strtoupper(substr(bin2hex(random_bytes(2)), 0, 4));
     $userId = Auth::id();
 
     try {
         $pdo->beginTransaction();
 
-        $stmtMat = $pdo->prepare("SELECT id, code, name, unit, current_stock FROM materials WHERE id = ?");
+        $stmtMat = $pdo->prepare("SELECT id, code, name, unit, current_stock FROM materials WHERE id = ?" . rowLockClause($pdo));
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 
         if (!$mat) {
             http_response_code(404);
-            echo json_encode(['success' => false, 'message' => 'Material packaging tidak ditemukan']);
+            echo json_encode(['success' => false, 'message' => 'Kemas tidak ditemukan']);
             exit;
         }
 
@@ -596,7 +613,7 @@ if ($action === 'manual_adjust' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses penyesuaian: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses penyesuaian.');
         exit;
     }
 }
@@ -616,6 +633,7 @@ if ($action === 'history') {
                m.name as material_name,
                m.category as material_category,
                m.unit as material_unit,
+               COALESCE(m.item_type, 'PACKAGING') as material_item_type,
                m.rack_location as rack_location,
                u.name as user_name,
                u.username as user_username

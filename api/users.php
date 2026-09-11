@@ -9,7 +9,7 @@ $action = $_GET['action'] ?? 'operators';
 
 // 1. GET OPERATORS LIST (For task dropdown)
 if ($action === 'operators') {
-    $stmt = $pdo->query("SELECT id, username, name, role, shift FROM users WHERE role = 'operator' ORDER BY name ASC");
+    $stmt = $pdo->query("SELECT id, username, name, role, shift FROM users WHERE role IN ('operator', 'operator_inventory', 'operator_fulfillment') OR role LIKE 'operator%' ORDER BY name ASC");
     $operators = $stmt->fetchAll();
     echo json_encode(['success' => true, 'data' => $operators]);
     exit;
@@ -26,7 +26,7 @@ if ($action === 'list') {
 
     // Sembunyikan akun Super Admin secara penuh dari Administrator biasa
     if (!Auth::isSuperAdmin()) {
-        $query .= " AND role != 'superadmin' AND LOWER(username) != 'daniel'";
+        $query .= " AND role NOT IN ('superadmin', 'teknisi')";
     }
 
     if (!empty($search)) {
@@ -46,7 +46,35 @@ if ($action === 'list') {
     $stmt->execute($params);
     $users = $stmt->fetchAll();
 
-    echo json_encode(['success' => true, 'data' => $users]);
+    // Tandai akun yang masih memakai password bawaan hasil migrasi.
+    // Password bawaan tidak pernah kedaluwarsa dengan sendirinya, dan tanpa
+    // ditampilkan begini ia bisa bertahan diam-diam sampai bertahun-tahun.
+    $passwordBawaan = ['admin' => 'admin123', 'operator1' => 'op123', 'operator2' => 'op123', 'Daniel' => 'Password01'];
+    $stmtHash = $pdo->prepare("SELECT password FROM users WHERE id = ?");
+    $jumlahBawaan = 0;
+
+    foreach ($users as &$u) {
+        $u['uses_default_password'] = false;
+        $tebakan = $passwordBawaan[$u['username']] ?? null;
+        if ($tebakan !== null) {
+            $stmtHash->execute([$u['id']]);
+            $hash = $stmtHash->fetchColumn();
+            if ($hash && password_verify($tebakan, $hash)) {
+                $u['uses_default_password'] = true;
+                $jumlahBawaan++;
+            }
+        }
+    }
+    unset($u);
+
+    echo json_encode([
+        'success' => true,
+        'data' => $users,
+        'default_password_count' => $jumlahBawaan,
+        'default_password_warning' => $jumlahBawaan > 0
+            ? "{$jumlahBawaan} akun masih memakai password bawaan sistem. Password bawaan diketahui umum — segera ganti sebelum sistem dipakai di lapangan."
+            : null
+    ]);
     exit;
 }
 
@@ -60,7 +88,7 @@ if ($action === 'get') {
 
     if ($u) {
         // Cegah admin biasa mengakses detail superadmin
-        if (!Auth::isSuperAdmin() && ($u['role'] === 'superadmin' || strtolower($u['username']) === 'daniel')) {
+        if (!Auth::isSuperAdmin() && in_array($u['role'], ['superadmin', 'teknisi'], true)) {
             http_response_code(403);
             echo json_encode(['success' => false, 'message' => 'Akses ditolak']);
             exit;
@@ -90,6 +118,12 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($pwError = validatePasswordStrength($password, $username)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $pwError]);
+        exit;
+    }
+
     // Larang keras Administrator biasa mendaftarkan user sebagai Super Admin atau Teknisi
     if (($role === 'superadmin' || $role === 'teknisi') && !Auth::isSuperAdmin()) {
         http_response_code(403);
@@ -97,8 +131,11 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_fulfillment', 'teknisi'])) {
-        $role = 'operator';
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi'])) {
+        $role = 'operator_inventory';
+    }
+    if ($role === 'operator') {
+        $role = 'operator_inventory';
     }
 
     // Check duplicate username
@@ -117,6 +154,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$username, $hashedPassword, $name, $role, $shift]);
         $newId = (int)$pdo->lastInsertId();
 
+        Auth::audit('USER_CREATE', $username, "Nama {$name}, role {$role}, shift {$shift}");
+
         echo json_encode([
             'success' => true,
             'message' => "User {$name} ({$username}) dengan role {$role} berhasil ditambahkan!",
@@ -124,7 +163,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menambahkan user: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menambahkan user.');
     }
     exit;
 }
@@ -137,7 +176,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $id       = (int)($input['id'] ?? 0);
     $username = trim($input['username'] ?? '');
     $name     = trim($input['name'] ?? '');
-    $role     = trim($input['role'] ?? 'operator');
+    $role     = trim($input['role'] ?? 'operator_inventory');
     $shift    = trim($input['shift'] ?? 'Gudang & Logistik');
     $password = trim($input['password'] ?? '');
 
@@ -148,7 +187,9 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Check target user existing role
-    $stmtTarget = $pdo->prepare("SELECT role FROM users WHERE id = ?");
+    // username ikut diambil: tanpa itu penjaga "target adalah akun Daniel" di bawah
+    // tidak pernah aktif karena $targetUser['username'] selalu kosong.
+    $stmtTarget = $pdo->prepare("SELECT username, name, role FROM users WHERE id = ?");
     $stmtTarget->execute([$id]);
     $targetUser = $stmtTarget->fetch();
 
@@ -159,14 +200,17 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // If target is superadmin and logged-in user is not superadmin, deny
-    if (($targetUser['role'] === 'superadmin' || strtolower($targetUser['username'] ?? '') === 'daniel') && !Auth::isSuperAdmin()) {
+    if (in_array($targetUser['role'], ['superadmin', 'teknisi'], true) && !Auth::isSuperAdmin()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang dapat mengubah akun Super Admin!']);
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_fulfillment', 'teknisi'])) {
-        $role = 'operator';
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi'])) {
+        $role = 'operator_inventory';
+    }
+    if ($role === 'operator') {
+        $role = 'operator_inventory';
     }
 
     // Non-superadmin cannot escalate role to superadmin or teknisi
@@ -185,6 +229,12 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (!empty($password) && ($pwError = validatePasswordStrength($password, $username))) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $pwError]);
+        exit;
+    }
+
     try {
         if (!empty($password)) {
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
@@ -195,10 +245,14 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$username, $name, $role, $shift, $id]);
         }
 
+        $roleLama = $targetUser['role'] ?? '-';
+        $detail = "Role {$roleLama} → {$role}, shift {$shift}" . (!empty($password) ? ', password diganti' : '');
+        Auth::audit('USER_UPDATE', $username, $detail);
+
         echo json_encode(['success' => true, 'message' => "Data user {$name} berhasil diperbarui!"]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui user: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memperbarui user.');
     }
     exit;
 }
@@ -222,7 +276,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Check if target user is Super Admin
-    $stmtCheck = $pdo->prepare("SELECT username, role FROM users WHERE id = ?");
+    $stmtCheck = $pdo->prepare("SELECT username, name, role FROM users WHERE id = ?");
     $stmtCheck->execute([$id]);
     $targetUser = $stmtCheck->fetch();
 
@@ -238,19 +292,28 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (strtolower($targetUser['username']) === 'daniel') {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Akun Super Admin utama (Daniel) tidak dapat dihapus!']);
-        exit;
+    // Jangan sampai sistem kehilangan seluruh Super Admin — pintu masuk terakhir
+    // ke menu maintenance, reset, dan manajemen user akan tertutup permanen.
+    if (in_array($targetUser['role'], ['superadmin', 'teknisi'], true)) {
+        $stmtSisa = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role IN ('superadmin', 'teknisi') AND id != ?");
+        $stmtSisa->execute([$id]);
+        if ((int)$stmtSisa->fetchColumn() === 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Akun Super Admin terakhir tidak dapat dihapus. Buat Super Admin pengganti terlebih dahulu.']);
+            exit;
+        }
     }
 
     try {
         $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
         $stmt->execute([$id]);
+
+        Auth::audit('USER_DELETE', $targetUser['username'] ?? (string)$id, "Role {$targetUser['role']}, nama {$targetUser['name']}");
+
         echo json_encode(['success' => true, 'message' => 'User berhasil dihapus']);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus user: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus user.');
     }
     exit;
 }
@@ -285,9 +348,9 @@ if ($action === 'update_my_password' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (strlen($newPassword) < 5) {
+    if ($pwError = validatePasswordStrength($newPassword, Auth::username() ?? '')) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Password baru minimal 5 karakter!']);
+        echo json_encode(['success' => false, 'message' => $pwError]);
         exit;
     }
 
@@ -304,6 +367,8 @@ if ($action === 'update_my_password' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $newHashed = password_hash($newPassword, PASSWORD_BCRYPT);
     $stmtUpdate = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
     $stmtUpdate->execute([$newHashed, $myId]);
+
+    Auth::audit('PASSWORD_CHANGE_SELF', Auth::username());
 
     echo json_encode(['success' => true, 'message' => 'Password Anda berhasil diperbarui!']);
     exit;

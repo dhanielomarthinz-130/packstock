@@ -23,6 +23,66 @@ function verifySuperAdminPassword(PDO $pdo, string $password): bool {
 }
 
 /**
+ * Helper: Cadangkan seluruh isi tabel penting ke berkas JSON sebelum penghapusan.
+ *
+ * InfinityFree tidak menyediakan cadangan otomatis, sedangkan endpoint di berkas ini
+ * menghapus data secara permanen. Cadangan otomatis dibuat lebih dulu supaya sebuah
+ * kesalahan klik masih dapat dipulihkan.
+ *
+ * @return array{file:string,size:int}|null
+ */
+function createSafetyBackup(PDO $pdo, string $reason): ?array {
+    $tables = [
+        'users', 'materials', 'material_batches', 'inbound_transactions', 'outbound_transactions',
+        'tasks', 'stock_opnames', 'stock_opname_items', 'stock_opname_item_stages',
+        'stock_mutations', 'handovers', 'consumable_requests', 'consumable_request_items',
+        'vas_transactions', 'menu_permissions', 'system_audit_logs'
+    ];
+
+    $dir = __DIR__ . '/../config/backups';
+    if (!is_dir($dir) && !mkdir($dir, 0750, true) && !is_dir($dir)) {
+        error_log('[PackStock] Gagal membuat direktori cadangan: ' . $dir);
+        return null;
+    }
+
+    $dump = [
+        'aplikasi'   => 'PackStock WMS',
+        'dibuat_pada'=> date('Y-m-d H:i:s'),
+        'dibuat_oleh'=> Auth::username(),
+        'alasan'     => $reason,
+        'tabel'      => []
+    ];
+
+    foreach ($tables as $t) {
+        try {
+            $dump['tabel'][$t] = $pdo->query("SELECT * FROM `{$t}`")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e) {
+            $dump['tabel'][$t] = null; // tabel tidak ada di instalasi ini
+        }
+    }
+
+    $name = 'backup_' . date('Ymd_His') . '_' . preg_replace('/[^a-z0-9]+/i', '-', $reason) . '.json';
+    $path = $dir . '/' . $name;
+
+    $json = json_encode($dump, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false || file_put_contents($path, $json) === false) {
+        error_log('[PackStock] Gagal menulis berkas cadangan: ' . $path);
+        return null;
+    }
+
+    // Simpan 20 cadangan terbaru saja.
+    $existing = glob($dir . '/backup_*.json') ?: [];
+    if (count($existing) > 20) {
+        usort($existing, fn($a, $b) => filemtime($a) <=> filemtime($b));
+        foreach (array_slice($existing, 0, count($existing) - 20) as $old) {
+            @unlink($old);
+        }
+    }
+
+    return ['file' => $name, 'size' => (int)filesize($path)];
+}
+
+/**
  * Helper: Set Foreign Key Checks based on Database Driver
  */
 function setForeignKeyChecks(PDO $pdo, bool $enable, bool $isSqlite) {
@@ -89,7 +149,7 @@ if ($action === 'stats') {
         ]);
     } catch (Throwable $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal membaca statistik database: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal membaca statistik database.');
     }
     exit;
 }
@@ -111,6 +171,8 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Teknisi tidak sesuai! Tindakan dibatalkan.']);
         exit;
     }
+
+    $backup = createSafetyBackup($pdo, 'clean-' . preg_replace('/[^a-z0-9]+/i', '', $tableKey));
 
     try {
         setForeignKeyChecks($pdo, false, $isSqlite);
@@ -179,14 +241,18 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         setForeignKeyChecks($pdo, true, $isSqlite);
 
+        Auth::audit('DATA_CLEAN_TABLE', $tableKey, $clearedInfo . ($backup ? " | cadangan: {$backup['file']}" : ' | CADANGAN GAGAL DIBUAT'));
+
         echo json_encode([
             'success' => true,
+            'backup'  => $backup,
             'message' => "Tabel berhasil dikosongkan: {$clearedInfo} telah dibersihkan secara permanen."
+                . ($backup ? " Cadangan otomatis tersimpan sebagai {$backup['file']}." : ' Peringatan: cadangan otomatis gagal dibuat.')
         ]);
     } catch (Throwable $e) {
         setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal mengosongkan tabel: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal mengosongkan tabel.');
     }
     exit;
 }
@@ -203,9 +269,11 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
         exit;
     }
 
+    $backup = createSafetyBackup($pdo, 'clean-all-transactions');
+
     try {
         setForeignKeyChecks($pdo, false, $isSqlite);
-        
+
         clearTable($pdo, 'inbound_transactions', $isSqlite);
         clearTable($pdo, 'outbound_transactions', $isSqlite);
         clearTable($pdo, 'tasks', $isSqlite);
@@ -225,14 +293,18 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
 
         setForeignKeyChecks($pdo, true, $isSqlite);
 
+        Auth::audit('DATA_CLEAN_ALL_TRANSACTIONS', 'seluruh transaksi', ($resetStockZero ? 'Stok direset ke 0. ' : '') . ($backup ? "Cadangan: {$backup['file']}" : 'CADANGAN GAGAL DIBUAT'));
+
         echo json_encode([
             'success' => true,
+            'backup'  => $backup,
             'message' => 'Seluruh riwayat transaksi (Inbound, Outbound, Task, Opname, Mutasi, Handover, Request Consumable) telah berhasil dikosongkan. Master Material dan User tetap aman.'
+                . ($backup ? " Cadangan otomatis tersimpan sebagai {$backup['file']}." : ' Peringatan: cadangan otomatis gagal dibuat.')
         ]);
     } catch (Throwable $e) {
         setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal membersihkan transaksi: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal membersihkan transaksi.');
     }
     exit;
 }
@@ -248,9 +320,11 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $backup = createSafetyBackup($pdo, 'factory-reset');
+
     try {
         setForeignKeyChecks($pdo, false, $isSqlite);
-        
+
         clearTable($pdo, 'materials', $isSqlite);
         clearTable($pdo, 'inbound_transactions', $isSqlite);
         clearTable($pdo, 'outbound_transactions', $isSqlite);
@@ -267,15 +341,70 @@ if ($action === 'factory_reset' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         setForeignKeyChecks($pdo, true, $isSqlite);
 
+        Auth::audit('DATA_FACTORY_RESET', 'seluruh database', $backup ? "Cadangan: {$backup['file']}" : 'CADANGAN GAGAL DIBUAT');
+
         echo json_encode([
             'success' => true,
+            'backup'  => $backup,
             'message' => 'Reset Database Penuh (Factory Reset) Berhasil! Seluruh data stok dan transaksi telah dikosongkan. Database siap untuk diisi data baru.'
+                . ($backup ? " Cadangan otomatis tersimpan sebagai {$backup['file']}." : ' Peringatan: cadangan otomatis gagal dibuat.')
         ]);
     } catch (Throwable $e) {
         setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal melakukan factory reset: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal melakukan factory reset.');
     }
+    exit;
+}
+
+// 4b. CADANGAN MANUAL — BUAT, DAFTAR, UNDUH
+if ($action === 'backup_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $backup = createSafetyBackup($pdo, 'manual');
+    if (!$backup) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Cadangan gagal dibuat. Periksa izin tulis pada folder config/backups di server.']);
+        exit;
+    }
+    Auth::audit('BACKUP_CREATE', $backup['file'], 'Ukuran ' . $backup['size'] . ' byte');
+    echo json_encode([
+        'success' => true,
+        'backup'  => $backup,
+        'message' => "Cadangan berhasil dibuat: {$backup['file']} (" . number_format($backup['size'] / 1024, 1, ',', '.') . " KB)."
+    ]);
+    exit;
+}
+
+if ($action === 'backup_list') {
+    $dir = __DIR__ . '/../config/backups';
+    $items = [];
+    foreach (glob($dir . '/backup_*.json') ?: [] as $f) {
+        $items[] = [
+            'file'       => basename($f),
+            'size'       => (int)filesize($f),
+            'created_at' => date('Y-m-d H:i:s', (int)filemtime($f))
+        ];
+    }
+    usort($items, fn($a, $b) => strcmp($b['created_at'], $a['created_at']));
+    echo json_encode(['success' => true, 'backups' => $items]);
+    exit;
+}
+
+if ($action === 'backup_download') {
+    $file = basename(trim($_GET['file'] ?? ''));   // basename menutup path traversal
+    $path = __DIR__ . '/../config/backups/' . $file;
+
+    if ($file === '' || !preg_match('/^backup_[\w.-]+\.json$/', $file) || !is_file($path)) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Berkas cadangan tidak ditemukan.']);
+        exit;
+    }
+
+    Auth::audit('BACKUP_DOWNLOAD', $file);
+
+    header('Content-Type: application/json; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $file . '"');
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
     exit;
 }
 
@@ -292,6 +421,7 @@ if ($action === 'toggle_maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'activated_by' => Auth::username()
         ];
         file_put_contents($flagFile, json_encode($data));
+        Auth::audit('MAINTENANCE_ON', 'situs dikunci');
         echo json_encode([
             'success' => true,
             'maintenance' => true,
@@ -301,6 +431,7 @@ if ($action === 'toggle_maintenance' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (file_exists($flagFile)) {
             unlink($flagFile);
         }
+        Auth::audit('MAINTENANCE_OFF', 'situs dibuka kembali');
         echo json_encode([
             'success' => true,
             'maintenance' => false,

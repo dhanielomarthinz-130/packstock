@@ -2,6 +2,7 @@
 // admin/export.php - Export Master Stock & Transaction History to Genuine Excel (.xlsx)
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/xlsx_writer.php';
+require_once __DIR__ . '/../includes/batch_helper.php';
 Auth::requireAdmin();
 
 $pdo = Database::getConnection();
@@ -93,7 +94,7 @@ if ($type === 'material_history') {
     $mat = $stmtMat->fetch();
     if (!$mat) {
         http_response_code(404);
-        die("Material packaging tidak ditemukan.");
+        die("Kemas tidak ditemukan.");
     }
 
     $cleanCode = preg_replace('/[^A-Za-z0-9_-]/', '_', $mat['code']);
@@ -155,11 +156,11 @@ if ($type === 'material_history') {
 }
 
 // =========================================================================
-// 2. EXPORT MASTER STOK PACKAGING MATERIAL (.xlsx)
+// 2. EXPORT MASTER STOK KEMAS (.xlsx)
 // =========================================================================
 if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
     $filename = "Laporan_Master_Stok_Packaging_" . date('Ymd_His') . ".xlsx";
-    $title = "LAPORAN MASTER STOK PACKAGING MATERIAL";
+    $title = "LAPORAN MASTER STOK KEMAS";
 
     $headers = [
         'No',
@@ -205,6 +206,7 @@ if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
                    COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
                )) as initial_upload_stock
         FROM materials m
+        WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
         ORDER BY m.code ASC
     ");
 
@@ -227,7 +229,7 @@ if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
             $no++,
             $row['code'],
             $row['name'],
-            $row['category'] ?: 'Packaging Material',
+            $row['category'] ?: 'Kemas',
             $initStock,
             $inbound,
             $outbound,
@@ -238,6 +240,134 @@ if ($type === 'csv' || $type === 'all_materials' || $type === 'materials') {
             $status
         ];
     }
+
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+}
+
+// =========================================================================
+// 2.B EXPORT MASTER STOK GIMMICK (.xlsx)
+// =========================================================================
+if ($type === 'all_gimmicks' || $type === 'gimmick' || $type === 'gimmicks') {
+    $filename = "Laporan_Master_Stok_Gimmick_" . date('Ymd_His') . ".xlsx";
+    $title = "LAPORAN MASTER STOK GIMMICK & SOUVENIR PROMOSI";
+
+    $headers = [
+        'No',
+        'SKU / Kode Barang',
+        'Nama Barang Gimmick',
+        'Stok Awal',
+        'Total Masuk (+)',
+        'Total Keluar (-)',
+        'Sisa Stok Akhir',
+        'Stok Zone VAS',
+        'No. Batch',
+        'Exp Date',
+        'Lokasi Rak',
+        'Kode SAP',
+        'Barcode (Fisik)',
+        'Barcode BPOM',
+        'Kategori',
+        'Status Aktif'
+    ];
+
+    $colWidths = [6, 28, 40, 14, 16, 16, 16, 16, 20, 14, 18, 16, 18, 22, 14, 14];
+    $rows = [];
+
+    $breakdowns = getBatchMovementBreakdown($pdo);
+
+    $stmt = $pdo->query("
+        SELECT * FROM materials 
+        WHERE item_type = 'GIMMICK'
+        ORDER BY code ASC
+    ");
+    $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $no = 1;
+    foreach ($materials as $m) {
+        $matId = (int)$m['id'];
+        $batches = $breakdowns[$matId] ?? [];
+
+        if (!empty($batches)) {
+            foreach ($batches as $b) {
+                $rawExp = !empty($b['exp_date']) ? explode(' ', explode('T', $b['exp_date'])[0])[0] : '';
+                $formattedExp = $rawExp ? formatExportDateOnly($rawExp) : '-';
+                $loc = trim($b['location'] ?? '');
+                if (!$loc || strtolower($loc) === 'pusat' || strtolower($loc) === 'null') $loc = '-';
+
+                $rows[] = [
+                    $no++,
+                    $m['code'],
+                    $m['name'],
+                    (float)($b['initial_stock'] ?? $b['qty'] ?? 0),
+                    (float)($b['total_inbound'] ?? 0),
+                    (float)($b['total_outbound'] ?? 0),
+                    (float)($b['ending_stock'] ?? $b['qty'] ?? 0),
+                    (float)($b['vas_qty'] ?? 0),
+                    $b['batch_no'] ?: '-',
+                    $formattedExp,
+                    $loc,
+                    $m['sap_code'] ?: '-',
+                    $m['barcode'] ?: '-',
+                    $m['barcode_bpom'] ?: '-',
+                    $m['category'] ?: 'Gimmick',
+                    ((int)($m['status_active'] ?? 1) === 1) ? 'AKTIF' : 'NON-AKTIF'
+                ];
+            }
+        } else {
+            $loc = trim($m['rack_location'] ?? '');
+            if (!$loc || strtolower($loc) === 'pusat' || strtolower($loc) === 'null') $loc = '-';
+
+            $rows[] = [
+                $no++,
+                $m['code'],
+                $m['name'],
+                (float)($m['qty_gudang_besar'] ?? $m['current_stock'] ?? 0),
+                0,
+                0,
+                (float)($m['current_stock'] ?? 0),
+                0,
+                '-',
+                '-',
+                $loc,
+                $m['sap_code'] ?: '-',
+                $m['barcode'] ?: '-',
+                $m['barcode_bpom'] ?: '-',
+                $m['category'] ?: 'Gimmick',
+                ((int)($m['status_active'] ?? 1) === 1) ? 'AKTIF' : 'NON-AKTIF'
+            ];
+        }
+    }
+
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+}
+
+// =========================================================================
+// 2.C TEMPLATE FORMAT EXCEL MASTER STOK GIMMICK (.xlsx)
+// =========================================================================
+if ($type === 'gimmick_template') {
+    $filename = "Template_Import_Stok_Gimmick.xlsx";
+    $title = "TEMPLATE IMPORT DATABASE STOK GIMMICK";
+
+    $headers = [
+        'SKU',
+        'Nama Barang',
+        'Area',
+        'SAP Code',
+        'Barcode',
+        'Barcode BPOM',
+        'Kategori',
+        'Qty Gudang Kecil',
+        'Qty Gudang Besar',
+        'Total On Hand',
+        'Status Aktif'
+    ];
+
+    $colWidths = [28, 45, 12, 16, 18, 26, 14, 16, 16, 15, 14];
+    $rows = [
+        ['GIMMICK-AMPLOP-HANASUI', '[NOT FOR SALE] Hanasui Amplop Cantik', 'Pusat', '7000050037', '126', '126', 'Gimmick', 1831, 0, 1831, 'AKTIF'],
+        ['GIMMICK-BAR-SOAP-CHARCOAL', '[NOT FOR SALE] Hanasui Sheet Mask & Stick Mask Bar Soap Charcoal', 'Pusat', '', '212', '(90)NA18210500451', 'Gimmick', 50, 0, 50, 'AKTIF'],
+        ['GIMMICK-BOBA-DOLL', '[NOT FOR SALE] HANASUI Boba Doll', 'Pusat', '7000050040', '149', '149', 'Gimmick', 4, 0, 4, 'AKTIF'],
+    ];
 
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
 }
@@ -258,7 +388,7 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
         'Tipe Outbound',
         'Status',
         'Item No',
-        'Nama Packaging Material',
+        'Nama Kemas',
         'Satuan',
         'Lokasi Rak',
         'Qty Out',
@@ -391,7 +521,7 @@ if ($type === 'inbound' || $type === 'inbound_csv' || $type === 'inbound_excel')
         'Waktu Submit',
         'No. Inbound',
         'Item No',
-        'Nama Packaging Material',
+        'Nama Kemas',
         'Satuan',
         'Lokasi Rak',
         'Qty In',
@@ -634,12 +764,12 @@ if ($type === 'stock_opname' || $type === 'opname') {
 // =========================================================================
 if ($type === 'adjust_template') {
     $filename = "Template_Penyesuaian_Stok_Adjust_" . date('Ymd') . ".xlsx";
-    $title = "TEMPLATE FORMAT PENYESUAIAN STOK MATERIAL PACKAGING (ADJUST PLUS / MINUS)";
+    $title = "TEMPLATE FORMAT PENYESUAIAN STOK KEMAS (ADJUST PLUS / MINUS)";
 
     $headers = [
         'No',
         'Item No',
-        'Deskripsi Material Packaging',
+        'Deskripsi Kemas',
         'Satuan',
         'Lokasi Rak',
         'Stok Sistem Saat Ini',
@@ -691,7 +821,7 @@ if ($type === 'adjust_history') {
         'Waktu Penyesuaian',
         'No. Referensi',
         'Item No',
-        'Deskripsi Material Packaging',
+        'Deskripsi Kemas',
         'Lokasi Rak',
         'Stok Sebelum',
         'Qty Penyesuaian (+/-)',
@@ -777,7 +907,7 @@ if ($type === 'mutations') {
         'Tipe Mutasi',
         'No. Referensi',
         'Item No',
-        'Deskripsi Material Packaging',
+        'Deskripsi Kemas',
         'Lokasi Rak',
         'Stok Sebelum',
         'Perubahan (+/-)',
@@ -929,7 +1059,7 @@ if ($type === 'counting_detail' || $type === 'dynamic_counting_detail') {
         'Tipe Counting',
         'Round (Putaran)',
         'Item No',
-        'Deskripsi Packaging Material',
+        'Deskripsi Kemas',
         'Satuan',
         'Qty Hasil Count',
         'Lokasi Rak Master',
@@ -981,7 +1111,7 @@ if ($type === 'inventory_template') {
     $headers = [
         'No',
         'Item No',
-        'Deskripsi Material Packaging',
+        'Deskripsi Kemas',
         'Satuan (UOM)',
         'Lokasi Rak',
         'Ending Stock (Stok Awal)',
@@ -1108,7 +1238,7 @@ if ($type === 'dashboard_summary' || $type === 'dashboard_stock_summary') {
     $headers = [
         'No',
         'Item No',
-        'Deskripsi Material Packaging / Consumable',
+        'Deskripsi Kemas / Consumable',
         'Satuan',
         'Lokasi Rak',
         'Kategori',
@@ -1169,6 +1299,205 @@ if ($type === 'dashboard_summary' || $type === 'dashboard_stock_summary') {
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
 }
 
+// =========================================================================
+// 10. EXPORT REORDER KEMAS & REKOMENDASI PO (.xlsx)
+// =========================================================================
+if ($type === 'reorder_alerts' || $type === 'reorder' || $type === 'critical_stock') {
+    $search     = trim($_GET['search'] ?? '');
+    $category   = trim($_GET['category'] ?? '');
+    $filterType = trim($_GET['filter_type'] ?? 'ALL_CRITICAL'); // ALL_CRITICAL, EMPTY, MUST_PO, LOW, ALL
+
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $date14Expr = ($driver === 'sqlite') ? "datetime('now', '-14 days')" : "DATE_SUB(CURDATE(), INTERVAL 14 DAY)";
+    $date30Expr = ($driver === 'sqlite') ? "datetime('now', '-30 days')" : "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+
+    $query = "
+        SELECT m.*,
+               COALESCE(out_14.total_outbound_14d, 0) AS total_outbound_14d,
+               COALESCE(out_30.total_outbound_30d, 0) AS total_outbound_30d,
+               COALESCE(out_all.total_outbound_all, 0) AS total_outbound_all,
+               COALESCE(po_active.active_po_count, 0) AS active_po_count,
+               po_active.latest_po_number,
+               po_active.latest_po_qty,
+               po_active.latest_po_eta,
+               po_active.latest_supplier
+        FROM materials m
+        LEFT JOIN (
+            SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_14d
+            FROM stock_mutations
+            WHERE qty_change < 0 AND created_at >= {$date14Expr}
+            GROUP BY material_id
+        ) out_14 ON m.id = out_14.material_id
+        LEFT JOIN (
+            SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_30d
+            FROM stock_mutations
+            WHERE qty_change < 0 AND created_at >= {$date30Expr}
+            GROUP BY material_id
+        ) out_30 ON m.id = out_30.material_id
+        LEFT JOIN (
+            SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_all
+            FROM stock_mutations
+            WHERE qty_change < 0
+            GROUP BY material_id
+        ) out_all ON m.id = out_all.material_id
+        LEFT JOIN (
+            SELECT t1.material_id,
+                   COUNT(t1.id) AS active_po_count,
+                   t1.po_number AS latest_po_number,
+                   t1.ordered_qty AS latest_po_qty,
+                   t1.eta_date AS latest_po_eta,
+                   t1.supplier_name AS latest_supplier
+            FROM material_po_trackings t1
+            INNER JOIN (
+                SELECT material_id, MAX(id) AS max_id
+                FROM material_po_trackings
+                WHERE status IN ('ORDERED', 'SHIPPED')
+                GROUP BY material_id
+            ) t2 ON t1.id = t2.max_id
+            GROUP BY t1.material_id
+        ) po_active ON m.id = po_active.material_id
+        WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
+    ";
+    $params = [];
+
+    if (!empty($search)) {
+        $query .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.rack_location LIKE ? OR m.category LIKE ?)";
+        $term = "%{$search}%";
+        $params = array_merge($params, [$term, $term, $term, $term]);
+    }
+
+    if (!empty($category) && $category !== 'all') {
+        $query .= " AND m.category = ?";
+        $params[] = $category;
+    }
+
+    $query .= " ORDER BY (m.current_stock <= 0) DESC, (m.current_stock <= m.min_stock) DESC, m.name ASC";
+
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $rowsRaw = $stmt->fetchAll();
+
+    $filename = "Rekap_Reorder_Kemas_PO_" . date('Ymd_His') . ".xlsx";
+    $title = "REKAP REORDER KEMAS & REKOMENDASI PO (LEAD TIME 1 MINGGU)";
+
+    $headers = [
+        'No',
+        'Kode Item / SKU',
+        'Nama Kemas',
+        'Kategori',
+        'Lokasi Rak',
+        'Stok Fisik Saat Ini',
+        'Safety Stock (Min)',
+        'Satuan',
+        'Rata-rata Keluar / Hari',
+        'Kebutuhan Lead Time (7 Hari)',
+        'Reorder Point (ROP)',
+        'Estimasi Sisa Hari (Runway)',
+        'Rekomendasi Qty PO',
+        'Status Urgensi',
+        'Status PO',
+        'No. PO Terakhir',
+        'Supplier',
+        'Estimasi Tiba (ETA)'
+    ];
+
+    $colWidths = [6, 16, 38, 16, 14, 15, 15, 10, 16, 16, 15, 20, 16, 18, 15, 16, 20, 16];
+    $rows = [];
+    $no = 1;
+    $leadTimeDays = 7;
+
+    foreach ($rowsRaw as $r) {
+        $stock = (float)$r['current_stock'];
+        $minStock = (float)$r['min_stock'];
+
+        $out14 = (float)$r['total_outbound_14d'];
+        $out30 = (float)$r['total_outbound_30d'];
+        $outAll = (float)$r['total_outbound_all'];
+
+        if ($out14 > 0) {
+            $dailyUsage = $out14 / 14.0;
+        } elseif ($out30 > 0) {
+            $dailyUsage = $out30 / 30.0;
+        } elseif ($outAll > 0) {
+            $dailyUsage = $outAll / 60.0;
+        } else {
+            $dailyUsage = 0.0;
+        }
+
+        $leadTimeDemand = $dailyUsage * $leadTimeDays;
+        $reorderPoint = $leadTimeDemand + $minStock;
+
+        $urgencyStatus = 'SAFE';
+        $urgencyLabel  = 'Aman';
+
+        if ($stock <= 0) {
+            $urgencyStatus = 'EMPTY';
+            $urgencyLabel  = 'STOK HABIS (0)';
+        } elseif ($stock <= $leadTimeDemand || ($minStock > 0 && $stock <= ($minStock * 0.5))) {
+            $urgencyStatus = 'MUST_PO';
+            $urgencyLabel  = 'HARUS PO (Kritis)';
+        } elseif ($stock <= $minStock || ($reorderPoint > 0 && $stock <= $reorderPoint)) {
+            $urgencyStatus = 'LOW';
+            $urgencyLabel  = 'Stok Menipis';
+        }
+
+        // Filter based on filter_type
+        if ($filterType === 'ALL_CRITICAL') {
+            if ($urgencyStatus === 'SAFE') continue;
+        } elseif ($filterType === 'EMPTY') {
+            if ($urgencyStatus !== 'EMPTY') continue;
+        } elseif ($filterType === 'MUST_PO') {
+            if ($urgencyStatus !== 'MUST_PO' && $urgencyStatus !== 'EMPTY') continue;
+        } elseif ($filterType === 'LOW') {
+            if ($urgencyStatus !== 'LOW') continue;
+        }
+
+        $runwayText = 'Statis';
+        if ($stock <= 0) {
+            $runwayText = '0 Hari (Habis)';
+        } elseif ($dailyUsage > 0) {
+            $days = round($stock / $dailyUsage, 1);
+            $runwayText = "{$days} Hari";
+        }
+
+        $suggestedQty = 0;
+        if ($urgencyStatus !== 'SAFE') {
+            $targetBuffer = max($minStock * 2, $leadTimeDemand * 3, $minStock + ($dailyUsage * 14));
+            $diff = $targetBuffer - $stock;
+            $suggestedQty = max(1, ceil($diff));
+            if ($suggestedQty > 100) {
+                $suggestedQty = ceil($suggestedQty / 10) * 10;
+            }
+        }
+
+        $poStatus = ($r['active_po_count'] > 0) ? 'Sedang Dipesan' : 'Belum Ada PO';
+
+        $rows[] = [
+            $no++,
+            $r['code'],
+            $r['name'],
+            $r['category'] ?: 'Umum',
+            $r['rack_location'] ?: '-',
+            $stock,
+            $minStock,
+            $r['unit'] ?: 'Pcs',
+            round($dailyUsage, 2),
+            round($leadTimeDemand, 2),
+            round($reorderPoint, 2),
+            $runwayText,
+            $suggestedQty,
+            $urgencyLabel,
+            $poStatus,
+            $r['latest_po_number'] ?: '-',
+            $r['latest_supplier'] ?: '-',
+            $r['latest_po_eta'] ? formatExportDateOnly($r['latest_po_eta']) : '-'
+        ];
+    }
+
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+}
+
 http_response_code(400);
 echo "Format ekspor tidak didukung";
+
 

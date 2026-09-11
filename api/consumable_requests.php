@@ -11,7 +11,7 @@ $action = $_GET['action'] ?? 'list';
 function handleConsumablePhotosUpload($files, $rawInputBase64 = null) {
     $uploadDir = __DIR__ . '/../uploads/consumable_requests/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+        mkdir($uploadDir, 0755, true);
     }
 
     $photoPaths = [];
@@ -25,10 +25,11 @@ function handleConsumablePhotosUpload($files, $rawInputBase64 = null) {
             if ($err === UPLOAD_ERR_OK) {
                 $tmpName = is_array($files['tmp_name']) ? $files['tmp_name'][$i] : $files['tmp_name'];
                 $fileName = is_array($files['name']) ? $files['name'][$i] : $files['name'];
-                $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-                if (empty($ext)) $ext = 'jpg';
+                // Ekstensi ditentukan dari isi berkas, bukan dari nama kiriman klien.
+                $size = is_array($files['size']) ? (int)$files['size'][$i] : (int)$files['size'];
+                $ext = validateUploadedPhoto($tmpName, $fileName, $size);
 
-                if (in_array($ext, $allowedExtensions)) {
+                if ($ext !== null) {
                     $newFileName = 'req_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
                     $destPath = $uploadDir . $newFileName;
                     if (move_uploaded_file($tmpName, $destPath)) {
@@ -47,13 +48,21 @@ function handleConsumablePhotosUpload($files, $rawInputBase64 = null) {
                     $ext = strtolower($type[1]);
                     if ($ext === 'jpeg') $ext = 'jpg';
                     if (in_array($ext, $allowedExtensions)) {
-                        $data = substr($b64, strpos($b64, ',') + 1);
-                        $data = base64_decode($data);
-                        if ($data !== false) {
-                            $newFileName = 'req_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $idx), 0, 8) . '.' . $ext;
-                            $destPath = $uploadDir . $newFileName;
-                            if (file_put_contents($destPath, $data)) {
-                                $photoPaths[] = 'uploads/consumable_requests/' . $newFileName;
+                        $data = base64_decode(substr($b64, strpos($b64, ',') + 1));
+
+                        // Batas ukuran dan bukti bahwa isinya benar-benar gambar.
+                        // Tanpa ini, apa pun yang dilabeli "data:image/..." akan ditulis apa adanya.
+                        if ($data !== false && strlen($data) > 0 && strlen($data) <= PACKSTOCK_MAX_PHOTO_BYTES) {
+                            $probe = @getimagesizefromstring($data);
+                            $jenisSah = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+
+                            if ($probe !== false && isset($jenisSah[$probe[2]])) {
+                                $ext = $jenisSah[$probe[2]];
+                                $newFileName = 'req_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $idx), 0, 8) . '.' . $ext;
+                                $destPath = $uploadDir . $newFileName;
+                                if (file_put_contents($destPath, $data)) {
+                                    $photoPaths[] = 'uploads/consumable_requests/' . $newFileName;
+                                }
                             }
                         }
                     }
@@ -139,7 +148,8 @@ if ($action === 'list') {
                    m.unit as material_unit,
                    m.rack_location,
                    m.current_stock,
-                   m.category as material_category
+                   m.category as material_category,
+                   COALESCE(m.item_type, 'PACKAGING') as material_item_type
             FROM consumable_request_items ri
             JOIN materials m ON ri.material_id = m.id
             WHERE ri.request_id IN ($inPlaceholders)
@@ -243,6 +253,10 @@ if ($action === 'list') {
             $req['items'] = $itemsByRequest[$req['id']] ?? [];
             $req['total_items'] = count($req['items']);
             $req['total_qty'] = array_sum(array_column($req['items'], 'qty'));
+            $itemUnits = array_values(array_unique(array_filter(array_map(function($it) {
+                return trim($it['material_unit'] ?? '');
+            }, $req['items']))));
+            $req['total_unit'] = (count($itemUnits) === 1) ? $itemUnits[0] : (count($itemUnits) === 0 ? 'Pcs' : 'Item');
             $photosArr = [];
             if (!empty($req['photos'])) {
                 $decoded = json_decode($req['photos'], true);
@@ -418,7 +432,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($items) || !is_array($items)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Daftar item permintaan consumable masih kosong. Silakan pilih minimal 1 packaging material.']);
+        echo json_encode(['success' => false, 'message' => 'Daftar item permintaan consumable masih kosong. Silakan pilih minimal 1 kemas.']);
         exit;
     }
 
@@ -536,7 +550,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal mengirim pengajuan consumable: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal mengirim pengajuan consumable.');
     }
     exit;
 }
@@ -737,7 +751,7 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $qty   = max(0, (float)$it['qty']);
 
                 // Re-fetch current stock
-                $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+                $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?" . rowLockClause($pdo));
                 $stmtMat->execute([$matId]);
                 $stockBefore = (float)$stmtMat->fetchColumn();
                 $stockAfter = max(0, $stockBefore - $qty);
@@ -792,7 +806,7 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memproses ACC: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memproses ACC.');
     }
     exit;
 }
@@ -888,6 +902,12 @@ if ($action === 'get') {
     ");
     $stmtItems->execute([$requestId]);
     $req['items'] = $stmtItems->fetchAll();
+    $req['total_items'] = count($req['items']);
+    $req['total_qty'] = array_sum(array_column($req['items'], 'qty'));
+    $itemUnits = array_values(array_unique(array_filter(array_map(function($it) {
+        return trim($it['material_unit'] ?? '');
+    }, $req['items']))));
+    $req['total_unit'] = (count($itemUnits) === 1) ? $itemUnits[0] : (count($itemUnits) === 0 ? 'Pcs' : 'Item');
 
     echo json_encode(['success' => true, 'data' => $req]);
     exit;
@@ -996,7 +1016,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui pengajuan: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memperbarui pengajuan.');
     }
     exit;
 }
@@ -1040,7 +1060,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus pengajuan: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus pengajuan.');
     }
     exit;
 }

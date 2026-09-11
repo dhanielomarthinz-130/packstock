@@ -33,6 +33,12 @@ $MENUS_CATALOG = [
         'description' => 'Katalog Stock Inventory, rumus stok akhir, kartu stok, dan upload Excel master.'
     ],
     [
+        'key' => 'gimmick',
+        'label' => 'Stock Gimmick',
+        'icon' => 'card_giftcard',
+        'description' => 'Katalog stok barang promosi, hadiah, & souvenir (E-commerce / Pusat) dengan barcode scanner.'
+    ],
+    [
         'key' => 'dynamic_count',
         'label' => 'Dynamic Count',
         'icon' => 'checklist',
@@ -81,10 +87,16 @@ $MENUS_CATALOG = [
         'description' => 'Manajemen stok Area VAS dan monitoring persediaan.'
     ],
     [
+        'key' => 'location_transfer',
+        'label' => 'Transfer Antar Lokasi',
+        'icon' => 'swap_horiz',
+        'description' => 'Movement perpindahan produk antar lokasi dengan penugasan ke Operator.'
+    ],
+    [
         'key' => 'stock_transfer',
         'label' => 'Stock Transfer',
-        'icon' => 'swap_horizontal_circle',
-        'description' => 'Transfer stok barang multi-item antar Gudang Utama dan Zone VAS (Masuk & Keluar).'
+        'icon' => 'sync_alt',
+        'description' => 'Transfer stok barang antara Gudang Besar dan Zone VAS (Gudang Besar ⇋ Zone VAS).'
     ],
     [
         'key' => 'consumable_requests',
@@ -94,7 +106,7 @@ $MENUS_CATALOG = [
     ],
     [
         'key' => 'reorder_alerts',
-        'label' => 'Peringatan PO & Stok Menipis',
+        'label' => 'Reorder Kemas',
         'icon' => 'notification_important',
         'description' => 'Monitoring stok 0 / kritis dengan kalkulasi Lead Time 1 Minggu dan rekomendasi Purchase Order.'
     ],
@@ -219,7 +231,7 @@ if ($action === 'get_all') {
     // Calculate resolved permissions for each user
     $resolvedUsers = [];
     foreach ($users as $u) {
-        $isSuper = ($u['role'] === 'superadmin' || $u['username'] === 'Daniel');
+        $isSuper = ($u['role'] === 'superadmin' || $u['role'] === 'teknisi');
         $resolved = $isSuper ? array_fill_keys(array_column($MENUS_CATALOG, 'key'), true) : getResolvedPermissionsForUser($pdo, $u['id'], $u['role']);
         $hasCustom = isset($userPerms[$u['id']]);
 
@@ -269,6 +281,9 @@ if ($action === 'save_role') {
     }
     $pdo->commit();
 
+    $diizinkan = array_keys(array_filter($permissions, fn($v) => (bool)$v));
+    Auth::audit('PERMISSION_SAVE_ROLE', $role, 'Menu aktif: ' . (implode(', ', $diizinkan) ?: '(tidak ada)'));
+
     echo json_encode([
         'success' => true,
         'message' => "Hak akses untuk role '{$role}' berhasil diperbarui!"
@@ -291,8 +306,9 @@ if ($action === 'save_user') {
         exit;
     }
 
-    if ($user['username'] === 'Daniel') {
-        echo json_encode(['success' => false, 'message' => 'Hak akses Super Admin Daniel tidak dapat dibatasi.']);
+    // Berbasis role, bukan nama pengguna: akun Super Admin mana pun tidak dapat dibatasi.
+    if (in_array($user['role'], ['superadmin', 'teknisi'], true)) {
+        echo json_encode(['success' => false, 'message' => "Hak akses Super Admin ({$user['name']}) tidak dapat dibatasi."]);
         exit;
     }
 
@@ -309,6 +325,9 @@ if ($action === 'save_user') {
     }
     $pdo->commit();
 
+    $diizinkan = array_keys(array_filter($permissions, fn($v) => (bool)$v));
+    Auth::audit('PERMISSION_SAVE_USER', $user['username'] ?? $user['name'], 'Menu aktif: ' . (implode(', ', $diizinkan) ?: '(tidak ada)'));
+
     echo json_encode([
         'success' => true,
         'message' => "Hak akses khusus untuk pengguna '{$user['name']}' berhasil disimpan!"
@@ -323,6 +342,8 @@ if ($action === 'reset_user') {
 
     $stmtDel = $pdo->prepare("DELETE FROM menu_permissions WHERE user_id = ?");
     $stmtDel->execute([$userId]);
+
+    Auth::audit('PERMISSION_RESET_USER', "user_id {$userId}", 'Dikembalikan ke standar role');
 
     echo json_encode([
         'success' => true,

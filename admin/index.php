@@ -15,7 +15,7 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Brand Logo & Mini Toggle -->
     <div class="h-16 flex items-center justify-between px-4 bg-white border-b border-slate-100 flex-shrink-0">
       <div class="flex items-center gap-3 sidebar-brand-container overflow-hidden">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-emerald-500 text-white flex items-center justify-center shadow-sm shadow-emerald-600/30 flex-shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-[#262363] text-white flex items-center justify-center shadow-sm shadow-[#262363]/30 flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">inventory_2</span>
         </div>
         <div class="sidebar-brand-text truncate">
@@ -31,32 +31,32 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Navigation Menu -->
     <nav class="flex-1 px-3 py-3.5 space-y-3.5 overflow-y-auto">
       
-      <!-- Section 1: Ringkasan & Dashboard -->
+      <!-- Section 1: Group Dashboard -->
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dashboard">
         <button type="button" onclick="toggleSidebarSection('dashboard')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-emerald-100 text-emerald-800 border border-emerald-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">space_dashboard</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Dashboard</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-xs" title="Monitoring Stok Kemas">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">space_dashboard</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-xs" title="Monitoring Stok Kemas">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">space_dashboard</span>
             <span class="sidebar-text truncate">Monitoring Stok</span>
           </button>
 
           <button onclick="switchAdminTab('counting_progress')" id="nav-counting_progress" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Live Progress Counting Dynamic & Opname">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-emerald-600">donut_large</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">donut_large</span>
               <span class="sidebar-text truncate">Progress Counting</span>
             </div>
-            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 animate-pulse">Live</span>
+            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">Live</span>
           </button>
         </div>
       </div>
@@ -65,68 +65,89 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="inventory">
         <button type="button" onclick="toggleSidebarSection('inventory')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-blue-100 text-blue-800 border border-blue-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">shelves</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Inventory</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
-          <!-- 1. Stock Inventory -->
+          <!-- 1. Stock Kemas -->
           <button onclick="switchAdminTab('inventory')" id="nav-inventory" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Inventory">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">shelves</span>
-            <span class="sidebar-text truncate">Stock Inventory</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas (Packaging & Consumable)">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">shelves</span>
+            <span class="sidebar-text truncate">Stock Kemas</span>
+          </button>
+
+          <!-- 1.1 Stock Gimmick -->
+          <button onclick="switchAdminTab('gimmick')" id="nav-gimmick" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Gimmick & Merchandise">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">card_giftcard</span>
+            <span class="sidebar-text truncate">Stock Gimmick</span>
           </button>
 
           <!-- 2. Stock VAS -->
           <button onclick="switchAdminTab('vas')" id="nav-vas" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock VAS">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-purple-600">precision_manufacturing</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">precision_manufacturing</span>
             <span class="sidebar-text truncate">Stock VAS</span>
           </button>
 
           <!-- 3. Barang Masuk -->
           <button onclick="switchAdminTab('inbound')" id="nav-inbound" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Masuk">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">move_to_inbox</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">move_to_inbox</span>
             <span class="sidebar-text truncate">Barang Masuk</span>
           </button>
 
           <!-- 4. Barang Keluar -->
           <button onclick="switchAdminTab('outbound')" id="nav-outbound" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Keluar">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">outbox</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">outbox</span>
             <span class="sidebar-text truncate">Barang Keluar</span>
           </button>
 
-          <!-- 5. Stock Transfer -->
+          <!-- 5. Transfer Antar Lokasi -->
+          <button onclick="switchAdminTab('location_transfer')" id="nav-location_transfer" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Antar Lokasi (Movement Product Location To Location)">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">swap_horiz</span>
+            <span class="sidebar-text truncate">Transfer Antar Lokasi</span>
+          </button>
+
+          <!-- 6. Stock Transfer (Gudang Besar <-> VAS) -->
           <button onclick="switchAdminTab('stock_transfer')" id="nav-stock_transfer" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Transfer (Stock Inventory <-> Stock VAS)">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-indigo-600">swap_horizontal_circle</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Stock Gudang Besar ⇋ Zone VAS">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">sync_alt</span>
             <span class="sidebar-text truncate">Stock Transfer</span>
           </button>
 
-          <!-- 6. Request Consumable -->
-          <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Consumable Operator & Approval ACC">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-amber-600">shopping_cart_checkout</span>
-            <span class="sidebar-text truncate">Request Consumable</span>
+          <!-- 7. Penugasan PIC (Tasks) - Hidden from sidebar as requested -->
+          <button onclick="switchAdminTab('tasks')" id="nav-tasks" 
+            class="hidden sidebar-nav-btn group w-full items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" style="display: none !important;" title="Penugasan Tugas PIC">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">assignment</span>
+            <span class="sidebar-text truncate">Tugas PIC</span>
           </button>
 
-          <!-- 7. Peringatan PO -->
+          <!-- 6. Request Fulfillments -->
+          <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Fulfillments Operator & Approval ACC">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">shopping_cart_checkout</span>
+            <span class="sidebar-text truncate">Request Fulfillments</span>
+          </button>
+
+          <!-- 7. Reorder Kemas -->
           <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Peringatan PO & Stok Menipis">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-orange-600">notification_important</span>
-            <span class="sidebar-text truncate">Peringatan PO (Stok Kritis)</span>
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Reorder Kemas & Rekomendasi PO">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">notification_important</span>
+            <span class="sidebar-text truncate">Reorder Kemas</span>
           </button>
 
           <!-- 8. Handover Shift -->
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-rose-600">published_with_changes</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">published_with_changes</span>
             <span class="sidebar-text truncate">Handover Shift</span>
           </button>
 
@@ -134,7 +155,7 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- 9. Audit Mutasi Stok -->
           <button onclick="switchAdminTab('mutations')" id="nav-mutations" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">history_edu</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">history_edu</span>
             <span class="sidebar-text truncate">Audit Mutasi Stok</span>
           </button>
           <?php endif; ?>
@@ -145,11 +166,11 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dynamic_count">
         <button type="button" onclick="toggleSidebarSection('dynamic_count')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">checklist</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Dynamic Count</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
@@ -157,16 +178,16 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="switchAdminTab('dynamic_count')" id="nav-dynamic_count" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Dynamic Count">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">checklist</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">checklist</span>
               <span class="sidebar-text truncate">Dynamic Count</span>
             </div>
-            <span id="sidebarDynamicBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-xs">0</span>
+            <span id="sidebarDynamicBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600 text-white shadow-xs">0</span>
           </button>
 
           <button onclick="switchAdminTab('dynamic_counting_detail')" id="nav-dynamic_counting_detail" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Dynamic Count">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-indigo-600">playlist_add_check</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">playlist_add_check</span>
               <span class="sidebar-text truncate">Detail Dynamic Count</span>
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-indigo-50 text-indigo-700 border border-indigo-200">Log</span>
@@ -178,11 +199,11 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="opname">
         <button type="button" onclick="toggleSidebarSection('opname')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-teal-100 text-teal-800 border border-teal-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">fact_check</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Stock Opname</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
@@ -190,16 +211,16 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="switchAdminTab('opname')" id="nav-opname" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Opname">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">fact_check</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">fact_check</span>
               <span class="sidebar-text truncate">Stock Opname</span>
             </div>
-            <span id="sidebarOpnameBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-600 text-white shadow-xs">0</span>
+            <span id="sidebarOpnameBadge" class="sidebar-badge hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-600 text-white shadow-xs">0</span>
           </button>
 
           <button onclick="switchAdminTab('counting_detail')" id="nav-counting_detail" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Stock Opname">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">table_rows</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">table_rows</span>
               <span class="sidebar-text truncate">Detail Stock Opname</span>
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Log</span>
@@ -211,11 +232,11 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="adjust">
         <button type="button" onclick="toggleSidebarSection('adjust')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-amber-100 text-amber-800 border border-amber-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">tune</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Adjustment</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
@@ -223,7 +244,7 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="switchAdminTab('adjust')" id="nav-adjust" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Adjustment Stok Packaging (+ / -)">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">tune</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">tune</span>
               <span class="sidebar-text truncate">Adjustment Opname</span>
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Adjust</span>
@@ -235,25 +256,25 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="pengaturan">
         <button type="button" onclick="toggleSidebarSection('pengaturan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-purple-100 text-purple-800 border border-purple-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">settings</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Settings</span>
-            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-2xs">AKTIF</span>
+            <span class="section-active-badge hidden px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-2xs">AKTIF</span>
           </div>
           <span class="sidebar-section-chevron material-symbols-outlined text-[15px] text-slate-400 group-hover:text-slate-600 transition-transform duration-200">expand_more</span>
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('users')" id="nav-users" 
             class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Manajemen User & Role">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0">group</span>
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">group</span>
             <span class="sidebar-text truncate">Manajemen User & Role</span>
           </button>
 
           <button onclick="switchAdminTab('permissions')" id="nav-permissions" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Hak Akses Menu">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">shield_person</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">shield_person</span>
               <span class="sidebar-text truncate">Hak Akses Menu</span>
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-slate-100 text-slate-600 border border-slate-200/80">Akses</span>
@@ -263,7 +284,7 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="switchAdminTab('maintenance')" id="nav-maintenance" 
             class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-all" title="Maintenance & Pembersihan Database">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-[20px] flex-shrink-0">database</span>
+              <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">database</span>
               <span class="sidebar-text truncate">Bersihkan Database</span>
             </div>
             <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-200">SUPER</span>
@@ -276,7 +297,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div id="sidebarFieldAccessContainer" class="sidebar-section is-collapsed hidden pt-1 p-1 rounded-2xl transition-all" data-section-id="lapangan">
         <button type="button" onclick="toggleSidebarSection('lapangan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
           <div class="flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-slate-800 border border-slate-200 shrink-0">
+            <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">smartphone</span>
             </span>
             <span class="sidebar-section-title text-slate-600 font-bold">Akses Lapangan</span>
@@ -285,17 +306,17 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content mt-1">
           <a id="sidebarFieldAccessBtn" href="../operator/" target="_blank" 
-            class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-emerald-500 hover:bg-emerald-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel PIC">
+            class="sidebar-field-access-btn group w-full p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-2xs transition-all flex items-center justify-between" title="Panel PIC">
             <div class="flex items-center gap-2.5">
-              <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0">
+              <div class="w-7 h-7 rounded-lg bg-[#262363] text-white flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform flex-shrink-0">
                 <span class="material-symbols-outlined text-[16px]">smartphone</span>
               </div>
               <div class="sidebar-field-access-text text-left leading-tight truncate">
-                <p class="text-xs font-bold text-slate-900 group-hover:text-emerald-900 transition-colors truncate">Panel PIC</p>
-                <p class="text-[10px] text-slate-500 group-hover:text-emerald-700 transition-colors truncate">Mode Mobile Touch</p>
+                <p class="text-xs font-bold text-slate-900 group-hover:text-blue-900 transition-colors truncate">Panel PIC</p>
+                <p class="text-[10px] text-slate-500 group-hover:text-blue-700 transition-colors truncate">Mode Mobile Touch</p>
               </div>
             </div>
-            <span class="sidebar-chevron material-symbols-outlined text-[16px] text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all">open_in_new</span>
+            <span class="sidebar-chevron material-symbols-outlined text-[16px] text-slate-400 group-hover:text-blue-700 group-hover:translate-x-0.5 transition-all">open_in_new</span>
           </a>
         </div>
       </div>
@@ -357,30 +378,55 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Top Row: Segmented Mode Selector & Action Buttons -->
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
             
-            <!-- Filter Type Selector -->
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mr-1">
-                <span class="material-symbols-outlined text-[18px] text-emerald-700">calendar_month</span>
-                <span>Filter Periode:</span>
-              </span>
+            <div class="flex items-center gap-4 flex-wrap">
+              <!-- Type Switcher: Semua | Kemas | Gimmick -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mr-1">
+                  <span class="material-symbols-outlined text-[18px] text-blue-700">category</span>
+                  <span>Tipe Stock:</span>
+                </span>
 
-              <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-                <button type="button" id="btnDashFilterDate" onclick="setDashboardFilterType('date')" 
-                  class="py-1.5 px-3 rounded-lg bg-emerald-600 text-white shadow-2xs transition-all">
-                  📅 Harian
-                </button>
-                <button type="button" id="btnDashFilterWeek" onclick="setDashboardFilterType('week')" 
-                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-                  📆 Mingguan
-                </button>
-                <button type="button" id="btnDashFilterMonth" onclick="setDashboardFilterType('month')" 
-                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-                  📊 Bulanan
-                </button>
-                <button type="button" id="btnDashFilterAll" onclick="setDashboardFilterType('all')" 
-                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
-                  🌐 Semua Waktu
-                </button>
+                <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                  <button type="button" id="btnDashTypeAll" onclick="setDashboardItemType('ALL')" 
+                    class="py-1.5 px-3 rounded-lg bg-blue-600 text-white shadow-2xs transition-all cursor-pointer">
+                    🌐 Semua
+                  </button>
+                  <button type="button" id="btnDashTypeKemas" onclick="setDashboardItemType('PACKAGING')" 
+                    class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                    📦 Kemas
+                  </button>
+                  <button type="button" id="btnDashTypeGimmick" onclick="setDashboardItemType('GIMMICK')" 
+                    class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                    🎁 Gimmick
+                  </button>
+                </div>
+              </div>
+
+              <!-- Filter Type Selector (Periode) -->
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 mr-1">
+                  <span class="material-symbols-outlined text-[18px] text-blue-700">calendar_month</span>
+                  <span>Filter Periode:</span>
+                </span>
+
+                <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+                  <button type="button" id="btnDashFilterDate" onclick="setDashboardFilterType('date')" 
+                    class="py-1.5 px-3 rounded-lg bg-blue-600 text-white shadow-2xs transition-all">
+                    📅 Harian
+                  </button>
+                  <button type="button" id="btnDashFilterWeek" onclick="setDashboardFilterType('week')" 
+                    class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                    📆 Mingguan
+                  </button>
+                  <button type="button" id="btnDashFilterMonth" onclick="setDashboardFilterType('month')" 
+                    class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                    📊 Bulanan
+                  </button>
+                  <button type="button" id="btnDashFilterAll" onclick="setDashboardFilterType('all')" 
+                    class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all">
+                    🌐 Semua Waktu
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -390,9 +436,9 @@ require_once __DIR__ . '/../includes/header.php';
               <!-- Date Picker (if date mode) -->
               <div id="dashFilterDateContainer" class="flex items-center gap-2">
                 <div class="premium-datepicker-wrapper">
-                  <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_month</span>
+                  <span class="material-symbols-outlined picker-icon text-blue-700">calendar_month</span>
                   <input type="text" id="dashInputDate" value="<?= date('Y-m-d') ?>" placeholder="Pilih Tanggal..." 
-                    class="premium-datepicker-input px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-emerald-600">
+                    class="premium-datepicker-input px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-blue-600">
                 </div>
                 <button type="button" onclick="setDashboardDateToday()" class="h-[38px] px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center">Hari Ini</button>
               </div>
@@ -419,7 +465,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <option value="12">Desember</option>
                 </select>
 
-                <select id="dashSelectWeek" onchange="loadDashboardStockSummary()" class="h-[38px] px-2.5 bg-emerald-50 border border-emerald-300 text-emerald-900 font-bold rounded-lg text-xs outline-none">
+                <select id="dashSelectWeek" onchange="loadDashboardStockSummary()" class="h-[38px] px-2.5 bg-blue-50 border border-blue-300 text-blue-900 font-bold rounded-lg text-xs outline-none">
                   <option value="1">Week 1 (Tgl 01 - 07)</option>
                   <option value="2">Week 2 (Tgl 08 - 14)</option>
                   <option value="3">Week 3 (Tgl 15 - 21)</option>
@@ -450,12 +496,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </select>
               </div>
 
-              <button type="button" onclick="loadDashboardStockSummary()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Muat Ulang Data">
-                <span class="material-symbols-outlined text-[18px]">refresh</span>
-                <span>Refresh</span>
-              </button>
-
-              <button type="button" onclick="exportDashboardSummaryExcel()" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Export Rekap Stok Dashboard ke File Excel (.xlsx)">
+              <button type="button" onclick="exportDashboardSummaryExcel()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" title="Export Rekap Stok Dashboard ke File Excel (.xlsx)">
                 <span class="material-symbols-outlined text-[18px]">table_chart</span>
                 <span>Export Rekap</span>
               </button>
@@ -465,8 +506,8 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Bottom Row: Active Period & Sub Info -->
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
-              <div class="inline-flex items-center gap-2 px-3 h-[34px] bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-xl text-xs font-bold">
-                <span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+              <div class="inline-flex items-center gap-2 px-3 h-[34px] bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
                 <span id="dashActivePeriodBadge">Memuat Periode...</span>
               </div>
             </div>
@@ -479,23 +520,23 @@ require_once __DIR__ . '/../includes/header.php';
           
           <!-- 1. SISA STOK TOTAL (Clickable -> Master Stok Inventory) -->
           <div onclick="navigateFromDashboard('inventory')" title="Klik untuk membuka Master Stok Kemas" 
-            class="bg-gradient-to-br from-emerald-700 to-emerald-900 text-white p-4 rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            class="bg-gradient-to-br from-blue-700 to-indigo-900 text-white p-4 rounded-xl shadow-sm relative overflow-hidden flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
             <div class="flex items-center justify-between">
-              <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-200 group-hover:text-white transition-colors">Sisa Stok Total</span>
-              <span class="material-symbols-outlined text-emerald-300 text-[22px] group-hover:rotate-12 transition-transform">inventory_2</span>
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-200 group-hover:text-white transition-colors">Sisa Stok Total</span>
+              <span class="material-symbols-outlined text-blue-200 text-[22px] group-hover:rotate-12 transition-transform">inventory_2</span>
             </div>
             <div class="mt-2">
               <p id="dashKpiTotalStockUnits" class="text-xl lg:text-2xl font-black tracking-tight text-white">0</p>
               <div class="flex items-center justify-between mt-0.5">
-                <span class="text-[10px] text-emerald-200 font-medium">Seluruh fisik gudang</span>
-                <span class="material-symbols-outlined text-[14px] text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                <span class="text-[10px] text-blue-200 font-medium">Seluruh fisik gudang</span>
+                <span class="material-symbols-outlined text-[14px] text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
               </div>
             </div>
           </div>
 
           <!-- 2. TOTAL BARANG MASUK (+) (Clickable -> Inbound Tab with Date Filter) -->
           <div onclick="navigateFromDashboard('inbound')" title="Klik untuk membuka Riwayat Barang Masuk sesuai tanggal" 
-            class="bg-white p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">Barang Masuk (+)</span>
               <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
@@ -513,7 +554,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- 3. TOTAL BARANG KELUAR (-) (Clickable -> Outbound Tab with Date Filter) -->
           <div onclick="navigateFromDashboard('outbound')" title="Klik untuk membuka Riwayat Barang Keluar sesuai tanggal" 
-            class="bg-white p-4 rounded-xl border border-rose-200 bg-rose-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            class="p-4 rounded-xl border border-rose-200 bg-rose-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-extrabold uppercase tracking-wider text-rose-800">Barang Keluar (-)</span>
               <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center group-hover:bg-rose-600 group-hover:text-white transition-colors">
@@ -531,7 +572,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- 4. TOTAL ADJUSTMENT (+/-) (Clickable -> Adjust -> Riwayat Penyesuaian with Date Filter) -->
           <div onclick="navigateFromDashboard('adjust')" title="Klik untuk membuka Tab Riwayat Penyesuaian Stok (Adjust)" 
-            class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            class="p-4 rounded-xl border border-blue-200 bg-blue-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Adjustment (+/-)</span>
               <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -549,7 +590,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- 5. STOK KRITIS / MENIPIS (Clickable -> Inventory with Low Stock Filter) -->
           <div onclick="navigateFromDashboard('inventory', 'low')" title="Klik untuk memfilter SKU Stok Menipis & Habis" 
-            class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
+            class="p-4 rounded-xl border border-amber-200 bg-amber-50/30 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all group select-none">
             <div class="flex items-center justify-between">
               <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Stok Kritis</span>
               <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
@@ -735,7 +776,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- 2. Task On-Proses -->
             <div onclick="navigateFromDashboard('tasks', 'IN_PROGRESS')" title="Klik untuk filter task yang sedang dikerjakan" 
-              class="bg-white p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
+              class="p-4 rounded-xl border border-amber-200 bg-amber-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Sedang Dikerjakan</span>
                 <span class="material-symbols-outlined text-amber-600 text-[20px] animate-spin">sync</span>
@@ -748,7 +789,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- 3. Antrean / Menunggu -->
             <div onclick="navigateFromDashboard('tasks', 'PENDING')" title="Klik untuk filter task yang menunggu dikerjakan" 
-              class="bg-white p-4 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
+              class="p-4 rounded-xl border border-blue-200 bg-blue-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Antrean / Menunggu</span>
                 <span class="material-symbols-outlined text-blue-600 text-[20px]">pending_actions</span>
@@ -761,7 +802,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- 4. Rata-rata Durasi Picking -->
             <div onclick="navigateFromDashboard('tasks')" title="Klik untuk membuka riwayat task" 
-              class="bg-white p-4 rounded-xl border border-indigo-200 bg-indigo-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
+              class="p-4 rounded-xl border border-indigo-200 bg-indigo-50/20 shadow-2xs flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all select-none">
               <div class="flex items-center justify-between">
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-800">Rata-rata Durasi</span>
                 <span class="material-symbols-outlined text-indigo-600 text-[20px]">timer</span>
@@ -840,6 +881,22 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Header / Filter Toolbar -->
         <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2.5 flex-1">
+            <!-- Filter Tipe Stock: Semua | Kemas | Gimmick -->
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shrink-0">
+              <button type="button" id="btnCpTypeAll" onclick="setCountingProgressItemType('ALL')" 
+                class="py-1.5 px-3 rounded-lg bg-blue-600 text-white shadow-2xs transition-all cursor-pointer">
+                🌐 Semua
+              </button>
+              <button type="button" id="btnCpTypeKemas" onclick="setCountingProgressItemType('PACKAGING')" 
+                class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                📦 Kemas
+              </button>
+              <button type="button" id="btnCpTypeGimmick" onclick="setCountingProgressItemType('GIMMICK')" 
+                class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                🎁 Gimmick
+              </button>
+            </div>
+
             <!-- Filter Tipe Counting -->
             <div class="flex items-center gap-1.5 min-w-[200px]">
               <span class="material-symbols-outlined text-emerald-600 text-[19px] shrink-0">filter_alt</span>
@@ -863,19 +920,15 @@ require_once __DIR__ . '/../includes/header.php';
               <input type="text" id="cpFilterDate" placeholder="Filter Tanggal..." class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600 focus:bg-white" title="Filter Tanggal Sesi">
             </div>
 
-            <button type="button" onclick="loadCountingProgressDashboard()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data Progress">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
 
           <!-- Quick Navigation Actions -->
           <div class="flex items-center gap-2 shrink-0">
-            <button type="button" onclick="switchAdminTab('dynamic_count')" class="h-[38px] px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Modul Dynamic Count">
+            <button type="button" onclick="switchAdminTab('dynamic_count')" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Buka Modul Dynamic Count">
               <span class="material-symbols-outlined text-[17px]">checklist</span>
               <span>Dynamic Count</span>
             </button>
-            <button type="button" onclick="switchAdminTab('opname')" class="h-[38px] px-3 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buka Modul Stock Opname">
+            <button type="button" onclick="switchAdminTab('opname')" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Buka Modul Stock Opname">
               <span class="material-symbols-outlined text-[17px]">fact_check</span>
               <span>Stock Opname</span>
             </button>
@@ -1090,15 +1143,15 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                 <span class="material-symbols-outlined text-[18px]">search</span>
               </span>
-              <input type="text" id="inventorySearch" oninput="loadMaterials()" placeholder="Cari Item No, nama / item description, kategori, lokasi rak..." 
+              <input type="text" id="inventorySearch" oninput="resetInventoryPageAndLoad()" placeholder="Cari Item No, nama / item description, kategori, lokasi rak..." 
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
             </div>
 
-            <select id="inventoryCategoryFilter" onchange="loadMaterials()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+            <select id="inventoryCategoryFilter" onchange="resetInventoryPageAndLoad()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Kategori</option>
             </select>
 
-            <select id="inventoryStatusFilter" onchange="loadMaterials()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+            <select id="inventoryStatusFilter" onchange="resetInventoryPageAndLoad()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
               <option value="all">Semua Status Stok</option>
               <option value="low">Menipis (&le; Min Stock)</option>
               <option value="empty">Habis (0 Stock)</option>
@@ -1109,34 +1162,29 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Action Buttons (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
 
-            <button onclick="loadMaterials()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Master">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-
-            <a href="export.php?type=inventory_template" target="_blank" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Download Format File Excel (.xlsx) Resmi & Rapi">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">download</span>
+            <a href="export.php?type=inventory_template" target="_blank" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Format File Excel (.xlsx) Resmi & Rapi">
+              <span class="material-symbols-outlined text-[18px]">download</span>
               <span>Template Excel</span>
             </a>
 
-            <button onclick="openExcelImportModal()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Upload File Excel/CSV Stok Awal">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">upload_file</span>
+            <button onclick="openExcelImportModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Upload File Excel/CSV Stok Awal">
+              <span class="material-symbols-outlined text-[18px]">upload_file</span>
               <span>Import Excel</span>
             </button>
 
-            <a href="export.php?type=all_materials" target="_blank" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Master Stok ke File Excel (.xlsx)">
+            <a href="export.php?type=all_materials" target="_blank" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Master Stok ke File Excel (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export Master</span>
             </a>
 
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true, this)" class="h-[38px] px-3.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Inventory ke Google Sheet">
-              <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
+            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Inventory ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
             <?php endif; ?>
 
-            <button onclick="openAddMaterialModal()" class="h-[38px] px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Tambah Material Packaging Baru">
+            <button onclick="openAddMaterialModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Tambah Kemas Baru">
               <span class="material-symbols-outlined text-[18px]">add_circle</span>
               <span>Tambah Material</span>
             </button>
@@ -1166,6 +1214,117 @@ require_once __DIR__ . '/../includes/header.php';
               <tbody id="inventoryTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
             </table>
           </div>
+
+          <!-- Navigasi Halaman Master Stok -->
+          <div id="inventoryPagination" class="hidden flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-slate-200 bg-slate-50/70">
+            <p id="inventoryPaginationInfo" class="text-[11px] font-semibold text-slate-600"></p>
+            <div class="flex items-center gap-1.5">
+              <label for="inventoryPerPage" class="text-[11px] font-semibold text-slate-500">Baris</label>
+              <select id="inventoryPerPage" onchange="changeInventoryPerPage(this.value)"
+                class="h-[30px] px-2 bg-white border border-slate-300 rounded-lg text-[11px] font-bold text-slate-700 outline-none focus:border-emerald-600 cursor-pointer">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+              <button type="button" id="inventoryPrevBtn" onclick="goInventoryPage(-1)"
+                class="h-[30px] px-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                &larr; Sebelumnya
+              </button>
+              <span id="inventoryPageLabel" class="text-[11px] font-bold text-slate-700 px-1.5"></span>
+              <button type="button" id="inventoryNextBtn" onclick="goInventoryPage(1)"
+                class="h-[30px] px-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                Berikutnya &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= 2.0.1 TAB: MASTER STOK GIMMICK & MERCHANDISE ================= -->
+      <div id="tab-gimmick" class="hidden space-y-4">
+        <!-- Control Bar & Search -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div class="flex flex-wrap items-center gap-2 flex-1">
+            <div class="relative flex-1 min-w-[220px] max-w-md">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <span class="material-symbols-outlined text-[18px]">search</span>
+              </span>
+              <input type="text" id="gimmickSearch" oninput="debounceGimmickSearch()" placeholder="Cari SKU, Nama, Lokasi, No. Batch, Barcode, SAP..." 
+                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-500 focus:bg-white transition-colors">
+            </div>
+
+            <select id="gimmickShelfLifeFilter" onchange="loadGimmickStock()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none" title="Filter berdasarkan sisa masa simpan / expired">
+              <option value="all">Semua Shelf Life</option>
+              <option value="expired">Expired (Lewat ED)</option>
+              <option value="critical">&le; 1 Bulan (&le; 30 Hari)</option>
+              <option value="warning">1 - 3 Bulan</option>
+              <option value="medium">3 - 6 Bulan</option>
+              <option value="safe">&gt; 6 Bulan (Aman)</option>
+            </select>
+
+            <select id="gimmickStatusFilter" onchange="loadGimmickStock()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+              <option value="all">Semua Status</option>
+              <option value="active">Hanya Aktif</option>
+              <option value="inactive">Non-Aktif</option>
+              <option value="low">Menipis (&le; Min Stock)</option>
+              <option value="empty">Habis (0 Stock)</option>
+              <option value="safe">Stok Aman</option>
+            </select>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <a href="export.php?type=gimmick_template" target="_blank" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Format Excel Stok Gimmick">
+              <span class="material-symbols-outlined text-[18px]">download</span>
+              <span>Template Excel</span>
+            </a>
+
+            <button onclick="openGimmickExcelImportModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Import File Excel Stok Gimmick">
+              <span class="material-symbols-outlined text-[18px]">upload_file</span>
+              <span>Import Excel Gimmick</span>
+            </button>
+
+            <a href="export.php?type=all_gimmicks" target="_blank" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Seluruh Master Stok Gimmick">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
+              <span>Export Gimmick</span>
+            </a>
+
+            <button onclick="openAddGimmickModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Tambah Master Gimmick Baru">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>Tambah Gimmick</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Gimmick Master Table -->
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-gradient-to-r from-amber-600 to-amber-700 text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-amber-800">
+                <tr>
+                  <th class="p-3 border-r border-white/20 w-12 text-center">No</th>
+                  <th class="p-3 border-r border-white/20 whitespace-nowrap min-w-[210px]">Detail Product</th>
+                  <th class="p-3 border-r border-white/20 min-w-[220px]">Product Name</th>
+                  <th class="p-3 text-center border-r border-white/20 whitespace-nowrap" title="Stok awal pendaftaran / upload per batch">Stok Awal</th>
+                  <th class="p-3 text-center border-r border-white/20 font-bold whitespace-nowrap" title="Total barang masuk / inbound per batch">Total Masuk (+)</th>
+                  <th class="p-3 text-center border-r border-white/20 font-bold whitespace-nowrap" title="Total barang keluar / outbound per batch">Total Keluar (-)</th>
+                  <th class="p-3 text-center border-r border-white/20 font-black whitespace-nowrap" title="Sisa stok aktual fisik di gudang per batch">Sisa Stok Akhir</th>
+                  <th class="p-3 text-center border-r border-white/20 font-black bg-purple-800/90 text-amber-300 whitespace-nowrap" title="Jumlah Stok yang saat ini tersimpan di Zone VAS berdasarkan SKU, Batch, & Exp Date">Stok Zone VAS</th>
+                  <th class="p-3 border-r border-white/20 whitespace-nowrap min-w-[190px]" title="Informasi No. Batch, Exp Date, dan Sisa Shelf Life">Batch / Exp / Shelf Life</th>
+                  <th class="p-3 text-center border-r border-white/20 whitespace-nowrap">Lokasi Rak</th>
+                  <th class="p-3 text-right whitespace-nowrap">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="gimmickTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Footer -->
+          <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div id="gimmickPaginationInfo" class="text-slate-600 font-medium">Memuat data gimmick...</div>
+            <div id="gimmickPaginationBtns" class="flex items-center gap-1.5"></div>
+          </div>
         </div>
       </div>
 
@@ -1174,34 +1333,44 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- History Top Control Bar -->
         <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <button type="button" onclick="switchAdminTab('inventory')" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5">
+            <button type="button" id="viewHistBackBtn" onclick="historyGoBack()" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span>Kembali ke Master Stok</span>
+              <span id="viewHistBackBtnText">Kembali ke Master Stok</span>
             </button>
             <div class="h-5 w-px bg-slate-200 hidden sm:block"></div>
             <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Modul Master Stok</span>
+              <span id="viewHistModuleSubtitle" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Modul Master Stok</span>
               <h2 class="font-black text-sm text-slate-900 flex items-center gap-1.5">
-                <span class="text-emerald-800">Kartu Stok Terintegrasi</span>
+                <span id="viewHistModuleTitle" class="text-emerald-800">Kartu Stok Terintegrasi</span>
               </h2>
             </div>
           </div>
 
-          <!-- History Action Buttons (Download, Sync & Print) -->
-          <div class="flex items-center gap-2 no-print">
-            <button type="button" onclick="reconcileAndRefreshStockCard()" class="h-[38px] px-3.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5 cursor-pointer" title="Sinkronkan & Rekonsiliasi Kartu Stok">
-              <span class="material-symbols-outlined text-[18px] text-amber-700">sync</span>
-              <span>Sinkronkan Stok</span>
+          <!-- History Action Buttons (Quick In/Out, Download, Sync & Print) -->
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button type="button" onclick="quickInboundForMaterial()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Catat Barang Masuk untuk SKU ini">
+              <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>Barang Masuk (+)</span>
             </button>
 
-            <a id="viewHistDownloadBtn" href="#" target="_blank" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Export Riwayat ke Excel (.xlsx)">
+            <button type="button" onclick="quickOutboundForMaterial()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Ambil Stok / Catat Barang Keluar untuk SKU ini">
+              <span class="material-symbols-outlined text-[18px]">remove_circle</span>
+              <span>Ambil Stok (-)</span>
+            </button>
+
+            <button type="button" onclick="reconcileAndRefreshStockCard()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Sinkronkan & Rekonsiliasi Kartu Stok">
+              <span class="material-symbols-outlined text-[18px] text-slate-500">sync</span>
+              <span class="hidden sm:inline">Sinkronkan</span>
+            </button>
+
+            <a id="viewHistDownloadBtn" href="#" target="_blank" class="h-[38px] px-3 rounded-lg bg-[#262363] hover:bg-[#1e1b4f] text-white text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Export Riwayat ke Excel (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
-              <span>Export History Excel</span>
+              <span class="hidden sm:inline">Export Excel</span>
             </a>
 
-            <button type="button" onclick="printStockCard()" class="h-[38px] px-3.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Cetak Kartu Stok">
+            <button type="button" onclick="printStockCard()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Cetak Kartu Stok">
               <span class="material-symbols-outlined text-[18px]">print</span>
-              <span>Cetak Kartu Stok</span>
+              <span class="hidden sm:inline">Cetak</span>
             </button>
           </div>
         </div>
@@ -1209,21 +1378,22 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- 1. Header Information Card -->
         <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div class="flex items-start gap-3.5">
-            <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold flex-shrink-0 border border-emerald-200">
-              <span class="material-symbols-outlined text-[28px]">inventory_2</span>
+            <div id="viewHistIconBox" class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold flex-shrink-0 border border-emerald-200">
+              <span id="viewHistIcon" class="material-symbols-outlined text-[28px]">inventory_2</span>
             </div>
             <div>
               <div class="flex flex-wrap items-center gap-2 mb-1">
                 <span id="viewHistBadgeCode" class="font-mono font-black text-sm px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-900 border border-emerald-300"></span>
                 <span id="viewHistBadgeCategory" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700"></span>
                 <span id="viewHistBadgeStatus"></span>
+                <span id="viewHistExtraBadges" class="inline-flex flex-wrap items-center gap-1.5"></span>
               </div>
               <h3 id="viewHistHeaderName" class="text-base sm:text-lg font-bold text-slate-900"></h3>
             </div>
           </div>
 
-          <!-- Quick Specs -->
-          <div class="flex flex-wrap items-center gap-4 text-xs border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-6 text-slate-600">
+          <!-- Quick Specs: Kemas Mode -->
+          <div id="viewHistKemasSpecs" class="flex flex-wrap items-center gap-4 text-xs border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-6 text-slate-600">
             <div>
               <span class="text-[10px] uppercase font-bold text-slate-400 block">Lokasi Rak Simpan</span>
               <span id="viewHistRack" class="font-bold text-slate-800 inline-flex items-center gap-1">
@@ -1236,6 +1406,29 @@ require_once __DIR__ . '/../includes/header.php';
               <span id="viewHistMinStock" class="font-bold text-slate-800"></span>
             </div>
           </div>
+
+          <!-- Quick Specs: Gimmick Mode -->
+          <div id="viewHistGimmickSpecs" class="hidden flex flex-wrap items-center gap-4 text-xs border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-6 text-slate-600">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Batch</span>
+              <span id="viewHistGimmickBatchCount" class="font-bold text-indigo-800 font-mono">0 Batch</span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Earliest Exp Date</span>
+              <span id="viewHistGimmickEarliestExp" class="font-bold text-slate-800 font-mono">-</span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Lokasi Simpan</span>
+              <span id="viewHistGimmickRack" class="font-bold text-slate-800 inline-flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px] text-indigo-600">location_on</span>
+                <span>-</span>
+              </span>
+            </div>
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Min Safety</span>
+              <span id="viewHistGimmickMinStock" class="font-bold text-slate-800 font-mono"></span>
+            </div>
+          </div>
         </div>
 
         <!-- 2. Stock Formula Breakdown (4 KPI Cards) -->
@@ -1243,19 +1436,19 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
             <p class="text-[10px] uppercase font-bold text-slate-400">1. Stok Awal (Upload)</p>
             <h4 id="viewHistInitialStock" class="text-xl sm:text-2xl font-black text-slate-800 mt-1">0</h4>
-            <p class="text-[10px] text-slate-400 mt-0.5">Stok awal dari file Excel</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Stok awal dari file Excel / Pendaftaran</p>
           </div>
 
-          <div class="bg-white p-4 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/20">
+          <div class="p-4 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/20">
             <p class="text-[10px] uppercase font-bold text-emerald-700">2. Total Barang Masuk (+)</p>
             <h4 id="viewHistTotalInbound" class="text-xl sm:text-2xl font-black text-emerald-700 mt-1">+0</h4>
-            <p class="text-[10px] text-emerald-600 mt-0.5">Akumulasi penerimaan PO</p>
+            <p class="text-[10px] text-emerald-600 mt-0.5">Akumulasi penerimaan PO / Inbound</p>
           </div>
 
-          <div class="bg-white p-4 rounded-xl border border-amber-200 shadow-sm bg-amber-50/20">
+          <div class="p-4 rounded-xl border border-amber-200 shadow-sm bg-amber-50/20">
             <p class="text-[10px] uppercase font-bold text-amber-700">3. Total Barang Keluar (-)</p>
             <h4 id="viewHistTotalOutbound" class="text-xl sm:text-2xl font-black text-amber-700 mt-1">-0</h4>
-            <p class="text-[10px] text-amber-600 mt-0.5">Picking Line & Pengeluaran Manual</p>
+            <p class="text-[10px] text-amber-600 mt-0.5">Picking Line & Pengeluaran Outbound</p>
           </div>
 
           <div id="viewHistStockBox" class="p-4 rounded-xl shadow-sm text-white bg-emerald-600">
@@ -1265,11 +1458,11 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- 3. Chronological Transactions Table -->
+        <!-- 3. Chronological Transactions Table (Single Unified Movement Table) -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-5 space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
             <div>
-              <h4 class="font-bold text-slate-900 text-xs uppercase tracking-wider">History Movement Stock</h4>
+              <h4 id="viewHistTableTitle" class="font-bold text-slate-900 text-xs uppercase tracking-wider">History Movement Stock</h4>
             </div>
             <span id="viewHistRowCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700"></span>
           </div>
@@ -1349,6 +1542,13 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-8 pr-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
             </div>
 
+            <!-- Filter Tipe Kemas / Gimmick -->
+            <select id="dynamicItemTypeFilter" onchange="loadDynamicMatrix()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 cursor-pointer">
+              <option value="ALL">📦+🎁 Semua Tipe</option>
+              <option value="PACKAGING">📦 Kemas</option>
+              <option value="GIMMICK">🎁 Gimmick</option>
+            </select>
+
             <!-- Filter Note -->
             <select id="dynamicNoteFilter" onchange="loadDynamicMatrix()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600">
               <option value="ALL">Semua Note</option>
@@ -1359,11 +1559,7 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="PENDING">Belum Dihitung</option>
             </select>
 
-            <button type="button" onclick="loadDynamicMatrix()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data Dynamic Count">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
 
           <!-- Action Buttons Right (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -1374,23 +1570,23 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- Finish / Complete Session Button (Unfreeze SKUs) -->
             <button type="button" id="btnFinishDynamicSession" onclick="confirmFinishDynamicSession()" 
-              class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" 
+              class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" 
               title="Selesaikan Sesi Dynamic Count & Buka Pembekuan (Freeze) SKU">
               <span class="material-symbols-outlined text-[18px]">lock_open</span>
               <span id="labelFinishDynamicSession">Selesaikan Sesi</span>
             </button>
 
-            <button type="button" id="btnAssignDynamicRecount" onclick="openAssignDynamicRecountModal()" class="h-[38px] px-3.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Tugaskan Hitung Ulang (Recount) ke Operator">
+            <button type="button" id="btnAssignDynamicRecount" onclick="openAssignDynamicRecountModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Tugaskan Hitung Ulang (Recount) ke Operator">
               <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
               <span>Tugaskan Recount</span>
             </button>
 
-            <button type="button" onclick="exportDynamicExcel()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-2xs" title="Download Excel Hasil Dynamic Count (.xlsx)">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
+            <button type="button" onclick="exportDynamicExcel()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Excel Hasil Dynamic Count (.xlsx)">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export Matrix</span>
             </button>
 
-            <button type="button" onclick="openCreateDynamicCountModal()" class="h-[38px] px-3.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buat Penugasan Dynamic Counting SKU Baru">
+            <button type="button" onclick="openCreateDynamicCountModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Buat Penugasan Dynamic Counting SKU Baru">
               <span class="material-symbols-outlined text-[18px]">add_circle</span>
               <span>Buat Sesi Baru</span>
             </button>
@@ -1438,6 +1634,13 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-8 pr-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
             </div>
 
+            <!-- Filter Tipe Kemas / Gimmick -->
+            <select id="opnameItemTypeFilter" onchange="loadOpnameMatrix()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-600 cursor-pointer">
+              <option value="ALL">📦+🎁 Semua Tipe</option>
+              <option value="PACKAGING">📦 Kemas</option>
+              <option value="GIMMICK">🎁 Gimmick</option>
+            </select>
+
             <!-- Filter Note -->
             <select id="opnameNoteFilter" onchange="loadOpnameMatrix()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600">
               <option value="ALL">Semua Note</option>
@@ -1448,11 +1651,7 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="PENDING">Belum Dihitung</option>
             </select>
 
-            <button type="button" onclick="loadOpnameMatrix()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
 
           <!-- Action Buttons Right (Uniform 38px Height) -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -1461,17 +1660,17 @@ require_once __DIR__ . '/../includes/header.php';
               0 Dipilih
             </span>
 
-            <button type="button" id="btnAssignOpnameRecount" onclick="openAssignRecountModal()" class="h-[38px] px-3.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Tugaskan Hitung Ulang (Recount) ke Operator">
+            <button type="button" id="btnAssignOpnameRecount" onclick="openAssignRecountModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Tugaskan Hitung Ulang (Recount) ke Operator">
               <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
               <span>Tugaskan Recount</span>
             </button>
 
-            <button type="button" onclick="exportCurrentOpnameExcel()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-2xs" title="Download Excel Hasil Stock Opname (.xlsx)">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
+            <button type="button" onclick="exportCurrentOpnameExcel()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Excel Hasil Stock Opname (.xlsx)">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export Hasil</span>
             </button>
 
-            <button type="button" onclick="openCreateStockOpnameModal()" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Mulai Sesi Stock Opname Baru">
+            <button type="button" onclick="openCreateStockOpnameModal()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Mulai Sesi Stock Opname Baru">
               <span class="material-symbols-outlined text-[18px]">add_circle</span>
               <span>Mulai Sesi Baru</span>
             </button>
@@ -1528,15 +1727,11 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-8 pr-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
             </div>
 
-            <button type="button" onclick="loadDynamicCountingDetails()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
 
           <!-- Action Buttons Right (Export Excel) -->
           <div class="flex items-center gap-2 shrink-0">
-            <button type="button" onclick="exportDynamicCountingDetailExcel()" class="h-[38px] px-4 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Download Excel Log Detail Dynamic Count (.xlsx)">
+            <button type="button" onclick="exportDynamicCountingDetailExcel()" class="h-[38px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Excel Log Detail Dynamic Count (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Download Excel</span>
             </button>
@@ -1651,15 +1846,11 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-8 pr-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-teal-600 focus:bg-white transition-colors">
             </div>
 
-            <button type="button" onclick="loadCountingDetails()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
 
           <!-- Action Buttons Right (Export Excel) -->
           <div class="flex items-center gap-2 shrink-0">
-            <button type="button" onclick="exportCountingDetailExcel()" class="h-[38px] px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Download Excel Log Detail Stock Opname (.xlsx)">
+            <button type="button" onclick="exportCountingDetailExcel()" class="h-[38px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Excel Log Detail Stock Opname (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Download Excel</span>
             </button>
@@ -1769,8 +1960,24 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                   <span class="material-symbols-outlined text-[18px]">search</span>
                 </span>
-                <input type="text" id="directAdjustSearchInput" oninput="renderDirectAdjustTable()" placeholder="Cari SKU, Nama Material, Rak..." 
+                <input type="text" id="directAdjustSearchInput" oninput="renderDirectAdjustTable()" placeholder="Cari SKU, Nama Material, Rak..."
                   class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
+              </div>
+
+              <!-- Filter Tipe Stock: Semua | Kemas | Gimmick -->
+              <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shrink-0" title="Tampilkan hanya Kemas atau hanya Gimmick">
+                <button type="button" id="btnAdjTypeAllForm" onclick="setAdjustItemType('ALL')"
+                  class="py-1.5 px-3 rounded-lg bg-amber-600 text-white shadow-2xs transition-all cursor-pointer">
+                  🌐 Semua
+                </button>
+                <button type="button" id="btnAdjTypeKemasForm" onclick="setAdjustItemType('PACKAGING')"
+                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                  📦 Kemas
+                </button>
+                <button type="button" id="btnAdjTypeGimmickForm" onclick="setAdjustItemType('GIMMICK')"
+                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                  🎁 Gimmick
+                </button>
               </div>
 
               <!-- Filter Status -->
@@ -1788,11 +1995,7 @@ require_once __DIR__ . '/../includes/header.php';
                   class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600" title="Tanggal Pencatatan Penyesuaian">
               </div>
 
-              <button type="button" onclick="loadDirectAdjustMaterials()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Data">
-                <span class="material-symbols-outlined text-[18px]">refresh</span>
-                <span>Refresh</span>
-              </button>
-            </div>
+              </div>
 
             <!-- Right: Action Buttons (Uniform 38px Height) -->
             <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -1800,19 +2003,19 @@ require_once __DIR__ . '/../includes/header.php';
               <input type="file" id="directAdjustFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleDirectExcelUpload(this)">
 
               <!-- Download Template Button -->
-              <a href="export.php?type=adjust_template" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Download Format File Excel (.xlsx) Resmi & Rapi">
+              <a href="export.php?type=adjust_template" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Format File Excel (.xlsx) Resmi & Rapi">
                 <span class="material-symbols-outlined text-[18px]">download</span>
                 <span>Template</span>
               </a>
 
               <!-- Upload Excel Button -->
-              <button type="button" onclick="document.getElementById('directAdjustFileInput').click()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Upload File Excel / CSV Hasil Opname untuk Penyesuaian">
-                <span class="material-symbols-outlined text-[18px] text-amber-700">upload_file</span>
+              <button type="button" onclick="document.getElementById('directAdjustFileInput').click()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Upload File Excel / CSV Hasil Opname untuk Penyesuaian">
+                <span class="material-symbols-outlined text-[18px]">upload_file</span>
                 <span>Import Excel</span>
               </button>
 
               <!-- Commit Adjustment Button -->
-              <button type="button" id="btnCommitDirectAdjust" onclick="commitDirectAdjustTable()" class="h-[38px] px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold opacity-50 cursor-not-allowed" disabled title="Terapkan Selisih Penyesuaian ke Master Stok">
+              <button type="button" id="btnCommitDirectAdjust" onclick="commitDirectAdjustTable()" class="h-[38px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold opacity-50 cursor-not-allowed" disabled title="Terapkan Selisih Penyesuaian ke Master Stok">
                 <span class="material-symbols-outlined text-[18px]">check_circle</span>
                 <span>Terapkan Adjust</span>
               </button>
@@ -1877,8 +2080,24 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
                   <span class="material-symbols-outlined text-[18px]">search</span>
                 </span>
-                <input type="text" id="adjustHistorySearchInput" oninput="renderAdjustHistoryTable()" placeholder="Cari No Referensi, SKU, Catatan..." 
+                <input type="text" id="adjustHistorySearchInput" oninput="renderAdjustHistoryTable()" placeholder="Cari No Referensi, SKU, Catatan..."
                   class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
+              </div>
+
+              <!-- Filter Tipe Stock: Semua | Kemas | Gimmick -->
+              <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shrink-0" title="Tampilkan hanya Kemas atau hanya Gimmick">
+                <button type="button" id="btnAdjTypeAllHistory" onclick="setAdjustItemType('ALL')"
+                  class="py-1.5 px-3 rounded-lg bg-amber-600 text-white shadow-2xs transition-all cursor-pointer">
+                  🌐 Semua
+                </button>
+                <button type="button" id="btnAdjTypeKemasHistory" onclick="setAdjustItemType('PACKAGING')"
+                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                  📦 Kemas
+                </button>
+                <button type="button" id="btnAdjTypeGimmickHistory" onclick="setAdjustItemType('GIMMICK')"
+                  class="py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                  🎁 Gimmick
+                </button>
               </div>
 
               <div class="premium-datepicker-wrapper">
@@ -1887,15 +2106,11 @@ require_once __DIR__ . '/../includes/header.php';
                   class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600" title="Filter Tanggal Penyesuaian">
               </div>
 
-              <button type="button" onclick="loadAdjustHistory()" class="h-[38px] px-3 rounded-lg bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Refresh Riwayat">
-                <span class="material-symbols-outlined text-[18px]">refresh</span>
-                <span>Refresh</span>
-              </button>
-            </div>
+              </div>
 
             <div class="flex items-center gap-2 shrink-0">
-              <button type="button" onclick="exportAdjustHistoryExcel()" class="h-[38px] px-3.5 rounded-lg bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-2xs" title="Download Riwayat Penyesuaian ke Excel (.xlsx)">
-                <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
+              <button type="button" onclick="exportAdjustHistoryExcel()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Riwayat Penyesuaian ke Excel (.xlsx)">
+                <span class="material-symbols-outlined text-[18px]">table_chart</span>
                 <span>Export Log Adjust</span>
               </button>
             </div>
@@ -1910,7 +2125,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <th class="p-3 text-center w-12 border-r border-white/20">No</th>
                     <th class="p-3 w-36 border-r border-white/20">Waktu</th>
                     <th class="p-3 w-40 border-r border-white/20">No Referensi</th>
-                    <th class="p-3 border-r border-white/20">Material Packaging</th>
+                    <th class="p-3 border-r border-white/20">Kemas</th>
                     <th class="p-3 w-28 border-r border-white/20">Lokasi Rak</th>
                     <th class="p-3 text-center w-24 border-r border-white/20">Stok Sebelum</th>
                     <th class="p-3 text-center w-28 font-bold border-r border-white/20">Penyesuaian</th>
@@ -1930,179 +2145,575 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ================= 3. TAB: BARANG MASUK (INBOUND) ================= -->
       <div id="tab-inbound" class="hidden space-y-4">
 
-        <!-- Inbound Control Bar -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-2 flex-1">
-            <div class="relative flex-1 min-w-[180px] max-w-md">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
-                <span class="material-symbols-outlined text-[18px]">search</span>
-              </span>
-              <input type="text" id="inboundSearchInput" oninput="loadInboundHistory()" placeholder="Cari No. Inbound, Material, Lokasi Rak, atau Penerima..." 
-                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
+        <!-- SUBVIEW 1: RIWAYAT / DAFTAR BARANG MASUK -->
+        <div id="inboundHistoryContainer" class="space-y-4">
+          <!-- Inbound Control Bar -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2 flex-1">
+              <div class="relative flex-1 min-w-[180px] max-w-md">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </span>
+                <input type="text" id="inboundSearchInput" oninput="loadInboundHistory()" placeholder="Cari No. Inbound, Material, Lokasi Rak, atau Penerima..." 
+                  class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white transition-colors">
+              </div>
+
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
+                <input type="text" id="inboundFromDateFilter" onchange="loadInboundHistory()" placeholder="Mulai Dari..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Mulai (From Date)">
+              </div>
+              <span class="text-slate-400 font-bold text-xs">s/d</span>
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
+                <input type="text" id="inboundToDateFilter" onchange="loadInboundHistory()" placeholder="Sampai Dengan..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Akhir (To Date)">
+              </div>
             </div>
 
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
-              <input type="text" id="inboundFromDateFilter" onchange="loadInboundHistory()" placeholder="Mulai Dari..." 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Mulai (From Date)">
-            </div>
-            <span class="text-slate-400 font-bold text-xs">s/d</span>
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-emerald-700">calendar_today</span>
-              <input type="text" id="inboundToDateFilter" onchange="loadInboundHistory()" placeholder="Sampai Dengan..." 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Tanggal Akhir (To Date)">
+            <!-- Inbound Actions (Uniform 38px Height & Solid Navy Blue Theme) -->
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <a href="export.php?type=inbound" target="_blank" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Riwayat Barang Masuk ke File Excel (.xlsx)">
+                <span class="material-symbols-outlined text-[18px]">table_chart</span>
+                <span>Export Inbound</span>
+              </a>
+
+              <?php if (Auth::isAdmin()): ?>
+              <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed rounded-xl" title="Sync Riwayat Barang Masuk ke Google Sheet">
+                <span class="material-symbols-outlined text-[18px]">table_chart</span>
+                <span>Sync Google Sheet</span>
+              </button>
+              <?php endif; ?>
+
+              <button onclick="switchInboundSubView('form')" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Input Penerimaan Barang Masuk (Halaman Penuh)">
+                <span class="material-symbols-outlined text-[18px]">add_box</span>
+                <span>Input Barang Masuk</span>
+              </button>
             </div>
           </div>
 
-          <!-- Inbound Actions (Uniform 38px Height) -->
-          <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button id="btnRefreshInbound" onclick="loadInboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Inbound">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
+          <!-- Full-Width Inbound Data Table -->
+          <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
+                  <tr>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Inbound</th>
+                    <th class="py-3.5 px-3.5 border-r border-white/20">Item &amp; Tipe (Kemas / Gimmick)</th>
+                    <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty In</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Lokasi Rak</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Petugas Penerima</th>
+                    <th class="py-3.5 px-3.5 border-r border-white/20">No. Ref / Catatan</th>
+                    <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="inboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
-            <a href="export.php?type=inbound" target="_blank" class="h-[38px] px-3.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Riwayat Barang Masuk ke File Excel (.xlsx)">
-              <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
-              <span>Export Inbound</span>
-            </a>
-
-            <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true, this)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Masuk ke Google Sheet">
-              <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
-              <span>Sync Google Sheet</span>
+        <!-- SUBVIEW 2: FORM INPUT BARANG MASUK (1 HALAMAN UTUH SEPERTI OUTBOUND & TASK) -->
+        <div id="inboundFormContainer" class="hidden space-y-4">
+          <!-- Form Header -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <button type="button" onclick="switchInboundSubView('history')" class="h-[38px] px-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali ke Riwayat Barang Masuk">
+              <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+              <span>Kembali ke Riwayat</span>
             </button>
-            <?php endif; ?>
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80 shadow-2xs shrink-0">
+              <span class="material-symbols-outlined text-[22px]">move_to_inbox</span>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Form Input Penerimaan Barang Masuk</h3>
+              <p class="text-[11px] text-slate-500 font-medium">Catat penerimaan barang masuk ke gudang (Kemas &amp; Gimmick)</p>
+            </div>
+          </div>
 
-            <button onclick="openAddInboundModal()" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Input Penerimaan Barang Masuk">
-              <span class="material-symbols-outlined text-[18px]">add_box</span>
-              <span>Input Barang Masuk</span>
-            </button>
+          <!-- Form Body Card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <form id="inboundForm" onsubmit="handleInboundTableSubmit(event)" class="space-y-4 text-xs">
+              
+              <!-- ================= LANGKAH 1: WAJIB PILIH TIPE BARANG (ATAS KE BAWAH) ================= -->
+              <div class="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-blue-50/30 border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-[#262363] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">1</span>
+                    <div>
+                      <h4 class="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <span>Pilih Tipe Penerimaan Barang</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">Wajib Dipilih *</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium">Tentukan jenis persediaan barang masuk: Stock Kemas atau Stock Gimmick</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto font-mono">Langkah 1 dari 2</span>
+                </div>
+
+                <!-- 2 Card Pilihan: Kemas vs Gimmick -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Kemas Card -->
+                  <button type="button" id="inboundTypeKemas" onclick="setInboundItemType('PACKAGING')"
+                    class="type-card-active p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-[#262363] text-white border-[#262363] shadow-md ring-2 ring-[#262363]/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">
+                        📦
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
+                          <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+
+                  <!-- Gimmick Card -->
+                  <button type="button" id="inboundTypeGimmick" onclick="setInboundItemType('GIMMICK')"
+                    class="type-card-inactive p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50/90 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl shrink-0">
+                        🎁
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
+                          <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= LANGKAH 2: INFORMASI & DETAIL PENERIMAAN ================= -->
+              <div class="flex items-center gap-2 pt-1 pb-0.5">
+                <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm">Informasi &amp; Detail Penerimaan</h4>
+              </div>
+
+              <!-- Meta Information Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tanggal Masuk</span>
+                    <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+                      <span class="material-symbols-outlined text-[12px]">lock</span>
+                      <span>Auto</span>
+                    </span>
+                  </label>
+                  <input type="text" id="inboundFormDateDisplay" readonly class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+                  <input type="hidden" id="inboundFormDate" value="<?= date('Y-m-d') ?>">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Jam / Waktu</span>
+                    <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+                      <span class="material-symbols-outlined text-[12px]">lock</span>
+                      <span>Auto</span>
+                    </span>
+                  </label>
+                  <input type="text" id="inboundFormTimeDisplay" readonly class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+                  <input type="hidden" id="inboundFormTime" value="<?= date('H:i') ?>">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">No. Referensi / PO / Batch <span class="text-rose-500 font-bold">*</span></label>
+                  <input type="text" id="inboundPoNumber" required placeholder="Contoh: PO-2026/08/001 atau No. SJ..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold outline-none focus:border-emerald-600">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+                  <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum (Opsional)..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
+                </div>
+              </div>
+
+              <!-- Photo Upload & Multi-Image Preview -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-emerald-600">photo_camera</span>
+                    <span>Foto Bukti / Surat Jalan / Kondisi Barang (Bisa > 1 Foto)</span>
+                  </label>
+                  <span id="inboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <input type="file" id="inboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleInboundPhotosSelect(event)">
+                  <button type="button" onclick="document.getElementById('inboundPhotosInput').click()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-300 shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 text-xs cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px] text-emerald-600">add_photo_alternate</span>
+                    <span>Pilih / Ambil Foto</span>
+                  </button>
+                  <button type="button" id="btnClearInboundPhotos" onclick="clearInboundPhotos()" class="hidden px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                    <span>Hapus Semua</span>
+                  </button>
+                </div>
+                <!-- Thumbnail preview container -->
+                <div id="inboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-32 overflow-y-auto"></div>
+              </div>
+
+              <!-- Items Table Container (Tanpa Kolom / Bar Barcode) -->
+              <div class="border border-slate-200 rounded-xl bg-white shadow-2xs overflow-hidden">
+                <div class="overflow-x-auto min-h-[260px]">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-100/95 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+                      <tr>
+                        <th class="p-3 w-10 text-center border-r border-slate-200/60">#</th>
+                        <th class="p-3 min-w-[260px] border-r border-slate-200/60">
+                          <span>Item / Kemas / Gimmick</span> <span class="text-rose-500">*</span>
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200/70 text-slate-600 ml-1 normal-case tracking-normal">
+                            <span class="material-symbols-outlined text-[12px]">barcode_scanner</span> Scan / Ketik
+                          </span>
+                        </th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">Lokasi Gudang / Rak</th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">No. Batch</th>
+                        <th class="p-3 w-36 min-w-[130px] border-r border-slate-200/60">Exp Date</th>
+                        <th class="p-3 w-32 min-w-[110px] text-center border-r border-slate-200/60">Qty Masuk <span class="text-rose-500">*</span></th>
+                        <th class="p-3 min-w-[160px] border-r border-slate-200/60">Catatan Item</th>
+                        <th class="p-3 w-14 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="inboundItemsTableBody" class="divide-y divide-slate-100">
+                      <!-- Dynamic rows inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Actions & Total Footer -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="addInboundTableRow(null, true)" class="h-[40px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs active:scale-95 inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-[19px]">add_circle</span>
+                  <span>Tambah Baris (Enter)</span>
+                </button>
+
+                <div class="flex items-center gap-3 justify-end flex-wrap">
+                  <div class="flex items-center gap-2 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+                    <span class="text-slate-600 font-bold text-xs">Total Qty Masuk:</span>
+                    <span id="inboundTotalQtySummary" class="font-mono font-black text-sm text-slate-900 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">0</span>
+                  </div>
+                  <button type="button" onclick="switchInboundSubView('history')" class="h-[40px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-200">
+                    Batal
+                  </button>
+                  <button type="submit" id="btnSubmitInboundTable" class="h-[40px] px-6 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs active:scale-95 inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    <span>Simpan &amp; Tambah Stok</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
 
-        <!-- Full-Width Inbound Data Table -->
-        <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
-                <tr>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Inbound</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas</th>
-                  <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty In</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Lokasi Rak</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Petugas Penerima</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">No. Ref / Catatan</th>
-                  <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="inboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
       <!-- ================= 4. TAB: BARANG KELUAR & MONITORING TASK (OUTBOUND) ================= -->
       <div id="tab-outbound" class="hidden space-y-4">
 
-        <!-- Outbound Control Bar -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-          <!-- Row 1: Search & Action Buttons -->
-          <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
-            <div class="relative flex-1 min-w-[240px]">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
-                <span class="material-symbols-outlined text-[18px]">search</span>
-              </span>
-              <input type="text" id="outboundSearchInput" oninput="loadOutboundHistory()" placeholder="Cari No. Keluar/Task, Material, Tujuan Line, Operator..." 
-                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
-            </div>
-
-            <!-- Action Buttons (Uniform 38px Height) -->
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button id="btnRefreshOutbound" onclick="loadOutboundHistory(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data Outbound">
-                <span class="material-symbols-outlined text-[18px]">refresh</span>
-                <span>Refresh</span>
-              </button>
-
-              <a href="export.php?type=outbound" target="_blank" class="h-[38px] px-3.5 bg-white hover:bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Riwayat Barang Keluar ke File Excel (.xlsx)">
-                <span class="material-symbols-outlined text-[18px] text-emerald-700">table_chart</span>
-                <span>Export Outbound</span>
-              </a>
-
-              <?php if (Auth::isAdmin()): ?>
-              <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true, this)" class="h-[38px] px-3.5 bg-emerald-700 hover:bg-emerald-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Keluar ke Google Sheet">
-                <span class="material-symbols-outlined text-[18px] text-emerald-200">table_chart</span>
-                <span>Sync Google Sheet</span>
-              </button>
-              <?php endif; ?>
-
-              <button onclick="openAddOutboundModal()" class="h-[38px] px-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Input Pengeluaran Manual Admin">
-                <span class="material-symbols-outlined text-[18px]">outbox</span>
-                <span>Keluar Manual</span>
-              </button>
-
-              <button onclick="switchAdminTab('tasks')" class="h-[38px] px-3.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Buka Form Penugasan Operator (Task Dispatch)">
-                <span class="material-symbols-outlined text-[18px]">assignment_add</span>
-                <span>Tugaskan Operator</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Row 2: Secondary Filters (Date Range & Select Dropdowns) -->
-          <div class="flex flex-wrap items-center gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
-            <!-- Date Range Group -->
-            <div class="flex items-center gap-1.5 bg-slate-50/80 p-1 px-2.5 rounded-lg border border-slate-200/90">
-              <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px] text-amber-700">date_range</span>
-                <span>Periode:</span>
-              </span>
-              <div class="premium-datepicker-wrapper">
-                <input type="text" id="outboundFromDateFilter" onchange="loadOutboundHistory()" placeholder="Mulai Dari..." 
-                  class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Mulai (From Date)">
+        <!-- SUBVIEW 1: RIWAYAT / DAFTAR BARANG KELUAR -->
+        <div id="outboundHistoryContainer" class="space-y-4">
+          <!-- Outbound Control Bar -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <!-- Row 1: Search & Action Buttons -->
+            <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
+              <div class="relative flex-1 min-w-[240px]">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </span>
+                <input type="text" id="outboundSearchInput" oninput="loadOutboundHistory()" placeholder="Cari No. Keluar/Task, Material, Tujuan Line, Operator..." 
+                  class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-amber-600 focus:bg-white transition-colors">
               </div>
-              <span class="text-slate-400 font-bold text-xs">s/d</span>
-              <div class="premium-datepicker-wrapper">
-                <input type="text" id="outboundToDateFilter" onchange="loadOutboundHistory()" placeholder="Sampai Dengan..." 
-                  class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Akhir (To Date)">
+
+              <!-- Action Buttons (Uniform 38px Height & Solid Navy Blue Theme) -->
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
+                <a href="export.php?type=outbound" target="_blank" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Riwayat Barang Keluar ke File Excel (.xlsx)">
+                  <span class="material-symbols-outlined text-[18px] text-emerald-300">table_chart</span>
+                  <span>Export Outbound</span>
+                </a>
+
+                <?php if (Auth::isAdmin()): ?>
+                <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Keluar ke Google Sheet">
+                  <span class="material-symbols-outlined text-[18px]">table_chart</span>
+                  <span>Sync Google Sheet</span>
+                </button>
+                <?php endif; ?>
+
+                <button onclick="switchOutboundSubView('form')" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" title="Input Pengeluaran Manual Admin (Form Halaman Penuh)">
+                  <span class="material-symbols-outlined text-[18px]">outbox</span>
+                  <span>Keluar Manual</span>
+                </button>
+
+                <button onclick="switchAdminTab('tasks')" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" title="Buka Form Penugasan PIC (Task Dispatch)">
+                  <span class="material-symbols-outlined text-[18px]">assignment_add</span>
+                  <span>Tugaskan PIC</span>
+                </button>
               </div>
             </div>
 
-            <!-- Select Dropdown Filters -->
-            <select id="outboundTypeFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
-              <option value="ALL">Semua Jenis Pengeluaran</option>
-              <option value="TASK_PICKING">Pengambilan Line (Operator Task)</option>
-              <option value="MANUAL_OUTBOUND">Pengeluaran Manual (Admin)</option>
-            </select>
+            <!-- Row 2: Secondary Filters (Date Range & Select Dropdowns) -->
+            <div class="flex flex-wrap items-center gap-2.5 pt-2.5 border-t border-slate-100 text-xs">
+              <!-- Date Range Group -->
+              <div class="flex items-center gap-1.5 bg-slate-50/80 p-1 px-2.5 rounded-lg border border-slate-200/90">
+                <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px] text-amber-700">date_range</span>
+                  <span>Periode:</span>
+                </span>
+                <div class="premium-datepicker-wrapper">
+                  <input type="text" id="outboundFromDateFilter" onchange="loadOutboundHistory()" placeholder="Mulai Dari..." 
+                    class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Mulai (From Date)">
+                </div>
+                <span class="text-slate-400 font-bold text-xs">s/d</span>
+                <div class="premium-datepicker-wrapper">
+                  <input type="text" id="outboundToDateFilter" onchange="loadOutboundHistory()" placeholder="Sampai Dengan..." 
+                    class="premium-datepicker-input px-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 outline-none focus:border-amber-600 h-[30px]" title="Tanggal Akhir (To Date)">
+                </div>
+              </div>
 
-            <select id="outboundStatusFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
-              <option value="ALL">Semua Status Pengerjaan</option>
-              <option value="IN_PROGRESS">On Proses / In Progress</option>
-              <option value="PENDING">Pending (Menunggu)</option>
-              <option value="COMPLETED">Selesai Dikerjakan</option>
-              <option value="CANCELLED">Dibatalkan</option>
-            </select>
+              <!-- Select Dropdown Filters -->
+              <select id="outboundTypeFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
+                <option value="ALL">Semua Jenis Pengeluaran</option>
+                <option value="TASK_PICKING">Pengambilan Line (Operator Task)</option>
+                <option value="MANUAL_OUTBOUND">Pengeluaran Manual (Admin)</option>
+              </select>
+
+              <select id="outboundStatusFilter" onchange="loadOutboundHistory()" class="h-[36px] px-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-amber-600">
+                <option value="ALL">Semua Status Pengerjaan</option>
+                <option value="IN_PROGRESS">On Proses / In Progress</option>
+                <option value="PENDING">Pending (Menunggu)</option>
+                <option value="COMPLETED">Selesai Dikerjakan</option>
+                <option value="CANCELLED">Dibatalkan</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Full-Width Outbound Data Table -->
+          <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
+                  <tr>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Dokumen / Task</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Status</th>
+                    <th class="py-3.5 px-3.5 border-r border-white/20">Item &amp; Tipe (Kemas / Gimmick)</th>
+                    <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty Out</th>
+                    <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tujuan Antar &amp; PIC</th>
+                    <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="outboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- Full-Width Outbound Data Table -->
-        <div class="bg-white rounded-xl border border-slate-200/90 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
-                <tr>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tanggal</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">No. Dokumen / Task</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Status</th>
-                  <th class="py-3.5 px-3.5 border-r border-white/20">Kemas</th>
-                  <th class="py-3.5 px-3.5 text-center whitespace-nowrap border-r border-white/20 font-mono font-bold">Qty Out</th>
-                  <th class="py-3.5 px-3.5 whitespace-nowrap border-r border-white/20">Tujuan Antar & PIC</th>
-                  <th class="py-3.5 px-3.5 text-center whitespace-nowrap">Aksi</th>
-                </tr>
-              </thead>
-              <tbody id="outboundHistoryTable" class="divide-y divide-slate-100 text-xs"></tbody>
-            </table>
+        <!-- SUBVIEW 2: FORM INPUT PENGELUARAN (1 HALAMAN UTUH) -->
+        <div id="outboundFormContainer" class="hidden space-y-4">
+          <!-- Form Header -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            <button type="button" onclick="switchOutboundSubView('history')" class="h-[38px] px-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali ke Riwayat Barang Keluar">
+              <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+              <span>Kembali ke Riwayat</span>
+            </button>
+            <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 shadow-2xs shrink-0">
+              <span class="material-symbols-outlined text-[22px]">outbox</span>
+            </div>
+            <div>
+              <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Form Input Pengeluaran Barang Keluar</h3>
+              <p class="text-[11px] text-slate-500 font-medium">Catat pengeluaran barang keluar langsung ke lini brand produksi (Kemas &amp; Gimmick)</p>
+            </div>
+          </div>
+
+          <!-- Form Body Card -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            <form id="outboundForm" onsubmit="handleOutboundTableSubmit(event)" class="space-y-4 text-xs">
+              
+              <!-- ================= LANGKAH 1: WAJIB PILIH TIPE BARANG (ATAS KE BAWAH) ================= -->
+              <div class="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-blue-50/30 border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-[#262363] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">1</span>
+                    <div>
+                      <h4 class="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <span>Pilih Tipe Pengeluaran Barang</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">Wajib Dipilih *</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium">Tentukan jenis persediaan yang akan dikeluarkan: Stock Kemas atau Stock Gimmick</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto font-mono">Langkah 1 dari 2</span>
+                </div>
+
+                <!-- 2 Card Pilihan: Kemas vs Gimmick -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Kemas Card -->
+                  <button type="button" id="outboundTypeKemas" onclick="setOutboundItemType('PACKAGING')"
+                    class="type-card-active p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-[#262363] text-white border-[#262363] shadow-md ring-2 ring-[#262363]/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">
+                        📦
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
+                          <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+
+                  <!-- Gimmick Card -->
+                  <button type="button" id="outboundTypeGimmick" onclick="setOutboundItemType('GIMMICK')"
+                    class="type-card-inactive p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50/90 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl shrink-0">
+                        🎁
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
+                          <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= LANGKAH 2: INFORMASI & DETAIL PENGELUARAN ================= -->
+              <div class="flex items-center gap-2 pt-1 pb-0.5">
+                <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm">Informasi &amp; Detail Pengeluaran</h4>
+              </div>
+
+              <!-- Meta Information Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Tanggal Keluar</span>
+                    <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+                      <span class="material-symbols-outlined text-[12px]">lock</span>
+                      <span>Auto</span>
+                    </span>
+                  </label>
+                  <input type="text" id="outboundFormDateDisplay" readonly class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+                  <input type="hidden" id="outboundFormDate" value="<?= date('Y-m-d') ?>">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Jam / Waktu</span>
+                    <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
+                      <span class="material-symbols-outlined text-[12px]">lock</span>
+                      <span>Auto</span>
+                    </span>
+                  </label>
+                  <input type="text" id="outboundFormTimeDisplay" readonly class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
+                  <input type="hidden" id="outboundFormTime" value="<?= date('H:i') ?>">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
+                  <input type="text" id="outboundGlobalNotes" placeholder="Keterangan / No SPK (Opsional)..." class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-amber-600">
+                </div>
+              </div>
+
+              <!-- Photo Upload & Multi-Image Preview -->
+              <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
+                    <span>Foto Bukti Pengeluaran / Serah Terima (Bisa > 1 Foto)</span>
+                  </label>
+                  <span id="outboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <input type="file" id="outboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleOutboundPhotosSelect(event)">
+                  <button type="button" onclick="document.getElementById('outboundPhotosInput').click()" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-300 shadow-2xs transition-all active:scale-95 flex items-center gap-1.5 text-xs cursor-pointer">
+                    <span class="material-symbols-outlined text-[16px] text-amber-600">add_photo_alternate</span>
+                    <span>Pilih / Ambil Foto</span>
+                  </button>
+                  <button type="button" id="btnClearOutboundPhotos" onclick="clearOutboundPhotos()" class="hidden px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                    <span>Hapus Semua</span>
+                  </button>
+                </div>
+                <!-- Thumbnail preview container -->
+                <div id="outboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-32 overflow-y-auto"></div>
+              </div>
+
+              <!-- Items Table Container -->
+              <div class="border border-slate-200 rounded-xl bg-white shadow-2xs overflow-hidden">
+                <div class="overflow-x-auto min-h-[260px]">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-100/95 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+                      <tr>
+                        <th class="p-3 w-10 text-center border-r border-slate-200/60">#</th>
+                        <th class="p-3 min-w-[260px] border-r border-slate-200/60">
+                          <span>Item / Kemas / Gimmick</span> <span class="text-rose-500">*</span>
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200/70 text-slate-600 ml-1 normal-case tracking-normal">
+                            <span class="material-symbols-outlined text-[12px]">barcode_scanner</span> Scan / Ketik
+                          </span>
+                        </th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">Lokasi (Suggest) <span class="text-rose-500">*</span></th>
+                        <th class="p-3 min-w-[200px] border-r border-slate-200/60 hidden" id="outboundThBatchExp">Batch &amp; Exp (Sisa Stok) <span class="text-rose-500">*</span></th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">Tujuan Brand <span class="text-rose-500">*</span></th>
+                        <th class="p-3 w-32 min-w-[110px] text-center border-r border-slate-200/60">Qty Keluar <span class="text-rose-500">*</span></th>
+                        <th class="p-3 min-w-[160px] border-r border-slate-200/60">Alasan Pengeluaran <span class="text-rose-500">*</span></th>
+                        <th class="p-3 w-14 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="outboundItemsTableBody" class="divide-y divide-slate-100">
+                      <!-- Dynamic rows inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Bottom Bar with Add Row and Total Summary -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                <button type="button" onclick="addOutboundTableRow()" class="h-[40px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-xs self-start cursor-pointer active:scale-95">
+                  <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                  <span>Tambah Baris (Enter)</span>
+                </button>
+
+                <div class="flex items-center justify-end gap-3">
+                  <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <span>Total Qty Keluar:</span>
+                    <span class="px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-950 border border-amber-200 font-mono font-black text-sm" id="outboundTotalQtySummary">0</span>
+                  </div>
+
+                  <button type="button" onclick="switchOutboundSubView('history')" class="h-[40px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer">
+                    Batal
+                  </button>
+                  <button type="submit" id="btnSubmitOutboundTable" class="h-[40px] px-6 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-2 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    <span>Catat &amp; Potong Stok</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
+
       </div>
 
       <!-- ================= 4.1 TAB: REQUEST CONSUMABLE & APPROVAL ACC ADMIN ================= -->
@@ -2145,15 +2756,11 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button type="button" onclick="printConsumableRequestsReport()" class="h-[38px] px-3.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg border border-amber-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Cetak Rekap Laporan Permintaan Consumable">
+            <button type="button" onclick="printConsumableRequestsReport()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Cetak Rekap Laporan Permintaan Consumable">
               <span class="material-symbols-outlined text-[18px] text-amber-700">print</span>
               <span>Cetak Rekap</span>
             </button>
-            <button type="button" onclick="loadAdminConsumableRequests()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Pengajuan">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
         </div>
 
         <!-- DataTable Container -->
@@ -2190,7 +2797,7 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <div>
               <div class="flex items-center gap-2">
-                <h2 class="font-black text-slate-900 text-base">Peringatan PO & Safety Stock</h2>
+                <h2 class="font-black text-slate-900 text-base">Reorder Kemas & Rekomendasi PO</h2>
                 <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300">Lead Time: 1 Minggu (7 Hari)</span>
               </div>
               <p class="text-xs text-slate-500">Monitoring stok 0 / menipis dan rekomendasi Qty Purchase Order agar operasional & produksi tidak terputus.</p>
@@ -2198,19 +2805,15 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
-            <button type="button" onclick="shareReorderAlertsWhatsApp()" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Kirim Rekap Kebutuhan PO via WhatsApp">
+            <button type="button" onclick="shareReorderAlertsWhatsApp()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Kirim Rekap Kebutuhan PO via WhatsApp">
               <span class="material-symbols-outlined text-[18px]">share</span>
               <span>Share Rekap PO (WA)</span>
             </button>
-            <button type="button" onclick="exportReorderAlerts()" class="h-[38px] px-3.5 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Rekap PO ke CSV / Excel">
-              <span class="material-symbols-outlined text-[18px] text-emerald-600">download</span>
-              <span>Export CSV</span>
+            <button type="button" onclick="exportReorderAlerts()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Rekap Stock Kritis ke Excel (.xlsx)">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
+              <span>Export Excel</span>
             </button>
-            <button type="button" onclick="loadReorderAlerts()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Refresh Data">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-          </div>
+            </div>
         </div>
 
         <!-- 3 KPI Cards -->
@@ -2254,7 +2857,7 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="flex items-center gap-2 flex-1 min-w-[260px]">
             <div class="relative flex-1">
               <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
-              <input type="text" id="reorderSearchInput" oninput="debounceReorderSearch()" placeholder="Cari SKU, Nama Material Kemas, Rak..." 
+              <input type="text" id="reorderSearchInput" oninput="debounceReorderSearch()" placeholder="Cari SKU, Nama Kemas, Rak..." 
                 class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs outline-none focus:bg-white focus:border-amber-600 font-medium">
             </div>
             <select id="reorderCategoryFilter" onchange="loadReorderAlerts()" class="p-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 outline-none">
@@ -2326,13 +2929,8 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex items-center gap-2">
-            <button type="button" onclick="loadVasStock()" class="h-[38px] px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 border border-slate-200 shadow-2xs">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true, this)" class="h-[38px] px-3.5 rounded-lg bg-purple-700 hover:bg-purple-800 text-white shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock VAS ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock VAS ke Google Sheet">
               <span class="material-symbols-outlined text-[18px] text-purple-200">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -2373,87 +2971,461 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <!-- ================= 4.2 TAB: STOCK TRANSFER (STOCK INVENTORY <-> ZONE VAS) ================= -->
-      <div id="tab-stock_transfer" class="hidden space-y-4">
-        <!-- Top Toolbar & Search -->
-        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div class="flex flex-wrap items-center gap-2 flex-1">
-            <div class="relative flex-1 min-w-[200px] max-w-md">
-              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
-                <span class="material-symbols-outlined text-[18px]">search</span>
-              </span>
-              <input type="text" id="stSearchInput" oninput="loadStockTransferHistory()" placeholder="Cari No Transaksi, SKU Code, Nama Material, Catatan..." 
-                class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
+      <!-- ================= 4.15 TAB: MOVEMENT STOCK / ORIGIN TO DESTINATION ================= -->
+      <div id="tab-location_transfer" class="hidden space-y-4">
+        
+        <!-- Header & Sub-Tab Switcher -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="window.history.length > 1 ? window.history.back() : switchAdminTab('dashboard')" class="h-[38px] w-[38px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center justify-center text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali">
+              <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+            </button>
+            <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center flex-shrink-0 border border-blue-200 shadow-2xs">
+              <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
             </div>
-
-            <select id="stTypeFilter" onchange="loadStockTransferHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-600">
-              <option value="ALL">Semua Arah Transfer</option>
-              <option value="TRANSFER_IN">Stock Inventory &rarr; Zone VAS (Masuk)</option>
-              <option value="TRANSFER_OUT">Zone VAS &rarr; Stock Inventory (Keluar Balik)</option>
-              <option value="VAS_OUTBOUND">Zone VAS &rarr; Outbound / Keluar (Disposal)</option>
-            </select>
-
-            <!-- From Date -->
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
-              <input type="text" id="stFromDateFilter" placeholder="Mulai Dari..." onchange="loadStockTransferHistory()" 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Mulai (From Date)">
-            </div>
-
-            <span class="text-slate-400 font-bold text-xs">s/d</span>
-
-            <!-- To Date -->
-            <div class="premium-datepicker-wrapper">
-              <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
-              <input type="text" id="stToDateFilter" placeholder="Sampai Dengan..." onchange="loadStockTransferHistory()" 
-                class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Akhir (To Date)">
+            <div>
+              <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Movement Product Location To Location</h2>
+              <p class="text-[11px] text-slate-500 font-medium">Movement perpindahan produk antar lokasi &amp; penugasan tugas fisik ke Operator</p>
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="loadStockTransferHistory()" class="h-[38px] px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-1.5 border border-slate-200 shadow-2xs">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh Log</span>
+          <!-- Sub-tab buttons -->
+          <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold self-start sm:self-auto gap-1">
+            <button type="button" id="subtab-mvt-form-btn" onclick="switchLocationTransferSubView('form')" 
+              class="h-[34px] px-3.5 rounded-lg bg-white text-blue-700 shadow-2xs font-bold transition-all flex items-center gap-1.5 border border-slate-200/60 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">add_task</span>
+              <span>Buat Movement Baru</span>
             </button>
-            <button type="button" onclick="openStockTransferModal('IN_VAS')" class="h-[38px] px-4 bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-indigo-600/30 inline-flex items-center gap-1.5 cursor-pointer">
-              <span class="material-symbols-outlined text-[18px]">swap_horizontal_circle</span>
-              <span>Stock Transfer</span>
+            <button type="button" id="subtab-mvt-history-btn" onclick="switchLocationTransferSubView('history')" 
+              class="h-[34px] px-3.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all font-semibold flex items-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">history</span>
+              <span>Riwayat &amp; Monitoring Movement</span>
             </button>
           </div>
         </div>
 
-        <!-- History Table Container -->
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <div class="flex items-center gap-2.5">
-              <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
-                <span class="material-symbols-outlined text-[20px]">swap_horizontal_circle</span>
-              </div>
+        <!-- VIEW 1: FORM INPUT MOVEMENT PRODUCT -->
+        <div id="mvtFormViewContainer" class="space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 class="font-extrabold text-slate-900 text-sm">Riwayat Audit Stock Transfer</h3>
-                <p class="text-[11px] text-slate-400">Daftar lengkap pergerakan transfer stok antara Stock Inventory dan Zone VAS</p>
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span>Form Request Movement Item &amp; Penugasan Operator</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Admin merequest perpindahan barang dari Origin (Lokasi Asal) ke Destination (Lokasi Tujuan) dan menugaskan ke Operator</p>
               </div>
+
+              <!-- Pilihan Tipe: Kemas vs Gimmick -->
+              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-[10px] font-extrabold text-slate-500 uppercase px-1.5">Tipe Item:</span>
+                <button type="button" id="mvtTypeKemas" onclick="setLocationTransferItemType('PACKAGING')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-white bg-[#262363] shadow-xs cursor-pointer flex items-center gap-1">
+                  <span>📦</span>
+                  <span>Kemas (Tanpa Batch)</span>
+                </button>
+                <button type="button" id="mvtTypeGimmick" onclick="setLocationTransferItemType('GIMMICK')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
+                  <span>🎁</span>
+                  <span>Gimmick (Batch &amp; Exp)</span>
+                </button>
+              </div>
+            </div>
+
+            <form id="formLocationTransfer" onsubmit="submitLocationTransfer(event)" class="space-y-4 text-xs">
+              
+              <!-- Batch Defaults Toolbar -->
+              <div class="p-4 bg-gradient-to-r from-blue-50/50 via-slate-50 to-indigo-50/40 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs shadow-2xs">
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1.5">Tugaskan ke Operator PIC <span class="text-rose-500">*</span></label>
+                  <select id="mvtGlobalOperator" required class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-600 font-semibold text-xs text-slate-800 shadow-2xs">
+                    <option value="">-- Pilih Operator --</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1.5">Prioritas Penugasan</label>
+                  <select id="mvtGlobalPriority" class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-600 font-bold text-xs text-slate-800 shadow-2xs" data-no-search>
+                    <option value="NORMAL">Normal</option>
+                    <option value="URGENT">URGENT</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1.5">Catatan Perintah / Instruksi</label>
+                  <input type="text" id="mvtGlobalNotes" placeholder="Contoh: Pindahkan untuk penataan ulang rak kemas..." class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg outline-none focus:border-blue-600 font-medium text-xs text-slate-800 shadow-2xs">
+                </div>
+              </div>
+
+              <!-- Multi-Row Table Movement -->
+              <div class="overflow-hidden border border-slate-200 rounded-xl bg-white shadow-sm">
+                <div class="overflow-x-auto min-h-[300px]">
+                  <table class="w-full text-left border-collapse">
+                    <thead class="bg-[#1e293b] text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-slate-800 sticky top-0 z-10">
+                      <tr>
+                        <th class="p-3 w-10 text-center border-r border-white/10">No</th>
+                        <th class="p-3 min-w-[240px] border-r border-white/10">
+                          <div class="flex items-center justify-between">
+                            <span>Produk / Item <span class="text-rose-400">*</span></span>
+                            <span class="text-[9px] font-normal px-1.5 py-0.2 rounded bg-white/10 text-blue-200">Scan / Ketik</span>
+                          </div>
+                        </th>
+                        <th id="mvtHeaderBatchCol" class="p-3 w-48 min-w-[170px] border-r border-white/10 hidden">No. Batch <span class="text-rose-400">*</span></th>
+                        <th id="mvtHeaderExpCol" class="p-3 w-36 min-w-[130px] border-r border-white/10 hidden">Exp Date</th>
+                        <th class="p-3 w-56 min-w-[210px] border-r border-white/10">Origin (Lokasi Asal) <span class="text-rose-400">*</span></th>
+                        <th class="p-3 w-48 min-w-[170px] border-r border-white/10">Destination (Lokasi Tujuan) <span class="text-rose-400">*</span></th>
+                        <th class="p-3 w-32 min-w-[110px] text-center border-r border-white/10">Qty Pindah <span class="text-rose-400">*</span></th>
+                        <th class="p-3 min-w-[160px] border-r border-white/10">Catatan Item</th>
+                        <th class="p-3 w-12 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="mvtItemsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Footer Actions -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="addLocationTransferTableRow()" class="h-[40px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95">
+                    <span class="material-symbols-outlined text-[19px]">add_circle</span>
+                    <span>Tambah Baris Item</span>
+                  </button>
+                  <button type="button" onclick="resetLocationTransferForm()" class="h-[40px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer" title="Bersihkan Form">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center gap-3 self-end sm:self-auto">
+                  <div class="px-4 py-2 bg-slate-100 rounded-xl text-right font-mono border border-slate-200">
+                    <span class="text-[11px] text-slate-500 font-semibold">Total Qty: </span>
+                    <span id="mvtTotalQtySummary" class="text-sm font-black text-blue-700">0</span>
+                  </div>
+
+                  <button type="submit" id="btnSubmitLocationTransfer" class="h-[40px] px-6 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-2 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+                    <span>Kirim &amp; Assign ke Operator</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+
+        <!-- VIEW 2: RIWAYAT & MONITORING MOVEMENT OPERATOR -->
+        <div id="mvtHistoryViewContainer" class="hidden space-y-4">
+          <!-- Filter Toolbar -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2 flex-1">
+              <div class="relative flex-1 min-w-[200px] max-w-sm">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </span>
+                <input type="text" id="mvtSearchInput" oninput="loadLocationTransferHistory()" placeholder="Cari No Task, SKU, Nama, Lokasi Rak..." 
+                  class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+              </div>
+
+              <select id="mvtStatusFilter" onchange="loadLocationTransferHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-blue-600" data-no-search>
+                <option value="ALL">Semua Status</option>
+                <option value="ACTIVE">Aktif (Pending / In Progress)</option>
+                <option value="PENDING">Menunggu Operator (Pending)</option>
+                <option value="IN_PROGRESS">Sedang Dikerjakan Operator</option>
+                <option value="COMPLETED">Selesai Pindah (Completed)</option>
+                <option value="CANCELLED">Dibatalkan</option>
+              </select>
+
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-blue-700">calendar_today</span>
+                <input type="text" id="mvtDateFilter" onchange="loadLocationTransferHistory()" placeholder="Filter Tanggal..." 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-blue-600" title="Filter Tanggal Movement">
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="switchLocationTransferSubView('form')" class="h-[38px] px-4 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">add</span>
+                <span>Buat Movement Baru</span>
+              </button>
             </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-slate-100/80 text-slate-700 uppercase font-extrabold text-[10px] tracking-wider border-b border-slate-200 whitespace-nowrap">
-                <tr>
-                  <th class="p-3">No Transaksi</th>
-                  <th class="p-3">Material / SKU</th>
-                  <th class="p-3 text-center">From (Asal)</th>
-                  <th class="p-3 text-center">To (Tujuan)</th>
-                  <th class="p-3 text-center">Qty Transfer</th>
-                  <th class="p-3">Catatan / Keterangan</th>
-                  <th class="p-3">Operator / User</th>
-                  <th class="p-3 text-right">Tanggal & Waktu</th>
-                </tr>
-              </thead>
-              <tbody id="stHistoryTableBody" class="divide-y divide-slate-100 text-xs">
-                <!-- Rows populated by JS -->
-              </tbody>
-            </table>
+          <!-- History Table -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-[#1e293b] text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-slate-800">
+                  <tr>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Tanggal &amp; No. Task</th>
+                    <th class="p-3 border-r border-white/10 min-w-[200px]">Produk / SKU</th>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Tipe Item</th>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Batch &amp; Exp</th>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Origin &rarr; Destination</th>
+                    <th class="p-3 text-center border-r border-white/10 whitespace-nowrap">Target Qty</th>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Operator Ditugaskan</th>
+                    <th class="p-3 text-center border-r border-white/10 whitespace-nowrap">Status</th>
+                    <th class="p-3 text-center whitespace-nowrap">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="mvtHistoryTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ================= 4.2 TAB: STOCK TRANSFER (GUDANG BESAR ⇋ ZONE VAS) ================= -->
+      <div id="tab-stock_transfer" class="hidden space-y-4">
+        
+        <!-- Header -->
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="window.history.length > 1 ? window.history.back() : switchAdminTab('dashboard')" class="h-[38px] w-[38px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center justify-center text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali">
+              <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+            </button>
+            <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0 border border-indigo-200 shadow-2xs">
+              <span class="material-symbols-outlined text-[22px]">sync_alt</span>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Stock Transfer (Gudang Besar ⇋ Zone VAS)</h2>
+              <p class="text-[11px] text-slate-500 font-medium">Pencatatan transfer stok barang antara Gudang Besar dan Area VAS</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 1: FULL-PAGE FORM INPUT TRANSFER STOK -->
+        <div id="stFormViewContainer" class="hidden space-y-4">
+          <!-- Form Header with Back Button & Type Selector -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <button type="button" onclick="switchStockTransferSubView('history')" class="h-[38px] px-3.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold border border-slate-200 shadow-2xs shrink-0 cursor-pointer" title="Kembali ke Riwayat Log Transfer">
+                <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+                <span>Kembali ke Riwayat</span>
+              </button>
+              <div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center flex-shrink-0 border border-indigo-200 shadow-2xs">
+                <span class="material-symbols-outlined text-[22px]">swap_horizontal_circle</span>
+              </div>
+              <div>
+                <h2 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Form Input Stock Transfer (Gudang Besar ⇋ Zone VAS)</h2>
+                <p class="text-[11px] text-slate-500 font-medium">Transfer stok barang multi-item antara Gudang Besar dan Zone VAS</p>
+              </div>
+            </div>
+
+            <!-- Pilihan Tipe: Kemas vs Gimmick -->
+            <div id="stTopTypeSelector" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
+              <span class="text-[10px] font-extrabold text-slate-500 uppercase px-1.5">Tipe:</span>
+              <button type="button" id="stTypeKemas" onclick="setStockTransferItemType('PACKAGING')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
+                <span>📦</span>
+                <span>Kemas</span>
+              </button>
+              <button type="button" id="stTypeGimmick" onclick="setStockTransferItemType('GIMMICK')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
+                <span>🎁</span>
+                <span>Gimmick</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-extrabold border border-indigo-200">
+                  Mode Multi-Item
+                </span>
+                <span class="text-xs text-slate-500 font-medium">Input mutasi transfer barang keluar/masuk antar lokasi gudang &amp; VAS</span>
+              </div>
+              <div id="stActiveTypeBadge" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                <span>Belum Pilih Tipe Stock</span>
+              </div>
+            </div>
+
+            <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-4 text-xs">
+              <!-- Meta Information Row -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div>
+                  <label class="block font-bold text-slate-800 mb-1">From (Asal) <span class="text-rose-500">*</span></label>
+                  <select id="stFormFrom" onchange="onStFromChange()" class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
+                    <option value="Gudang Besar" selected>Gudang Besar</option>
+                    <option value="VAS">Zone VAS</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-800 mb-1">To (Tujuan) <span class="text-rose-500">*</span></label>
+                  <select id="stFormTo" onchange="onStToChange()" class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
+                    <option value="VAS" selected>Zone VAS</option>
+                    <option value="Gudang Besar">Gudang Besar</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Tanggal Transfer</label>
+                  <input type="text" id="stFormDateDisplay" readonly value="<?= date('d F Y - H:i') ?>" class="w-full h-[38px] px-3 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed outline-none">
+                </div>
+
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Catatan Dokumen</label>
+                  <input type="text" id="stGlobalNotes" placeholder="Keterangan / No SPK / Surat Jalan..." class="w-full h-[38px] px-3 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-indigo-600">
+                </div>
+              </div>
+
+              <!-- Items Table Container -->
+              <div class="border border-slate-200 rounded-xl bg-white shadow-2xs overflow-hidden">
+                <div class="overflow-x-auto min-h-[300px]">
+                  <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-100/95 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+                      <tr>
+                        <th class="p-3 w-10 text-center border-r border-slate-200/60">#</th>
+                        <th class="p-3 min-w-[260px] border-r border-slate-200/60">
+                          <div class="flex items-center justify-between">
+                            <span>Item / Kemas / Gimmick <span class="text-rose-500">*</span></span>
+                            <span class="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">Scan / Ketik</span>
+                          </div>
+                        </th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">Lokasi Asal (Suggest)</th>
+                        <th class="p-3 min-w-[220px] border-r border-slate-200/60 st-th-batch" id="stThBatchExp">Pilih Batch &amp; Exp (Sisa Stok)</th>
+                        <th class="p-3 w-40 min-w-[140px] border-r border-slate-200/60">Lokasi Tujuan</th>
+                        <th class="p-3 w-32 min-w-[110px] text-center border-r border-slate-200/60">Qty Transfer <span class="text-rose-500">*</span></th>
+                        <th class="p-3 min-w-[160px] border-r border-slate-200/60">Catatan Item</th>
+                        <th class="p-3 w-14 text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="stItemsTableBody" class="divide-y divide-slate-100">
+                      <!-- Dynamic rows inserted here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Bottom Bar with Add Row and Total Summary -->
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="addStockTransferTableRow()" class="h-[40px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-extrabold text-xs flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95">
+                    <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                    <span>Tambah Baris (Enter)</span>
+                  </button>
+                  <button type="button" onclick="resetStockTransferForm()" class="h-[40px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer" title="Bersihkan Form">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <span>Reset</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-end gap-3">
+                  <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <span>Total Qty Transfer:</span>
+                    <span class="px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-950 border border-indigo-200 font-mono font-black text-sm" id="stTotalQtySummary">0</span>
+                  </div>
+
+                  <button type="submit" id="btnSubmitStockTransferBatch" class="h-[40px] px-6 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-2 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+                    <span>Catat & Process Transfer Stok</span>
+                  </button>
+                </div>
+              </div>
+
+              <datalist id="commonLocationsList">
+                <option value="Zone VAS">
+                <option value="Gudang Besar">
+                <option value="Rak G-01">
+                <option value="Rak G-02">
+                <option value="Rak G-03">
+                <option value="Rak G-04">
+                <option value="Rak G-05">
+                <option value="B1-A-01-001">
+                <option value="B1-A-01-002">
+                <option value="B1-A-02-001">
+                <option value="B1-A-02-002">
+                <option value="B1-B-01-001">
+                <option value="B1-B-01-002">
+                <option value="B1-C-01-001">
+                <option value="B1-C-01-002">
+                <option value="B1-D-01-001">
+                <option value="B1-D-01-002">
+              </datalist>
+            </form>
+          </div>
+        </div>
+
+        <!-- VIEW 2: RIWAYAT AUDIT MUTASI -->
+        <div id="stHistoryViewContainer" class="space-y-4">
+          <!-- Top Toolbar & Search -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2 flex-1">
+              <div class="relative flex-1 min-w-[200px] max-w-md">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                  <span class="material-symbols-outlined text-[18px]">search</span>
+                </span>
+                <input type="text" id="stSearchInput" oninput="loadStockTransferHistory()" placeholder="Cari No Transaksi, SKU Code, Nama Material, Catatan..." 
+                  class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:bg-white transition-colors">
+              </div>
+
+              <select id="stTypeFilter" onchange="loadStockTransferHistory()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none focus:border-indigo-600">
+                <option value="ALL">Semua Arah Transfer</option>
+                <option value="TRANSFER_IN">Stock Inventory &rarr; Zone VAS (Masuk)</option>
+                <option value="TRANSFER_OUT">Zone VAS &rarr; Stock Inventory (Keluar Balik)</option>
+                <option value="VAS_OUTBOUND">Zone VAS &rarr; Outbound / Keluar (Disposal)</option>
+              </select>
+
+              <!-- From Date -->
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
+                <input type="text" id="stFromDateFilter" placeholder="Mulai Dari..." value="<?= date('Y-m-d') ?>" onchange="loadStockTransferHistory()" 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Mulai (From Date)">
+              </div>
+
+              <span class="text-slate-400 font-bold text-xs">s/d</span>
+
+              <!-- To Date -->
+              <div class="premium-datepicker-wrapper">
+                <span class="material-symbols-outlined picker-icon text-indigo-700">calendar_today</span>
+                <input type="text" id="stToDateFilter" placeholder="Sampai Dengan..." value="<?= date('Y-m-d') ?>" onchange="loadStockTransferHistory()" 
+                  class="premium-datepicker-input px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-indigo-600" title="Tanggal Akhir (To Date)">
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="button" onclick="switchStockTransferSubView('form')" class="h-[38px] px-4 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Input Transfer Baru (Form Halaman Penuh)">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                <span>Input Transfer Baru</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- History Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200">
+                  <span class="material-symbols-outlined text-[20px]">swap_horizontal_circle</span>
+                </div>
+                <div>
+                  <h3 class="font-extrabold text-slate-900 text-sm">Riwayat Audit Stock Transfer</h3>
+                  <p class="text-[11px] text-slate-400">Daftar lengkap pergerakan transfer stok antara Stock Inventory dan Zone VAS</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-100/80 text-slate-700 uppercase font-extrabold text-[10px] tracking-wider border-b border-slate-200 whitespace-nowrap">
+                  <tr>
+                    <th class="p-3">No Transaksi</th>
+                    <th class="p-3">Material / SKU</th>
+                    <th class="p-3 text-center">From (Asal)</th>
+                    <th class="p-3 text-center">To (Tujuan)</th>
+                    <th class="p-3 text-center">Qty Transfer</th>
+                    <th class="p-3">Catatan / Keterangan</th>
+                    <th class="p-3">Operator / User</th>
+                    <th class="p-3 text-right">Tanggal & Waktu</th>
+                  </tr>
+                </thead>
+                <tbody id="stHistoryTableBody" class="divide-y divide-slate-100 text-xs">
+                  <!-- Rows populated by JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -2504,13 +3476,79 @@ require_once __DIR__ . '/../includes/header.php';
               <div>
                 <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  <span>Form Assign Picking Stock Kemas</span>
+                  <span id="taskFormHeadingTitle">Form Assign Picking Operator PIC</span>
                 </h3>
               </div>
             </div>
 
             <!-- MULTIPLE PRODUCT FORM (FULL PAGE TABLE) -->
             <div id="assignTaskMultipleSection" class="space-y-4">
+              
+              <!-- ================= LANGKAH 1: WAJIB PILIH TIPE BARANG (ATAS KE BAWAH) ================= -->
+              <div class="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-blue-50/30 border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-[#262363] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">1</span>
+                    <div>
+                      <h4 class="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <span>Pilih Tipe Penugasan Barang</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">Wajib Dipilih *</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium">Tentukan jenis persediaan yang akan ditugaskan ke PIC: Stock Kemas atau Stock Gimmick</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto font-mono">Langkah 1 dari 2</span>
+                </div>
+
+                <!-- 2 Card Pilihan: Kemas vs Gimmick -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Kemas Card -->
+                  <button type="button" id="taskTypeKemas" onclick="setTaskItemType('PACKAGING')"
+                    class="type-card-active p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-[#262363] text-white border-[#262363] shadow-md ring-2 ring-[#262363]/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">
+                        📦
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
+                          <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+
+                  <!-- Gimmick Card -->
+                  <button type="button" id="taskTypeGimmick" onclick="setTaskItemType('GIMMICK')"
+                    class="type-card-inactive p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50/90 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl shrink-0">
+                        🎁
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
+                          <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= LANGKAH 2: INFORMASI & DETAIL PENUGASAN ================= -->
+              <div class="flex items-center gap-2 pt-1 pb-0.5">
+                <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm">Pengaturan PIC &amp; Detail Penugasan</h4>
+              </div>
               <!-- Batch Defaults Toolbar -->
               <div class="p-4 bg-gradient-to-r from-slate-50 to-emerald-50/20 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs shadow-2xs">
                 <div>
@@ -2549,7 +3587,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950 sticky top-0 z-10">
                       <tr>
                         <th class="p-3 w-12 text-center border-r border-white/10">No</th>
-                        <th class="p-3 min-w-[300px] border-r border-white/10">Stock Kemas <span class="text-amber-300">*</span></th>
+                        <th id="thBulkTaskMaterial" class="p-3 min-w-[300px] border-r border-white/10">Stock Kemas <span class="text-amber-300">*</span></th>
                         <th class="p-3 w-28 text-center border-r border-white/10">Satuan (UOM)</th>
                         <th class="p-3 w-32 border-r border-white/10">Target Qty <span class="text-amber-300">*</span></th>
                         <th class="p-3 w-40 border-r border-white/10">Tujuan Spesifik</th>
@@ -2565,7 +3603,7 @@ require_once __DIR__ . '/../includes/header.php';
 
               <!-- Actions Footer -->
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                <button type="button" onclick="addBulkTaskRow()" class="h-[40px] px-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 inline-flex items-center justify-center gap-2 transition-colors shadow-2xs">
+                <button type="button" onclick="addBulkTaskRow()" class="h-[40px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs active:scale-95 inline-flex items-center justify-center gap-2 transition-all cursor-pointer">
                   <span class="material-symbols-outlined text-[19px]">add_circle</span>
                   <span>Tambah Baris Produk</span>
                 </button>
@@ -2575,7 +3613,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <span class="material-symbols-outlined text-[17px]">arrow_back</span>
                     <span>Kembali ke Barang Keluar</span>
                   </button>
-                  <button type="button" onclick="handleBulkTaskSubmit()" class="h-[40px] px-6 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white text-xs font-bold shadow-sm inline-flex items-center gap-2 transition-all">
+                  <button type="button" onclick="handleBulkTaskSubmit()" class="h-[40px] px-6 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white text-xs font-bold shadow-xs inline-flex items-center gap-2 transition-all cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">send</span>
                     <span>Kirim Tugas</span>
                   </button>
@@ -2613,6 +3651,12 @@ require_once __DIR__ . '/../includes/header.php';
                 <option value="CANCELLED">Dibatalkan</option>
               </select>
 
+              <select id="taskItemTypeFilter" onchange="loadTasks()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" data-no-search>
+                <option value="ALL">Semua Tipe (Kemas & Gimmick)</option>
+                <option value="PACKAGING">📦 Stock Kemas</option>
+                <option value="GIMMICK">🎁 Stock Gimmick</option>
+              </select>
+
               <select id="taskPriorityFilter" onchange="loadTasks()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" data-no-search>
                 <option value="ALL">Semua Prioritas</option>
                 <option value="URGENT">URGENT</option>
@@ -2622,12 +3666,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- Actions (Uniform 38px Height) -->
             <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button onclick="loadTasks()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Daftar Task">
-                <span class="material-symbols-outlined text-[18px]">refresh</span>
-                <span>Refresh</span>
-              </button>
-
-              <button onclick="switchTaskSubView('create')" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Buat Penugasan Task Baru">
+              <button onclick="switchTaskSubView('create')" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Buat Penugasan Task Baru">
                 <span class="material-symbols-outlined text-[18px]">add_task</span>
                 <span>Buat Penugasan</span>
               </button>
@@ -2641,7 +3680,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <tr>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">Tanggal & Waktu</th>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">No. Task</th>
-                    <th class="p-3 border-r border-white/10">Kemas</th>
+                    <th class="p-3 border-r border-white/10 whitespace-nowrap">Produk / Material</th>
                     <th class="p-3 text-center border-r border-white/10 font-mono whitespace-nowrap">Target & Realisasi</th>
                     <th class="p-3 border-r border-white/10 whitespace-nowrap">Tujuan Antar</th>
                     <th class="p-3 text-center border-r border-white/10 whitespace-nowrap">Prioritas</th>
@@ -2682,7 +3721,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <input type="file" id="excelTaskFileInput" accept=".csv, .txt, .xlsx, .xls" onchange="handleExcelTaskFileSelect(this)" class="hidden">
                 
                 <div class="mt-3 flex items-center justify-center gap-2">
-                  <button type="button" onclick="document.getElementById('excelTaskFileInput').click()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5">
+                  <button type="button" onclick="document.getElementById('excelTaskFileInput').click()" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-semibold transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer">
                     <span class="material-symbols-outlined text-[18px]">folder_open</span>
                     <span>Telusuri File Task</span>
                   </button>
@@ -2717,7 +3756,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <thead class="thead-emerald text-[10px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-950 sticky top-0">
                       <tr>
                         <th class="p-2">Item No</th>
-                        <th class="p-2">Material Packaging</th>
+                        <th class="p-2">Kemas</th>
                         <th class="p-2">Target Qty</th>
                         <th class="p-2">Tujuan</th>
                         <th class="p-2">Operator PIC</th>
@@ -2735,7 +3774,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <span class="material-symbols-outlined text-[16px]">arrow_back</span>
                   <span>Batal & Kembali ke Barang Keluar</span>
                 </button>
-                <button type="button" id="importTaskSubmitBtn" onclick="commitExcelTaskImport()" class="hidden px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm inline-flex items-center gap-1.5">
+                <button type="button" id="importTaskSubmitBtn" onclick="commitExcelTaskImport()" class="hidden px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs inline-flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer">
                   <span class="material-symbols-outlined text-[18px]">send</span>
                   <span>Buat Semua Task Hasil Import</span>
                 </button>
@@ -2835,11 +3874,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="material-symbols-outlined text-[14px]">clear_all</span>
                 <span>Reset Tanggal</span>
               </button>
-
-              <button type="button" onclick="loadAdminHandovers()" class="py-2 px-3 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 font-bold rounded-xl flex items-center gap-1 transition-all">
-                <span class="material-symbols-outlined text-[16px]">refresh</span>
-                <span>Refresh</span>
-              </button>
             </div>
 
           </div>
@@ -2901,12 +3935,7 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button type="button" onclick="loadMutations(true)" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data Mutasi">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-
-            <button type="button" onclick="exportMutationsExcel()" class="h-[38px] px-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Export Buku Mutasi ke File Excel (.xlsx)">
+            <button type="button" onclick="exportMutationsExcel()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Buku Mutasi ke File Excel (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export Mutasi</span>
             </button>
@@ -2951,18 +3980,13 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="teknisi">Teknisi</option>
               <?php endif; ?>
               <option value="admin">Admin</option>
-              <option value="operator">Operator Gudang (PIC)</option>
+              <option value="operator_inventory">Operator Inventory</option>
               <option value="operator_fulfillment">Operator Fulfillment</option>
             </select>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <button type="button" onclick="loadUsers()" class="h-[38px] px-3 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold" title="Refresh Data User">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh</span>
-            </button>
-
-            <button onclick="openAddUserModal()" class="h-[38px] px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0" title="Tambah User Baru">
+            <button onclick="openAddUserModal()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer" title="Tambah User Baru">
               <span class="material-symbols-outlined text-[18px]">person_add</span>
               <span>Tambah User</span>
             </button>
@@ -3005,7 +4029,7 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Target Selector: Role or User -->
           <div class="flex items-center gap-2">
             <div class="inline-flex p-1 bg-slate-100 rounded-lg border border-slate-200 text-xs font-semibold">
-              <button type="button" id="btnPermModeRole" onclick="setPermissionMode('role')" class="px-3 py-1 rounded-md bg-white text-emerald-800 shadow-2xs font-bold transition-all">Berdasarkan Role</button>
+              <button type="button" id="btnPermModeRole" onclick="setPermissionMode('role')" class="px-3 py-1 rounded-md bg-white text-blue-800 shadow-2xs font-bold transition-all">Berdasarkan Role</button>
               <button type="button" id="btnPermModeUser" onclick="setPermissionMode('user')" class="px-3 py-1 rounded-md text-slate-600 hover:text-slate-900 transition-all">Khusus Per User</button>
             </div>
 
@@ -3030,7 +4054,7 @@ require_once __DIR__ . '/../includes/header.php';
               <p id="permTargetSubtitle" class="text-xs text-slate-500">Aktifkan atau nonaktifkan menu untuk role ini</p>
             </div>
             <div class="flex items-center gap-2">
-              <button type="button" onclick="toggleAllPermissions(true)" class="px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-200 transition-colors">
+              <button type="button" onclick="toggleAllPermissions(true)" class="px-3 py-1.5 text-xs font-semibold text-white bg-[#262363] hover:bg-[#1c1a4a] rounded-xl transition-all shadow-xs active:scale-95 cursor-pointer">
                 Pilih Semua (ON)
               </button>
               <button type="button" onclick="toggleAllPermissions(false)" class="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors">
@@ -3051,7 +4075,7 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
             <div class="flex items-center gap-2 ml-auto">
               <button type="button" onclick="loadPermissionMatrix()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
-              <button type="button" onclick="savePermissions()" class="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+              <button type="button" onclick="savePermissions()" class="px-5 py-2.5 text-xs font-bold text-white bg-[#262363] hover:bg-[#1c1a4a] rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">save</span>
                 <span>Simpan Hak Akses</span>
               </button>
@@ -3083,7 +4107,7 @@ require_once __DIR__ . '/../includes/header.php';
               </span>
               
               <button type="button" id="btnToggleMaintenance" onclick="toggleMaintenanceMode(<?= Auth::isMaintenanceMode() ? 'false' : 'true' ?>)" 
-                class="h-[38px] px-4 <?= Auth::isMaintenanceMode() ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white' ?> text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer">
+                class="h-[38px] px-4 <?= Auth::isMaintenanceMode() ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-rose-600 hover:bg-rose-700 text-white' ?> text-xs font-bold rounded-xl shadow transition-colors flex items-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]"><?= Auth::isMaintenanceMode() ? 'lock_open' : 'lock' ?></span>
                 <span><?= Auth::isMaintenanceMode() ? 'Matikan Mode Maintenance' : 'Aktifkan Mode Maintenance' ?></span>
               </button>
@@ -3105,11 +4129,6 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
               </div>
             </div>
-
-            <button type="button" onclick="loadDatabaseStats()" class="h-[38px] px-3.5 bg-rose-900/60 hover:bg-rose-800 text-rose-200 hover:text-white rounded-lg border border-rose-700/60 transition-colors flex items-center gap-1.5 text-xs font-bold shrink-0 self-start sm:self-auto shadow-2xs" title="Refresh Statistik Database">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Refresh Status DB</span>
-            </button>
           </div>
         </div>
 
@@ -3131,7 +4150,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">materials</span>
                   <span id="statMaint_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 SKU</span>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Master Stok Material Packaging</h5>
+                <h5 class="font-bold text-slate-900 text-xs">Master Stok Kemas</h5>
               </div>
               <button type="button" onclick="openCleanTableModal('materials', 'Master Stok Material (materials)', document.getElementById('statMaint_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
                 <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
@@ -3276,7 +4295,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </label>
               </div>
 
-              <button type="button" onclick="openBulkCleanModal('clean_all_transactions')" class="h-[40px] px-4 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5">
+              <button type="button" onclick="openBulkCleanModal('clean_all_transactions')" class="h-[40px] px-4 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
                 <span class="material-symbols-outlined text-[18px]">cleaning_services</span>
                 <span>Bersihkan Semua Transaksi Sekarang</span>
               </button>
@@ -3322,11 +4341,11 @@ require_once __DIR__ . '/../includes/header.php';
               <input type="url" id="maintInputWebAppUrl" placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
                 class="flex-1 p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-mono text-slate-900 outline-none focus:border-emerald-600 transition-colors">
               
-              <button type="button" onclick="saveMaintGoogleSheetsUrlConfig()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer shadow-2xs">
+              <button type="button" onclick="saveMaintGoogleSheetsUrlConfig()" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95">
                 Simpan URL
               </button>
               
-              <button type="button" onclick="pingGoogleSheetsConnection()" class="px-3.5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer border border-slate-200">
+              <button type="button" onclick="pingGoogleSheetsConnection()" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer shadow-xs active:scale-95">
                 Tes Ping
               </button>
             </div>
@@ -3337,24 +4356,24 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
             <div class="flex items-center justify-between">
               <h4 class="font-bold text-xs text-slate-900 flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-emerald-600 text-[18px]">code</span>
+                <span class="material-symbols-outlined text-blue-600 text-[18px]">code</span>
                 <span>Kode Script Penerima (Google Apps Script)</span>
               </h4>
-              <button type="button" onclick="copyGoogleAppsScriptTemplate()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-emerald-800 border border-emerald-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs">
-                <span class="material-symbols-outlined text-[15px] text-emerald-700">content_copy</span>
+              <button type="button" onclick="copyGoogleAppsScriptTemplate()" class="px-3 py-1.5 bg-white hover:bg-slate-100 text-blue-800 border border-blue-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shadow-2xs">
+                <span class="material-symbols-outlined text-[15px] text-blue-700">content_copy</span>
                 <span id="maintCopyBtnLabel">Salin Kode Script</span>
               </button>
             </div>
 
             <div class="relative">
-              <textarea id="maintCodeTemplateArea" readonly rows="7" class="w-full p-3 bg-slate-900 text-emerald-300 rounded-xl text-[11px] font-mono leading-relaxed outline-none border border-slate-800 select-all"></textarea>
+              <textarea id="maintCodeTemplateArea" readonly rows="7" class="w-full p-3 bg-slate-900 text-blue-300 rounded-xl text-[11px] font-mono leading-relaxed outline-none border border-slate-800 select-all"></textarea>
             </div>
 
             <!-- Step-by-step Setup Guide -->
             <div class="pt-2 space-y-2 border-t border-slate-200">
               <h5 class="text-xs font-bold text-slate-800">Panduan Setup 1 Menit:</h5>
               <ol class="text-[11px] text-slate-600 space-y-1.5 pl-4 list-decimal leading-relaxed">
-                <li>Buka <a href="https://sheets.new" target="_blank" class="text-emerald-700 underline font-bold">Google Sheets Baru</a> di browser Anda.</li>
+                <li>Buka <a href="https://sheets.new" target="_blank" class="text-blue-700 underline font-bold">Google Sheets Baru</a> di browser Anda.</li>
                 <li>Klik menu <b>Ekstensi</b> &rarr; <b>Apps Script</b>.</li>
                 <li>Hapus semua kode bawaan, lalu <b>PASTE (Tempel)</b> kode yang disalin di atas.</li>
                 <li>Klik tombol <b>Deploy</b> (Kanan Atas) &rarr; pilih <b>New Deployment</b>.</li>
@@ -3373,254 +4392,9 @@ require_once __DIR__ . '/../includes/header.php';
   </main>
 </div>
 
-<!-- ================= MODAL: INPUT INBOUND TABLE ================= -->
-<div id="modalAddInbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
-  <div class="bg-white rounded-2xl max-w-6xl w-full xl:max-w-7xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/80 shadow-2xs">
-          <span class="material-symbols-outlined text-[22px]">move_to_inbox</span>
-        </div>
-        <div>
-          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Penerimaan Barang Masuk (Tabel)</h3>
-          <p class="text-[11px] text-slate-400 font-medium">Input satu atau beberapa material kemas/consumable dalam satu transaksi</p>
-        </div>
-      </div>
-      <button onclick="App.closeModal('modalAddInbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
+<!-- (Note: Inbound Form has been upgraded to full-page subview #inboundFormContainer in tab-inbound) -->
 
-    <form id="inboundForm" onsubmit="handleInboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
-      <!-- Meta Information Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span>Tanggal Masuk</span>
-            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Auto</span>
-            </span>
-          </label>
-          <input type="text" id="inboundFormDateDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-          <input type="hidden" id="inboundFormDate" value="<?= date('Y-m-d') ?>">
-        </div>
 
-        <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span>Jam / Waktu</span>
-            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Auto</span>
-            </span>
-          </label>
-          <input type="text" id="inboundFormTimeDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-          <input type="hidden" id="inboundFormTime" value="<?= date('H:i') ?>">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">No. Referensi / PO / Batch <span class="text-rose-500 font-bold">*</span></label>
-          <input type="text" id="inboundPoNumber" required placeholder="Contoh: PO-2026/08/001 atau No. SJ..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold outline-none focus:border-emerald-600">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
-          <input type="text" id="inboundGlobalNotes" placeholder="Keterangan umum (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-emerald-600">
-        </div>
-      </div>
-
-      <!-- Photo Upload & Multi-Image Preview -->
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 flex-shrink-0">
-        <div class="flex items-center justify-between">
-          <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px] text-emerald-600">photo_camera</span>
-            <span>Foto Bukti / Surat Jalan / Kondisi Barang (Bisa > 1 Foto)</span>
-          </label>
-          <span id="inboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <input type="file" id="inboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleInboundPhotosSelect(event)">
-          <button type="button" onclick="document.getElementById('inboundPhotosInput').click()" class="px-3 py-1.5 bg-white hover:bg-emerald-50 hover:text-emerald-800 text-slate-700 font-bold rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs cursor-pointer">
-            <span class="material-symbols-outlined text-[16px] text-emerald-600">add_photo_alternate</span>
-            <span>Pilih / Ambil Foto</span>
-          </button>
-          <button type="button" id="btnClearInboundPhotos" onclick="clearInboundPhotos()" class="hidden px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
-            <span class="material-symbols-outlined text-[14px]">delete</span>
-            <span>Hapus Semua</span>
-          </button>
-        </div>
-        <!-- Thumbnail preview container -->
-        <div id="inboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-28 overflow-y-auto"></div>
-      </div>
-
-      <!-- Items Table Container -->
-      <div class="flex-1 min-h-[220px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
-            <tr>
-              <th class="p-2.5 w-12 text-center">#</th>
-              <th class="p-2.5 min-w-[340px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-40 min-w-[140px]">Lokasi Rak</th>
-              <th class="p-2.5 w-32 min-w-[110px] text-center">Qty Masuk <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 min-w-[200px]">Catatan Item</th>
-              <th class="p-2.5 w-14 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="inboundItemsTableBody" class="divide-y divide-slate-100">
-            <!-- Dynamic rows inserted here -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Bottom Bar with Add Row and Total Summary -->
-      <div class="flex items-center justify-between pt-1 flex-shrink-0">
-        <button type="button" onclick="addInboundTableRow()" class="px-3.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs">
-          <span class="material-symbols-outlined text-[16px]">add_circle</span>
-          <span>Tambah Baris (Enter)</span>
-        </button>
-
-        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
-          <span>Total Qty Masuk:</span>
-          <span class="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 font-mono font-black text-sm" id="inboundTotalQtySummary">0</span>
-        </div>
-      </div>
-
-      <!-- Footer Buttons -->
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
-        <button type="button" onclick="App.closeModal('modalAddInbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
-          Batal
-        </button>
-        <button type="submit" id="btnSubmitInboundTable" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
-          <span class="material-symbols-outlined text-[17px]">save</span>
-          <span>Simpan & Tambah Stok</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ================= MODAL: INPUT OUTBOUND TABLE ================= -->
-<div id="modalAddOutbound" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
-  <div class="bg-white rounded-2xl max-w-6xl w-full xl:max-w-7xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 shadow-2xs">
-          <span class="material-symbols-outlined text-[22px]">outbox</span>
-        </div>
-        <div>
-          <h3 class="font-extrabold text-slate-900 text-sm leading-tight">Input Pengeluaran Kemas/Consumable (Tabel)</h3>
-          <p class="text-[11px] text-slate-400 font-medium">Catat pengeluaran barang keluar langsung ke lini brand produksi</p>
-        </div>
-      </div>
-      <button onclick="App.closeModal('modalAddOutbound')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
-
-    <form id="outboundForm" onsubmit="handleOutboundTableSubmit(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
-      <!-- Meta Information Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 flex-shrink-0 bg-slate-50 p-3 rounded-xl border border-slate-200">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span>Tanggal Keluar</span>
-            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Auto</span>
-            </span>
-          </label>
-          <input type="text" id="outboundFormDateDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-          <input type="hidden" id="outboundFormDate" value="<?= date('Y-m-d') ?>">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1 flex items-center justify-between">
-            <span>Jam / Waktu</span>
-            <span class="text-[10px] text-slate-400 font-semibold flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-[12px]">lock</span>
-              <span>Auto</span>
-            </span>
-          </label>
-          <input type="text" id="outboundFormTimeDisplay" readonly class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed select-none outline-none">
-          <input type="hidden" id="outboundFormTime" value="<?= date('H:i') ?>">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Catatan Tambahan</label>
-          <input type="text" id="outboundGlobalNotes" placeholder="Keterangan / No SPK (Opsional)..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-amber-600">
-        </div>
-      </div>
-
-      <!-- Photo Upload & Multi-Image Preview -->
-      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2 flex-shrink-0">
-        <div class="flex items-center justify-between">
-          <label class="font-bold text-slate-700 text-xs flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[16px] text-amber-600">photo_camera</span>
-            <span>Foto Bukti Pengeluaran / Serah Terima (Bisa > 1 Foto)</span>
-          </label>
-          <span id="outboundPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto Dipilih</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <input type="file" id="outboundPhotosInput" accept="image/*" multiple class="hidden" onchange="handleOutboundPhotosSelect(event)">
-          <button type="button" onclick="document.getElementById('outboundPhotosInput').click()" class="px-3 py-1.5 bg-white hover:bg-amber-50 hover:text-amber-800 text-slate-700 font-bold rounded-lg border border-slate-300 shadow-2xs transition-colors flex items-center gap-1.5 text-xs cursor-pointer">
-            <span class="material-symbols-outlined text-[16px] text-amber-600">add_photo_alternate</span>
-            <span>Pilih / Ambil Foto</span>
-          </button>
-          <button type="button" id="btnClearOutboundPhotos" onclick="clearOutboundPhotos()" class="hidden px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded-lg border border-rose-200 transition-colors text-xs flex items-center gap-1">
-            <span class="material-symbols-outlined text-[14px]">delete</span>
-            <span>Hapus Semua</span>
-          </button>
-        </div>
-        <!-- Thumbnail preview container -->
-        <div id="outboundPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1.5 max-h-28 overflow-y-auto"></div>
-      </div>
-
-      <!-- Items Table Container -->
-      <div class="flex-1 min-h-[220px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
-            <tr>
-              <th class="p-2.5 w-12 text-center">#</th>
-              <th class="p-2.5 min-w-[340px]">Kemas / Consumable <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-44 min-w-[160px]">Tujuan Brand <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-32 min-w-[110px] text-center">Qty Keluar <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 min-w-[220px]">Alasan Pengeluaran <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-14 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="outboundItemsTableBody" class="divide-y divide-slate-100">
-            <!-- Dynamic rows inserted here -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Bottom Bar with Add Row and Total Summary -->
-      <div class="flex items-center justify-between pt-1 flex-shrink-0">
-        <button type="button" onclick="addOutboundTableRow()" class="px-3.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs">
-          <span class="material-symbols-outlined text-[16px]">add_circle</span>
-          <span>Tambah Baris (Enter)</span>
-        </button>
-
-        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
-          <span>Total Qty Keluar:</span>
-          <span class="px-3 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 font-mono font-black text-sm" id="outboundTotalQtySummary">0</span>
-        </div>
-      </div>
-
-      <!-- Footer Buttons -->
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
-        <button type="button" onclick="App.closeModal('modalAddOutbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
-          Batal
-        </button>
-        <button type="submit" id="btnSubmitOutboundTable" class="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all">
-          <span class="material-symbols-outlined text-[17px]">save</span>
-          <span>Catat & Potong Stok</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <!-- ================= MODAL: EXCEL / CSV IMPORT (MASTER STOK) ================= -->
 <div id="modalExcelImport" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
@@ -3647,10 +4421,10 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-emerald-700 text-[24px]">task</span>
           <div>
             <p class="font-bold text-emerald-900 text-xs">File Ditemukan di Folder: <span id="localExcelFileName" class="font-mono bg-white/70 px-1.5 py-0.5 rounded border border-emerald-300">Data Packaaging Material.xlsx</span></p>
-            <p class="text-[11px] text-emerald-700 mt-0.5" id="localExcelFileDesc">Tersedia data material packaging siap diimpor ke database.</p>
+            <p class="text-[11px] text-emerald-700 mt-0.5" id="localExcelFileDesc">Tersedia data kemas siap diimpor ke database.</p>
           </div>
         </div>
-        <button type="button" onclick="previewDetectedLocalExcel()" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm whitespace-nowrap inline-flex items-center gap-1 active:scale-95 transition-all">
+        <button type="button" onclick="previewDetectedLocalExcel()" class="px-3.5 py-2 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold shadow-xs whitespace-nowrap inline-flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">bolt</span>
           <span>Preview File Ini</span>
         </button>
@@ -3671,11 +4445,11 @@ require_once __DIR__ . '/../includes/header.php';
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv, .txt" onchange="handleExcelFileSelect(this)" class="hidden">
         
         <div class="mt-4 flex items-center gap-2">
-          <button type="button" onclick="document.getElementById('excelFileInput').click()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 inline-flex items-center gap-1.5 active:scale-95">
+          <button type="button" onclick="document.getElementById('excelFileInput').click()" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">folder_open</span>
             <span>Telusuri File Excel</span>
           </button>
-          <a href="export.php?type=inventory_template" target="_blank" class="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition-all duration-300 inline-flex items-center gap-1.5 shadow-2xs hover:shadow-sm active:scale-95">
+          <a href="export.php?type=inventory_template" target="_blank" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all active:scale-95 inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
             <span class="material-symbols-outlined text-[16px] text-slate-500">download</span>
             <span>Download Template Excel</span>
           </a>
@@ -3689,7 +4463,7 @@ require_once __DIR__ . '/../includes/header.php';
           <label class="text-xs font-bold tracking-wide">Atau Tempel (Paste) Data Tabel Excel di Sini:</label>
         </div>
         <textarea id="excelPasteText" rows="3" placeholder="Contoh format: ItemNo [Tab] Deskripsi [Tab] Stok... (Salin langsung dari baris Excel Anda)" class="w-full p-3 bg-slate-50/50 border border-slate-200 rounded-xl text-xs font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 outline-none placeholder-slate-400"></textarea>
-        <button type="button" onclick="previewExcelTextPaste()" class="px-4 py-2 bg-slate-950 hover:bg-slate-850 text-white rounded-xl text-xs font-bold transition-all duration-300 shadow-md shadow-slate-950/10 active:scale-95 inline-flex items-center gap-1.5">
+        <button type="button" onclick="previewExcelTextPaste()" class="px-4 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all active:scale-95 inline-flex items-center gap-1.5 shadow-xs cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">done_all</span>
           <span>Proses Teks Tempel</span>
         </button>
@@ -3738,7 +4512,7 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Modal Footer -->
     <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-shrink-0">
       <button type="button" onclick="App.closeModal('modalExcelImport')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all duration-300 active:scale-95">Batal</button>
-      <button type="button" id="importSubmitBtn" onclick="commitExcelImport()" class="hidden px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all duration-300 inline-flex items-center gap-1.5 active:scale-95">
+      <button type="button" id="importSubmitBtn" onclick="commitExcelImport()" class="hidden px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all inline-flex items-center gap-1.5 active:scale-95 cursor-pointer">
         <span class="material-symbols-outlined text-[16px]">upload</span>
         <span>Simpan ke Master Stok</span>
       </button>
@@ -3823,7 +4597,7 @@ require_once __DIR__ . '/../includes/header.php';
         <span>Min Safety: <b id="histMinStock" class="text-slate-800"></b></span>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" id="histAssignBtn" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm inline-flex items-center gap-1">
+        <button type="button" id="histAssignBtn" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-semibold shadow-xs inline-flex items-center gap-1 active:scale-95 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">add</span>
           <span>Assign Task Item Ini</span>
         </button>
@@ -3837,7 +4611,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div id="modalMaterialForm" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
   <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-      <h3 id="modalMaterialTitle" class="font-bold text-slate-900 text-sm">Tambah Material Packaging</h3>
+      <h3 id="modalMaterialTitle" class="font-bold text-slate-900 text-sm">Tambah Kemas</h3>
       <button onclick="App.closeModal('modalMaterialForm')" class="text-slate-400 hover:text-slate-700">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
@@ -3888,12 +4662,399 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalMaterialForm')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-colors">
+        <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Material</span>
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: ADD / EDIT GIMMICK MASTER ================= -->
+<div id="modalGimmickForm" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200/80 shadow-2xs">
+          <span class="material-symbols-outlined text-[20px]">card_giftcard</span>
+        </div>
+        <div>
+          <h3 id="modalGimmickTitle" class="font-bold text-slate-900 text-sm">Tambah Master Gimmick</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Barang promosi, hadiah, merchandise brand</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalGimmickForm')" class="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <form id="formGimmick" onsubmit="handleGimmickFormSubmit(event)" class="space-y-3 text-xs flex-1 overflow-y-auto pr-1">
+      <input type="hidden" id="gimmickIdInput">
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[15px] text-amber-600">barcode_scanner</span>
+            <span>Barcode (Fisik)</span>
+          </label>
+          <input type="text" id="gimmickBarcodeInput" placeholder="Contoh: 126" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[15px] text-emerald-600">verified</span>
+            <span>Barcode BPOM</span>
+          </label>
+          <input type="text" id="gimmickBarcodeBpomInput" placeholder="Contoh: (90)NA18210500451" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kode SAP</label>
+          <input type="text" id="gimmickSapCodeInput" placeholder="Contoh: 7000050037" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono font-bold outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">SKU / Kode Barang <span class="text-rose-500">*</span></label>
+          <input type="text" id="gimmickCodeInput" required placeholder="Contoh: GIMMICK-POUCH-01" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono uppercase font-bold outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kategori</label>
+          <input type="text" id="gimmickCategoryInput" placeholder="Gimmick / Merchandise" value="Gimmick" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Deskripsi / Nama Barang Gimmick <span class="text-rose-500">*</span></label>
+        <input type="text" id="gimmickNameInput" required placeholder="Contoh: POUCH KOSMETIK HANASUI GOLD" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold text-slate-900 outline-none focus:border-amber-500 focus:bg-white">
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Area Penyimpanan</label>
+          <select id="gimmickAreaInput" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+            <option value="GUDANG KECIL">GUDANG KECIL</option>
+            <option value="GUDANG BESAR">GUDANG BESAR</option>
+            <option value="AREA DISPLAY">AREA DISPLAY</option>
+            <option value="LAINNYA">LAINNYA</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Lokasi Rak / Bin</label>
+          <input type="text" id="gimmickRackInput" placeholder="Rak G-01" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Status Item</label>
+          <select id="gimmickStatusActiveSelect" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+            <option value="1">Aktif</option>
+            <option value="0">Non-Aktif</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="gimmickStockInitialGroup" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-xl bg-amber-50/60 border border-amber-200">
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">Qty Gudang Kecil</label>
+          <input type="number" step="1" id="gimmickQtyKecilInput" min="0" placeholder="0" class="w-full p-2 bg-white border border-amber-300 rounded-lg font-mono font-bold text-blue-800 outline-none focus:border-amber-500">
+        </div>
+        <div>
+          <label class="block font-bold text-slate-800 mb-1">Qty Gudang Besar</label>
+          <input type="number" step="1" id="gimmickQtyBesarInput" min="0" placeholder="0" class="w-full p-2 bg-white border border-amber-300 rounded-lg font-mono font-bold text-indigo-800 outline-none focus:border-amber-500">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Min Safety Stock</label>
+          <input type="number" step="any" id="gimmickMinStockInput" min="0" placeholder="10" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Satuan (UOM)</label>
+          <input type="text" id="gimmickUnitInput" value="Pcs" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-bold outline-none focus:border-amber-500 focus:bg-white">
+        </div>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Deskripsi / Catatan Tambahan</label>
+        <input type="text" id="gimmickDescInput" placeholder="Keterangan fisik, spesifikasi..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:bg-white">
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 flex-shrink-0">
+        <button type="button" onclick="App.closeModal('modalGimmickForm')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">save</span>
+          <span>Simpan Gimmick</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= MODAL: RINCIAN BATCH & EXP DATE GIMMICK ================= -->
+<div id="modalGimmickBatches" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-3 sm:p-4">
+  <div class="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[92vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200 shadow-2xs">
+          <span class="material-symbols-outlined text-[24px]">layers</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Breakdown Batch &amp; Exp Date</h3>
+          <p id="modalGimmickBatchSubTitle" class="text-[11px] text-slate-500 font-medium">Rincian otomatis tercatat dari transaksi Barang Masuk (Inbound) per SKU, Batch, Exp Date, &amp; Lokasi</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalGimmickBatches')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Summary Banner of Current Material -->
+    <div class="bg-gradient-to-r from-amber-500/10 via-amber-50 to-orange-50 border border-amber-200/80 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs flex-shrink-0">
+      <div>
+        <span id="gimmickBatchMaterialCode" class="font-mono font-black text-amber-900 bg-amber-100/80 px-2 py-0.5 rounded text-[11px] border border-amber-200">SKU</span>
+        <h4 id="gimmickBatchMaterialName" class="font-black text-slate-900 text-sm mt-1">Nama Material Gimmick</h4>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="text-right">
+          <span class="text-[10px] font-bold text-slate-400 block uppercase">Total On Hand</span>
+          <span id="gimmickBatchTotalOnHand" class="font-mono font-black text-emerald-800 text-base">0 Pcs</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info Notice -->
+    <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-[11px] flex items-center gap-2 flex-shrink-0">
+      <span class="material-symbols-outlined text-[17px] text-blue-600 shrink-0">info</span>
+      <span>Data No. Batch, Tanggal Exp Date, dan Lokasi Rak terisi otomatis dari transaksi <b>Barang Masuk (Inbound)</b> dan tidak dapat diubah manual sembarangan.</span>
+    </div>
+
+    <!-- Batches List Table (Read-Only) -->
+    <div class="flex-1 min-h-[240px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
+          <tr>
+            <th class="p-2.5 w-10 text-center">#</th>
+            <th class="p-2.5 min-w-[170px]">Batch / Exp / Status</th>
+            <th class="p-2.5 min-w-[130px]">Lokasi Rak</th>
+            <th class="p-2.5 w-24 text-center font-semibold text-slate-600">Stok Awal</th>
+            <th class="p-2.5 w-20 text-center font-bold text-emerald-700">Masuk (+)</th>
+            <th class="p-2.5 w-20 text-center font-bold text-amber-700">Keluar (-)</th>
+            <th class="p-2.5 w-24 text-center font-black text-emerald-900 bg-emerald-50/60">Sisa Akhir</th>
+            <th class="p-2.5 w-24 text-center font-black text-amber-300 bg-purple-800/90">Zone VAS</th>
+          </tr>
+        </thead>
+        <tbody id="gimmickBatchesTableBody" class="divide-y divide-slate-100">
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center justify-between pt-2 border-t border-slate-100 flex-shrink-0 text-xs">
+      <span class="text-[11px] text-slate-400 font-medium">Sistem menerapkan prinsip FEFO (First Expired First Out) secara otomatis.</span>
+      <button type="button" onclick="App.closeModal('modalGimmickBatches')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: EXCEL IMPORT (GIMMICK STOCK) ================= -->
+<div id="modalGimmickExcelImport" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center border border-amber-200">
+          <span class="material-symbols-outlined text-[24px]">upload_file</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm">Import Master Stok Gimmick (Excel)</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Unggah berkas spreadsheet (.xlsx / .csv) data stok Gimmick</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalGimmickExcelImport')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <div class="space-y-4 overflow-y-auto flex-1 pr-1">
+      <!-- Local file detector alert -->
+      <div id="localGimmickExcelAlert" class="hidden p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5">
+          <span class="material-symbols-outlined text-[22px] text-amber-700">description</span>
+          <div>
+            <h5 id="localGimmickExcelName" class="font-bold text-xs text-amber-900">Data stock Gimmick.xlsx</h5>
+            <p id="localGimmickExcelDesc" class="text-[11px] text-amber-800 font-medium">Berkas ditemukan di server.</p>
+          </div>
+        </div>
+        <button type="button" onclick="previewDetectedLocalGimmickExcel()" class="px-3.5 py-2 bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold rounded-xl text-xs flex items-center gap-1 shrink-0 active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">sync</span>
+          <span>Muat File Ini</span>
+        </button>
+      </div>
+
+      <!-- Upload input area -->
+      <div class="border-2 border-dashed border-amber-300 hover:border-amber-500 rounded-2xl p-5 text-center transition-colors bg-amber-50/20">
+        <input type="file" id="gimmickExcelFileInput" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleGimmickExcelFileSelect(this)">
+        <span class="material-symbols-outlined text-[36px] text-amber-600 mb-1">cloud_upload</span>
+        <p class="text-xs font-bold text-slate-800">Pilih berkas Excel (.xlsx) atau CSV dari komputer</p>
+        <p class="text-[10px] text-slate-400 mt-0.5">Mendukung kolom Barcode, Item Description, QTY Gudang Kecil, QTY Gudang Besar, Kode SAP, Total On Hand</p>
+        <button type="button" onclick="document.getElementById('gimmickExcelFileInput').click()" class="mt-3 px-4 py-2 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs inline-flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">folder_open</span>
+          <span>Telusuri File...</span>
+        </button>
+      </div>
+
+      <!-- Paste area toggle -->
+      <details class="text-xs text-slate-600">
+        <summary class="cursor-pointer font-bold text-amber-700 hover:underline flex items-center gap-1">
+          <span class="material-symbols-outlined text-[15px]">content_paste</span>
+          <span>Atau tempel (paste) data tabel dari Excel di sini</span>
+        </summary>
+        <div class="mt-2 space-y-2">
+          <textarea id="gimmickExcelPasteText" rows="4" placeholder="Copy tabel di Excel lalu Paste di sini..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-[11px] outline-none focus:border-amber-500 focus:bg-white"></textarea>
+          <button type="button" onclick="previewGimmickExcelPaste()" class="px-4 py-2 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs active:scale-95 transition-all shadow-xs cursor-pointer">Pratinjau Teks</button>
+        </div>
+      </details>
+
+      <!-- Loading State -->
+      <div id="gimmickImportLoading" class="hidden py-6 text-center">
+        <span class="material-symbols-outlined text-[32px] text-amber-600 animate-spin mb-2">progress_activity</span>
+        <p class="text-xs font-bold text-slate-700">Menganalisis data stok Gimmick...</p>
+      </div>
+
+      <!-- Preview Section -->
+      <div id="gimmickImportPreviewSection" class="hidden space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+          <h4 class="font-bold text-[11px] text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-amber-700">visibility</span>
+            <span>Hasil Pratinjau Gimmick:</span>
+          </h4>
+          <div id="gimmickImportSummaryStats"></div>
+        </div>
+
+        <div class="max-h-64 overflow-y-auto border border-slate-200 rounded-xl shadow-2xs">
+          <table class="w-full text-left">
+            <thead class="bg-gradient-to-r from-amber-600 to-amber-700 text-[10px] font-extrabold uppercase tracking-wider text-white sticky top-0">
+              <tr>
+                <th class="p-2.5">SKU</th>
+                <th class="p-2.5">Nama Barang</th>
+                <th class="p-2.5">Barcode (Fisik)</th>
+                <th class="p-2.5">Barcode BPOM</th>
+                <th class="p-2.5">Kode SAP</th>
+                <th class="p-2.5">Area</th>
+                <th class="p-2.5">Status</th>
+              </tr>
+            </thead>
+            <tbody id="gimmickImportPreviewTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex items-center justify-between pt-3 border-t border-slate-100 flex-shrink-0">
+      <button type="button" onclick="App.closeModal('modalGimmickExcelImport')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all">Batal</button>
+      <button type="button" id="gimmickImportSubmitBtn" onclick="commitGimmickExcelImport()" class="hidden px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all inline-flex items-center gap-1.5 active:scale-95 cursor-pointer">
+        <span class="material-symbols-outlined text-[16px]">upload</span>
+        <span>Simpan ke Master Stok Gimmick</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= MODAL: FAST BARCODE SCANNER DIALOG ================= -->
+<div id="modalFastBarcodeScanner" class="fixed inset-0 z-50 modal-backdrop hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 flex flex-col">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20">
+          <span class="material-symbols-outlined text-[22px]">barcode_scanner</span>
+        </div>
+        <div>
+          <h3 class="font-extrabold text-slate-900 text-sm">Fast Barcode Scanner</h3>
+          <p class="text-[11px] text-slate-400 font-medium">Scan barcode produk / SKU untuk cek stok instan</p>
+        </div>
+      </div>
+      <button onclick="App.closeModal('modalFastBarcodeScanner')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Scanner Input -->
+    <div class="space-y-2">
+      <label class="block font-bold text-slate-700 text-xs">Scan Barcode / Ketik Kode:</label>
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+          <span class="material-symbols-outlined text-[20px] text-amber-600">qr_code_scanner</span>
+        </span>
+        <input type="text" id="fastScannerInput" placeholder="Arahkan scanner ke barcode lalu scan..." 
+          class="w-full h-11 pl-10 pr-10 bg-amber-50/50 border-2 border-amber-400 rounded-xl font-mono text-sm font-black text-slate-900 outline-none focus:bg-white focus:border-amber-600 focus:ring-2 focus:ring-amber-200 transition-all"
+          autocomplete="off" onkeydown="handleFastScannerKeydown(event)">
+        <span id="fastScannerLoading" class="absolute right-3 top-1/2 -translate-y-1/2 hidden">
+          <span class="material-symbols-outlined text-[18px] text-amber-600 animate-spin">sync</span>
+        </span>
+      </div>
+      <p class="text-[10px] text-slate-400 font-medium">Mendukung Barcode EAN, Kode SAP, dan Kode SKU Internal.</p>
+    </div>
+
+    <!-- Result Card -->
+    <div id="fastScannerResultBox" class="hidden rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+      <div class="flex items-start justify-between gap-3">
+        <div class="space-y-1 min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span id="fastScanBadgeType" class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-200">GIMMICK</span>
+            <span id="fastScanSku" class="font-mono text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-slate-200 text-slate-800"></span>
+            <span id="fastScanBarcode" class="font-mono text-[11px] font-bold text-slate-600"></span>
+          </div>
+          <h4 id="fastScanName" class="font-extrabold text-sm text-slate-900 leading-snug"></h4>
+          <div class="flex items-center gap-2 flex-wrap text-xs text-slate-500 font-mono">
+            <span id="fastScanBpom"></span>
+            <span id="fastScanSap"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breakdown Stock Grid -->
+      <div class="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-200">
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <p class="text-[10px] text-slate-500 font-bold uppercase">Gudang Kecil</p>
+          <p id="fastScanQtyKecil" class="text-sm font-black text-blue-800">0</p>
+        </div>
+        <div class="bg-white p-2 rounded-lg border border-slate-200">
+          <p class="text-[10px] text-slate-500 font-bold uppercase">Gudang Besar</p>
+          <p id="fastScanQtyBesar" class="text-sm font-black text-indigo-800">0</p>
+        </div>
+        <div class="p-2 rounded-lg border border-emerald-200 bg-emerald-50/50">
+          <p class="text-[10px] text-emerald-700 font-bold uppercase">Total On Hand</p>
+          <p id="fastScanTotalOnHand" class="text-sm font-black text-emerald-800">0</p>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="pt-2 flex items-center justify-end gap-2">
+        <button type="button" id="fastScanBtnInbound" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs flex items-center gap-1 active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">move_to_inbox</span>
+          <span>Inbound</span>
+        </button>
+        <button type="button" id="fastScanBtnOutbound" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs flex items-center gap-1 active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">outbox</span>
+          <span>Outbound</span>
+        </button>
+        <button type="button" id="fastScanBtnHistory" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs flex items-center gap-1 active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">history</span>
+          <span>Riwayat</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Scanner Empty / Error State -->
+    <div id="fastScannerEmptyState" class="hidden text-center py-6 text-slate-400">
+      <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">search_off</span>
+      <p class="text-xs font-semibold text-slate-600" id="fastScannerNotFoundMsg">Item tidak ditemukan</p>
+    </div>
+
+    <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+      <span class="text-[11px] text-slate-400">Tekan Enter setelah scan barcode</span>
+      <button type="button" onclick="App.closeModal('modalFastBarcodeScanner')" class="px-4 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs">Tutup</button>
+    </div>
   </div>
 </div>
 
@@ -3925,7 +5086,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Role / Hak Akses <span class="text-rose-500">*</span></label>
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
-          <option value="operator">Operator Gudang (Panel Mobile Lengkap)</option>
+          <option value="operator_inventory">Operator Inventory (Operator Gudang - Panel Mobile Lengkap)</option>
           <option value="operator_fulfillment">Operator Fulfillment (Khusus Form Request Consumable)</option>
           <option value="admin">Administrator (Panel Admin)</option>
           <?php if (Auth::isSuperAdmin()): ?>
@@ -3960,7 +5121,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalUserForm')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-colors">
+        <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan User</span>
         </button>
@@ -4038,7 +5199,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalEditTask')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
+        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Perubahan Qty</span>
         </button>
@@ -4108,7 +5269,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalRecordPO')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnRecordPOSubmit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5">
+        <button type="submit" id="btnRecordPOSubmit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">check_circle</span>
           <span>Simpan Status PO</span>
         </button>
@@ -4175,7 +5336,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalProfile')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnProfileSubmit" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1">
+        <button type="submit" id="btnProfileSubmit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Perubahan</span>
         </button>
@@ -4207,7 +5368,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <div class="flex items-center justify-between pt-3 border-t border-slate-100">
-      <button type="button" id="btnEditFromInboundDetail" onclick="openEditInboundModalFromDetail()" class="px-3.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-200 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+      <button type="button" id="btnEditFromInboundDetail" onclick="openEditInboundModalFromDetail()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-[#262363] hover:text-white text-slate-700 border border-slate-200 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95">
         <span class="material-symbols-outlined text-[16px]">edit</span>
         <span>Edit Transaksi</span>
       </button>
@@ -4252,9 +5413,9 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Pilih Material -->
       <div>
-        <label class="block font-bold text-slate-700 mb-1">Material Packaging <span class="text-rose-500">*</span></label>
+        <label class="block font-bold text-slate-700 mb-1">Kemas <span class="text-rose-500">*</span></label>
         <select id="editInboundMaterialSelect" required onchange="handleEditInboundMaterialChange()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600 focus:bg-white transition-colors">
-          <option value="">-- Pilih Material Packaging --</option>
+          <option value="">-- Pilih Kemas --</option>
         </select>
         <div id="editInboundStockHint" class="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5 font-medium">
           <span>Stok Master Saat Ini: <b id="editInboundCurrentStock" class="font-mono text-emerald-800">0</b></span>
@@ -4306,7 +5467,7 @@ require_once __DIR__ . '/../includes/header.php';
           <button type="button" onclick="App.closeModal('modalEditInbound')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
             Batal
           </button>
-          <button type="submit" id="btnSubmitEditInbound" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+          <button type="submit" id="btnSubmitEditInbound" class="px-5 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all cursor-pointer">
             <span class="material-symbols-outlined text-[17px]">save</span>
             <span>Simpan Perubahan</span>
           </button>
@@ -4385,23 +5546,30 @@ require_once __DIR__ . '/../includes/header.php';
           <div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-indigo-700 text-[18px]">rule</span>
-              <span class="font-bold text-slate-900 text-xs">Pilih Material Packaging yang Akan Dihitung:</span>
+              <span class="font-bold text-slate-900 text-xs">Pilih Kemas yang Akan Dihitung:</span>
               <span id="dynamicSkuSelectedCountBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-600 text-white shadow-2xs">0 SKU Terpilih</span>
             </div>
             <p class="text-[11px] text-slate-500 mt-0.5">Centang baris produk yang ingin dihitung secara spesifik pada sesi counting ini.</p>
           </div>
           <div class="flex items-center gap-1.5 text-xs">
-            <button type="button" onclick="toggleSelectAllDynamicSku(true)" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-lg font-bold transition-colors border border-indigo-200 shadow-2xs">Pilih Semua (Hasil Filter)</button>
+            <button type="button" onclick="toggleSelectAllDynamicSku(true)" class="px-3 py-1.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl font-bold transition-all shadow-xs active:scale-95 cursor-pointer">Pilih Semua (Hasil Filter)</button>
             <button type="button" onclick="toggleSelectAllDynamicSku(false)" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors shadow-2xs">Reset Pilihan</button>
           </div>
         </div>
 
         <!-- Filter & Search Toolbar -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div class="relative">
             <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-slate-400">search</span>
             <input type="text" id="dynamicSkuSearchInput" oninput="filterDynamicSkuChecklist()" placeholder="Cari kode SKU, nama material, atau lokasi rak..." 
               class="w-full pl-8 pr-3 py-2 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600 shadow-2xs">
+          </div>
+          <div>
+            <select id="dynamicSkuTypeFilter" onchange="filterDynamicSkuChecklist()" class="w-full py-2 px-3 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600 shadow-2xs font-bold text-slate-800 cursor-pointer">
+              <option value="ALL">📦+🎁 Semua Tipe (Kemas & Gimmick)</option>
+              <option value="PACKAGING">📦 Kemas (Packaging)</option>
+              <option value="GIMMICK">🎁 Gimmick</option>
+            </select>
           </div>
           <div>
             <select id="dynamicSkuCategoryFilter" onchange="filterDynamicSkuChecklist()" class="w-full py-2 px-3 bg-white border border-indigo-200 rounded-lg text-xs outline-none focus:border-indigo-600 shadow-2xs font-medium">
@@ -4420,7 +5588,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </th>
                 <th class="p-2.5 text-center w-10">No</th>
                 <th class="p-2.5 whitespace-nowrap">Item No / SKU</th>
-                <th class="p-2.5 min-w-[220px]">Deskripsi Material Packaging</th>
+                <th class="p-2.5 min-w-[220px]">Deskripsi Kemas</th>
                 <th class="p-2.5 whitespace-nowrap">Kategori</th>
                 <th class="p-2.5 text-center whitespace-nowrap">Lokasi Rak</th>
                 <th class="p-2.5 text-center whitespace-nowrap">Stok Sistem</th>
@@ -4441,7 +5609,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalCreateDynamicCount')" class="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitCreateDynamic" class="px-5 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
+        <button type="submit" id="btnSubmitCreateDynamic" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">send</span>
           <span>Buat & Assign ke Operator</span>
         </button>
@@ -4496,13 +5664,13 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div class="flex items-center justify-between gap-2 pt-3 border-t border-slate-100">
-        <button type="button" onclick="printFromApproveModal()" class="px-3 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer" title="Cetak Surat Permintaan Ini">
+        <button type="button" onclick="printFromApproveModal()" class="px-3.5 py-2 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold text-xs transition-all flex items-center gap-1 cursor-pointer active:scale-95" title="Cetak Surat Permintaan Ini">
           <span class="material-symbols-outlined text-[16px] text-amber-700">print</span>
           <span>Cetak Form</span>
         </button>
         <div class="flex items-center gap-2">
           <button type="button" onclick="App.closeModal('modalApproveConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
-          <button type="submit" id="btnSubmitApproveConsumable" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5">
+          <button type="submit" id="btnSubmitApproveConsumable" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined text-[17px]">verified</span>
             <span>Setujui (ACC Sekarang)</span>
           </button>
@@ -4607,7 +5775,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px]">Daftar Item Material Consumable</label>
-          <button type="button" onclick="addAdminEditConsumableItemRow()" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer">
+          <button type="button" onclick="addAdminEditConsumableItemRow()" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95">
             <span class="material-symbols-outlined text-[15px]">add</span>
             <span>Tambah Item</span>
           </button>
@@ -4617,7 +5785,7 @@ require_once __DIR__ . '/../includes/header.php';
           <table class="w-full text-left border-collapse">
             <thead class="bg-slate-100 text-[10.5px] font-extrabold uppercase text-slate-600 border-b border-slate-200">
               <tr>
-                <th class="p-2.5">Material Packaging</th>
+                <th class="p-2.5">Kemas</th>
                 <th class="p-2.5 w-28 text-center">Target Qty</th>
                 <th class="p-2.5">Catatan Item</th>
                 <th class="p-2.5 w-12 text-center">Aksi</th>
@@ -4637,7 +5805,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
         <button type="button" onclick="App.closeModal('modalEditConsumableRequest')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitEditConsumable" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+        <button type="submit" id="btnSubmitEditConsumable" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[17px]">save</span>
           <span>Simpan Perubahan</span>
         </button>
@@ -4661,7 +5829,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button type="button" onclick="executeConsumablePrint()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+        <button type="button" onclick="executeConsumablePrint()" class="px-5 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[17px]">print</span>
           <span>Cetak Sekarang (Print)</span>
         </button>
@@ -4705,11 +5873,21 @@ require_once __DIR__ . '/../includes/header.php';
           class="w-full p-2.5 bg-slate-100 border border-slate-300 rounded-lg outline-none font-mono font-bold text-emerald-700 text-xs cursor-default">
       </div>
 
+      <!-- STOCK OPNAME: ITEM TYPE (SEMUA / KEMAS / GIMMICK) -->
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Tipe Produk yang Dihitung</label>
+        <select id="createOpnameItemType" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-bold text-slate-800 text-xs">
+          <option value="ALL">📦+🎁 Semua Tipe (Kemas + Gimmick)</option>
+          <option value="PACKAGING">📦 Hanya Kemas</option>
+          <option value="GIMMICK">🎁 Hanya Gimmick</option>
+        </select>
+      </div>
+
       <!-- STOCK OPNAME: SCOPE SELECTION (ALL / CATEGORY / RACK) -->
       <div class="space-y-2">
-        <label class="block font-semibold text-slate-700 mb-1">Cakupan Material Packaging</label>
+        <label class="block font-semibold text-slate-700 mb-1">Cakupan Area / Sektor Gudang</label>
         <select id="createOpnameScope" onchange="toggleOpnameScopeFilter()" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg outline-none focus:border-emerald-600 font-semibold text-xs">
-          <option value="all">Semua Material Packaging di Gudang (Rekomendasi)</option>
+          <option value="all">Semua Lokasi di Gudang (Rekomendasi)</option>
           <option value="category">Berdasarkan Kategori Tertentu</option>
           <option value="rack">Berdasarkan Lokasi Rak Tertentu</option>
         </select>
@@ -4732,7 +5910,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalCreateStockOpname')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitCreateOpname" class="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition-colors flex items-center gap-1.5">
+        <button type="submit" id="btnSubmitCreateOpname" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">play_circle</span>
           <span>Buka Sesi Stock Opname</span>
         </button>
@@ -4775,7 +5953,7 @@ require_once __DIR__ . '/../includes/header.php';
             <p class="text-[11px] text-slate-500 mt-0.5">Centang 1 atau beberapa operator. Sistem akan <b>otomatis membagi rata SKU</b> ke semua operator yang dipilih.</p>
           </div>
           <div class="flex items-center gap-1.5 text-xs">
-            <button type="button" onclick="toggleSelectAllRecountOperators(true)" class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold transition-colors border border-purple-200 shadow-2xs">Pilih Semua</button>
+            <button type="button" onclick="toggleSelectAllRecountOperators(true)" class="px-3 py-1.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl font-bold transition-all shadow-xs active:scale-95 cursor-pointer">Pilih Semua</button>
             <button type="button" onclick="toggleSelectAllRecountOperators(false)" class="px-2.5 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-bold transition-colors shadow-2xs">Reset</button>
           </div>
         </div>
@@ -4823,7 +6001,7 @@ require_once __DIR__ . '/../includes/header.php';
               <tr>
                 <th class="p-2.5 text-center w-10">No</th>
                 <th class="p-2.5 whitespace-nowrap">Item No / SKU</th>
-                <th class="p-2.5 min-w-[220px]">Deskripsi Material Packaging</th>
+                <th class="p-2.5 min-w-[220px]">Deskripsi Kemas</th>
                 <th class="p-2.5 text-center whitespace-nowrap">Lokasi Rak</th>
                 <th class="p-2.5 text-center whitespace-nowrap">Stok Sistem</th>
                 <th class="p-2.5 text-center whitespace-nowrap">Fisik 1st</th>
@@ -4845,7 +6023,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalAssignRecount')" class="px-4 py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnSubmitRecount" class="px-5 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-black text-xs shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
+        <button type="submit" id="btnSubmitRecount" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">send</span>
           <span id="btnSubmitRecountText">Kirim Tugas Recount</span>
         </button>
@@ -4898,7 +6076,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
         <button type="button" onclick="App.closeModal('modalEditOpnameItem')" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm text-xs flex items-center gap-1.5 transition-colors">
+        <button type="submit" class="px-5 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white font-bold rounded-xl shadow-xs text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Perubahan</span>
         </button>
@@ -5149,97 +6327,7 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: INPUT STOCK TRANSFER MULTI-ITEM (GUDANG UTAMA <-> ZONE VAS) ================= -->
-<div id="modalStockTransfer" class="fixed inset-0 z-50 modal-backdrop hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-  <div class="bg-white rounded-2xl max-w-5xl w-full xl:max-w-6xl p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] flex flex-col mx-auto my-auto">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-200/80 shadow-2xs">
-          <span class="material-symbols-outlined text-[22px]">swap_horizontal_circle</span>
-        </div>
-        <div>
-          <h3 class="font-extrabold text-slate-900 text-base leading-tight">Stock Transfer</h3>
-        </div>
-      </div>
-      <button type="button" onclick="App.closeModal('modalStockTransfer')" class="w-8 h-8 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer">
-        <span class="material-symbols-outlined text-[20px]">close</span>
-      </button>
-    </div>
 
-    <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-3.5 text-xs flex-1 flex flex-col min-h-0 overflow-hidden">
-      <!-- Meta Information Row -->
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 flex-shrink-0 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-        <div>
-          <label class="block font-bold text-slate-800 mb-1">From (Asal) <span class="text-rose-500">*</span></label>
-          <select id="stFormFrom" onchange="onStFromChange()" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
-            <option value="INVENTORY">Stock Inventory</option>
-            <option value="VAS">Zone VAS</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-800 mb-1">To (Tujuan) <span class="text-rose-500">*</span></label>
-          <select id="stFormTo" onchange="onStToChange()" class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-indigo-600 shadow-2xs">
-            <option value="VAS">Zone VAS</option>
-            <option value="INVENTORY">Stock Inventory</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Tanggal Transfer</label>
-          <input type="text" id="stFormDateDisplay" readonly value="<?= date('d F Y - H:i') ?>" class="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 cursor-not-allowed outline-none">
-        </div>
-
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Catatan Dokumen</label>
-          <input type="text" id="stGlobalNotes" placeholder="Keterangan / No SPK / Surat Jalan..." class="w-full p-2 bg-white border border-slate-300 rounded-lg text-xs outline-none focus:border-indigo-600">
-        </div>
-      </div>
-
-      <!-- Items Table Container -->
-      <div class="flex-1 min-h-[240px] overflow-y-auto border border-slate-200 rounded-xl bg-white shadow-2xs">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-100/90 text-slate-700 font-extrabold uppercase text-[10px] tracking-wider border-b border-slate-200 sticky top-0 z-10 whitespace-nowrap">
-            <tr>
-              <th class="p-2.5 w-12 text-center border-r border-slate-200/60">#</th>
-              <th class="p-2.5 min-w-[280px] border-r border-slate-200/60">Kemas / Material Packaging <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 w-40 min-w-[140px] text-center border-r border-slate-200/60">Sisa Stock Asal</th>
-              <th class="p-2.5 w-36 min-w-[120px] text-center border-r border-slate-200/60">Qty Transfer <span class="text-rose-500">*</span></th>
-              <th class="p-2.5 min-w-[180px] border-r border-slate-200/60">Catatan Item</th>
-              <th class="p-2.5 w-14 text-center">Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="stItemsTableBody" class="divide-y divide-slate-100">
-            <!-- Dynamic rows inserted here -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Bottom Bar with Add Row and Total Summary -->
-      <div class="flex items-center justify-between pt-1 flex-shrink-0">
-        <button type="button" onclick="addStockTransferTableRow()" class="px-3.5 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs flex items-center gap-1.5 transition-colors shadow-2xs cursor-pointer">
-          <span class="material-symbols-outlined text-[16px]">add_circle</span>
-          <span>Tambah Baris (Enter)</span>
-        </button>
-
-        <div class="text-xs font-bold text-slate-700 flex items-center gap-2">
-          <span>Total Qty Transfer:</span>
-          <span class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-950 border border-indigo-200 font-mono font-black text-sm" id="stTotalQtySummary">0</span>
-        </div>
-      </div>
-
-      <!-- Footer Buttons -->
-      <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 flex-shrink-0">
-        <button type="button" onclick="App.closeModal('modalStockTransfer')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
-          Batal
-        </button>
-        <button type="submit" id="btnSubmitStockTransferBatch" class="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 active:scale-95 text-white font-extrabold rounded-xl shadow-md text-xs flex items-center gap-1.5 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[17px]">swap_horiz</span>
-          <span>Catat & Process Transfer Stok</span>
-        </button>
-      </div>
-    </form>
   <?php if (Auth::isAdmin()): ?>
 <!-- ================= MODAL: SINKRONISASI GOOGLE SHEETS ================= -->
 <div id="googleSheetsSyncModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
@@ -5259,7 +6347,7 @@ require_once __DIR__ . '/../includes/header.php';
           <p class="text-xs text-emerald-200/90">Kirim data ke Google Sheets dalam 1-Klik</p>
         </div>
       </div>
-      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="text-emerald-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="text-blue-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors">
         <span class="material-symbols-outlined text-xl">close</span>
       </button>
     </div>
@@ -5323,7 +6411,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           
           <!-- Button 1: Incremental Update Only -->
-          <button id="btnGsSyncUpdate" type="button" onclick="triggerGoogleSheetsSync('update', this)" class="p-4 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-emerald-500 disabled:opacity-60 disabled:cursor-not-allowed">
+          <button id="btnGsSyncUpdate" type="button" onclick="triggerGoogleSheetsSync('update', this)" class="p-4 bg-[#262363] hover:bg-[#1c1a4a] active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-[#262363] disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
               <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-900/60 text-emerald-200 border border-emerald-400/40">Dianjurkan</span>
               <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform gs-btn-icon">bolt</span>
@@ -5339,7 +6427,7 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <!-- Button 2: Full Sync Overhaul -->
-          <button id="btnGsSyncFull" type="button" onclick="triggerGoogleSheetsSync('full', this)" class="p-4 bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-800 rounded-xl border border-slate-300 shadow-2xs transition-all flex flex-col justify-between text-left group cursor-pointer hover:border-slate-400 disabled:opacity-60 disabled:cursor-not-allowed">
+          <button id="btnGsSyncFull" type="button" onclick="triggerGoogleSheetsSync('full', this)" class="p-4 bg-[#262363] hover:bg-[#1c1a4a] active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-[#262363] disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
               <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">Reset Total</span>
               <span class="material-symbols-outlined text-2xl text-slate-500 group-hover:rotate-180 transition-transform duration-500 gs-btn-icon">sync</span>
@@ -5403,7 +6491,7 @@ require_once __DIR__ . '/../includes/header.php';
 
     <form id="formVasTransferBack" onsubmit="submitVasTransferToInventory(event)" class="p-5 space-y-4">
       <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Material Packaging <span class="text-rose-500">*</span></label>
+        <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Kemas <span class="text-rose-500">*</span></label>
         <select id="vasTransferMaterialSelect" onchange="onVasTransferMaterialChange()" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-900 outline-none focus:border-purple-600 focus:bg-white transition-colors">
           <option value="">-- Pilih SKU yang Ada di Zone VAS --</option>
         </select>
@@ -5439,7 +6527,7 @@ require_once __DIR__ . '/../includes/header.php';
         <button type="button" onclick="closeVasTransferModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors">
           Batal
         </button>
-        <button type="submit" id="btnSubmitVasTransfer" class="px-5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm shadow-purple-600/30 inline-flex items-center gap-1.5 cursor-pointer">
+        <button type="submit" id="btnSubmitVasTransfer" class="px-5 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[18px]">check_circle</span>
           <span>Proses Transfer Masuk</span>
         </button>
@@ -5455,5 +6543,6 @@ require_once __DIR__ . '/../includes/header.php';
 </script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/admin.js?v=<?= time() ?>"></script>
+<?php $appJsAlreadyLoaded = true; ?>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
 

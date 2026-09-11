@@ -86,6 +86,18 @@ $material['total_outbound'] = (float)$material['total_outbound'];
 $material['current_stock'] = (float)$material['current_stock'];
 $material['min_stock'] = (float)$material['min_stock'];
 
+$isGimmick = ($material['item_type'] === 'GIMMICK');
+
+// Fetch batches if Gimmick
+$stmtBatches = $pdo->prepare("
+    SELECT id, batch_no, exp_date, location, qty, notes, created_at
+    FROM material_batches
+    WHERE material_id = ?
+    ORDER BY (CASE WHEN qty > 0 THEN 0 ELSE 1 END), exp_date ASC, batch_no ASC
+");
+$stmtBatches->execute([$material['id']]);
+$batches = $stmtBatches->fetchAll();
+
 // Fetch all mutations (INITIAL_IMPORT first, then chronological)
 $stmtMut = $pdo->prepare("
     SELECT sm.*, u.name as user_name, u.role as user_role, u.shift as user_shift
@@ -97,7 +109,23 @@ $stmtMut = $pdo->prepare("
 $stmtMut->execute([$material['id']]);
 $mutations = $stmtMut->fetchAll();
 
-$pageTitle = "History Movement Stock: {$material['code']} - {$material['name']}";
+if (empty($mutations) && $material['current_stock'] > 0) {
+    $batchList = !empty($batches) ? implode(', ', array_filter(array_column($batches, 'batch_no'))) : '';
+    $refNo = $isGimmick ? 'INIT-GIMMICK' : 'INITIAL-IMPORT';
+    $notes = $isGimmick
+        ? ('Stok Awal Pendaftaran Gimmick' . (!empty($batchList) ? " [Batch: {$batchList}]" : ''))
+        : 'Stok Awal Pendaftaran Kemas';
+    $userId = Auth::id() ?? 1;
+    $stmtInitMut = $pdo->prepare("
+        INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+        VALUES (?, 'INITIAL_IMPORT', ?, 0, ?, ?, ?, ?, '2026-08-01 00:00:00')
+    ");
+    $stmtInitMut->execute([$material['id'], $material['current_stock'], $material['current_stock'], $refNo, $notes, $userId]);
+    $stmtMut->execute([$material['id']]);
+    $mutations = $stmtMut->fetchAll();
+}
+
+$pageTitle = ($isGimmick ? "History Stock Gimmick: " : "History Movement Stock: ") . "{$material['code']} - {$material['name']}";
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -106,15 +134,15 @@ require_once __DIR__ . '/../includes/header.php';
   <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-2xs no-print">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <a href="./#inventory" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold" title="Kembali ke Master Stok">
+        <a href="<?= $isGimmick ? './#gimmick' : './#inventory' ?>" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5 text-xs font-bold" title="<?= $isGimmick ? 'Kembali ke Katalog Gimmick' : 'Kembali ke Master Stok' ?>">
           <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-          <span class="hidden sm:inline">Kembali ke Master Stok</span>
+          <span class="hidden sm:inline"><?= $isGimmick ? 'Kembali ke Katalog Gimmick' : 'Kembali ke Master Stok' ?></span>
         </a>
         <div class="h-5 w-px bg-slate-200"></div>
         <div>
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Modul Master Stok</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400"><?= $isGimmick ? 'Modul Stok Gimmick' : 'Modul Master Stok' ?></span>
           <h1 class="font-extrabold text-sm sm:text-base text-slate-900 flex items-center gap-1.5">
-            <span class="text-emerald-800">Kartu Stok Terintegrasi</span>
+            <span class="<?= $isGimmick ? 'text-[#262363]' : 'text-emerald-800' ?>"><?= $isGimmick ? 'Kartu Stok & Riwayat Mutasi Gimmick' : 'Kartu Stok Terintegrasi' ?></span>
           </h1>
         </div>
       </div>
@@ -122,13 +150,13 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Download Excel -->
-        <a href="export.php?type=material_history&id=<?= $material['id'] ?>" class="h-[38px] px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Export Riwayat ke Excel (.xlsx)">
+        <a href="export.php?type=material_history&id=<?= $material['id'] ?>" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Export Riwayat ke Excel (.xlsx)">
           <span class="material-symbols-outlined text-[18px]">table_chart</span>
           <span>Export History Excel</span>
         </a>
 
         <!-- Print PDF Button -->
-        <button onclick="window.print()" class="h-[38px] px-3.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-2xs transition-colors inline-flex items-center gap-1.5" title="Cetak Kartu Stok">
+        <button onclick="window.print()" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold shadow-xs transition-all active:scale-95 inline-flex items-center gap-1.5 cursor-pointer" title="Cetak Kartu Stok">
           <span class="material-symbols-outlined text-[18px]">print</span>
           <span>Cetak Kartu Stok</span>
         </button>
@@ -251,9 +279,9 @@ require_once __DIR__ . '/../includes/header.php';
               <th class="p-3">Waktu Transaksi</th>
               <th class="p-3">Tipe Mutasi</th>
               <th class="p-3">No. Referensi (PO / Task)</th>
-              <th class="p-3 text-center text-emerald-800">Masuk (+)</th>
-              <th class="p-3 text-center text-rose-600">Keluar (-)</th>
-              <th class="p-3 text-center font-bold text-slate-900">Sisa Stok</th>
+              <th class="p-3 text-center text-white font-bold">Masuk (+)</th>
+              <th class="p-3 text-center text-white font-bold">Keluar (-)</th>
+              <th class="p-3 text-center font-bold text-white">Sisa Stok</th>
               <th class="p-3">Keterangan & Catatan</th>
               <th class="p-3">Petugas PIC</th>
             </tr>
@@ -263,7 +291,7 @@ require_once __DIR__ . '/../includes/header.php';
               <tr>
                 <td colspan="8" class="p-8 text-center text-slate-400 font-medium">
                   <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">history</span>
-                  <p>Belum ada catatan mutasi untuk packaging material ini.</p>
+                  <p>Belum ada catatan mutasi untuk kemas ini.</p>
                 </td>
               </tr>
             <?php else: ?>

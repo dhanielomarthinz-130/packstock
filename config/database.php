@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 4;
+    private const CURRENT_SCHEMA_VERSION = 9;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -57,7 +57,16 @@ class Database {
             self::ensureSchema(self::$pdo, 'mysql');
             return self::$pdo;
         } catch (Exception $e) {
-            // Fallback to SQLite if MySQL is unavailable
+            // PENTING: fallback SQLite HANYA untuk pengembangan lokal.
+            // Di produksi, beralih diam-diam ke SQLite berarti operator tetap bisa login
+            // (dengan akun bawaan hasil migrasi) dan mencatat transaksi ke basis data
+            // sekali pakai yang hilang begitu MySQL pulih. Lebih baik berhenti terang-terangan.
+            if ($isLive) {
+                self::$pdo = null;
+                self::halt503($e);
+            }
+
+            // Fallback to SQLite if MySQL is unavailable (local development only)
             $sqlitePath = __DIR__ . '/packstock.sqlite';
             self::$pdo = new PDO("sqlite:" . $sqlitePath, null, null, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -68,11 +77,55 @@ class Database {
                 self::$pdo->exec("PRAGMA journal_mode = WAL;");
                 self::$pdo->exec("PRAGMA synchronous = NORMAL;");
                 self::$pdo->exec("PRAGMA busy_timeout = 30000;");
+                // SQLite mematikan foreign key secara bawaan, sehingga baris yatim
+                // (mutasi yang materialnya sudah dihapus) bisa terbentuk diam-diam.
+                self::$pdo->exec("PRAGMA foreign_keys = ON;");
             } catch (Throwable $ignored) {}
 
             self::ensureSchema(self::$pdo, 'sqlite');
             return self::$pdo;
         }
+    }
+
+    /**
+     * Hentikan permintaan dengan 503 saat basis data produksi tidak terjangkau.
+     * Detail teknis hanya masuk error log, tidak pernah dikirim ke pengguna.
+     */
+    private static function halt503(Throwable $e): void {
+        error_log('[PackStock] Koneksi database produksi gagal: ' . $e->getMessage());
+
+        if (!headers_sent()) {
+            http_response_code(503);
+            header('Retry-After: 120');
+        }
+
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        $wantsJson = strpos($uri, '/api/') !== false
+            || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+
+        if ($wantsJson) {
+            if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => false,
+                'message' => 'Koneksi ke database gudang sedang terputus. Jangan mencatat transaksi dulu — hubungi tim teknis, lalu muat ulang halaman ini beberapa menit lagi.'
+            ]);
+        } else {
+            if (!headers_sent()) header('Content-Type: text/html; charset=utf-8');
+            echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">'
+               . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+               . '<title>Database Tidak Terjangkau</title></head>'
+               . '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;'
+               . 'background:#f6f5fa;font-family:system-ui,sans-serif;color:#191733;padding:24px">'
+               . '<div style="max-width:30rem;background:#fff;border:1px solid #e0dee9;border-radius:8px;padding:28px">'
+               . '<h1 style="margin:0 0 10px;font-size:1.3rem">Koneksi database terputus</h1>'
+               . '<p style="margin:0 0 14px;line-height:1.6;color:#3d3a5c">PackStock tidak dapat menjangkau database gudang saat ini, '
+               . 'jadi sistem sengaja berhenti agar tidak ada transaksi yang tercatat di tempat yang salah.</p>'
+               . '<p style="margin:0;line-height:1.6;color:#3d3a5c"><b>Yang perlu dilakukan:</b> jangan catat inbound, outbound, '
+               . 'atau opname dulu. Hubungi tim teknis, lalu muat ulang halaman ini beberapa menit lagi.</p>'
+               . '</div></body></html>';
+        }
+        exit;
     }
 
     private static function ensureSchema(PDO $pdo, string $driver): void {
@@ -150,12 +203,21 @@ class Database {
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
                 `code` VARCHAR(100) NOT NULL UNIQUE,
                 `name` VARCHAR(255) NOT NULL,
+                `item_type` VARCHAR(20) NOT NULL DEFAULT 'PACKAGING',
                 `category` VARCHAR(100) DEFAULT 'Karton Box',
                 `unit` VARCHAR(30) DEFAULT 'Pcs',
                 `rack_location` VARCHAR(100) DEFAULT 'Gudang Utama',
                 `min_stock` INT DEFAULT 20,
                 `current_stock` INT DEFAULT 0,
                 `vas_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                `sap_code` VARCHAR(50) NULL,
+                `barcode` VARCHAR(100) NULL,
+                `barcode_bpom` VARCHAR(100) NULL,
+                `area` VARCHAR(50) DEFAULT 'Pusat',
+                `qty_gudang_kecil` DECIMAL(12,2) DEFAULT 0.00,
+                `qty_gudang_besar` DECIMAL(12,2) DEFAULT 0.00,
+                `status_active` VARCHAR(20) DEFAULT 'AKTIF',
+                `is_reserved` TINYINT(1) DEFAULT 0,
                 `description` TEXT,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -249,6 +311,35 @@ class Database {
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 UNIQUE KEY `uniq_perm` (`role`, `user_id`, `menu_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // Login Attempts (pembatasan brute force per username & IP)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `login_attempts` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `username` VARCHAR(100) NOT NULL,
+                `ip_address` VARCHAR(45) NOT NULL,
+                `success` TINYINT(1) NOT NULL DEFAULT 0,
+                `attempted_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                KEY `idx_attempt_user` (`username`, `attempted_at`),
+                KEY `idx_attempt_ip` (`ip_address`, `attempted_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+
+        // System Audit Logs (jejak tindakan sistem di luar mutasi stok)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `system_audit_logs` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `actor_id` INT NULL,
+                `actor_username` VARCHAR(100) NULL,
+                `action` VARCHAR(60) NOT NULL,
+                `target` VARCHAR(255) NULL,
+                `detail` TEXT NULL,
+                `ip_address` VARCHAR(45) NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                KEY `idx_audit_action` (`action`, `created_at`),
+                KEY `idx_audit_actor` (`actor_id`, `created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
 
@@ -419,7 +510,32 @@ class Database {
             "ALTER TABLE `stock_opname_items` MODIFY COLUMN `difference` DECIMAL(12,2) DEFAULT 0.00",
             "ALTER TABLE `stock_opname_item_stages` MODIFY COLUMN `count_qty` DECIMAL(12,2) NULL",
             "ALTER TABLE `users` MODIFY COLUMN `role` VARCHAR(50) NOT NULL DEFAULT 'operator'",
-            "ALTER TABLE `materials` ADD COLUMN `vas_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00"
+            "ALTER TABLE `materials` ADD COLUMN `vas_stock` DECIMAL(12,2) NOT NULL DEFAULT 0.00",
+            "ALTER TABLE `materials` ADD COLUMN `item_type` VARCHAR(20) NOT NULL DEFAULT 'PACKAGING'",
+            "ALTER TABLE `materials` ADD COLUMN `sap_code` VARCHAR(50) NULL",
+            "ALTER TABLE `materials` ADD COLUMN `barcode` VARCHAR(100) NULL",
+            "ALTER TABLE `materials` ADD COLUMN `barcode_bpom` VARCHAR(100) NULL",
+            "ALTER TABLE `materials` ADD COLUMN `area` VARCHAR(50) DEFAULT 'Pusat'",
+            "ALTER TABLE `materials` ADD COLUMN `qty_gudang_kecil` DECIMAL(12,2) DEFAULT 0.00",
+            "ALTER TABLE `materials` ADD COLUMN `qty_gudang_besar` DECIMAL(12,2) DEFAULT 0.00",
+            "ALTER TABLE `materials` ADD COLUMN `status_active` VARCHAR(20) DEFAULT 'AKTIF'",
+            "ALTER TABLE `materials` ADD COLUMN `is_reserved` TINYINT(1) DEFAULT 0",
+            "ALTER TABLE `inbound_transactions` ADD COLUMN `batch_no` VARCHAR(100) NULL",
+            "ALTER TABLE `inbound_transactions` ADD COLUMN `exp_date` DATE NULL",
+            "ALTER TABLE `inbound_transactions` ADD COLUMN `location` VARCHAR(100) NULL",
+            "ALTER TABLE `outbound_transactions` ADD COLUMN `batch_no` VARCHAR(100) NULL",
+            "ALTER TABLE `outbound_transactions` ADD COLUMN `exp_date` DATE NULL",
+            "ALTER TABLE `outbound_transactions` ADD COLUMN `location` VARCHAR(100) NULL",
+            "ALTER TABLE `vas_transactions` ADD COLUMN `batch_no` VARCHAR(100) NULL",
+            "ALTER TABLE `vas_transactions` ADD COLUMN `exp_date` DATE NULL",
+            "ALTER TABLE `vas_transactions` ADD COLUMN `from_location` VARCHAR(100) NULL",
+            "ALTER TABLE `vas_transactions` ADD COLUMN `to_location` VARCHAR(100) NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `task_type` VARCHAR(30) NOT NULL DEFAULT 'PICKING'",
+            "ALTER TABLE `tasks` ADD COLUMN `from_location` VARCHAR(100) NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `to_location` VARCHAR(100) NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `batch_id` INT NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `batch_no` VARCHAR(100) NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `exp_date` DATE NULL"
         ];
 
         foreach ($migrations as $mSql) {
@@ -429,6 +545,25 @@ class Database {
                 // Column already exists or migration applied
             }
         }
+
+        // Material Batches (Batch & Expiry Date Breakdown per Lokasi)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `material_batches` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `material_id` INT NOT NULL,
+                `batch_no` VARCHAR(100) NOT NULL,
+                `exp_date` DATE NULL,
+                `location` VARCHAR(100) NOT NULL DEFAULT 'Gudang Kecil',
+                `qty` DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                `notes` TEXT NULL,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX (`material_id`),
+                INDEX (`batch_no`),
+                INDEX (`exp_date`),
+                INDEX (`location`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
 
         // VAS Transactions (Pencatatan Riwayat Transfer Stok Zone VAS)
         $pdo->exec("
@@ -458,6 +593,10 @@ class Database {
             "CREATE INDEX `idx_inb_date` ON `inbound_transactions` (`created_at`)",
             "CREATE INDEX `idx_outb_date` ON `outbound_transactions` (`created_at`)",
             "CREATE INDEX `idx_mat_cat_stock` ON `materials` (`category`, `current_stock`)",
+            "CREATE INDEX `idx_mat_item_type` ON `materials` (`item_type`)",
+            "CREATE INDEX `idx_mat_barcode` ON `materials` (`barcode`)",
+            "CREATE INDEX `idx_mat_barcode_bpom` ON `materials` (`barcode_bpom`)",
+            "CREATE INDEX `idx_mat_sap_code` ON `materials` (`sap_code`)",
             "CREATE INDEX `idx_menu_perm_role_user` ON `menu_permissions` (`role`, `user_id`, `menu_key`)",
             "CREATE INDEX `idx_vas_mat_date` ON `vas_transactions` (`material_id`, `created_at`)"
         ];
@@ -487,12 +626,21 @@ class Database {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 code TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL,
+                item_type TEXT DEFAULT 'PACKAGING',
                 category TEXT DEFAULT 'Karton Box',
                 unit TEXT DEFAULT 'Pcs',
                 rack_location TEXT DEFAULT 'Gudang Utama',
                 min_stock REAL DEFAULT 20.0,
                 current_stock REAL DEFAULT 0.0,
                 vas_stock REAL DEFAULT 0.0,
+                sap_code TEXT NULL,
+                barcode TEXT NULL,
+                barcode_bpom TEXT NULL,
+                area TEXT DEFAULT 'Pusat',
+                qty_gudang_kecil REAL DEFAULT 0.0,
+                qty_gudang_besar REAL DEFAULT 0.0,
+                status_active TEXT DEFAULT 'AKTIF',
+                is_reserved INTEGER DEFAULT 0,
                 description TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -567,6 +715,23 @@ class Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE (role, user_id, menu_key)
+            );
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                ip_address TEXT NOT NULL,
+                success INTEGER NOT NULL DEFAULT 0,
+                attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS system_audit_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                actor_id INTEGER NULL,
+                actor_username TEXT NULL,
+                action TEXT NOT NULL,
+                target TEXT NULL,
+                detail TEXT NULL,
+                ip_address TEXT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS stock_opnames (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -676,7 +841,32 @@ class Database {
             "ALTER TABLE handovers ADD COLUMN from_shift TEXT NULL",
             "ALTER TABLE handovers ADD COLUMN receiver_shift TEXT NULL",
             "ALTER TABLE consumable_requests ADD COLUMN photos TEXT NULL",
-            "ALTER TABLE materials ADD COLUMN vas_stock REAL DEFAULT 0.0"
+            "ALTER TABLE materials ADD COLUMN vas_stock REAL DEFAULT 0.0",
+            "ALTER TABLE materials ADD COLUMN item_type TEXT DEFAULT 'PACKAGING'",
+            "ALTER TABLE materials ADD COLUMN sap_code TEXT NULL",
+            "ALTER TABLE materials ADD COLUMN barcode TEXT NULL",
+            "ALTER TABLE materials ADD COLUMN barcode_bpom TEXT NULL",
+            "ALTER TABLE materials ADD COLUMN area TEXT DEFAULT 'Pusat'",
+            "ALTER TABLE materials ADD COLUMN qty_gudang_kecil REAL DEFAULT 0.0",
+            "ALTER TABLE materials ADD COLUMN qty_gudang_besar REAL DEFAULT 0.0",
+            "ALTER TABLE materials ADD COLUMN status_active TEXT DEFAULT 'AKTIF'",
+            "ALTER TABLE materials ADD COLUMN is_reserved INTEGER DEFAULT 0",
+            "ALTER TABLE inbound_transactions ADD COLUMN batch_no TEXT NULL",
+            "ALTER TABLE inbound_transactions ADD COLUMN exp_date TEXT NULL",
+            "ALTER TABLE inbound_transactions ADD COLUMN location TEXT NULL",
+            "ALTER TABLE outbound_transactions ADD COLUMN batch_no TEXT NULL",
+            "ALTER TABLE outbound_transactions ADD COLUMN exp_date TEXT NULL",
+            "ALTER TABLE outbound_transactions ADD COLUMN location TEXT NULL",
+            "ALTER TABLE vas_transactions ADD COLUMN batch_no TEXT NULL",
+            "ALTER TABLE vas_transactions ADD COLUMN exp_date TEXT NULL",
+            "ALTER TABLE vas_transactions ADD COLUMN from_location TEXT NULL",
+            "ALTER TABLE vas_transactions ADD COLUMN to_location TEXT NULL",
+            "ALTER TABLE tasks ADD COLUMN task_type TEXT NOT NULL DEFAULT 'PICKING'",
+            "ALTER TABLE tasks ADD COLUMN from_location TEXT NULL",
+            "ALTER TABLE tasks ADD COLUMN to_location TEXT NULL",
+            "ALTER TABLE tasks ADD COLUMN batch_id INTEGER NULL",
+            "ALTER TABLE tasks ADD COLUMN batch_no TEXT NULL",
+            "ALTER TABLE tasks ADD COLUMN exp_date TEXT NULL"
         ];
 
         foreach ($sqliteMigrations as $sql) {
@@ -686,6 +876,21 @@ class Database {
                 // Column already exists
             }
         }
+
+        // Material Batches (Batch & Expiry Date Breakdown per Lokasi - SQLite)
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS material_batches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                material_id INTEGER NOT NULL,
+                batch_no TEXT NOT NULL,
+                exp_date TEXT NULL,
+                location TEXT NOT NULL DEFAULT 'Gudang Kecil',
+                qty REAL NOT NULL DEFAULT 0.0,
+                notes TEXT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        ");
 
         // Create performance indexes for SQLite
         $sqliteIndexes = [
@@ -697,7 +902,19 @@ class Database {
             "CREATE INDEX IF NOT EXISTS idx_inb_date ON inbound_transactions (created_at)",
             "CREATE INDEX IF NOT EXISTS idx_outb_date ON outbound_transactions (created_at)",
             "CREATE INDEX IF NOT EXISTS idx_mat_cat_stock ON materials (category, current_stock)",
-            "CREATE INDEX IF NOT EXISTS idx_menu_perm_role_user ON menu_permissions (role, user_id, menu_key)"
+            "CREATE INDEX IF NOT EXISTS idx_mat_item_type ON materials (item_type)",
+            "CREATE INDEX IF NOT EXISTS idx_mat_barcode ON materials (barcode)",
+            "CREATE INDEX IF NOT EXISTS idx_mat_barcode_bpom ON materials (barcode_bpom)",
+            "CREATE INDEX IF NOT EXISTS idx_mat_sap_code ON materials (sap_code)",
+            "CREATE INDEX IF NOT EXISTS idx_menu_perm_role_user ON menu_permissions (role, user_id, menu_key)",
+            "CREATE INDEX IF NOT EXISTS idx_batch_mat ON material_batches (material_id)",
+            "CREATE INDEX IF NOT EXISTS idx_batch_no ON material_batches (batch_no)",
+            "CREATE INDEX IF NOT EXISTS idx_batch_exp ON material_batches (exp_date)",
+            "CREATE INDEX IF NOT EXISTS idx_batch_loc ON material_batches (location)",
+            "CREATE INDEX IF NOT EXISTS idx_attempt_user ON login_attempts (username, attempted_at)",
+            "CREATE INDEX IF NOT EXISTS idx_attempt_ip ON login_attempts (ip_address, attempted_at)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_action ON system_audit_logs (action, created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_audit_actor ON system_audit_logs (actor_id, created_at)"
         ];
         foreach ($sqliteIndexes as $idxSql) {
             try {
@@ -863,6 +1080,7 @@ class Database {
                 'inbound'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'outbound'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'vas'                     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
+                'location_transfer'       => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'stock_transfer'          => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'tasks'                   => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
                 'adjust'                  => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
@@ -872,6 +1090,7 @@ class Database {
                 'field_access'            => ['superadmin' => 1, 'admin' => 0, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
                 'handover'                => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 0],
                 'consumable_requests'     => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 1, 'operator_fulfillment' => 1],
+                'gimmick'                 => ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0],
             ];
 
             $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -883,6 +1102,18 @@ class Database {
                     } catch (Throwable $e) {
                         // Ignored
                     }
+                }
+            }
+        } else {
+            // Ensure gimmick menu permission exists for existing databases
+            $stmtCheckGimmick = $pdo->query("SELECT COUNT(*) FROM menu_permissions WHERE menu_key = 'gimmick'");
+            if ((int)($stmtCheckGimmick ? $stmtCheckGimmick->fetchColumn() : 0) === 0) {
+                $gimmickRoles = ['superadmin' => 1, 'admin' => 1, 'teknisi' => 1, 'operator' => 0, 'operator_fulfillment' => 0];
+                $stmtInsGimmick = $pdo->prepare("INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed) VALUES (?, NULL, 'gimmick', ?)");
+                foreach ($gimmickRoles as $r => $allow) {
+                    try {
+                        $stmtInsGimmick->execute([$r, $allow]);
+                    } catch (Throwable $e) {}
                 }
             }
         }

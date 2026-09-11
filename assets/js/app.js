@@ -1,5 +1,51 @@
 // assets/js/app.js - Global App Helpers & Toast Notifications with Google Material Symbols
 
+// =============================================================================
+// CSRF: sisipkan token halaman ke setiap permintaan pengubah data ke server ini.
+// Dibungkus di level window.fetch supaya seluruh pemanggilan ikut terlindungi —
+// App.fetchJson maupun fetch() langsung — tanpa menyentuh ratusan titik panggilan.
+// Permintaan ke domain lain (mis. Google Apps Script) TIDAK diberi token.
+// =============================================================================
+(function installCsrfFetch() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  const token = meta ? meta.getAttribute('content') : '';
+  if (!token || typeof window.fetch !== 'function') return;
+
+  const originalFetch = window.fetch.bind(window);
+  const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+
+  window.fetch = function (input, init) {
+    init = init || {};
+    const method = (init.method || (input && input.method) || 'GET').toUpperCase();
+
+    if (safeMethods.includes(method)) {
+      return originalFetch(input, init);
+    }
+
+    // Hanya untuk permintaan ke origin yang sama.
+    let sameOrigin = true;
+    try {
+      const url = new URL(
+        typeof input === 'string' ? input : (input && input.url) || '',
+        window.location.href
+      );
+      sameOrigin = url.origin === window.location.origin;
+    } catch (e) {
+      sameOrigin = true;
+    }
+    if (!sameOrigin) {
+      return originalFetch(input, init);
+    }
+
+    const headers = new Headers(init.headers || (input && input.headers) || {});
+    if (!headers.has('X-CSRF-Token')) {
+      headers.set('X-CSRF-Token', token);
+    }
+
+    return originalFetch(input, { ...init, headers });
+  };
+})();
+
 const App = {
   // Toast Notification System
   toast(message, type = 'success', title = '') {
@@ -100,9 +146,9 @@ const App = {
 
       const colorMap = {
         emerald: {
-          bg: 'bg-emerald-100',
-          text: 'text-emerald-700',
-          btn: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-700/25',
+          bg: 'bg-blue-100',
+          text: 'text-blue-900',
+          btn: 'bg-[#262363] hover:bg-[#1c1a4a] shadow-blue-900/25',
           icon: icon === 'help' ? 'check_circle' : icon
         },
         rose: {
@@ -112,15 +158,15 @@ const App = {
           icon: icon === 'help' ? 'warning' : icon
         },
         amber: {
-          bg: 'bg-amber-100',
-          text: 'text-amber-700',
-          btn: 'bg-amber-600 hover:bg-amber-700 shadow-amber-700/25',
+          bg: 'bg-blue-100',
+          text: 'text-blue-900',
+          btn: 'bg-[#262363] hover:bg-[#1c1a4a] shadow-blue-900/25',
           icon: icon === 'help' ? 'help' : icon
         },
         blue: {
           bg: 'bg-blue-100',
-          text: 'text-blue-700',
-          btn: 'bg-blue-600 hover:bg-blue-700 shadow-blue-700/25',
+          text: 'text-blue-900',
+          btn: 'bg-[#262363] hover:bg-[#1c1a4a] shadow-blue-900/25',
           icon: icon === 'help' ? 'info' : icon
         }
       };
@@ -201,6 +247,14 @@ const App = {
       }
 
       const data = await response.json();
+
+      // Token keamanan halaman kedaluwarsa (mis. sesi diganti dari tab lain).
+      // Muat ulang halaman agar token baru terpasang, lalu pengguna mengulang aksinya.
+      if (data && data.csrf_expired) {
+        App.toast('Token keamanan halaman sudah kedaluwarsa. Halaman dimuat ulang...', 'warning');
+        setTimeout(() => { window.location.reload(); }, 1500);
+      }
+
       return data;
     } catch (err) {
       console.error('Fetch error:', err);
@@ -447,59 +501,113 @@ const App = {
     function renderOptions(filter = '') {
       optionsList.innerHTML = '';
       const term = filter.toLowerCase().trim();
-      let matchCount = 0;
+      const matchedItems = [];
 
       for (let i = 0; i < select.options.length; i++) {
         const opt = select.options[i];
-        const text = opt.text;
-        const value = opt.value;
+        if (!opt.value && i === 0 && select.options.length > 1) {
+          if (term === '') {
+            matchedItems.push({ opt, index: i, score: 9999 });
+          }
+          continue;
+        }
+
+        const text = (opt.text || '').toLowerCase();
         const code = (opt.getAttribute('data-code') || '').toLowerCase();
         const name = (opt.getAttribute('data-name') || '').toLowerCase();
-        const isSelected = (i === select.selectedIndex);
+        const barcode = (opt.getAttribute('data-barcode') || '').toLowerCase();
+        const barcodeBpom = (opt.getAttribute('data-barcode-bpom') || '').toLowerCase();
+        const sap = (opt.getAttribute('data-sap') || opt.getAttribute('data-sap-code') || '').toLowerCase();
 
-        if (term === '' || text.toLowerCase().includes(term) || value.toLowerCase().includes(term) || code.includes(term) || name.includes(term)) {
-          matchCount++;
-          const optEl = document.createElement('div');
-          optEl.className = 'ss-option px-3 py-2 rounded-lg text-xs cursor-pointer flex items-start justify-between gap-2 transition-colors ' + 
-            (isSelected ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-300' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium');
-          optEl.dataset.value = value;
-          optEl.dataset.index = i;
+        if (term === '') {
+          matchedItems.push({ opt, index: i, score: 100 });
+        } else {
+          let score = -1;
+          // 1. Exact matches: Barcode Fisik, Barcode BPOM, Code/SKU, SAP
+          if (barcode && barcode === term) score = 1;
+          else if (barcodeBpom && barcodeBpom === term) score = 2;
+          else if (code && code === term) score = 3;
+          else if (sap && sap === term) score = 4;
+          // 2. Starts-with matches
+          else if (barcode && barcode.startsWith(term)) score = 10;
+          else if (barcodeBpom && barcodeBpom.startsWith(term)) score = 11;
+          else if (code && code.startsWith(term)) score = 12;
+          else if (sap && sap.startsWith(term)) score = 13;
+          else if (name && name.startsWith(term)) score = 14;
+          // 3. Substring matches
+          else if (barcode && barcode.includes(term)) score = 20;
+          else if (barcodeBpom && barcodeBpom.includes(term)) score = 21;
+          else if (code && code.includes(term)) score = 22;
+          else if (sap && sap.includes(term)) score = 23;
+          else if (name && name.includes(term)) score = 24;
+          else if (text && text.includes(term)) score = 25;
 
-          const leftContent = document.createElement('div');
-          leftContent.className = 'flex items-start gap-2 flex-1 text-left py-0.5';
-
-          const itemIcon = document.createElement('span');
-          itemIcon.className = 'material-symbols-outlined text-[16px] text-slate-400 flex-shrink-0 mt-0.5';
-          itemIcon.innerText = value ? defaultIcon : 'remove';
-
-          const textSpan = document.createElement('span');
-          textSpan.className = 'text-xs font-medium text-slate-800 leading-snug whitespace-normal break-words flex-1 text-left';
-          textSpan.innerText = text;
-
-          leftContent.appendChild(itemIcon);
-          leftContent.appendChild(textSpan);
-          optEl.appendChild(leftContent);
-
-          if (isSelected) {
-            const checkIcon = document.createElement('span');
-            checkIcon.className = 'material-symbols-outlined text-[16px] text-emerald-600 flex-shrink-0 mt-0.5';
-            checkIcon.innerText = 'check_circle';
-            optEl.appendChild(checkIcon);
+          if (score > 0) {
+            matchedItems.push({ opt, index: i, score });
           }
-
-          optEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            select.selectedIndex = i;
-            select.dispatchEvent(new Event('change', { bubbles: true }));
-            updateTriggerText();
-            closeDropdown();
-          });
-
-          optionsList.appendChild(optEl);
         }
       }
 
-      if (matchCount === 0) {
+      // Sort by score ascending so exact barcode match comes FIRST!
+      matchedItems.sort((a, b) => a.score - b.score);
+
+      for (const item of matchedItems) {
+        const opt = item.opt;
+        const i = item.index;
+        const text = opt.text;
+        const value = opt.value;
+        const isSelected = (i === select.selectedIndex);
+
+        const optEl = document.createElement('div');
+        optEl.className = 'ss-option px-3 py-2 rounded-lg text-xs cursor-pointer flex items-start justify-between gap-2 transition-colors ' + 
+          (isSelected ? 'bg-emerald-50 text-emerald-900 font-bold border border-emerald-300' : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-medium');
+        optEl.dataset.value = value;
+        optEl.dataset.index = i;
+
+        const leftContent = document.createElement('div');
+        leftContent.className = 'flex items-start gap-2 flex-1 text-left py-0.5';
+
+        const itemIcon = document.createElement('span');
+        itemIcon.className = 'material-symbols-outlined text-[16px] text-slate-400 flex-shrink-0 mt-0.5';
+        itemIcon.innerText = value ? defaultIcon : 'remove';
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'text-xs font-medium text-slate-800 leading-snug whitespace-normal break-words flex-1 text-left';
+        textSpan.innerText = text;
+
+        leftContent.appendChild(itemIcon);
+        leftContent.appendChild(textSpan);
+        optEl.appendChild(leftContent);
+
+        // Barcode / SAP badge for visual confirmation
+        const bCode = opt.getAttribute('data-barcode');
+        const bBpom = opt.getAttribute('data-barcode-bpom');
+        if (bCode || bBpom) {
+          const badgeSpan = document.createElement('span');
+          badgeSpan.className = 'text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 self-center border border-slate-200';
+          badgeSpan.innerText = bCode || bBpom;
+          optEl.appendChild(badgeSpan);
+        }
+
+        if (isSelected) {
+          const checkIcon = document.createElement('span');
+          checkIcon.className = 'material-symbols-outlined text-[16px] text-emerald-600 flex-shrink-0 mt-0.5';
+          checkIcon.innerText = 'check_circle';
+          optEl.appendChild(checkIcon);
+        }
+
+        optEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          select.selectedIndex = i;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          updateTriggerText();
+          closeDropdown();
+        });
+
+        optionsList.appendChild(optEl);
+      }
+
+      if (matchedItems.length === 0) {
         optionsList.innerHTML = '<div class="p-4 text-center text-xs text-slate-400 flex flex-col items-center gap-1"><span class="material-symbols-outlined text-[20px] text-slate-300">search_off</span><span>Tidak ada hasil yang cocok</span></div>';
       }
     }
@@ -580,6 +688,12 @@ const App = {
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeDropdown();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const firstOpt = optionsList.querySelector('.ss-option');
+        if (firstOpt) {
+          firstOpt.click();
+        }
       }
     });
 

@@ -1,8 +1,61 @@
+# =========================================================================
+# BLOKIR AKSES BERKAS SENSITIF (harus berada paling atas, sebelum rewrite)
+# =========================================================================
+
+# CATATAN PENTING SOAL KETAHANAN
+# Satu direktif yang tidak didukung server akan membuat SELURUH situs balas
+# 500 Internal Server Error, dan deploy lewat FTP tidak punya rollback otomatis.
+# Karena itu setiap direktif di bawah dibungkus penjaga <IfModule>, dan
+# pemblokiran berkas dibuat berlapis: bila satu lapis tidak didukung, lapis
+# lain masih menutup. Jangan menambahkan direktif tanpa penjaga di berkas ini.
+
+# Disable directory browsing
+<IfModule mod_autoindex.c>
+Options -Indexes
+</IfModule>
+
+# Berkas basis data, konfigurasi, data mentah, dan catatan internal.
+# Tidak ada satu pun yang di-fetch oleh front-end, jadi aman ditutup total.
+#
+# LAPIS 1 — sintaks Apache 2.4.
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(sqlite|sqlite-journal|sqlite-wal|sqlite-shm|db|json|xlsx|xls|csv|txt|md|log|flag|ini|yml|yaml|bak|sql)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+# LAPIS 1b — sintaks Apache 2.2, untuk server yang belum memakai mod_authz_core.
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(sqlite|sqlite-journal|sqlite-wal|sqlite-shm|db|json|xlsx|xls|csv|txt|md|log|flag|ini|yml|yaml|bak|sql)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# LAPIS 2 — pemblokiran lewat rewrite. Berlaku walau kedua lapis di atas
+# tidak didukung, selama mod_rewrite ada (dan mod_rewrite pasti ada, karena
+# seluruh routing aplikasi ini bergantung padanya).
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
-# Disable directory browsing
-Options -Indexes
+# Seluruh direktori config/ — berisi env.php, berkas SQLite, google_sheets.json,
+# dan folder backups/. Ditutup sebagai satu blok, bukan per ekstensi.
+RewriteRule ^config/ - [F,L]
+
+# Berkas rahasia & data mentah di mana pun.
+# Ekstensi .json dan .txt sengaja TIDAK dicantumkan di sini: keduanya sudah
+# ditutup oleh Lapis 1 dan oleh aturan config/ di atas, sedangkan memblokirnya
+# lewat rewrite akan ikut memblokir robots.txt bila nanti ditambahkan.
+RewriteRule \.(sqlite|sqlite-journal|sqlite-wal|sqlite-shm|db|xlsx|xls|csv|md|log|flag|ini|yml|yaml|bak|sql)$ - [F,L]
+
+# Direktori .git dan dotfile lain (.env, .gitignore, .htaccess)
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+</IfModule>
+
+<IfModule mod_alias.c>
+RedirectMatch 404 (?i)/\.git
+</IfModule>
+
+<IfModule mod_rewrite.c>
 
 # 1. External Redirect: Remove index.php or index from URL to trailing slash
 RewriteCond %{REQUEST_METHOD} !POST
@@ -35,4 +88,29 @@ RewriteRule ^ - [L]
         Header set Pragma "no-cache"
         Header set Expires "0"
     </FilesMatch>
+</IfModule>
+
+# =========================================================================
+# KOMPRESI — assets/js/admin.js berukuran 656 KB mentah. Untuk perangkat
+# genggam operator di jaringan gudang, ini perbedaan yang terasa.
+# =========================================================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+    AddOutputFilterByType DEFLATE text/javascript application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml image/svg+xml
+</IfModule>
+
+# =========================================================================
+# CACHE ASET STATIS — berkas JS/CSS sudah memakai cache-buster ?v= pada URL,
+# jadi aman disimpan lama; perubahan tetap langsung terbaca karena URL berubah.
+# =========================================================================
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                "access plus 7 days"
+    ExpiresByType text/javascript         "access plus 7 days"
+    ExpiresByType application/javascript  "access plus 7 days"
+    ExpiresByType image/png               "access plus 30 days"
+    ExpiresByType image/jpeg              "access plus 30 days"
+    ExpiresByType image/webp              "access plus 30 days"
+    ExpiresByType image/svg+xml           "access plus 30 days"
 </IfModule>

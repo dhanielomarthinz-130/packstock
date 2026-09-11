@@ -64,6 +64,7 @@ if ($action === 'list') {
     $search = trim($_GET['search'] ?? '');
     $status = trim($_GET['status'] ?? '');
     $type   = trim($_GET['type'] ?? '');
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL'));
 
     $query = "
         SELECT so.*,
@@ -87,6 +88,12 @@ if ($action === 'list') {
     if (!empty($type) && $type !== 'ALL') {
         $query .= " AND so.counting_type = ?";
         $params[] = $type;
+    }
+
+    if ($itemType === 'GIMMICK') {
+        $query .= " AND EXISTS (SELECT 1 FROM stock_opname_items soi2 JOIN materials m2 ON soi2.material_id = m2.id WHERE soi2.opname_id = so.id AND m2.item_type = 'GIMMICK')";
+    } elseif ($itemType === 'PACKAGING') {
+        $query .= " AND EXISTS (SELECT 1 FROM stock_opname_items soi2 JOIN materials m2 ON soi2.material_id = m2.id WHERE soi2.opname_id = so.id AND (m2.item_type = 'PACKAGING' OR m2.item_type IS NULL OR m2.item_type = ''))";
     }
 
     if (!empty($search)) {
@@ -114,6 +121,7 @@ if ($action === 'matrix') {
     $dateFilter = trim($_GET['date'] ?? '');
     $search = trim($_GET['search'] ?? '');
     $noteFilter = trim($_GET['note_filter'] ?? 'ALL');
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL'));
 
     if (!in_array($type, ['STOCK_OPNAME', 'DYNAMIC_COUNT'])) {
         $type = 'STOCK_OPNAME';
@@ -186,6 +194,12 @@ if ($action === 'matrix') {
             WHERE soi.opname_id = ?
         ";
         $params = [$selectedOpnameId];
+
+        if ($itemType === 'GIMMICK') {
+            $queryItems .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $queryItems .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
 
         if (!empty($search)) {
             $queryItems .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.rack_location LIKE ?)";
@@ -580,6 +594,7 @@ if ($action === 'counting_progress_summary') {
     $type = trim($_GET['type'] ?? 'ALL'); // ALL, DYNAMIC_COUNT, STOCK_OPNAME
     $status = trim($_GET['status'] ?? 'ALL'); // ALL, ACTIVE, COMPLETED
     $date = trim($_GET['date'] ?? '');
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL'));
 
     $where = ["1=1"];
     $params = [];
@@ -600,21 +615,34 @@ if ($action === 'counting_progress_summary') {
         $params[] = $date;
     }
 
+    if ($itemType === 'GIMMICK') {
+        $where[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND m_f.item_type = 'GIMMICK')";
+    } elseif ($itemType === 'PACKAGING') {
+        $where[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND (m_f.item_type = 'PACKAGING' OR m_f.item_type IS NULL OR m_f.item_type = ''))";
+    }
+
     // Only include sessions that have at least 1 item generated/assigned
     $where[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
 
     $whereSql = implode(" AND ", $where);
 
+    $soiItemTypeCond = "";
+    if ($itemType === 'GIMMICK') {
+        $soiItemTypeCond = " AND EXISTS (SELECT 1 FROM materials m WHERE m.id = soi.material_id AND m.item_type = 'GIMMICK')";
+    } elseif ($itemType === 'PACKAGING') {
+        $soiItemTypeCond = " AND EXISTS (SELECT 1 FROM materials m WHERE m.id = soi.material_id AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''))";
+    }
+
     // Fetch sessions with stage breakdown
     $stmt = $pdo->prepare("
         SELECT so.*,
                u.name as creator_name,
-               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id) as total_items,
-               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 1) as stage_1_counted,
-               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 2) as stage_2_counted,
-               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number >= 3) as stage_3_counted,
-               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id AND (soi.difference IS NOT NULL AND soi.difference != 0)) as variance_items_count,
-               (SELECT SUM(st.count_qty) FROM stock_opname_item_stages st WHERE st.opname_id = so.id AND st.count_qty IS NOT NULL) as total_counted_qty
+               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id {$soiItemTypeCond}) as total_items,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st JOIN stock_opname_items soi ON st.item_id = soi.id WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 1 {$soiItemTypeCond}) as stage_1_counted,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st JOIN stock_opname_items soi ON st.item_id = soi.id WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number = 2 {$soiItemTypeCond}) as stage_2_counted,
+               (SELECT COUNT(DISTINCT st.item_id) FROM stock_opname_item_stages st JOIN stock_opname_items soi ON st.item_id = soi.id WHERE st.opname_id = so.id AND st.status = 'COUNTED' AND st.stage_number >= 3 {$soiItemTypeCond}) as stage_3_counted,
+               (SELECT COUNT(*) FROM stock_opname_items soi WHERE soi.opname_id = so.id AND (soi.difference IS NOT NULL AND soi.difference != 0) {$soiItemTypeCond}) as variance_items_count,
+               (SELECT SUM(st.count_qty) FROM stock_opname_item_stages st JOIN stock_opname_items soi ON st.item_id = soi.id WHERE st.opname_id = so.id AND st.count_qty IS NOT NULL {$soiItemTypeCond}) as total_counted_qty
         FROM stock_opnames so
         LEFT JOIN users u ON so.created_by = u.id
         WHERE {$whereSql}
@@ -712,6 +740,11 @@ if ($action === 'counting_progress_summary') {
         $soWhere[] = "DATE(so.created_at) = ?";
         $soParams[] = $date;
     }
+    if ($itemType === 'GIMMICK') {
+        $soWhere[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND m_f.item_type = 'GIMMICK')";
+    } elseif ($itemType === 'PACKAGING') {
+        $soWhere[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND (m_f.item_type = 'PACKAGING' OR m_f.item_type IS NULL OR m_f.item_type = ''))";
+    }
     $soWhere[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
     $soWhereSql = implode(" AND ", $soWhere);
 
@@ -726,6 +759,11 @@ if ($action === 'counting_progress_summary') {
         $dynWhere[] = "DATE(so.created_at) = ?";
         $dynParams[] = $date;
     }
+    if ($itemType === 'GIMMICK') {
+        $dynWhere[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND m_f.item_type = 'GIMMICK')";
+    } elseif ($itemType === 'PACKAGING') {
+        $dynWhere[] = "EXISTS (SELECT 1 FROM stock_opname_items soi_f JOIN materials m_f ON soi_f.material_id = m_f.id WHERE soi_f.opname_id = so.id AND (m_f.item_type = 'PACKAGING' OR m_f.item_type IS NULL OR m_f.item_type = ''))";
+    }
     $dynWhere[] = "(SELECT COUNT(*) FROM stock_opname_items WHERE opname_id = so.id) > 0";
     $dynWhereSql = implode(" AND ", $dynWhere);
 
@@ -739,16 +777,30 @@ if ($action === 'counting_progress_summary') {
     $opnameUncountedSkus = 0;
     $opnameProgressPct = 0;
 
+    $matTypeFilter = "";
+    if ($itemType === 'GIMMICK') {
+        $matTypeFilter = " AND item_type = 'GIMMICK'";
+    } elseif ($itemType === 'PACKAGING') {
+        $matTypeFilter = " AND (item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+    }
+
     if (!empty($soSessionIds)) {
-        $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0");
+        $stmtDbPos = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock > 0 {$matTypeFilter}");
         $totalDbSkusPositive = (int)$stmtDbPos->fetchColumn();
 
         $inClause = implode(',', array_map('intval', $soSessionIds));
+        $matJoinFilter = "";
+        if ($itemType === 'GIMMICK') {
+            $matJoinFilter = " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $matJoinFilter = " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
         $stmtOpCounted = $pdo->query("
             SELECT COUNT(DISTINCT soi.material_id) 
             FROM stock_opname_item_stages st 
             JOIN stock_opname_items soi ON st.item_id = soi.id 
-            WHERE st.opname_id IN ({$inClause}) AND st.status = 'COUNTED' AND st.stage_number = 1
+            JOIN materials m ON soi.material_id = m.id
+            WHERE st.opname_id IN ({$inClause}) AND st.status = 'COUNTED' AND st.stage_number = 1 {$matJoinFilter}
         ");
         $opnameCountedSkus = (int)$stmtOpCounted->fetchColumn();
         $opnameUncountedSkus = max(0, $totalDbSkusPositive - $opnameCountedSkus);
@@ -763,17 +815,26 @@ if ($action === 'counting_progress_summary') {
 
     if (!empty($dynSessionIds)) {
         $inClauseDyn = implode(',', array_map('intval', $dynSessionIds));
+        $matJoinFilterDyn = "";
+        if ($itemType === 'GIMMICK') {
+            $matJoinFilterDyn = " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $matJoinFilterDyn = " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
         $stmtDynAssign = $pdo->query("
             SELECT COUNT(*) 
             FROM stock_opname_items soi 
-            WHERE soi.opname_id IN ({$inClauseDyn})
+            JOIN materials m ON soi.material_id = m.id
+            WHERE soi.opname_id IN ({$inClauseDyn}) {$matJoinFilterDyn}
         ");
         $dynamicAssignedSkus = (int)$stmtDynAssign->fetchColumn();
 
         $stmtDynDone = $pdo->query("
             SELECT COUNT(DISTINCT st.item_id) 
             FROM stock_opname_item_stages st 
-            WHERE st.opname_id IN ({$inClauseDyn}) AND st.status = 'COUNTED' AND st.stage_number = 1
+            JOIN stock_opname_items soi ON st.item_id = soi.id 
+            JOIN materials m ON soi.material_id = m.id
+            WHERE st.opname_id IN ({$inClauseDyn}) AND st.status = 'COUNTED' AND st.stage_number = 1 {$matJoinFilterDyn}
         ");
         $dynamicDoneSkus = (int)$stmtDynDone->fetchColumn();
         $dynamicPendingSkus = max(0, $dynamicAssignedSkus - $dynamicDoneSkus);
@@ -970,8 +1031,15 @@ if ($action === 'create') {
     }
 
     // Resolve Target Materials
+    $itemTypeScope = trim($input['item_type'] ?? '');
     $materialsQuery = "SELECT id, code, name, category, rack_location, current_stock FROM materials WHERE 1=1";
     $mParams = [];
+
+    if ($itemTypeScope === 'GIMMICK' || $scope === 'gimmick') {
+        $materialsQuery .= " AND item_type = 'GIMMICK'";
+    } elseif ($itemTypeScope === 'PACKAGING' || $scope === 'packaging') {
+        $materialsQuery .= " AND (item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+    }
 
     if ($counting_type === 'DYNAMIC_COUNT') {
         if (empty($material_ids) || !is_array($material_ids)) {
@@ -981,7 +1049,7 @@ if ($action === 'create') {
         }
         $placeholders = implode(',', array_fill(0, count($material_ids), '?'));
         $materialsQuery .= " AND id IN ($placeholders)";
-        $mParams = array_map('intval', $material_ids);
+        $mParams = array_merge($mParams, array_map('intval', $material_ids));
     } else {
         if ($scope === 'category' && !empty($category) && $category !== 'all') {
             $materialsQuery .= " AND category = ?";
@@ -1057,7 +1125,7 @@ if ($action === 'create') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal membuat sesi: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal membuat sesi.');
         exit;
     }
 }
@@ -1228,7 +1296,7 @@ if ($action === 'submit_dynamic_count') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan hitungan: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menyimpan hitungan.');
         exit;
     }
 }
@@ -1247,7 +1315,7 @@ if ($action === 'submit_blank_count') {
 
     if ($material_id <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Pilih atau scan SKU Packaging Material']);
+        echo json_encode(['success' => false, 'message' => 'Pilih atau scan SKU Kemas']);
         exit;
     }
 
@@ -1265,7 +1333,7 @@ if ($action === 'submit_blank_count') {
     $material = $stmtMat->fetch();
     if (!$material) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Material Packaging tidak ditemukan']);
+        echo json_encode(['success' => false, 'message' => 'Kemas tidak ditemukan']);
         exit;
     }
 
@@ -1371,7 +1439,7 @@ if ($action === 'submit_blank_count') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan Blank Count: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menyimpan Blank Count.');
         exit;
     }
 }
@@ -1467,7 +1535,7 @@ if ($action === 'delete_blank_count') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus entri: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus entri.');
         exit;
     }
 }
@@ -1619,7 +1687,7 @@ if ($action === 'assign_recount') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menugaskan recount: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menugaskan recount.');
         exit;
     }
 }
@@ -1775,7 +1843,7 @@ if ($action === 'submit_recount' || $action === 'submit_count') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan recount: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menyimpan recount.');
         exit;
     }
 }
@@ -1855,7 +1923,7 @@ if ($action === 'delete_item') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus item: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus item.');
         exit;
     }
 }
@@ -1890,7 +1958,7 @@ if ($action === 'delete') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus sesi: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus sesi.');
         exit;
     }
 }
@@ -1978,7 +2046,7 @@ if ($action === 'apply_adjustment') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menerapkan penyesuaian: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menerapkan penyesuaian.');
         exit;
     }
 }

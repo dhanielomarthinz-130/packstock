@@ -2,6 +2,7 @@
 // api/tasks.php - Task Assignment, Bulk Assignment & Mobile Execution API (with Excel Task Import)
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/batch_helper.php';
 
 Auth::requireLogin();
 $pdo = Database::getConnection();
@@ -63,11 +64,13 @@ if ($action === 'list') {
     $status   = trim($_GET['status'] ?? '');
     $priority = trim($_GET['priority'] ?? '');
     $search   = trim($_GET['search'] ?? '');
+    $taskType = trim($_GET['task_type'] ?? '');
+    $itemType = trim($_GET['item_type'] ?? '');
     $forMe    = isset($_GET['my_tasks']) && $_GET['my_tasks'] === '1';
 
     $query = "
         SELECT t.*, 
-               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock,
+               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock, m.item_type,
                u_to.name as operator_name, u_to.username as operator_username, u_to.shift as operator_shift,
                u_by.name as creator_name,
                (SELECT cr.request_no FROM consumable_requests cr WHERE cr.task_id = t.id OR (t.notes LIKE ('%' || cr.request_no || '%')) LIMIT 1) as request_no,
@@ -80,9 +83,26 @@ if ($action === 'list') {
     ";
     $params = [];
 
-    if (Auth::role() === 'operator' || $forMe) {
+    if (Auth::role() === 'operator' || Auth::role() === 'operator_inventory' || Auth::role() === 'operator_fulfillment' || $forMe) {
         $query .= " AND t.assigned_to = ?";
         $params[] = Auth::id();
+    }
+
+    if (!empty($itemType) && $itemType !== 'ALL') {
+        if ($itemType === 'GIMMICK') {
+            $query .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $query .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
+    }
+
+    if (!empty($taskType) && $taskType !== 'ALL') {
+        if ($taskType === 'PICKING') {
+            $query .= " AND (t.task_type = 'PICKING' OR t.task_type IS NULL)";
+        } else {
+            $query .= " AND t.task_type = ?";
+            $params[] = $taskType;
+        }
     }
 
     if (!empty($status) && $status !== 'ALL') {
@@ -106,9 +126,9 @@ if ($action === 'list') {
     }
 
     if (!empty($search)) {
-        $query .= " AND (t.task_no LIKE ? OR m.name LIKE ? OR m.code LIKE ? OR t.destination LIKE ? OR u_to.name LIKE ?)";
+        $query .= " AND (t.task_no LIKE ? OR m.name LIKE ? OR m.code LIKE ? OR t.destination LIKE ? OR t.from_location LIKE ? OR t.to_location LIKE ? OR u_to.name LIKE ?)";
         $term = "%{$search}%";
-        $params = array_merge($params, [$term, $term, $term, $term, $term]);
+        $params = array_merge($params, [$term, $term, $term, $term, $term, $term, $term]);
     }
 
     $query .= " ORDER BY (t.priority = 'URGENT' OR t.priority = 'CRITICAL') DESC, (t.status = 'PENDING') DESC, (t.status = 'IN_PROGRESS') DESC, t.created_at DESC";
@@ -118,6 +138,295 @@ if ($action === 'list') {
     $tasks = $stmt->fetchAll();
 
     echo json_encode(['success' => true, 'data' => $tasks]);
+    exit;
+}
+
+// 2.1 CREATE RACK MOVEMENT TASK (TRANSFER ANTAR LOKASI RACK A -> RACK B - Admin Dispatching)
+if (($action === 'create_movement' || $action === 'batch_create_movement') && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $rawInput = file_get_contents('php://input');
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    if (empty($input) && !empty($_POST)) $input = $_POST;
+
+    $items = $input['items'] ?? [];
+    if (empty($items) && isset($input['material_id'])) {
+        $items = [$input];
+    }
+    if (empty($items)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Daftar item movement tidak boleh kosong!']);
+        exit;
+    }
+
+    $globalAssignedTo = (int)($input['assigned_to'] ?? 0);
+    $globalPriority   = strtoupper(trim($input['priority'] ?? 'NORMAL'));
+    $globalNotes      = trim($input['notes'] ?? '');
+
+    try {
+        $pdo->beginTransaction();
+
+        $prefix = 'MVT-' . date('Ym') . '-';
+        $stmtLast = $pdo->prepare("SELECT task_no FROM tasks WHERE task_no LIKE ? ORDER BY LENGTH(task_no) DESC, task_no DESC LIMIT 1");
+        $stmtLast->execute([$prefix . '%']);
+        $lastTaskNo = $stmtLast->fetchColumn();
+        $nextNum = 1;
+        if ($lastTaskNo) {
+            $parts = explode('-', $lastTaskNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+        $stmtCheck = $pdo->prepare("SELECT 1 FROM tasks WHERE task_no = ? LIMIT 1");
+
+        $now = date('Y-m-d H:i:s');
+        $authId = Auth::id();
+        $createdTasks = [];
+
+        $stmtMat = $pdo->prepare("SELECT id, name, code, current_stock, rack_location, item_type FROM materials WHERE id = ?");
+        $stmtInsert = $pdo->prepare("
+            INSERT INTO tasks (
+                task_no, material_id, target_qty, priority, destination, 
+                assigned_to, assigned_by, status, notes, task_type, 
+                from_location, to_location, batch_id, batch_no, exp_date, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING', ?, 'RACK_MOVEMENT', ?, ?, ?, ?, ?, ?)
+        ");
+
+        foreach ($items as $idx => $it) {
+            $materialId   = (int)($it['material_id'] ?? 0);
+            $targetQty    = max(0, parseNumberDecimal($it['target_qty'] ?? $it['qty'] ?? 0));
+            $fromLocation = trim($it['from_location'] ?? $it['from_rack'] ?? '');
+            $toLocation   = trim($it['to_location'] ?? $it['to_rack'] ?? '');
+            $assignedTo   = (int)($it['assigned_to'] ?? $globalAssignedTo);
+            $priority     = strtoupper(trim($it['priority'] ?? $globalPriority));
+            if (!in_array($priority, ['NORMAL', 'URGENT', 'CRITICAL'])) $priority = 'NORMAL';
+            $itemNotes    = trim($it['notes'] ?? '');
+            $notes        = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
+
+            $batchId      = (int)($it['batch_id'] ?? 0);
+            $batchNo      = trim($it['batch_no'] ?? '');
+            $expDate      = !empty($it['exp_date']) ? trim($it['exp_date']) : null;
+
+            if ($materialId <= 0 || $targetQty <= 0) continue;
+            if (empty($fromLocation) || empty($toLocation)) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Lokasi Rack Asal dan Lokasi Rack Tujuan wajib diisi!"]);
+                exit;
+            }
+            if ($assignedTo <= 0) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Operator PIC wajib dipilih untuk penugasan movement!"]);
+                exit;
+            }
+
+            $stmtMat->execute([$materialId]);
+            $mat = $stmtMat->fetch();
+            if (!$mat) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => "Produk #{$materialId} tidak ditemukan!"]);
+                exit;
+            }
+
+            // Generate unique task_no MVT-YYYYMM-XXXX
+            do {
+                $taskNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                $stmtCheck->execute([$taskNo]);
+            } while ($stmtCheck->fetchColumn());
+
+            $destinationDesc = "Pindah ke {$toLocation}";
+            $stmtInsert->execute([
+                $taskNo, $materialId, $targetQty, $priority, $destinationDesc,
+                $assignedTo, $authId, $notes,
+                $fromLocation, $toLocation,
+                $batchId > 0 ? $batchId : null,
+                !empty($batchNo) ? $batchNo : null,
+                $expDate,
+                $now
+            ]);
+
+            $createdTasks[] = $taskNo;
+        }
+
+        if (empty($createdTasks)) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada item movement yang valid untuk ditugaskan.']);
+            exit;
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => count($createdTasks) . " tugas Movement Product berhasil ditugaskan ke Operator!",
+            'task_numbers' => $createdTasks
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        apiFail($e, 'Gagal membuat tugas movement.');
+    }
+    exit;
+}
+
+// 2.2 CREATE OPERATOR DIRECT MOVEMENT (TRANSFER ANTAR LOKASI DIINISIASI OPERATOR)
+if (($action === 'create_operator_movement' || $action === 'batch_create_operator_movement') && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!Auth::isOperatorAny() && !Auth::isAdmin()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak. Fitur ini khusus Operator / Admin.']);
+        exit;
+    }
+
+    $rawInput = file_get_contents('php://input');
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    if (empty($input) && !empty($_POST)) $input = $_POST;
+
+    $items = $input['items'] ?? [];
+    if (empty($items) && isset($input['material_id'])) {
+        $items = [$input];
+    }
+    if (empty($items)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Daftar item transfer tidak boleh kosong!']);
+        exit;
+    }
+
+    $globalNotes = trim($input['notes'] ?? '');
+    $authId = Auth::id();
+    $authName = Auth::name() ?? 'Operator';
+
+    try {
+        $pdo->beginTransaction();
+
+        $prefix = 'MVT-' . date('Ym') . '-';
+        $stmtLast = $pdo->prepare("SELECT task_no FROM tasks WHERE task_no LIKE ? ORDER BY LENGTH(task_no) DESC, task_no DESC LIMIT 1");
+        $stmtLast->execute([$prefix . '%']);
+        $lastTaskNo = $stmtLast->fetchColumn();
+        $nextNum = 1;
+        if ($lastTaskNo) {
+            $parts = explode('-', $lastTaskNo);
+            $lastSuffix = end($parts);
+            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+        }
+        $stmtCheck = $pdo->prepare("SELECT 1 FROM tasks WHERE task_no = ? LIMIT 1");
+
+        $now = date('Y-m-d H:i:s');
+        $createdTasks = [];
+
+        $stmtMat = $pdo->prepare("SELECT id, name, code, unit, current_stock, rack_location, item_type FROM materials WHERE id = ?");
+        $stmtInsert = $pdo->prepare("
+            INSERT INTO tasks (
+                task_no, material_id, target_qty, actual_qty, priority, destination, 
+                assigned_to, assigned_by, status, notes, completion_notes, task_type, 
+                from_location, to_location, batch_id, batch_no, exp_date, 
+                started_at, completed_at, duration_seconds, created_at
+            ) VALUES (?, ?, ?, ?, 'NORMAL', ?, ?, ?, 'COMPLETED', ?, ?, 'RACK_MOVEMENT', ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        ");
+
+        $stmtUpMat = $pdo->prepare("UPDATE materials SET rack_location = ? WHERE id = ?");
+        $stmtMut = $pdo->prepare("
+            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+            VALUES (?, 'TRANSFER_LOCATION', 0, ?, ?, ?, ?, ?, ?)
+        ");
+
+        foreach ($items as $it) {
+            $materialId   = (int)($it['material_id'] ?? 0);
+            $qty          = max(0, parseNumberDecimal($it['qty'] ?? $it['target_qty'] ?? 0));
+            $fromLocation = trim($it['from_location'] ?? $it['from_rack'] ?? '');
+            $toLocation   = trim($it['to_location'] ?? $it['to_rack'] ?? '');
+            $itemNotes    = trim($it['notes'] ?? '');
+            $notes        = !empty($globalNotes) ? ($itemNotes ? "{$globalNotes} | {$itemNotes}" : $globalNotes) : $itemNotes;
+
+            $batchId      = (int)($it['batch_id'] ?? 0);
+            $batchNo      = trim($it['batch_no'] ?? '');
+            $expDate      = !empty($it['exp_date']) ? trim($it['exp_date']) : null;
+
+            if ($materialId <= 0 || $qty <= 0) continue;
+            if (empty($fromLocation) || empty($toLocation)) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => "Lokasi Rack Asal dan Lokasi Rack Tujuan wajib diisi!"]);
+                exit;
+            }
+
+            // Validasi Dynamic Count Freeze
+            $freeze = getMaterialDynamicCountFreeze($pdo, $materialId);
+            if ($freeze) {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Transfer Ditolak! SKU '{$freeze['material_name']}' ({$freeze['material_code']}) sedang dalam sesi Dynamic Count aktif (#{$freeze['opname_no']}) dan dibekukan."
+                ]);
+                exit;
+            }
+
+            $stmtMat->execute([$materialId]);
+            $mat = $stmtMat->fetch();
+            if (!$mat) {
+                $pdo->rollBack();
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => "Produk #{$materialId} tidak ditemukan!"]);
+                exit;
+            }
+
+            // Generate unique task_no MVT-YYYYMM-XXXX
+            do {
+                $taskNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                $stmtCheck->execute([$taskNo]);
+            } while ($stmtCheck->fetchColumn());
+
+            $destinationDesc = "Pindah ke {$toLocation}";
+            $compNote = "Transfer mandiri oleh {$authName} dari {$fromLocation} ke {$toLocation}";
+            if (!empty($notes)) $compNote .= " ({$notes})";
+
+            $stmtInsert->execute([
+                $taskNo, $materialId, $qty, $qty, $destinationDesc,
+                $authId, $authId, $notes, $compNote,
+                $fromLocation, $toLocation,
+                $batchId > 0 ? $batchId : null,
+                !empty($batchNo) ? $batchNo : null,
+                $expDate,
+                $now, $now, $now
+            ]);
+
+            // 1. Update Master Lokasi Rak Material
+            $stmtUpMat->execute([$toLocation, $materialId]);
+
+            // 2. Jika ada batch, pindahkan batch ke lokasi baru
+            if (!empty($toLocation)) {
+                recordBatchTransfer($pdo, $materialId, $batchId > 0 ? $batchId : 0, !empty($batchNo) ? $batchNo : null, $fromLocation, $toLocation, $qty);
+            }
+
+            // 3. Catat Mutasi Audit Trail TRANSFER_LOCATION
+            $stockBefore = (float)$mat['current_stock'];
+            $mutNotes = "Transfer Antar Lokasi dari {$fromLocation} ke {$toLocation} (Qty: {$qty} {$mat['unit']}) oleh Operator {$authName}";
+            if (!empty($notes)) $mutNotes .= " (Catatan: {$notes})";
+            $stmtMut->execute([$materialId, $stockBefore, $stockBefore, $taskNo, $mutNotes, $authId, $now]);
+
+            $createdTasks[] = $taskNo;
+        }
+
+        if (empty($createdTasks)) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Tidak ada item transfer yang valid untuk diproses.']);
+            exit;
+        }
+
+        $pdo->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => count($createdTasks) . " item Transfer Antar Lokasi berhasil diproses dan disimpan!",
+            'task_numbers' => $createdTasks
+        ]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        apiFail($e, 'Gagal memproses transfer lokasi.');
+    }
     exit;
 }
 
@@ -132,6 +441,12 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $destination = trim($input['destination'] ?? 'Line Packing');
     $assignedTo  = (int)($input['assigned_to'] ?? 0);
     $notes       = trim($input['notes'] ?? '');
+
+    if ($qtyError = validateQtyRange($targetQty, 'Target Qty')) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $qtyError]);
+        exit;
+    }
 
     if ($materialId <= 0 || $targetQty <= 0 || empty($destination) || $assignedTo <= 0) {
         http_response_code(400);
@@ -157,7 +472,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$mat) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Material packaging tidak ditemukan!']);
+        echo json_encode(['success' => false, 'message' => 'Kemas tidak ditemukan!']);
         exit;
     }
 
@@ -201,7 +516,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal membuat tugas: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal membuat tugas.');
     }
     exit;
 }
@@ -254,6 +569,12 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($qtyError = validateQtyRange($targetQty, 'Target Qty')) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $qtyError]);
+        exit;
+    }
+
     try {
         $stmtMat = $pdo->prepare("SELECT name, current_stock, unit FROM materials WHERE id = ?");
         $stmtMat->execute([$materialId]);
@@ -289,7 +610,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['success' => true, 'message' => 'Target Qty penugasan task berhasil diperbarui!']);
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal memperbarui task: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal memperbarui task.');
     }
     exit;
 }
@@ -396,7 +717,7 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal membuat tugas bulk: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal membuat tugas bulk.');
     }
     exit;
 }
@@ -510,7 +831,7 @@ if ($action === 'preview_excel' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $operatorsMap = [];
     $defaultOperator = null;
-    $stmtOp = $pdo->query("SELECT id, username, name, shift FROM users WHERE role = 'operator'");
+    $stmtOp = $pdo->query("SELECT id, username, name, shift FROM users WHERE role IN ('operator', 'operator_inventory', 'operator_fulfillment') OR role LIKE 'operator%'");
     while ($op = $stmtOp->fetch()) {
         $operatorsMap[strtolower($op['username'])] = $op;
         $operatorsMap[strtolower($op['name'])] = $op;
@@ -626,7 +947,7 @@ function handleUploadedTaskPhotos(): ?string {
 
     $uploadDir = __DIR__ . '/../uploads/tasks/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
+        mkdir($uploadDir, 0755, true);
     }
 
     $photoPaths = [];
@@ -636,9 +957,8 @@ function handleUploadedTaskPhotos(): ?string {
         if ($files['error'][$i] === UPLOAD_ERR_OK) {
             $fileTmpPath = $files['tmp_name'][$i];
             $fileName = $files['name'][$i];
-            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-            if (in_array($ext, $allowedExtensions)) {
+            $ext = validateUploadedPhoto($fileTmpPath, $fileName, (int)($files['size'][$i] ?? 0));
+            if ($ext !== null) {
                 $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
                 $destPath = $uploadDir . $newFileName;
                 if (move_uploaded_file($fileTmpPath, $destPath)) {
@@ -666,19 +986,13 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($taskId <= 0 || $actualQty <= 0) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Jumlah riil barang yang diambil wajib diisi lebih dari 0!']);
+        echo json_encode(['success' => false, 'message' => 'Jumlah riil barang wajib diisi lebih dari 0!']);
         exit;
     }
 
-    if (empty($completionNotes)) {
+    if ($qtyError = validateQtyRange($actualQty, 'Jumlah riil barang')) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Catatan penerima di line / PIC wajib diisi!']);
-        exit;
-    }
-
-    if (empty($photoPathValue)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Foto bukti penyerahan ke line wajib diunggah minimal 1 foto!']);
+        echo json_encode(['success' => false, 'message' => $qtyError]);
         exit;
     }
 
@@ -693,6 +1007,26 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->rollBack();
             http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Tugas tidak ditemukan']);
+            exit;
+        }
+
+        $isMovement = ($task['task_type'] ?? '') === 'RACK_MOVEMENT';
+
+        if (empty($completionNotes)) {
+            if ($isMovement) {
+                $completionNotes = "Movement barang dari " . ($task['from_location'] ?? 'Rak Asal') . " ke " . ($task['to_location'] ?? 'Rak Tujuan') . " selesai ditata.";
+            } else {
+                $pdo->rollBack();
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Catatan penerima di line / PIC wajib diisi!']);
+                exit;
+            }
+        }
+
+        if (empty($photoPathValue) && !$isMovement) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Foto bukti penyerahan ke line wajib diunggah minimal 1 foto!']);
             exit;
         }
 
@@ -717,7 +1051,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $materialId = (int)$task['material_id'];
 
-        $stmtMat = $pdo->prepare("SELECT id, name, code, unit, current_stock FROM materials WHERE id = ?");
+        $stmtMat = $pdo->prepare("SELECT id, name, code, unit, current_stock FROM materials WHERE id = ?" . rowLockClause($pdo));
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
 
@@ -729,6 +1063,81 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $stockBefore = (float)$mat['current_stock'];
+
+        // Penjaga kecukupan stok — sejalan dengan api/outbound.php.
+        // Tanpa ini, penyelesaian task dapat mendorong stok menjadi negatif.
+        // RACK_MOVEMENT dikecualikan karena hanya memindahkan lokasi, tidak mengurangi stok.
+        if (($task['task_type'] ?? '') !== 'RACK_MOVEMENT' && $actualQty > $stockBefore) {
+            $pdo->rollBack();
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => "Stok {$mat['name']} tidak mencukupi! Sisa stok saat ini "
+                    . number_format($stockBefore, 2, ',', '.') . " {$mat['unit']}, sedangkan yang akan diserahkan "
+                    . number_format($actualQty, 2, ',', '.') . " {$mat['unit']}. "
+                    . "Perbaiki jumlah aktual, atau minta Admin melakukan penyesuaian stok terlebih dahulu."
+            ]);
+            exit;
+        }
+
+        // Cek jika tugas adalah RACK_MOVEMENT (Perpindahan Rak Antar Lokasi)
+        if (($task['task_type'] ?? '') === 'RACK_MOVEMENT') {
+            $toLocation   = trim($task['to_location'] ?? '');
+            $fromLocation = trim($task['from_location'] ?? '');
+
+            // 1. Update Master Lokasi Rak Material
+            if (!empty($toLocation)) {
+                $stmtUpMat = $pdo->prepare("UPDATE materials SET rack_location = ? WHERE id = ?");
+                $stmtUpMat->execute([$toLocation, $materialId]);
+            }
+
+            // 2. Jika Gimmick / memiliki record batch, pindahkan batch ke lokasi rak baru
+            if (!empty($toLocation)) {
+                recordBatchTransfer($pdo, $materialId, (int)($task['batch_id'] ?? 0), $task['batch_no'] ?? null, $fromLocation, $toLocation, $actualQty);
+            }
+
+            // 3. Durasi & Takt Time
+            $now = date('Y-m-d H:i:s');
+            $startedAtStr = $task['started_at'] ?? $task['created_at'];
+            $startedAtTime = strtotime($startedAtStr);
+            $completedAtTime = strtotime($now);
+            $durationSeconds = max(1, $completedAtTime - $startedAtTime);
+
+            // 4. Update status task menjadi COMPLETED
+            $stmtUpdateTask = $pdo->prepare("
+                UPDATE tasks 
+                SET status = 'COMPLETED', 
+                    actual_qty = ?, 
+                    completion_notes = ?, 
+                    photo_path = IFNULL(?, photo_path),
+                    started_at = IFNULL(started_at, ?),
+                    completed_at = ?,
+                    duration_seconds = ?
+                WHERE id = ?
+            ");
+            $stmtUpdateTask->execute([$actualQty, $completionNotes, $photoPathValue, date('Y-m-d H:i:s', $startedAtTime), $now, $durationSeconds, $taskId]);
+
+            // 5. Catat Mutasi Audit Trail TRANSFER_LOCATION
+            $stmtMut = $pdo->prepare("
+                INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                VALUES (?, 'TRANSFER_LOCATION', 0, ?, ?, ?, ?, ?, ?)
+            ");
+            $mutNotes = "Movement Produk dari {$fromLocation} ke {$toLocation} (Qty: {$actualQty} {$mat['unit']}) oleh Operator " . (Auth::name() ?? '');
+            if (!empty($completionNotes)) $mutNotes .= " (Catatan: {$completionNotes})";
+            $stmtMut->execute([$materialId, $stockBefore, $stockBefore, $task['task_no'], $mutNotes, Auth::id(), $now]);
+
+            $pdo->commit();
+
+            echo json_encode([
+                'success' => true,
+                'message' => "Movement #{$task['task_no']} selesai! Lokasi {$mat['name']} berhasil dipindahkan ke {$toLocation}.",
+                'task_no' => $task['task_no'],
+                'new_location' => $toLocation,
+                'stock' => $stockBefore
+            ]);
+            exit;
+        }
+
         $stockAfter = $stockBefore - $actualQty;
 
         // Calculate Duration & Takt Time
@@ -777,7 +1186,7 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal submit tugas: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal submit tugas.');
     }
     exit;
 }
@@ -885,7 +1294,7 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Gagal menghapus tugas: ' . $e->getMessage()]);
+        apiFail($e, 'Gagal menghapus tugas.');
     }
     exit;
 }

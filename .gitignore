@@ -15,3 +15,6 @@ Thumbs.db
 uploads/*/*
 !uploads/*/.gitkeep
 !uploads/.gitkeep
+
+# Cadangan otomatis database (jangan pernah di-commit)
+config/backups/

@@ -9,6 +9,21 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateLiveClock, 1000);
   updateGreeting();
 
+  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
+    loadOperatorInventoryStats();
+    loadMyTransferHistory();
+    initMandatoryShiftGate();
+
+    setInterval(() => {
+      if (document.hidden) return;
+      loadOperatorInventoryStats();
+      if (currentOpTab === 'location_transfer' && currentOpTransferSubTab === 'history') {
+        loadMyTransferHistory(true);
+      }
+    }, 45000);
+    return;
+  }
+
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     loadFulfillmentStats();
     loadOperatorConsumableRequests();
@@ -65,7 +80,13 @@ async function refreshOperatorData() {
   const icon = document.getElementById('btnSyncIcon');
   if (icon) icon.classList.add('animate-spin');
 
-  if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
+    await Promise.all([
+      loadOperatorInventoryStats(),
+      loadMyTransferHistory(),
+      populateTransferMaterials()
+    ]);
+  } else if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     await Promise.all([
       loadFulfillmentStats(),
       loadOperatorConsumableRequests(),
@@ -79,7 +100,8 @@ async function refreshOperatorData() {
       loadOperatorBlankCounts(true),
       loadOperatorRecountTasks(true),
       loadOperatorStock(true),
-      loadHandovers(true)
+      loadHandovers(true),
+      loadMyTransferHistory(true)
     ]);
   }
 
@@ -91,6 +113,13 @@ async function refreshOperatorData() {
 
 // Mobile Screen / Tab Switcher
 function switchOpTab(tabName) {
+  // Strict 1-menu access for operator_inventory
+  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
+    if (tabName !== 'home' && tabName !== 'location_transfer') {
+      tabName = 'location_transfer';
+    }
+  }
+
   // Strict 1-menu access for operator_fulfillment
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     if (tabName !== 'home' && tabName !== 'request_consumable') {
@@ -99,7 +128,7 @@ function switchOpTab(tabName) {
   }
 
   currentOpTab = tabName;
-  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover'];
+  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover', 'location_transfer'];
 
   allTabs.forEach(t => {
     const el = document.getElementById('op-tab-' + t);
@@ -114,13 +143,15 @@ function switchOpTab(tabName) {
   }
 
   // Update bottom navigation bar active states
-  const bottomNavs = ['home', 'inbound', 'tasks', 'handover', 'dynamic_count', 'opname', 'req-form', 'req-hist'];
+  const bottomNavs = ['home', 'inbound', 'tasks', 'handover', 'dynamic_count', 'opname', 'req-form', 'req-hist', 'transfer-form', 'transfer-hist'];
   bottomNavs.forEach(nav => {
     const navBtn = document.getElementById('bottom-nav-' + nav);
     if (navBtn) {
       const isMatch = (nav === tabName) ||
         (nav === 'req-form' && tabName === 'request_consumable' && currentOpReqSubTab === 'form') ||
-        (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history');
+        (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history') ||
+        (nav === 'transfer-form' && tabName === 'location_transfer' && currentOpTransferSubTab === 'form') ||
+        (nav === 'transfer-hist' && tabName === 'location_transfer' && currentOpTransferSubTab === 'history');
       if (isMatch) {
         navBtn.classList.remove('text-slate-400', 'font-semibold');
         navBtn.classList.add('text-emerald-700', 'font-bold');
@@ -132,9 +163,14 @@ function switchOpTab(tabName) {
   });
 
   // Trigger sub-view data loading
-  if (tabName === 'home' && typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
-    loadFulfillmentStats();
+  if (tabName === 'home') {
+    if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
+      loadOperatorInventoryStats();
+    } else if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+      loadFulfillmentStats();
+    }
   }
+  if (tabName === 'location_transfer') initOperatorTransferView();
   if (tabName === 'tasks') loadOperatorTasks();
   if (tabName === 'dynamic_count') loadOperatorDynamicTasks();
   if (tabName === 'opname') {
@@ -260,6 +296,10 @@ async function loadOperatorStats(silent = false) {
         badgeTasks.classList.add('hidden');
       }
     }
+    // Elemen ini opsional (dock badge belum tentu ada di layout aktif).
+    // Sebelumnya dirujuk tanpa dideklarasikan, sehingga melempar ReferenceError
+    // dan menghentikan sisa fungsi ini di tengah jalan.
+    const dockBadgeTasks = document.getElementById('dockBadgeTasks');
     if (dockBadgeTasks) {
       if (activeTasks > 0) dockBadgeTasks.classList.remove('hidden');
       else dockBadgeTasks.classList.add('hidden');
@@ -293,7 +333,7 @@ function switchOpTaskSubTab(tab) {
 
   if (tab === 'active') {
     if (btnActive) {
-      btnActive.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs font-bold transition-all cursor-pointer';
+      btnActive.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-xs font-bold transition-all cursor-pointer';
     }
     if (btnHistory) {
       btnHistory.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 font-bold transition-all cursor-pointer';
@@ -302,7 +342,7 @@ function switchOpTaskSubTab(tab) {
     if (viewHistory) viewHistory.classList.add('hidden');
   } else {
     if (btnHistory) {
-      btnHistory.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs font-bold transition-all cursor-pointer';
+      btnHistory.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-xs font-bold transition-all cursor-pointer';
     }
     if (btnActive) {
       btnActive.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 font-bold transition-all cursor-pointer';
@@ -361,6 +401,104 @@ function renderOperatorTasksList() {
   container.innerHTML = activeTasks.map(t => {
     const isUrgent = t.priority === 'URGENT' || t.priority === 'CRITICAL';
     const isInProgress = t.status === 'IN_PROGRESS';
+    const isMovement = (t.task_type === 'RACK_MOVEMENT');
+
+    if (isMovement) {
+      return `
+        <div class="bg-white rounded-3xl p-4 border ${isUrgent ? 'border-amber-300 ring-2 ring-amber-400/30' : 'border-blue-200'} shadow-xs hover:shadow-md transition-all space-y-3">
+          
+          <!-- Header: Task No & Movement Badge -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-mono font-black text-xs text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">${escapeHtml(t.task_no)}</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[13px]">swap_horiz</span>
+                <span>PINDAH RAK</span>
+              </span>
+              ${isInProgress ? '<span class="px-2 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 animate-pulse">Sedang Dipindahkan</span>' : ''}
+            </div>
+            ${isUrgent
+          ? '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 animate-pulse">URGENT</span>'
+          : '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">NORMAL</span>'}
+          </div>
+
+          <!-- Material Info -->
+          <div>
+            <h3 class="font-black text-slate-900 text-sm leading-snug">${escapeHtml(t.material_name)}</h3>
+            <p class="text-[11px] font-mono font-bold text-slate-400 mt-0.5">${escapeHtml(t.material_code)}</p>
+            ${t.batch_no ? `
+              <div class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-mono text-[10px] font-bold">
+                <span class="material-symbols-outlined text-[13px]">label</span>
+                <span>Batch: ${escapeHtml(t.batch_no)}</span>
+                ${t.exp_date ? `<span class="text-purple-400 font-normal">| Exp: ${escapeHtml(t.exp_date.split(' ')[0])}</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Movement Locations (Rack A -> Rack B) -->
+          <div class="grid grid-cols-2 gap-2 bg-gradient-to-r from-rose-50/40 to-blue-50/50 p-3 rounded-2xl border border-slate-200/80">
+            <div>
+              <p class="text-[9px] font-bold uppercase tracking-wider text-rose-500 flex items-center gap-0.5">
+                <span class="material-symbols-outlined text-[12px]">logout</span>
+                <span>Dari Rak (Asal)</span>
+              </p>
+              <p class="text-xs font-black text-slate-900 flex items-center gap-1 mt-0.5">
+                <span class="material-symbols-outlined text-rose-500 text-[15px]">location_on</span>
+                <span class="bg-white px-2 py-0.5 rounded-md border border-rose-200 font-mono">${escapeHtml(t.from_location || t.rack_location || '-')}</span>
+              </p>
+            </div>
+            <div class="text-right">
+              <p class="text-[9px] font-bold uppercase tracking-wider text-blue-600 flex items-center justify-end gap-0.5">
+                <span>Ke Rak (Tujuan)</span>
+                <span class="material-symbols-outlined text-[12px]">login</span>
+              </p>
+              <p class="text-xs font-black text-slate-900 flex items-center justify-end gap-1 mt-0.5">
+                <span class="material-symbols-outlined text-blue-600 text-[15px]">arrow_forward</span>
+                <span class="bg-white px-2 py-0.5 rounded-md border border-blue-200 font-mono text-blue-700">${escapeHtml(t.to_location || t.destination || '-')}</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Target Qty & Duration -->
+          <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+            <span class="text-slate-500 font-medium">Qty yang Dipindahkan:</span>
+            <span class="font-mono font-black text-blue-800 text-sm">
+              ${App.formatNumber(t.target_qty)} <span class="text-[11px] font-semibold text-slate-500">${escapeHtml(t.material_unit || 'Pcs')}</span>
+            </span>
+          </div>
+
+          <!-- Notes & Start Time -->
+          ${isInProgress ? `
+            <div class="flex items-center gap-1.5 text-[11px] font-mono text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-200">
+              <span class="material-symbols-outlined text-[15px] animate-spin text-amber-600">progress_activity</span>
+              <span>Mulai Pindah: <b>${App.formatTime(t.started_at || t.created_at)}</b></span>
+            </div>
+          ` : ''}
+          ${t.notes ? `
+            <div class="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-[11px] flex items-start gap-1">
+              <span class="material-symbols-outlined text-slate-400 text-[14px] flex-shrink-0 mt-0.5">info</span>
+              <span>${escapeHtml(t.notes)}</span>
+            </div>
+          ` : ''}
+
+          <!-- Action Buttons -->
+          <div class="pt-1 flex items-center gap-2">
+            ${!isInProgress ? `
+              <button onclick="startOperatorTask(${t.id})" class="flex-1 py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-1 shadow-xs cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                <span>Mulai Pindah</span>
+              </button>
+            ` : ''}
+
+            <button onclick="openSubmitModal(${t.id})" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">task_alt</span>
+              <span>Selesai Pindah</span>
+            </button>
+          </div>
+
+        </div>
+      `;
+    }
 
     return `
       <div class="bg-white rounded-3xl p-4 border ${isUrgent ? 'border-amber-300 ring-2 ring-amber-400/30' : 'border-slate-200'} shadow-xs hover:shadow-md transition-all space-y-3">
@@ -379,6 +517,9 @@ function renderOperatorTasksList() {
 
         <!-- Material Info -->
         <div>
+          ${t.item_type === 'GIMMICK' 
+            ? '<div class="mb-1"><span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-50 text-purple-700 border border-purple-200">🎁 GIMMICK</span></div>' 
+            : ''}
           <h3 class="font-black text-slate-900 text-sm leading-snug">${escapeHtml(t.material_name)}</h3>
           <p class="text-[11px] font-mono font-bold text-slate-400 mt-0.5">${escapeHtml(t.material_code)}</p>
         </div>
@@ -429,7 +570,7 @@ function renderOperatorTasksList() {
             </button>
           ` : ''}
 
-          <button onclick="openSubmitModal(${t.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <button onclick="openSubmitModal(${t.id})" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
             <span class="material-symbols-outlined text-[17px]">task_alt</span>
             <span>Submit Selesai</span>
           </button>
@@ -811,7 +952,7 @@ function renderOperatorTasksHistory() {
 
           <!-- SINGLE UNIFIED WHATSAPP SHARE BUTTON -->
           <div class="pt-1">
-            <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="w-full py-3 px-4 ${isShared ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700'} active:scale-98 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+            <button type="button" onclick="openShareOutboundModal('${g.groupKey}')" class="w-full py-3 px-4 ${isShared ? 'bg-blue-700 hover:bg-blue-800' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} active:scale-98 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
               <span class="material-symbols-outlined text-[19px]">${isShared ? 'done_all' : 'send'}</span>
               <span>${isShared ? '✓ Bagikan Ulang ke WhatsApp' : 'Bagikan ke WhatsApp'}</span>
             </button>
@@ -1176,11 +1317,64 @@ function openSubmitModal(taskId) {
   activeSubmittingTask = task;
   clearTaskCompletePhotos();
 
+  const isMovement = (task.task_type === 'RACK_MOVEMENT');
+
   document.getElementById('submitTaskId').value = task.id;
   document.getElementById('submitMaterialTitle').innerText = task.material_name;
   document.getElementById('submitTargetQtyLabel').innerText = `${App.formatNumber(task.target_qty)} ${escapeHtml(task.material_unit || 'Pcs')}`;
-  document.getElementById('submitRackLocationLabel').innerText = task.rack_location;
-  document.getElementById('submitDestinationLabel').innerText = task.destination;
+  document.getElementById('submitRackLocationLabel').innerText = isMovement ? (task.from_location || task.rack_location) : task.rack_location;
+  document.getElementById('submitDestinationLabel').innerText = isMovement ? (task.to_location || task.destination) : task.destination;
+
+  // Dynamic modal labels based on task type
+  const modalTitle = document.getElementById('submitTaskModalTitle');
+  const modalSub = document.getElementById('submitTaskModalSubtitle');
+  const modalIconBg = document.getElementById('submitTaskModalIconBg');
+  const modalIcon = document.getElementById('submitTaskModalIcon');
+  const rackFromH = document.getElementById('submitRackFromHeader');
+  const rackToH = document.getElementById('submitRackToHeader');
+  const qtyH = document.getElementById('submitQtyHeaderLabel');
+  const actualQtyLbl = document.getElementById('submitActualQtyLabel');
+  const recContainer = document.getElementById('submitReceiverContainer');
+  const recInput = document.getElementById('submitReceiverName');
+  const photoLbl = document.getElementById('submitPhotoLabel');
+  const photoSub = document.getElementById('submitPhotoSubtitle');
+  const btnSubmitText = document.getElementById('btnFinalSubmitText');
+
+  if (isMovement) {
+    if (modalTitle) modalTitle.innerText = 'Submit Pindah Rak';
+    if (modalSub) modalSub.innerText = 'Konfirmasi perpindahan fisik barang & update lokasi rak';
+    if (modalIconBg) modalIconBg.className = 'w-9 h-9 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center font-bold shadow-xs';
+    if (modalIcon) modalIcon.innerText = 'swap_horiz';
+    if (rackFromH) rackFromH.innerText = 'Dari Rak (Asal):';
+    if (rackToH) rackToH.innerText = 'Ke Rak (Tujuan):';
+    if (qtyH) qtyH.innerText = 'Qty Pindah:';
+    if (actualQtyLbl) actualQtyLbl.innerHTML = `Jumlah Riil yang Dipindahkan (<span id="submitUnitLabel">${escapeHtml(task.material_unit || 'Pcs')}</span>) <span class="text-rose-500">*</span>`;
+    if (recContainer) recContainer.classList.add('hidden');
+    if (recInput) {
+      recInput.required = false;
+      recInput.value = 'Operator Pindah Selesai';
+    }
+    if (photoLbl) photoLbl.innerHTML = '<span class="material-symbols-outlined text-[16px] text-blue-600">photo_camera</span><span>Foto Bukti Fisik / Rak Baru <span class="text-slate-400 font-normal text-[10px]">(Opsional)</span></span>';
+    if (photoSub) photoSub.innerText = 'Opsional: Lampirkan foto kondisi barang setelah disusun di rak baru.';
+    if (btnSubmitText) btnSubmitText.innerText = 'Konfirmasi Pindah Rak';
+  } else {
+    if (modalTitle) modalTitle.innerText = 'Submit Pengambilan';
+    if (modalSub) modalSub.innerText = 'Konfirmasi serah terima ke line & potong stok';
+    if (modalIconBg) modalIconBg.className = 'w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-xs';
+    if (modalIcon) modalIcon.innerText = 'task_alt';
+    if (rackFromH) rackFromH.innerText = 'Lokasi:';
+    if (rackToH) rackToH.innerText = 'Tujuan:';
+    if (qtyH) qtyH.innerText = 'Target Diminta:';
+    if (actualQtyLbl) actualQtyLbl.innerHTML = `Jumlah Riil yang Diserahkan (<span id="submitUnitLabel">${escapeHtml(task.material_unit || 'Pcs')}</span>) <span class="text-rose-500">*</span>`;
+    if (recContainer) recContainer.classList.remove('hidden');
+    if (recInput) {
+      recInput.required = true;
+      recInput.value = '';
+    }
+    if (photoLbl) photoLbl.innerHTML = '<span class="material-symbols-outlined text-[16px] text-amber-600">receipt_long</span><span>Foto Surat Jalan & Bukti Serah Terima <span class="text-rose-500 font-bold">*</span></span>';
+    if (photoSub) photoSub.innerText = 'Lampirkan foto fisik Surat Jalan atau bukti penyerahan barang di line.';
+    if (btnSubmitText) btnSubmitText.innerText = 'Konfirmasi & Potong Stok';
+  }
 
   const actualInput = document.getElementById('submitActualQty');
   actualInput.value = task.target_qty;
@@ -1188,8 +1382,6 @@ function openSubmitModal(taskId) {
   const unitLabel = document.getElementById('submitUnitLabel');
   if (unitLabel) unitLabel.innerText = escapeHtml(task.material_unit || 'Qty');
 
-  const recInput = document.getElementById('submitReceiverName');
-  if (recInput) recInput.value = '';
   document.getElementById('submitNotes').value = '';
 
   App.openModal('modalSubmitTask');
@@ -1199,17 +1391,18 @@ async function handleFinalTaskSubmit(e) {
   e.preventDefault();
   if (!activeSubmittingTask) return;
 
+  const isMovement = (activeSubmittingTask.task_type === 'RACK_MOVEMENT');
   const task_id = document.getElementById('submitTaskId').value;
   const actual_qty = App.parseNumber(document.getElementById('submitActualQty').value);
   const receiver_name = document.getElementById('submitReceiverName')?.value?.trim() || '';
   const extra_notes = document.getElementById('submitNotes')?.value?.trim() || '';
 
   if (actual_qty <= 0) {
-    App.toast('Jumlah riil yang diserahkan harus lebih dari 0', 'warning', 'Qty Wajib');
+    App.toast('Jumlah riil yang dipindahkan/diserahkan harus lebih dari 0', 'warning', 'Qty Wajib');
     return;
   }
 
-  if (!receiver_name) {
+  if (!receiver_name && !isMovement) {
     App.toast('Nama Penerima di Line / PIC wajib diisi!', 'warning', 'Wajib Diisi');
     const recInput = document.getElementById('submitReceiverName');
     if (recInput) {
@@ -1220,16 +1413,18 @@ async function handleFinalTaskSubmit(e) {
     return;
   }
 
-  const completion_notes = extra_notes ? `Penerima: ${receiver_name} | ${extra_notes}` : `Penerima: ${receiver_name}`;
+  const finalReceiver = receiver_name || (isMovement ? 'Operator Lapangan' : '');
+  const completion_notes = extra_notes ? `Penerima/PIC: ${finalReceiver} | ${extra_notes}` : `Penerima/PIC: ${finalReceiver}`;
 
-  if (!taskCompleteSelectedFiles || taskCompleteSelectedFiles.length === 0) {
+  if ((!taskCompleteSelectedFiles || taskCompleteSelectedFiles.length === 0) && !isMovement) {
     App.toast('Foto Surat Jalan / Bukti penyerahan wajib diunggah minimal 1 foto!', 'warning', 'Foto Wajib');
     return;
   }
 
   const btn = document.getElementById('btnFinalSubmit');
+  const btnSubmitText = document.getElementById('btnFinalSubmitText');
   btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined text-[17px] animate-spin">progress_activity</span> Menyimpan...';
+  if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
 
   const formData = new FormData();
   formData.append('task_id', task_id);
@@ -1248,7 +1443,9 @@ async function handleFinalTaskSubmit(e) {
     const res = await response.json();
 
     btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Potong Stok</span>';
+    if (btnSubmitText) {
+      btnSubmitText.innerText = isMovement ? 'Konfirmasi Pindah Rak' : 'Konfirmasi & Potong Stok';
+    }
 
     if (res.success) {
       App.toast(res.message, 'success', 'Tugas Selesai');
@@ -1262,7 +1459,9 @@ async function handleFinalTaskSubmit(e) {
     }
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span>Konfirmasi & Potong Stok</span>';
+    if (btnSubmitText) {
+      btnSubmitText.innerText = isMovement ? 'Konfirmasi Pindah Rak' : 'Konfirmasi & Potong Stok';
+    }
     App.toast('Terjadi kesalahan koneksi saat submit tugas', 'error');
   }
 }
@@ -1378,42 +1577,672 @@ function renderCompletedHistory() {
   }).join('');
 }
 
-// 5. INBOUND GOODS RECEIPT DRAFT (MULTI-PRODUCT)
+// 5. INBOUND GOODS RECEIPT DRAFT (MULTI-PRODUCT & KEMAS / GIMMICK)
+let opInboundActiveType = 'PACKAGING';
+let currentOpInboundBatches = [];
+let currentOpInboundLocations = [];
+let currentOpInboundLocationStocks = {};
+
+function setOpInboundType(type) {
+  opInboundActiveType = (type === 'GIMMICK') ? 'GIMMICK' : 'PACKAGING';
+
+  const btnKemas = document.getElementById('btnOpInboundTypeKemas');
+  const btnGimmick = document.getElementById('btnOpInboundTypeGimmick');
+  const chkKemas = document.getElementById('opInboundCheckKemas');
+  const chkGimmick = document.getElementById('opInboundCheckGimmick');
+  const typeLabel = document.getElementById('opInboundTypeLabel');
+  const gimmickSection = document.getElementById('opInboundGimmickSection');
+  const locHint = document.getElementById('opInboundLocHint');
+
+  if (btnKemas && btnGimmick) {
+    if (opInboundActiveType === 'GIMMICK') {
+      btnGimmick.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white';
+      btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+      if (chkGimmick) chkGimmick.classList.remove('hidden');
+      if (chkKemas) chkKemas.classList.add('hidden');
+    } else {
+      btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white';
+      btnGimmick.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+      if (chkKemas) chkKemas.classList.remove('hidden');
+      if (chkGimmick) chkGimmick.classList.add('hidden');
+    }
+  }
+
+  if (typeLabel) {
+    typeLabel.innerText = (opInboundActiveType === 'GIMMICK') ? 'Gimmick' : 'Kemas';
+  }
+
+  if (locHint) {
+    locHint.innerText = (opInboundActiveType === 'GIMMICK') ? 'Berdasarkan SKU, Batch & Exp' : 'Pilih Lokasi & Sisa Stok';
+  }
+
+  if (gimmickSection) {
+    if (opInboundActiveType === 'GIMMICK') {
+      gimmickSection.classList.remove('hidden');
+    } else {
+      gimmickSection.classList.add('hidden');
+    }
+  }
+
+  resetOpInboundFormItemInputs();
+  populateOpInboundMaterials();
+}
+
+function resetOpInboundFormItemInputs() {
+  const select = document.getElementById('opInboundMaterialSelect');
+  if (select) {
+    select.value = '';
+    App.syncSearchableSelect(select);
+  }
+  const badge = document.getElementById('opInboundStockBadge');
+  if (badge) badge.innerHTML = '';
+  
+  const locInput = document.getElementById('opInboundLocationInput');
+  if (locInput) locInput.value = '';
+  const locSug = document.getElementById('opInboundLocationSuggestions');
+  if (locSug) locSug.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih material untuk melihat sugesti lokasi...</span>';
+
+  const locSelect = document.getElementById('opInboundLocationSelect');
+  if (locSelect) {
+    locSelect.innerHTML = '<option value="">-- Pilih Material Terlebih Dahulu --</option>';
+    locSelect.value = '';
+  }
+  const customLoc = document.getElementById('opInboundCustomLocation');
+  if (customLoc) { customLoc.value = ''; customLoc.classList.add('hidden'); }
+
+  const batchInp = document.getElementById('opInboundBatchNo');
+  if (batchInp) batchInp.value = '';
+  const batchList = document.getElementById('opInboundBatchList');
+  if (batchList) batchList.innerHTML = '';
+  const expInp = document.getElementById('opInboundExpDate');
+  if (expInp) expInp.value = '';
+
+  const batchSug = document.getElementById('opInboundBatchSuggestions');
+  if (batchSug) batchSug.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih gimmick dahulu</span>';
+  const expSug = document.getElementById('opInboundExpSuggestions');
+  if (expSug) expSug.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih batch dahulu</span>';
+
+  const batchCont = document.getElementById('opInboundExistingBatchesContainer');
+  if (batchCont) batchCont.classList.add('hidden');
+
+  const qtyInp = document.getElementById('opInboundQty');
+  if (qtyInp) qtyInp.value = '';
+  const notesInp = document.getElementById('opInboundNotes');
+  if (notesInp) notesInp.value = '';
+
+  currentOpInboundBatches = [];
+  currentOpInboundLocations = [];
+  currentOpInboundLocationStocks = {};
+
+  updateOpInboundStockBadge();
+}
+
 async function populateOpInboundMaterials() {
-  if (allStock.length === 0) {
-    const res = await App.fetchJson('../api/materials.php?action=list');
-    if (res.success && res.data) {
+  let materials = (typeof allStock !== 'undefined' && allStock.length > 0) ? allStock : [];
+  const hasGimmick = materials.some(m => m.item_type === 'GIMMICK');
+  if (materials.length === 0 || !hasGimmick) {
+    const res = await App.fetchJson('../api/materials.php?action=list&item_type=all');
+    if (res && res.success && res.data) {
       allStock = res.data;
+      materials = res.data;
     }
   }
 
   const select = document.getElementById('opInboundMaterialSelect');
   if (!select) return;
 
+  let filtered = materials || [];
+  if (opInboundActiveType === 'GIMMICK') {
+    filtered = filtered.filter(m => m.item_type === 'GIMMICK');
+  } else {
+    filtered = filtered.filter(m => m.item_type !== 'GIMMICK');
+  }
+
   const currentVal = select.value;
-  select.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' +
-    allStock.map(m => `
-      <option value="${m.id}" data-code="${escapeHtml(m.code)}" data-name="${escapeHtml(m.name)}" data-stock="${m.current_stock}" data-rack="${escapeHtml(m.rack_location)}">
+  const placeholder = (opInboundActiveType === 'GIMMICK') ? '-- Pilih Gimmick --' : '-- Pilih Kemas --';
+
+  select.innerHTML = `<option value="">${placeholder}</option>` +
+    filtered.map(m => `
+      <option value="${m.id}" data-code="${escapeHtml(m.code || '')}" data-name="${escapeHtml(m.name || '')}" data-barcode="${escapeHtml(m.barcode || '')}" data-barcode-bpom="${escapeHtml(m.barcode_bpom || '')}" data-sap="${escapeHtml(m.sap_code || '')}" data-stock="${m.current_stock}" data-rack="${escapeHtml(m.rack_location || '')}" data-item-type="${escapeHtml(m.item_type || 'PACKAGING')}">
         ${escapeHtml(m.name)} (Stok: ${App.formatNumber(m.current_stock)})
       </option>
     `).join('');
 
-  if (currentVal) select.value = currentVal;
+  if (currentVal && filtered.some(m => m.id == currentVal)) {
+    select.value = currentVal;
+  }
   App.syncSearchableSelect(select);
+}
+
+async function handleOpInboundMaterialChange() {
+  updateOpInboundStockBadge();
+
+  const select = document.getElementById('opInboundMaterialSelect');
+  const locInput = document.getElementById('opInboundLocationInput');
+  const locSugContainer = document.getElementById('opInboundLocationSuggestions');
+  const batchInp = document.getElementById('opInboundBatchNo');
+  const expInp = document.getElementById('opInboundExpDate');
+  const batchSugContainer = document.getElementById('opInboundBatchSuggestions');
+  const expSugContainer = document.getElementById('opInboundExpSuggestions');
+
+  if (batchInp) batchInp.value = '';
+  if (expInp) expInp.value = '';
+  if (locInput) locInput.value = '';
+
+  const materialId = parseInt(select?.value || '0');
+  if (!materialId) {
+    if (batchSugContainer) batchSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih gimmick dahulu</span>';
+    if (expSugContainer) expSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih batch dahulu</span>';
+    if (locSugContainer) locSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih material untuk melihat sugesti lokasi...</span>';
+    currentOpInboundBatches = [];
+    currentOpInboundLocations = [];
+    currentOpInboundLocationStocks = {};
+    return;
+  }
+
+  const OP_GENERIC_LOCATIONS = ['GUDANG BESAR', 'GUDANG UTAMA', 'GUDANG KECIL', 'PUSAT', 'GUDANG GIMMICK PUSAT', 'GUDANG', '-', 'DEFAULT'];
+  function isOpGenericLocation(loc) {
+    if (!loc) return true;
+    return OP_GENERIC_LOCATIONS.includes(loc.trim().toUpperCase());
+  }
+
+  if (opInboundActiveType === 'PACKAGING') {
+    // 1. KEMAS: Tampilkan sugesti lokasi rak simpan khusus SKU tersebut beserta sisa stok
+    if (locSugContainer) {
+      locSugContainer.innerHTML = '<span class="text-[10px] text-emerald-600 font-semibold italic animate-pulse">Memuat sugesti lokasi rak...</span>';
+    }
+    try {
+      const res = await App.fetchJson(`../api/materials.php?action=suggest_locations&material_id=${materialId}`);
+      let locations = (res && res.success && res.locations) ? res.locations : [];
+      const stocks = (res && res.location_stocks) ? res.location_stocks : {};
+
+      const opt = select.options[select.selectedIndex];
+      const defaultRack = opt?.getAttribute('data-rack')?.trim();
+      if (defaultRack && !isOpGenericLocation(defaultRack) && !locations.includes(defaultRack)) {
+        locations.unshift(defaultRack);
+      }
+
+      // Filter out generic warehouse building names
+      locations = locations.filter(loc => !isOpGenericLocation(loc));
+
+      let suggestions = [];
+      locations.forEach(loc => {
+        const s = stocks[loc] !== undefined ? stocks[loc] : 0;
+        suggestions.push({ loc: loc, stock: s });
+      });
+
+      const primaryLoc = (defaultRack && !isOpGenericLocation(defaultRack) && locations.includes(defaultRack))
+        ? defaultRack
+        : (locations[0] || defaultRack || '');
+
+      if (locInput) {
+        locInput.value = primaryLoc;
+      }
+
+      renderOpInboundLocationSuggestions(suggestions, primaryLoc);
+    } catch (e) {
+      if (locInput) locInput.value = '';
+      renderOpInboundLocationSuggestions([], '');
+    }
+  } else {
+    // 2. GIMMICK: Ambil data batch SKU dan tampilkan sugesti batch terlebih dahulu
+    if (batchSugContainer) {
+      batchSugContainer.innerHTML = '<span class="text-[10px] text-amber-600 font-semibold italic animate-pulse">Memuat daftar batch...</span>';
+    }
+    if (expSugContainer) {
+      expSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih atau ketik No. Batch dahulu</span>';
+    }
+    if (locSugContainer) {
+      locSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih No. Batch untuk melihat sugesti rak simpan</span>';
+    }
+
+    try {
+      const [bRes, locRes] = await Promise.all([
+        App.fetchJson(`../api/materials.php?action=get_batches&material_id=${materialId}`),
+        App.fetchJson(`../api/materials.php?action=suggest_locations&material_id=${materialId}`)
+      ]);
+
+      currentOpInboundBatches = (bRes && bRes.success && (bRes.batches || bRes.data)) ? (bRes.batches || bRes.data) : [];
+      currentOpInboundLocations = (locRes && locRes.success && locRes.locations) ? locRes.locations : [];
+      currentOpInboundLocationStocks = (locRes && locRes.location_stocks) ? locRes.location_stocks : {};
+
+      renderOpInboundBatchSuggestions();
+    } catch (e) {
+      currentOpInboundBatches = [];
+      currentOpInboundLocations = [];
+      currentOpInboundLocationStocks = {};
+      renderOpInboundBatchSuggestions();
+    }
+  }
+}
+
+// Menampilkan sugesti batch dari item SKU Gimmick yang di-select
+function renderOpInboundBatchSuggestions() {
+  const container = document.getElementById('opInboundBatchSuggestions');
+  const datalist = document.getElementById('opInboundBatchList');
+  const currentBatchInp = document.getElementById('opInboundBatchNo');
+  const currentBatchVal = (currentBatchInp?.value || '').trim().toUpperCase();
+
+  const batchMap = {};
+  (currentOpInboundBatches || []).forEach(b => {
+    const bNo = (b.batch_no || '').trim();
+    if (!bNo) return;
+    if (!batchMap[bNo]) {
+      batchMap[bNo] = {
+        batch_no: bNo,
+        total_qty: 0,
+        exp_date: b.exp_date || '',
+        location: b.location || ''
+      };
+    }
+    batchMap[bNo].total_qty += (parseFloat(b.qty) || 0);
+    if (!batchMap[bNo].exp_date && b.exp_date) batchMap[bNo].exp_date = b.exp_date;
+  });
+
+  const batchList = Object.values(batchMap);
+
+  if (datalist) {
+    datalist.innerHTML = batchList.map(b => `<option value="${escapeHtml(b.batch_no)}">Batch: ${escapeHtml(b.batch_no)} (Stok: ${App.formatNumber(b.total_qty)})</option>`).join('');
+  }
+
+  if (!container) return;
+
+  if (batchList.length === 0) {
+    container.innerHTML = '<span class="text-[10px] text-slate-400 italic">Belum ada riwayat batch untuk SKU ini (ketik No. Batch baru di atas)</span>';
+    return;
+  }
+
+  container.innerHTML = batchList.map(b => {
+    const isSelected = (b.batch_no.toUpperCase() === currentBatchVal);
+    const badgeClass = isSelected
+      ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
+      : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200';
+    const qtyText = b.total_qty > 0 ? ` (${App.formatNumber(b.total_qty)} Pcs)` : '';
+    return `
+      <button type="button" onclick="selectOpInboundBatch('${escapeHtml(b.batch_no)}')"
+        class="text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer ${badgeClass}"
+        title="Pilih Batch ${escapeHtml(b.batch_no)}">
+        <span class="material-symbols-outlined text-[12px]">${isSelected ? 'check' : 'sell'}</span>
+        <span>${escapeHtml(b.batch_no)}</span>
+        <span class="${isSelected ? 'text-amber-100' : 'text-amber-700'} font-normal text-[9px]">${qtyText}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function selectOpInboundBatch(batchNo) {
+  const batchInp = document.getElementById('opInboundBatchNo');
+  if (batchInp) {
+    batchInp.value = batchNo;
+    onOpInboundBatchInput(batchInp);
+  }
+}
+
+function onOpInboundBatchInput(inputEl) {
+  const batchNo = (inputEl.value || '').trim().toUpperCase();
+  const expInp = document.getElementById('opInboundExpDate');
+  const expSugContainer = document.getElementById('opInboundExpSuggestions');
+  const batchSugContainer = document.getElementById('opInboundBatchSuggestions');
+
+  // Update active state in batch suggestions
+  if (batchSugContainer) {
+    batchSugContainer.querySelectorAll('button').forEach(btn => {
+      const match = batchNo && btn.innerText.toUpperCase().includes(batchNo);
+      if (match) {
+        btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-amber-600 text-white border-amber-700 shadow-2xs';
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) icon.innerText = 'check';
+      } else {
+        btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200';
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) icon.innerText = 'sell';
+      }
+    });
+  }
+
+  if (!batchNo) {
+    if (expInp) expInp.value = '';
+    if (expSugContainer) expSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih atau ketik No. Batch dahulu</span>';
+    const locSug = document.getElementById('opInboundLocationSuggestions');
+    if (locSug) locSug.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih No. Batch untuk melihat sugesti lokasi rak</span>';
+    const locInp = document.getElementById('opInboundLocationInput');
+    if (locInp) locInp.value = '';
+    return;
+  }
+
+  // Cari batch yang cocok di data SKU
+  const matching = (currentOpInboundBatches || []).filter(b => (b.batch_no || '').toUpperCase() === batchNo);
+
+  if (matching.length > 0) {
+    // Kumpulkan tanggal exp dari batch yang cocok dalam format DD-MM-YY
+    const expDates = [...new Set(matching.map(b => b.exp_date ? formatExpDateToDDMMYY(b.exp_date) : '').filter(Boolean))];
+
+    if (expDates.length > 0) {
+      if (expInp) expInp.value = expDates[0];
+      if (expSugContainer) {
+        expSugContainer.innerHTML = expDates.map(ed => {
+          const isSel = (ed === (expInp?.value || '').trim());
+          let slText = '';
+          const sl = calculateShelfLifeMonths(ed);
+          if (sl && sl.text && sl.text !== '-') {
+            slText = ` (${sl.text})`;
+          }
+          return `
+            <button type="button" onclick="selectOpInboundExpDate('${escapeHtml(ed)}')"
+              class="text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer ${isSel ? 'bg-amber-600 text-white border-amber-700 shadow-2xs' : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200'}">
+              <span class="material-symbols-outlined text-[12px]">${isSel ? 'check' : 'calendar_today'}</span>
+              <span>${escapeHtml(ed)}</span>
+              <span class="text-[9px] font-normal ${isSel ? 'text-amber-100' : 'text-amber-700'}">${escapeHtml(slText)}</span>
+            </button>
+          `;
+        }).join('');
+      }
+    } else {
+      if (expSugContainer) expSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Batch ini tanpa Exp Date (atau ketik manual)</span>';
+    }
+  } else {
+    // Batch baru (belum ada riwayat)
+    if (expSugContainer) expSugContainer.innerHTML = '<span class="text-[10px] text-slate-400 italic">Batch baru. Ketik Exp Date format DD-MM-YY</span>';
+  }
+
+  updateOpInboundGimmickLocations();
+}
+
+// Helper format date to DD-MM-YY
+function formatExpDateToDDMMYY(dateStr) {
+  if (!dateStr) return '';
+  const s = String(dateStr).trim().split(' ')[0].split('T')[0];
+  if (/^\d{2}-\d{2}-\d{2}$/.test(s)) return s;
+  const dmyMatch = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+  if (dmyMatch) {
+    const d = String(dmyMatch[1]).padStart(2, '0');
+    const m = String(dmyMatch[2]).padStart(2, '0');
+    let y = dmyMatch[3];
+    if (y.length === 4) y = y.slice(-2);
+    return `${d}-${m}-${y}`;
+  }
+  const ymdMatch = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if (ymdMatch) {
+    const y = ymdMatch[1].slice(-2);
+    const m = String(ymdMatch[2]).padStart(2, '0');
+    const d = String(ymdMatch[3]).padStart(2, '0');
+    return `${d}-${m}-${y}`;
+  }
+  return s;
+}
+
+// Normalize Exp Date to YYYY-MM-DD
+function normalizeExpDateToYMD(dateStr) {
+  if (!dateStr) return '';
+  const s = String(dateStr).trim().split(' ')[0].split('T')[0];
+  const dmy = s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+  if (dmy) {
+    const d = String(dmy[1]).padStart(2, '0');
+    const m = String(dmy[2]).padStart(2, '0');
+    let y = parseInt(dmy[3], 10);
+    if (y < 100) y += (y <= 69 ? 2000 : 1900);
+    return `${y}-${m}-${d}`;
+  }
+  return s;
+}
+
+// Auto format input string into DD-MM-YY on input
+function autoFormatExpDateInput(inputEl) {
+  if (!inputEl) return;
+  let val = (inputEl.value || '').replace(/[^0-9]/g, '');
+  if (val.length > 6) val = val.slice(0, 6);
+  let formatted = val;
+  if (val.length > 4) {
+    formatted = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4);
+  } else if (val.length > 2) {
+    formatted = val.slice(0, 2) + '-' + val.slice(2);
+  }
+  if (inputEl.value !== formatted) {
+    inputEl.value = formatted;
+  }
+}
+
+function calculateShelfLifeMonths(expDateStr) {
+  if (!expDateStr) return { text: '-', class: 'text-slate-400 font-mono', title: '', status: 'none' };
+  const ymd = normalizeExpDateToYMD(expDateStr);
+  const parts = ymd.split('-');
+  if (parts.length !== 3) return { text: '-', class: 'text-slate-400 font-mono', title: '', status: 'none' };
+
+  const expYear = parseInt(parts[0], 10);
+  const expMonth = parseInt(parts[1], 10) - 1;
+  const expDay = parseInt(parts[2], 10);
+  if (isNaN(expYear) || isNaN(expMonth) || isNaN(expDay)) {
+    return { text: '-', class: 'text-slate-400 font-mono', title: '', status: 'none' };
+  }
+  const expDate = new Date(expYear, expMonth, expDay);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffTime = expDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return {
+      text: 'Expired',
+      class: 'text-rose-600 font-bold',
+      status: 'expired',
+      diffDays
+    };
+  }
+  if (diffDays === 0) {
+    return {
+      text: 'Exp Hari ini',
+      class: 'text-rose-600 font-bold',
+      status: 'expired',
+      diffDays: 0
+    };
+  }
+  if (diffDays <= 90) {
+    return {
+      text: `${diffDays} Hari`,
+      class: 'text-amber-600 font-bold',
+      status: 'warning',
+      diffDays
+    };
+  }
+  const months = Math.round(diffDays / 30.4375);
+  return {
+    text: `${months} Bln`,
+    class: 'text-emerald-700 font-bold',
+    status: 'safe',
+    diffDays
+  };
+}
+
+function selectOpInboundExpDate(expDate) {
+  const expInp = document.getElementById('opInboundExpDate');
+  if (expInp) {
+    expInp.value = expDate;
+    onOpInboundExpDateInput(expInp);
+  }
+}
+
+function onOpInboundExpDateInput(inputEl) {
+  autoFormatExpDateInput(inputEl);
+  const typedExp = (inputEl?.value || '').trim();
+  const expSugContainer = document.getElementById('opInboundExpSuggestions');
+  if (expSugContainer) {
+    expSugContainer.querySelectorAll('button').forEach(btn => {
+      const match = typedExp && btn.innerText.includes(typedExp);
+      if (match) {
+        btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-amber-600 text-white border-amber-700 shadow-2xs';
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) icon.innerText = 'check';
+      } else {
+        btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-200';
+        const icon = btn.querySelector('.material-symbols-outlined');
+        if (icon) icon.innerText = 'calendar_today';
+      }
+    });
+  }
+
+  updateOpInboundGimmickLocations();
+}
+
+// Menampilkan sugesti lokasi rak dari SKU Gimmick berdasarkan SKU, Batch, dan Exp Date
+function updateOpInboundGimmickLocations() {
+  const locInput = document.getElementById('opInboundLocationInput');
+  const batchInp = document.getElementById('opInboundBatchNo');
+  const expInp = document.getElementById('opInboundExpDate');
+  const batchNo = batchInp?.value.trim().toUpperCase() || '';
+  const expDate = expInp?.value.trim() || '';
+
+  const OP_GENERIC_LOCATIONS = ['GUDANG BESAR', 'GUDANG UTAMA', 'GUDANG KECIL', 'PUSAT', 'GUDANG GIMMICK PUSAT', 'GUDANG', '-', 'DEFAULT'];
+  function isOpGenericLocation(loc) {
+    if (!loc) return true;
+    return OP_GENERIC_LOCATIONS.includes(loc.trim().toUpperCase());
+  }
+
+  if (!batchNo) {
+    const locSug = document.getElementById('opInboundLocationSuggestions');
+    if (locSug) locSug.innerHTML = '<span class="text-[10px] text-slate-400 italic">Pilih No. Batch untuk melihat sugesti lokasi rak</span>';
+    if (locInput) locInput.value = '';
+    return;
+  }
+
+  // Filter batch yang cocok dengan SKU + Batch No
+  let matchingBatches = (currentOpInboundBatches || []).filter(b => (b.batch_no || '').toUpperCase() === batchNo);
+
+  // Jika Exp Date diisi, filter lebih spesifik (cocokkan DD-MM-YY atau normalized YMD)
+  if (expDate && matchingBatches.length > 1) {
+    const normTyped = normalizeExpDateToYMD(expDate);
+    const filteredByExp = matchingBatches.filter(b => {
+      const bDmy = formatExpDateToDDMMYY(b.exp_date);
+      const bYmd = normalizeExpDateToYMD(b.exp_date);
+      return bDmy === expDate || (normTyped && bYmd === normTyped);
+    });
+    if (filteredByExp.length > 0) matchingBatches = filteredByExp;
+  }
+
+  // Kumpulkan lokasi rak unik dan stoknya dari SKU + Batch + Exp Date yang cocok
+  const locMap = {};
+  matchingBatches.forEach(b => {
+    let loc = (b.location || '').trim();
+    if (loc && !isOpGenericLocation(loc)) {
+      locMap[loc] = (locMap[loc] || 0) + (parseFloat(b.qty) || 0);
+    }
+  });
+
+  const suggestions = Object.keys(locMap).map(loc => ({
+    loc: loc,
+    stock: locMap[loc],
+    batch: batchNo,
+    exp: expDate
+  }));
+
+  // Auto-fill lokasi rak jika ada sugesti yang cocok
+  let autoLoc = '';
+  if (suggestions.length > 0) {
+    autoLoc = suggestions[0].loc;
+  }
+
+  if (locInput) {
+    if (autoLoc) {
+      locInput.value = autoLoc;
+    } else {
+      // Jika batch baru dan belum punya lokasi, biarkan kosong
+      locInput.value = '';
+    }
+  }
+
+  renderOpInboundLocationSuggestions(suggestions, locInput ? locInput.value : autoLoc);
+}
+
+function renderOpInboundLocationSuggestions(suggestions, selectedLoc) {
+  const container = document.getElementById('opInboundLocationSuggestions');
+  if (!container) return;
+  window._currentOpInboundSuggestions = suggestions || [];
+
+  if (!suggestions || suggestions.length === 0) {
+    const isGimmick = (opInboundActiveType === 'GIMMICK');
+    const batchNo = document.getElementById('opInboundBatchNo')?.value.trim();
+    let emptyMsg = 'Belum ada lokasi rak terdaftar. Ketik nama lokasi rak di atas.';
+    if (isGimmick) {
+      if (batchNo) {
+        emptyMsg = `Batch <b>${escapeHtml(batchNo)}</b> belum memiliki rak simpan. Ketik lokasi rak di atas.`;
+      } else {
+        emptyMsg = 'Pilih No. Batch untuk melihat sugesti lokasi rak simpan.';
+      }
+    }
+    container.innerHTML = `<span class="text-[10px] text-slate-400 italic">${emptyMsg}</span>`;
+    return;
+  }
+
+  container.innerHTML = suggestions.map(s => {
+    const isSelected = (s.loc.toLowerCase() === (selectedLoc || '').trim().toLowerCase());
+    const badgeClass = isSelected
+      ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200';
+    const stkText = s.stock > 0 ? ` (${App.formatNumber(s.stock)} Pcs)` : '';
+    return `
+      <button type="button" onclick="selectOpInboundSuggestedRack('${escapeHtml(s.loc)}', '${escapeHtml(s.batch || '')}', '${escapeHtml(s.exp || '')}')"
+        class="text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer ${badgeClass}"
+        title="Klik untuk memilih lokasi ${escapeHtml(s.loc)}">
+        <span class="material-symbols-outlined text-[12px]">${isSelected ? 'check' : 'location_on'}</span>
+        <span>${escapeHtml(s.loc)}</span>
+        <span class="${isSelected ? 'text-emerald-100' : 'text-emerald-600'} font-normal text-[9px]">${stkText}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function selectOpInboundSuggestedRack(locName, batchNo, expDate) {
+  const locInput = document.getElementById('opInboundLocationInput');
+  if (locInput) {
+    locInput.value = locName;
+  }
+  const batchInp = document.getElementById('opInboundBatchNo');
+  const expInp = document.getElementById('opInboundExpDate');
+  if (batchNo && batchInp && !batchInp.value) {
+    batchInp.value = batchNo;
+  }
+  if (expDate && expInp && !expInp.value) {
+    expInp.value = expDate;
+  }
+  highlightOpInboundSelectedSuggestion(locName);
+}
+
+function onOpInboundLocationInput(inputEl) {
+  const typed = (inputEl.value || '').trim();
+  highlightOpInboundSelectedSuggestion(typed);
+}
+
+function highlightOpInboundSelectedSuggestion(locName) {
+  const container = document.getElementById('opInboundLocationSuggestions');
+  if (!container) return;
+  container.querySelectorAll('button').forEach(btn => {
+    const isMatch = locName && btn.innerText.toLowerCase().includes(locName.toLowerCase());
+    if (isMatch) {
+      btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-emerald-600 text-white border-emerald-700 shadow-2xs';
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (icon) icon.innerText = 'check';
+    } else {
+      btn.className = 'text-[10px] px-2 py-0.5 rounded-md border font-bold flex items-center gap-1 transition-all cursor-pointer bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200';
+      const icon = btn.querySelector('.material-symbols-outlined');
+      if (icon) icon.innerText = 'location_on';
+    }
+  });
+}
+
+function handleOpInboundLocationChange() {
+  // Backwards compatibility if called anywhere
 }
 
 function updateOpInboundStockBadge() {
   const select = document.getElementById('opInboundMaterialSelect');
   const badge = document.getElementById('opInboundStockBadge');
-  const locInp = document.getElementById('opInboundLocation');
   if (!select || !badge) return;
 
   const opt = select.options[select.selectedIndex];
   if (opt && opt.value) {
     const stock = opt.getAttribute('data-stock');
-    const rack = opt.getAttribute('data-rack') || 'Gudang Utama';
-    badge.innerHTML = `Sisa Stok Saat Ini: <b class="${stock <= 0 ? 'text-rose-600' : 'text-emerald-700'}">${App.formatNumber(stock)}</b> &bull; Lokasi Rak: <b>${rack}</b>`;
-    if (locInp) locInp.value = rack;
+    badge.innerHTML = `Total Stok Gudang: <b class="${stock <= 0 ? 'text-rose-600' : 'text-emerald-700'}">${App.formatNumber(stock)} Pcs</b>`;
   } else {
     badge.innerHTML = '';
   }
@@ -1424,8 +2253,12 @@ let opInboundDraftStartTime = null;
 function addInboundDraftItem() {
   const select = document.getElementById('opInboundMaterialSelect');
   const qtyInp = document.getElementById('opInboundQty');
-  const locInp = document.getElementById('opInboundLocation');
+  const locInput = document.getElementById('opInboundLocationInput');
+  const locSelect = document.getElementById('opInboundLocationSelect');
+  const customLocInp = document.getElementById('opInboundCustomLocation');
   const notesInp = document.getElementById('opInboundNotes');
+  const batchInp = document.getElementById('opInboundBatchNo');
+  const expInp = document.getElementById('opInboundExpDate');
 
   if (!select || !qtyInp) return;
 
@@ -1443,7 +2276,25 @@ function addInboundDraftItem() {
   }
 
   if (!materialId || materialId <= 0) {
-    App.toast('Silakan pilih material packaging terlebih dahulu.', 'warning');
+    App.toast(`Silakan pilih ${opInboundActiveType === 'GIMMICK' ? 'gimmick' : 'kemas'} terlebih dahulu.`, 'warning');
+    return;
+  }
+
+  // Ambil lokasi rak dari input teks / chip sugesti
+  let itemRack = '';
+  if (locInput) {
+    itemRack = locInput.value.trim();
+  } else if (locSelect) {
+    if (locSelect.value === '__CUSTOM__') {
+      itemRack = customLocInp ? customLocInp.value.trim() : '';
+    } else {
+      itemRack = locSelect.value.trim();
+    }
+  }
+
+  if (!itemRack) {
+    App.toast('Silakan ketik atau pilih lokasi rak simpan terlebih dahulu!', 'warning');
+    locInput?.focus();
     return;
   }
 
@@ -1455,16 +2306,24 @@ function addInboundDraftItem() {
   const opt = select.options[select.selectedIndex];
   const itemCode = opt.getAttribute('data-code') || '';
   const itemName = opt.getAttribute('data-name') || '';
-  const itemRack = (locInp && locInp.value.trim()) ? locInp.value.trim() : (opt.getAttribute('data-rack') || 'Gudang Utama');
+
+  const batchNo = (opInboundActiveType === 'GIMMICK' && batchInp) ? batchInp.value.trim() : '';
+  const expDate = (opInboundActiveType === 'GIMMICK' && expInp) ? expInp.value.trim() : '';
 
   if (!opInboundDraftStartTime) {
     opInboundDraftStartTime = new Date().toISOString();
   }
 
-  const existingIdx = opInboundDraft.findIndex(i => i.material_id === materialId && i.rack === itemRack);
+  const existingIdx = opInboundDraft.findIndex(i => 
+    i.material_id === materialId && 
+    i.rack === itemRack && 
+    (i.batch_no || '') === (batchNo || '')
+  );
+
   if (existingIdx >= 0) {
     opInboundDraft[existingIdx].qty = +(opInboundDraft[existingIdx].qty + qty).toFixed(3);
     if (notes) opInboundDraft[existingIdx].notes = notes;
+    if (expDate && !opInboundDraft[existingIdx].exp_date) opInboundDraft[existingIdx].exp_date = expDate;
   } else {
     opInboundDraft.push({
       material_id: materialId,
@@ -1472,16 +2331,14 @@ function addInboundDraftItem() {
       name: itemName,
       rack: itemRack,
       qty: qty,
-      notes: notes
+      notes: notes,
+      item_type: opInboundActiveType,
+      batch_no: batchNo,
+      exp_date: expDate
     });
   }
 
-  qtyInp.value = '';
-  if (locInp) locInp.value = '';
-  if (notesInp) notesInp.value = '';
-  select.value = '';
-  App.syncSearchableSelect(select);
-  updateOpInboundStockBadge();
+  resetOpInboundFormItemInputs();
   renderInboundDraftList();
   App.toast(`Item ditambahkan ke draft penerimaan.`, 'info');
 }
@@ -1525,12 +2382,18 @@ function renderInboundDraftList() {
 
   container.innerHTML = opInboundDraft.map((item, idx) => {
     totalQty += item.qty;
+    const isGimmick = (item.item_type === 'GIMMICK');
 
     return `
       <div class="p-2.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex items-center justify-between gap-2 text-xs">
-        <div class="space-y-0.5 flex-1 min-w-0">
-          <div class="flex items-center gap-2">
+        <div class="space-y-1 flex-1 min-w-0">
+          <div class="flex items-center flex-wrap gap-1.5">
+            <span class="text-[10px] font-black px-1.5 py-0.2 rounded border ${isGimmick ? 'bg-amber-50 text-amber-900 border-amber-200' : 'bg-blue-50 text-[#262363] border-blue-200'}">
+              ${isGimmick ? '🎁 GIMMICK' : '📦 KEMAS'}
+            </span>
             <span class="text-[10px] text-slate-600 font-bold bg-slate-100 px-1.5 py-0.2 rounded border border-slate-200">Rak: ${escapeHtml(item.rack)}</span>
+            ${item.batch_no ? `<span class="text-[10px] text-amber-800 font-bold bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">Batch: ${escapeHtml(item.batch_no)}</span>` : ''}
+            ${item.exp_date ? `<span class="text-[10px] text-purple-800 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-200">Exp: ${escapeHtml(item.exp_date)}</span>` : ''}
             ${item.notes ? `<span class="text-[10px] text-slate-500 italic truncate max-w-[150px]">"${escapeHtml(item.notes)}"</span>` : ''}
           </div>
           <p class="font-extrabold text-slate-900 leading-snug truncate">${escapeHtml(item.name)}</p>
@@ -1618,7 +2481,7 @@ async function handleInboundDraftSubmit() {
   const notes = document.getElementById('opInboundNotes')?.value.trim() || 'Penerimaan Lapangan Operator';
 
   if (opInboundDraft.length === 0) {
-    App.toast('Keranjang draft penerimaan masih kosong. Tambahkan minimal 1 packaging material.', 'warning');
+    App.toast('Keranjang draft penerimaan masih kosong. Tambahkan minimal 1 kemas.', 'warning');
     return;
   }
 
@@ -1637,6 +2500,8 @@ async function handleInboundDraftSubmit() {
     material_id: d.material_id,
     qty: d.qty,
     rack_location: d.rack,
+    batch_no: d.batch_no || '',
+    exp_date: d.exp_date || '',
     notes: d.notes || '-'
   }))));
 
@@ -1660,8 +2525,7 @@ async function handleInboundDraftSubmit() {
       // Clear form & draft
       const poEl = document.getElementById('opInboundPoNumber');
       if (poEl) poEl.value = '';
-      const notesEl = document.getElementById('opInboundNotes');
-      if (notesEl) notesEl.value = '';
+      resetOpInboundFormItemInputs();
       opInboundDraft = [];
       opInboundDraftStartTime = null;
       clearOpInboundPhotos();
@@ -1897,9 +2761,9 @@ async function populateBlankMaterials() {
   if (!select) return;
 
   const currentVal = select.value;
-  select.innerHTML = '<option value="">-- Ketik / Pilih Material Packaging --</option>' +
+  select.innerHTML = '<option value="">-- Ketik / Pilih Kemas --</option>' +
     (allStock || []).map(m => `
-      <option value="${m.id}" data-code="${escapeHtml(m.code)}" data-name="${escapeHtml(m.name)}" data-unit="${escapeHtml(m.unit || 'Pcs')}" data-rack="${escapeHtml(m.rack_location || '')}">
+      <option value="${m.id}" data-code="${escapeHtml(m.code || '')}" data-name="${escapeHtml(m.name || '')}" data-barcode="${escapeHtml(m.barcode || '')}" data-barcode-bpom="${escapeHtml(m.barcode_bpom || '')}" data-sap="${escapeHtml(m.sap_code || '')}" data-unit="${escapeHtml(m.unit || 'Pcs')}" data-rack="${escapeHtml(m.rack_location || '')}">
         ${escapeHtml(m.code)} - ${escapeHtml(m.name)} (${escapeHtml(m.unit || 'Pcs')})
       </option>
     `).join('');
@@ -1950,7 +2814,7 @@ async function handleBlankCountSubmit(e) {
   const notes = document.getElementById('blankNotes').value.trim();
 
   if (!material_id) {
-    App.toast('Pilih material packaging terlebih dahulu', 'warning');
+    App.toast('Pilih kemas terlebih dahulu', 'warning');
     return;
   }
 
@@ -2073,7 +2937,7 @@ function switchOpnameSubTab(subTab) {
     if (tabRecount) tabRecount.classList.add('hidden');
 
     if (btn1st) {
-      btn1st.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-xs transition-all';
+      btn1st.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-blue-600 text-white shadow-xs transition-all';
     }
     if (btnRecount) {
       btnRecount.className = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 text-slate-600 hover:text-slate-900 transition-all relative';
@@ -2121,7 +2985,7 @@ async function loadOperatorRecountTasks(silent = false) {
         homeBadgeOpname.classList.remove('hidden');
       } else {
         homeBadgeOpname.innerText = 'Aktif';
-        homeBadgeOpname.className = 'absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none';
+        homeBadgeOpname.className = 'absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-[9px] shadow-xs leading-none';
       }
     }
   }
@@ -2599,7 +3463,7 @@ function openHandoverDetail(id) {
 
   if (isPending && canAcceptHandover(item.to_shift)) {
     actionsHtml += `
-      <button onclick="receiveHandoverInModal(${item.id})" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1 shadow-md">
+      <button onclick="receiveHandoverInModal(${item.id})" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all flex items-center justify-center gap-1 shadow-md">
         <span class="material-symbols-outlined text-[16px]">done_all</span>
         <span>Terima & Selesaikan</span>
       </button>
@@ -3099,21 +3963,47 @@ function switchOpReqSubTab(subTab) {
   }
 }
 
+let opReqActiveType = 'PACKAGING';
+
+function setOpReqType(type) {
+  // Request Fulfillment hanya untuk Kemas (Packaging), tanpa Gimmick
+  opReqActiveType = 'PACKAGING';
+
+  const label = document.getElementById('opReqMaterialTypeLabel');
+  if (label) {
+    label.innerText = 'Kemas';
+  }
+
+  const sel = document.getElementById('opReqMaterialSelect');
+  if (sel) {
+    sel.value = '';
+  }
+  const badge = document.getElementById('opReqStockInfoBadge');
+  if (badge) badge.classList.add('hidden');
+
+  populateOpReqMaterialSelect();
+}
+
 async function populateOpReqMaterialSelect() {
   const sel = document.getElementById('opReqMaterialSelect');
   if (!sel) return;
 
   let materials = (typeof allStock !== 'undefined' && allStock.length > 0) ? allStock : [];
   if (materials.length === 0) {
-    const res = await App.fetchJson('../api/materials.php?action=list');
+    const res = await App.fetchJson('../api/materials.php?action=list&item_type=all');
     if (res && res.success && res.data) {
       allStock = res.data;
       materials = res.data;
     }
   }
 
+  // Hanya tampilkan Kemas (Packaging), exclude Gimmick
+  let filtered = (materials || []).filter(m => m.item_type !== 'GIMMICK');
+
   const currentVal = sel.value;
-  sel.innerHTML = '<option value="">-- Pilih Material Packaging --</option>' + (materials || []).map(m => {
+  const placeholder = '-- Pilih Kemas --';
+
+  sel.innerHTML = `<option value="">${placeholder}</option>` + filtered.map(m => {
     const code = App.escapeHtml(m.code || '');
     const name = App.escapeHtml(m.name || '');
     const unit = App.escapeHtml(m.unit || 'Pcs');
@@ -3121,11 +4011,15 @@ async function populateOpReqMaterialSelect() {
     const stock = Number(m.current_stock || 0);
     const isFrozen = !!m.is_frozen;
     const frozenLabel = isFrozen ? ` [🔒 DYNAMIC COUNT - FREEZE #${App.escapeHtml(m.frozen_session_no || '')}]` : '';
-    const disabledAttr = isFrozen ? 'disabled style="color:#94a3b8; background-color:#f1f5f9;"' : '';
-    return `<option value="${m.id}" data-code="${code}" data-name="${name}" data-stock="${stock}" data-unit="${unit}" data-rack="${rack}" data-frozen="${isFrozen ? '1' : '0'}" ${disabledAttr}>${name}${frozenLabel} (Stok: ${App.formatNumber(stock)} ${unit})</option>`;
+    const barcode = App.escapeHtml(m.barcode || '');
+    const barcodeBpom = App.escapeHtml(m.barcode_bpom || '');
+    const sap = App.escapeHtml(m.sap_code || '');
+    return `<option value="${m.id}" data-code="${code}" data-name="${name}" data-barcode="${barcode}" data-barcode-bpom="${barcodeBpom}" data-sap="${sap}" data-stock="${stock}" data-unit="${unit}" data-rack="${rack}" data-item-type="${m.item_type || 'PACKAGING'}" data-frozen="${isFrozen ? '1' : '0'}">${name}${frozenLabel} (Stok: ${App.formatNumber(stock)} ${unit})</option>`;
   }).join('');
 
-  if (currentVal) sel.value = currentVal;
+  if (currentVal && filtered.some(m => m.id == currentVal)) {
+    sel.value = currentVal;
+  }
   if (typeof App.syncSearchableSelect === 'function') {
     App.syncSearchableSelect(sel);
   }
@@ -3253,7 +4147,7 @@ function addConsumableDraftItem() {
   const notes = notesInp ? notesInp.value.trim() : '';
 
   if (!materialId || materialId <= 0) {
-    App.toast('Silakan pilih material packaging terlebih dahulu.', 'warning');
+    App.toast('Silakan pilih kemas terlebih dahulu.', 'warning');
     sel.focus();
     return;
   }
@@ -3286,6 +4180,8 @@ function addConsumableDraftItem() {
     return;
   }
 
+  const itemType = opt.getAttribute('data-item-type') || 'PACKAGING';
+
   if (existingIdx >= 0) {
     opConsumableDraft[existingIdx].qty = +(opConsumableDraft[existingIdx].qty + qty).toFixed(3);
     if (notes) opConsumableDraft[existingIdx].notes = notes;
@@ -3297,6 +4193,7 @@ function addConsumableDraftItem() {
       stock: itemStock,
       unit: itemUnit,
       qty: qty,
+      item_type: itemType,
       notes: notes
     });
   }
@@ -3345,6 +4242,7 @@ function renderConsumableDraftList() {
         <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200/80 flex items-center justify-between gap-2 shadow-2xs">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 flex-wrap">
+              ${item.item_type === 'GIMMICK' ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-300">GIMMICK</span>' : '<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300">KEMAS</span>'}
               <span class="font-bold text-slate-900 text-xs truncate">${App.escapeHtml(item.name)}</span>
               <span class="text-[10px] text-amber-800 font-mono font-bold bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-300">${App.escapeHtml(item.code)}</span>
             </div>
@@ -3509,6 +4407,8 @@ async function loadOperatorConsumableRequests(isSilent = false) {
     const ho = req.handover_info || {};
     const stage = ho.stage || (req.status === 'APPROVED' ? 2 : (req.status === 'PENDING' ? 1 : 0));
     const simpleShift = (req.requester_shift || '').split('(')[0].trim() || (req.requester_shift || 'Shift');
+    const itemUnits = [...new Set((req.items || []).map(it => (it.material_unit || '').trim()).filter(Boolean))];
+    const totalUnit = req.total_unit || (itemUnits.length === 1 ? itemUnits[0] : (itemUnits.length === 0 ? 'Pcs' : 'Item'));
 
     // Default open state: open if user previously opened it, otherwise keep collapsed
     const isOpen = openedOpReqCardIds.has(req.id);
@@ -3720,7 +4620,7 @@ async function loadOperatorConsumableRequests(isSilent = false) {
               <span>Pemohon: <b class="text-slate-800 font-bold">${App.escapeHtml(req.requester_name || 'Operator')}</b> (${App.escapeHtml(simpleShift)}) &bull; ${App.formatDate(req.created_at)}</span>
             </div>
             <div class="shrink-0 text-right font-bold text-amber-950 font-mono">
-              <span>${req.items ? req.items.length : 0} Item (${App.formatNumber(req.total_qty || 0)} Qty)</span>
+              <span>${req.items ? req.items.length : 0} Item (${App.formatNumber(req.total_qty || 0)} ${escapeHtml(totalUnit)})</span>
             </div>
           </div>
 
@@ -3731,7 +4631,7 @@ async function loadOperatorConsumableRequests(isSilent = false) {
               <span id="opReqToggleLabel_${req.id}">${isOpen ? 'Tutup Detail' : 'Klik untuk Buka Detail'}</span>
             </span>
 
-            <button type="button" onclick="shareConsumableRequest(${req.id})" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 hover:border-emerald-300 rounded-lg text-[10.5px] font-extrabold transition-all inline-flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer">
+            <button type="button" onclick="shareConsumableRequest(${req.id})" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 hover:border-blue-300 rounded-lg text-[10.5px] font-extrabold transition-all inline-flex items-center gap-1 active:scale-95 shadow-2xs cursor-pointer">
               <span class="material-symbols-outlined text-[14px] text-emerald-600">share</span>
               <span>Bagikan (WA)</span>
             </button>
@@ -3751,7 +4651,7 @@ async function loadOperatorConsumableRequests(isSilent = false) {
           <div class="space-y-1.5">
             <div class="flex items-center justify-between">
               <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Daftar Material Permintaan (${req.items ? req.items.length : 0} Item)</span>
-              <span class="text-[10px] font-bold text-amber-900 font-mono">Total Qty: ${App.formatNumber(req.total_qty || 0)}</span>
+              <span class="text-[10px] font-bold text-amber-900 font-mono">Total Qty: ${App.formatNumber(req.total_qty || 0)} ${escapeHtml(totalUnit)}</span>
             </div>
             <div class="divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 p-2 text-xs shadow-2xs">
               ${(req.items || []).map(it => `
@@ -3893,7 +4793,14 @@ _Dibuat otomatis via PackStock WMS (Fulfillment System)_`;
 }
 
 async function cancelOperatorConsumableRequest(id) {
-  if (!confirm('Apakah Anda yakin ingin membatalkan pengajuan consumable ini?')) return;
+  const confirmed = await App.confirm({
+    title: 'Batalkan Pengajuan',
+    message: 'Apakah Anda yakin ingin membatalkan pengajuan consumable ini?',
+    confirmText: 'Ya, Batalkan',
+    cancelText: 'Kembali',
+    type: 'rose'
+  });
+  if (!confirmed) return;
 
   const res = await App.fetchJson('../api/consumable_requests.php?action=cancel', {
     method: 'POST',
@@ -3937,6 +4844,814 @@ async function loadFulfillmentStats() {
     }
   }
 }
+
+// =========================================================================
+// OPERATOR DIRECT LOCATION TRANSFER (TRANSFER ANTAR LOKASI MANDIRI)
+// =========================================================================
+
+let currentOpTransferSubTab = 'form';
+let allTransferMaterials = [];
+let transferDraftItems = [];
+let allOperatorTransferHistory = [];
+
+async function initOperatorTransferView() {
+  await populateTransferMaterials();
+  loadMyTransferHistory();
+  switchOpTransferSubTab(currentOpTransferSubTab || 'form');
+}
+
+function switchOpTransferSubTab(subTab) {
+  currentOpTransferSubTab = subTab;
+
+  const btnForm = document.getElementById('btnOpTransferSubTabForm');
+  const btnHist = document.getElementById('btnOpTransferSubTabHistory');
+  const viewForm = document.getElementById('opTransferSubViewForm');
+  const viewHist = document.getElementById('opTransferSubViewHistory');
+
+  if (subTab === 'form') {
+    if (btnForm) {
+      btnForm.className = 'py-2 rounded-lg font-bold text-xs bg-white text-blue-900 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer';
+    }
+    if (btnHist) {
+      btnHist.className = 'py-2 rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer';
+    }
+    if (viewForm) viewForm.classList.remove('hidden');
+    if (viewHist) viewHist.classList.add('hidden');
+  } else {
+    if (btnForm) {
+      btnForm.className = 'py-2 rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer';
+    }
+    if (btnHist) {
+      btnHist.className = 'py-2 rounded-lg font-bold text-xs bg-white text-blue-900 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer';
+    }
+    if (viewForm) viewForm.classList.add('hidden');
+    if (viewHist) viewHist.classList.remove('hidden');
+    loadMyTransferHistory();
+  }
+
+  // Update bottom nav active state if needed
+  const navTransferForm = document.getElementById('bottom-nav-transfer-form');
+  const navTransferHist = document.getElementById('bottom-nav-transfer-hist');
+  if (navTransferForm && navTransferHist) {
+    if (subTab === 'form') {
+      navTransferForm.classList.remove('text-slate-400', 'font-semibold');
+      navTransferForm.classList.add('text-emerald-700', 'font-bold');
+      navTransferHist.classList.remove('text-emerald-700', 'font-bold');
+      navTransferHist.classList.add('text-slate-400', 'font-semibold');
+    } else {
+      navTransferHist.classList.remove('text-slate-400', 'font-semibold');
+      navTransferHist.classList.add('text-emerald-700', 'font-bold');
+      navTransferForm.classList.remove('text-emerald-700', 'font-bold');
+      navTransferForm.classList.add('text-slate-400', 'font-semibold');
+    }
+  }
+}
+
+let currentTransferTypeFilter = 'ALL';
+let currentSelectedMaterialBatches = [];
+
+function setOpTransferTypeFilter(type) {
+  currentTransferTypeFilter = type;
+  const btnAll = document.getElementById('btnOpTransferTypeAll');
+  const btnPkg = document.getElementById('btnOpTransferTypePackaging');
+  const btnGim = document.getElementById('btnOpTransferTypeGimmick');
+  const countBadge = document.getElementById('opTransferTypeCountBadge');
+
+  if (btnAll) {
+    btnAll.className = type === 'ALL'
+      ? 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-700 shadow-xs'
+      : 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900';
+  }
+  if (btnPkg) {
+    btnPkg.className = type === 'PACKAGING'
+      ? 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-700 shadow-xs'
+      : 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900';
+  }
+  if (btnGim) {
+    btnGim.className = type === 'GIMMICK'
+      ? 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-purple-700 shadow-xs'
+      : 'py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900';
+  }
+
+  const searchVal = document.getElementById('opTransferMaterialSearch')?.value || '';
+  filterTransferMaterialDropdown(searchVal);
+
+  if (countBadge) {
+    let filteredCount = allTransferMaterials.length;
+    if (type === 'PACKAGING') filteredCount = allTransferMaterials.filter(m => (m.item_type || 'PACKAGING').toUpperCase() === 'PACKAGING').length;
+    if (type === 'GIMMICK') filteredCount = allTransferMaterials.filter(m => (m.item_type || '').toUpperCase() === 'GIMMICK').length;
+    countBadge.innerText = `${filteredCount} Item Tersedia`;
+  }
+}
+
+async function populateTransferMaterials() {
+  const select = document.getElementById('opTransferMaterialSelect');
+  if (!select) return;
+
+  try {
+    const res = await App.fetchJson('../api/materials.php?action=list');
+    if (res.success && Array.isArray(res.data)) {
+      // Support BOTH Kemas (Packaging) and Gimmick
+      allTransferMaterials = res.data;
+      renderTransferMaterialOptions(allTransferMaterials);
+      setOpTransferTypeFilter(currentTransferTypeFilter);
+    }
+  } catch (e) {
+    console.error('Error fetching materials for transfer:', e);
+  }
+}
+
+function renderTransferMaterialOptions(materials) {
+  const select = document.getElementById('opTransferMaterialSelect');
+  if (!select) return;
+
+  let filtered = materials;
+  if (currentTransferTypeFilter === 'PACKAGING') {
+    filtered = materials.filter(m => (m.item_type || 'PACKAGING').toUpperCase() === 'PACKAGING');
+  } else if (currentTransferTypeFilter === 'GIMMICK') {
+    filtered = materials.filter(m => (m.item_type || '').toUpperCase() === 'GIMMICK');
+  }
+
+  const currentVal = select.value;
+  select.innerHTML = '<option value="">-- Pilih Material (Kemas / Gimmick) --</option>';
+
+  filtered.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    const isGimmick = (m.item_type || '').toUpperCase() === 'GIMMICK';
+
+    // Set search metadata attributes for fast instant search inside searchable select
+    opt.setAttribute('data-code', m.code || '');
+    opt.setAttribute('data-name', m.name || '');
+    opt.setAttribute('data-barcode', m.barcode || '');
+    opt.setAttribute('data-barcode-bpom', m.barcode_bpom || '');
+    opt.setAttribute('data-sap', m.sap_code || '');
+
+    // Display clean and concise single-line text
+    if (isGimmick) {
+      const codeOrBarcode = m.barcode || m.code;
+      opt.innerText = `🎁 [${codeOrBarcode}] ${m.name}`;
+    } else {
+      opt.innerText = `📦 [${m.code}] ${m.name}`;
+    }
+
+    select.appendChild(opt);
+  });
+
+  if (currentVal && filtered.some(m => m.id == currentVal)) {
+    select.value = currentVal;
+  } else {
+    select.value = '';
+  }
+
+  if (typeof App.syncSearchableSelect === 'function') {
+    App.syncSearchableSelect(select);
+  }
+}
+
+function filterTransferMaterialDropdown(query) {
+  const q = (query || '').toLowerCase().trim();
+  if (!q) {
+    renderTransferMaterialOptions(allTransferMaterials);
+    return;
+  }
+  const filtered = allTransferMaterials.filter(m => 
+    (m.name || '').toLowerCase().includes(q) || 
+    (m.code || '').toLowerCase().includes(q) ||
+    (m.barcode || '').toLowerCase().includes(q) ||
+    (m.barcode_bpom || '').toLowerCase().includes(q) ||
+    (m.sap_code || '').toLowerCase().includes(q) ||
+    (m.rack_location || '').toLowerCase().includes(q) ||
+    (m.item_type || '').toLowerCase().includes(q)
+  );
+  renderTransferMaterialOptions(filtered);
+
+  // If user scanned/typed exact Barcode or exact SKU match and exactly 1 result found
+  if (filtered.length === 1 && (
+    (filtered[0].barcode || '').toLowerCase() === q || 
+    (filtered[0].code || '').toLowerCase() === q
+  )) {
+    const select = document.getElementById('opTransferMaterialSelect');
+    if (select && select.value != filtered[0].id) {
+      select.value = filtered[0].id;
+      if (typeof App.syncSearchableSelect === 'function') {
+        App.syncSearchableSelect(select);
+      }
+      onOpTransferMaterialChange(filtered[0].id);
+    }
+  }
+}
+
+async function onOpTransferMaterialChange(materialId) {
+  const infoBox = document.getElementById('opTransferMaterialInfoBox');
+  const nameEl = document.getElementById('opTransferInfoName');
+  const codeEl = document.getElementById('opTransferInfoCode');
+  const barcodeEl = document.getElementById('opTransferInfoBarcode');
+  const stockEl = document.getElementById('opTransferInfoStock');
+  const rackEl = document.getElementById('opTransferInfoCurrentRack');
+  const badgeEl = document.getElementById('opTransferInfoBadge');
+  const fromLocInput = document.getElementById('opTransferFromLocation');
+  const unitLabel = document.getElementById('opTransferUnitLabel');
+  const qtyInput = document.getElementById('opTransferQty');
+  const batchContainer = document.getElementById('opTransferBatchContainer');
+  const batchSelect = document.getElementById('opTransferBatchSelect');
+  const batchDetails = document.getElementById('opTransferBatchDetails');
+  const batchBadge = document.getElementById('opTransferBatchCountBadge');
+
+  currentSelectedMaterialBatches = [];
+
+  if (!materialId) {
+    if (infoBox) infoBox.classList.add('hidden');
+    if (fromLocInput) fromLocInput.value = '';
+    if (qtyInput) {
+      qtyInput.value = '';
+      qtyInput.placeholder = '0';
+    }
+    if (batchContainer) batchContainer.classList.add('hidden');
+    if (batchDetails) batchDetails.classList.add('hidden');
+    return;
+  }
+
+  const mat = allTransferMaterials.find(m => m.id == materialId);
+  if (!mat) return;
+
+  const isGimmick = (mat.item_type || '').toUpperCase() === 'GIMMICK';
+  const availStock = parseFloat(mat.current_stock || 0);
+
+  if (infoBox) infoBox.classList.remove('hidden');
+  if (nameEl) nameEl.innerText = mat.name || '-';
+  if (codeEl) codeEl.innerText = mat.code || '-';
+  if (stockEl) stockEl.innerText = `${App.formatNumber(availStock)} ${mat.unit || 'Pcs'}`;
+  if (rackEl) rackEl.innerText = mat.rack_location || '(Belum diset)';
+  if (fromLocInput) fromLocInput.value = mat.rack_location || '';
+  if (unitLabel) unitLabel.innerText = mat.unit || 'Pcs';
+
+  // Auto-fill Qty Transfer with available stock of the selected SKU
+  if (qtyInput) {
+    qtyInput.value = availStock > 0 ? availStock : 0;
+    qtyInput.placeholder = `Maks ${App.formatNumber(availStock)}`;
+  }
+
+  if (barcodeEl) {
+    if (isGimmick && mat.barcode) {
+      barcodeEl.innerText = `Barcode: ${mat.barcode}`;
+      barcodeEl.classList.remove('hidden');
+    } else {
+      barcodeEl.classList.add('hidden');
+    }
+  }
+
+  if (badgeEl) {
+    if (isGimmick) {
+      badgeEl.innerText = 'GIMMICK';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[9px] font-black bg-purple-200 text-purple-900 uppercase tracking-wide';
+    } else {
+      badgeEl.innerText = 'KEMAS';
+      badgeEl.className = 'px-2 py-0.5 rounded text-[9px] font-black bg-blue-200 text-blue-900 uppercase tracking-wide';
+    }
+  }
+
+  // Fetch batches if item is Gimmick or has batches
+  if (batchContainer && batchSelect) {
+    try {
+      const res = await App.fetchJson(`../api/materials.php?action=suggest_batches&material_id=${materialId}`);
+      if (res.success && Array.isArray(res.batches) && res.batches.length > 0) {
+        currentSelectedMaterialBatches = res.batches;
+        batchContainer.classList.remove('hidden');
+        if (batchBadge) batchBadge.innerText = `${res.batches.length} Batch Aktif`;
+
+        batchSelect.innerHTML = '<option value="">-- Pilih Batch No / Exp Date --</option>';
+        res.batches.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.id || b.batch_no;
+          const exp = b.exp_date ? b.exp_date : 'Tanpa Exp';
+          const loc = b.location ? ` | Lokasi: ${b.location}` : '';
+          opt.innerText = `Batch: ${b.batch_no || '-'} (Exp: ${exp} | Stok: ${App.formatNumber(b.qty || 0)}${loc})`;
+          batchSelect.appendChild(opt);
+        });
+
+        if (typeof App.syncSearchableSelect === 'function') {
+          App.syncSearchableSelect(batchSelect);
+        }
+
+        // Auto select first batch if only 1 batch
+        if (res.batches.length === 1) {
+          batchSelect.value = res.batches[0].id || res.batches[0].batch_no;
+          if (typeof App.syncSearchableSelect === 'function') {
+            App.syncSearchableSelect(batchSelect);
+          }
+          onOpTransferBatchChange(batchSelect.value);
+        } else {
+          if (batchDetails) batchDetails.classList.add('hidden');
+        }
+      } else {
+        if (isGimmick) {
+          batchContainer.classList.remove('hidden');
+          if (batchBadge) batchBadge.innerText = '0 Batch';
+          batchSelect.innerHTML = '<option value="">(Belum ada batch tercatat - Transfer Default)</option>';
+        } else {
+          batchContainer.classList.add('hidden');
+        }
+        if (batchDetails) batchDetails.classList.add('hidden');
+        if (typeof App.syncSearchableSelect === 'function') {
+          App.syncSearchableSelect(batchSelect);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching batches:', err);
+      batchContainer.classList.add('hidden');
+    }
+  }
+}
+
+function onOpTransferBatchChange(batchVal) {
+  const batchDetails = document.getElementById('opTransferBatchDetails');
+  const expDateEl = document.getElementById('opTransferBatchExpDate');
+  const qtyEl = document.getElementById('opTransferBatchQty');
+  const fromLocInput = document.getElementById('opTransferFromLocation');
+  const qtyInput = document.getElementById('opTransferQty');
+
+  if (!batchVal) {
+    if (batchDetails) batchDetails.classList.add('hidden');
+    // Fallback to total stock of material if batch unselected
+    const matSelect = document.getElementById('opTransferMaterialSelect');
+    if (matSelect && matSelect.value) {
+      const mat = allTransferMaterials.find(m => m.id == matSelect.value);
+      if (mat && qtyInput) {
+        const availStock = parseFloat(mat.current_stock || 0);
+        qtyInput.value = availStock > 0 ? availStock : 0;
+        qtyInput.placeholder = `Maks ${App.formatNumber(availStock)}`;
+      }
+    }
+    return;
+  }
+
+  const batch = currentSelectedMaterialBatches.find(b => (b.id == batchVal || b.batch_no == batchVal));
+  if (batch) {
+    if (batchDetails) batchDetails.classList.remove('hidden');
+    if (expDateEl) expDateEl.innerText = batch.exp_date || '-';
+    const batchStock = parseFloat(batch.qty || 0);
+    if (qtyEl) qtyEl.innerText = `${App.formatNumber(batchStock)} Pcs`;
+
+    if (batch.location && fromLocInput) {
+      fromLocInput.value = batch.location;
+    }
+    
+    // Auto-fill Qty Transfer with selected batch stock
+    if (qtyInput) {
+      qtyInput.value = batchStock > 0 ? batchStock : 0;
+      qtyInput.placeholder = `Maks ${App.formatNumber(batchStock)}`;
+    }
+  } else {
+    if (batchDetails) batchDetails.classList.add('hidden');
+  }
+}
+
+function resetOpTransferForm() {
+  const select = document.getElementById('opTransferMaterialSelect');
+  if (select) {
+    select.value = '';
+    if (typeof App.syncSearchableSelect === 'function') {
+      App.syncSearchableSelect(select);
+    }
+  }
+
+  const infoBox = document.getElementById('opTransferMaterialInfoBox');
+  if (infoBox) infoBox.classList.add('hidden');
+
+  const batchContainer = document.getElementById('opTransferBatchContainer');
+  if (batchContainer) batchContainer.classList.add('hidden');
+
+  const batchSelect = document.getElementById('opTransferBatchSelect');
+  if (batchSelect) {
+    batchSelect.innerHTML = '<option value="">-- Pilih Batch No / Exp Date --</option>';
+    batchSelect.value = '';
+    if (typeof App.syncSearchableSelect === 'function') {
+      App.syncSearchableSelect(batchSelect);
+    }
+  }
+
+  const batchDetails = document.getElementById('opTransferBatchDetails');
+  if (batchDetails) batchDetails.classList.add('hidden');
+
+  const fromLoc = document.getElementById('opTransferFromLocation');
+  if (fromLoc) fromLoc.value = '';
+
+  const toLoc = document.getElementById('opTransferToLocation');
+  if (toLoc) toLoc.value = '';
+
+  const qtyInput = document.getElementById('opTransferQty');
+  if (qtyInput) {
+    qtyInput.value = '';
+    qtyInput.placeholder = '0';
+  }
+
+  const notesInput = document.getElementById('opTransferItemNotes');
+  if (notesInput) notesInput.value = '';
+
+  const unitLabel = document.getElementById('opTransferUnitLabel');
+  if (unitLabel) unitLabel.innerText = 'Pcs';
+
+  currentSelectedMaterialBatches = [];
+  renderTransferMaterialOptions(allTransferMaterials);
+}
+
+function addTransferDraftItem() {
+  const select = document.getElementById('opTransferMaterialSelect');
+  const materialId = parseInt(select ? select.value : '0', 10);
+  const fromLocation = (document.getElementById('opTransferFromLocation')?.value || '').trim();
+  const toLocation = (document.getElementById('opTransferToLocation')?.value || '').trim();
+  const qtyInput = document.getElementById('opTransferQty');
+  const qty = parseFloat(qtyInput ? qtyInput.value : '0') || 0;
+  const itemNotes = (document.getElementById('opTransferItemNotes')?.value || '').trim();
+
+  const batchSelect = document.getElementById('opTransferBatchSelect');
+  const batchVal = batchSelect ? batchSelect.value : '';
+  let selectedBatch = null;
+  if (batchVal && currentSelectedMaterialBatches.length > 0) {
+    selectedBatch = currentSelectedMaterialBatches.find(b => (b.id == batchVal || b.batch_no == batchVal));
+  }
+
+  if (!materialId || materialId <= 0) {
+    App.toast('Silakan pilih material terlebih dahulu!', 'warning');
+    return;
+  }
+
+  const mat = allTransferMaterials.find(m => m.id == materialId);
+  if (!mat) {
+    App.toast('Material tidak valid!', 'error');
+    return;
+  }
+
+  if (!fromLocation) {
+    App.toast('Lokasi Rak Asal wajib diisi!', 'warning');
+    return;
+  }
+
+  if (!toLocation) {
+    App.toast('Lokasi Rak Tujuan wajib diisi!', 'warning');
+    return;
+  }
+
+  if (fromLocation.toLowerCase() === toLocation.toLowerCase()) {
+    App.toast('Lokasi Rak Tujuan tidak boleh sama dengan Lokasi Asal!', 'warning');
+    return;
+  }
+
+  if (qty <= 0) {
+    App.toast('Jumlah Qty transfer harus lebih dari 0!', 'warning');
+    return;
+  }
+
+  const batchId = selectedBatch ? (selectedBatch.id || 0) : 0;
+  const batchNo = selectedBatch ? (selectedBatch.batch_no || '') : '';
+  const expDate = selectedBatch ? (selectedBatch.exp_date || '') : '';
+
+  // Check if item already exists in draft with same source, destination, and batch
+  const existingIdx = transferDraftItems.findIndex(it => 
+    it.material_id === materialId && 
+    (it.batch_id || 0) === batchId &&
+    (it.batch_no || '') === batchNo &&
+    it.from_location.toLowerCase() === fromLocation.toLowerCase() && 
+    it.to_location.toLowerCase() === toLocation.toLowerCase()
+  );
+
+  if (existingIdx >= 0) {
+    transferDraftItems[existingIdx].qty += qty;
+    if (itemNotes) {
+      transferDraftItems[existingIdx].notes = (transferDraftItems[existingIdx].notes ? transferDraftItems[existingIdx].notes + ' | ' : '') + itemNotes;
+    }
+  } else {
+    transferDraftItems.push({
+      material_id: mat.id,
+      material_name: mat.name,
+      material_code: mat.code,
+      material_unit: mat.unit || 'Pcs',
+      item_type: mat.item_type || 'PACKAGING',
+      batch_id: batchId,
+      batch_no: batchNo,
+      exp_date: expDate,
+      from_location: fromLocation,
+      to_location: toLocation,
+      qty: qty,
+      notes: itemNotes
+    });
+  }
+
+  // Fully reset the form back to clean state
+  resetOpTransferForm();
+
+  renderTransferDraftList();
+  App.toast(`Item '${mat.name}' berhasil dimasukkan ke draft!`, 'success');
+}
+
+function removeTransferDraftItem(index) {
+  if (index >= 0 && index < transferDraftItems.length) {
+    transferDraftItems.splice(index, 1);
+    renderTransferDraftList();
+  }
+}
+
+function clearTransferDraft() {
+  if (transferDraftItems.length === 0) return;
+  transferDraftItems = [];
+  renderTransferDraftList();
+  App.toast('Draft transfer telah dikosongkan', 'info');
+}
+
+function renderTransferDraftList() {
+  const container = document.getElementById('opTransferDraftList');
+  const countEl = document.getElementById('opTransferDraftCount');
+  const summaryBox = document.getElementById('opTransferDraftSummaryBox');
+  const totalQtyEl = document.getElementById('opTransferDraftTotalQty');
+
+  if (countEl) countEl.innerText = transferDraftItems.length;
+
+  if (!container) return;
+
+  if (transferDraftItems.length === 0) {
+    container.innerHTML = `
+      <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+        Draft transfer masih kosong. Masukkan item di atas.
+      </div>
+    `;
+    if (summaryBox) summaryBox.classList.add('hidden');
+    return;
+  }
+
+  let totalQty = 0;
+  container.innerHTML = transferDraftItems.map((it, idx) => {
+    totalQty += it.qty;
+    const isGimmick = (it.item_type || '').toUpperCase() === 'GIMMICK';
+    return `
+      <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between gap-2.5">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${isGimmick ? 'bg-purple-100 text-purple-900 border border-purple-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
+              ${isGimmick ? 'GIMMICK' : 'KEMAS'}
+            </span>
+            <span class="font-black text-slate-900 text-xs truncate">${App.escapeHtml(it.material_name)}</span>
+          </div>
+          <p class="text-[10px] font-mono text-slate-400 mt-0.5">${App.escapeHtml(it.material_code)}</p>
+          
+          ${it.batch_no ? `
+            <div class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-900 text-[10px] font-mono border border-purple-200">
+              <span class="font-bold">Batch: ${App.escapeHtml(it.batch_no)}</span>
+              ${it.exp_date ? `<span class="text-purple-600">| Exp: ${App.escapeHtml(it.exp_date)}</span>` : ''}
+            </div>
+          ` : ''}
+
+          <div class="flex items-center gap-1.5 mt-1 text-[11px] font-bold">
+            <span class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200 font-mono">${App.escapeHtml(it.from_location)}</span>
+            <span class="material-symbols-outlined text-[14px] text-blue-600">arrow_forward</span>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-200 font-mono">${App.escapeHtml(it.to_location)}</span>
+          </div>
+          ${it.notes ? `<p class="text-[10px] text-slate-500 italic mt-0.5">&ldquo;${App.escapeHtml(it.notes)}&rdquo;</p>` : ''}
+        </div>
+
+        <div class="text-right shrink-0 flex items-center gap-2">
+          <div>
+            <span class="font-mono font-black text-blue-800 text-sm block">${App.formatNumber(it.qty)}</span>
+            <span class="text-[9px] text-slate-400 block">${App.escapeHtml(it.material_unit)}</span>
+          </div>
+          <button type="button" onclick="removeTransferDraftItem(${idx})" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors cursor-pointer" title="Hapus">
+            <span class="material-symbols-outlined text-[16px]">delete</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (summaryBox) {
+    summaryBox.classList.remove('hidden');
+    if (totalQtyEl) totalQtyEl.innerText = `${App.formatNumber(totalQty)} Pcs`;
+  }
+}
+
+async function handleTransferDraftSubmit() {
+  if (transferDraftItems.length === 0) {
+    App.toast('Draft transfer masih kosong! Masukkan minimal 1 item.', 'warning');
+    return;
+  }
+
+  const globalNotes = (document.getElementById('opTransferGlobalNotes')?.value || '').trim();
+  const btn = document.getElementById('btnSubmitTransferDraft');
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+      <span>Memproses Transfer...</span>
+    `;
+  }
+
+  try {
+    const payload = {
+      items: transferDraftItems,
+      notes: globalNotes
+    };
+
+    const res = await App.fetchJson('../api/tasks.php?action=batch_create_operator_movement', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+
+    if (res.success) {
+      App.toast(res.message || 'Transfer Antar Lokasi berhasil diproses!', 'success');
+      transferDraftItems = [];
+      renderTransferDraftList();
+      if (document.getElementById('opTransferGlobalNotes')) document.getElementById('opTransferGlobalNotes').value = '';
+
+      // Reload materials & history
+      await populateTransferMaterials();
+      await loadMyTransferHistory();
+      if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
+        loadOperatorInventoryStats();
+      }
+
+      // Switch to History sub-tab
+      switchOpTransferSubTab('history');
+    } else {
+      App.toast(res.message || 'Gagal memproses transfer', 'error');
+    }
+  } catch (err) {
+    console.error('Error submitting transfer:', err);
+    App.toast('Terjadi kesalahan saat memproses transfer.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+        <span>Submit Transfer & Update Lokasi Rak</span>
+      `;
+    }
+  }
+}
+
+async function loadMyTransferHistory(isSilent = false) {
+  const container = document.getElementById('opTransferHistoryContainer');
+  const badgeCount = document.getElementById('badgeOpTransferHistoryCount');
+
+  if (!isSilent && container) {
+    container.innerHTML = `
+      <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+        <span class="material-symbols-outlined text-[20px] animate-spin text-blue-600 mb-1">progress_activity</span>
+        <p>Memuat riwayat transfer lokasi...</p>
+      </div>
+    `;
+  }
+
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=list&task_type=RACK_MOVEMENT&my_tasks=1');
+    if (res.success && Array.isArray(res.data)) {
+      allOperatorTransferHistory = res.data;
+      if (badgeCount) badgeCount.innerText = allOperatorTransferHistory.length;
+      renderMyTransferHistory(allOperatorTransferHistory);
+    } else {
+      if (container) {
+        container.innerHTML = `
+          <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+            <p>Belum ada riwayat transfer lokasi yang tercatat.</p>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading transfer history:', err);
+    if (container) {
+      container.innerHTML = `
+        <div class="p-6 bg-white rounded-2xl text-center text-rose-500 text-xs shadow-xs border border-rose-200">
+          <p>Gagal memuat riwayat transfer lokasi.</p>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderMyTransferHistory(tasks) {
+  const container = document.getElementById('opTransferHistoryContainer');
+  if (!container) return;
+
+  if (!tasks || tasks.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+        <span class="material-symbols-outlined text-[28px] text-slate-300 mb-1">swap_horiz</span>
+        <p>Belum ada riwayat transfer antar lokasi.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = tasks.map(t => {
+    const isCompleted = t.status === 'COMPLETED';
+    const isGimmick = (t.item_type || '').toUpperCase() === 'GIMMICK';
+    const fromLoc = t.from_location || 'Rak Asal';
+    const toLoc = t.to_location || 'Rak Tujuan';
+    const qty = t.actual_qty || t.target_qty || 0;
+    const unit = t.material_unit || 'Pcs';
+    const dateStr = t.completed_at || t.created_at;
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-3.5 space-y-2 hover:border-blue-300 transition-colors">
+        
+        <!-- Header: Task No & Status Badge -->
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase ${isGimmick ? 'bg-purple-100 text-purple-900 border border-purple-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}">
+                ${isGimmick ? 'GIMMICK' : 'KEMAS'}
+              </span>
+              <span class="font-mono font-black text-blue-900 text-xs">${App.escapeHtml(t.task_no)}</span>
+              <span class="px-2 py-0.2 rounded-full font-black text-[9px] ${isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
+                ${isCompleted ? 'SELESAI DIPINDAH' : 'PROSES'}
+              </span>
+            </div>
+            <h4 class="font-black text-slate-900 text-xs mt-0.5">${App.escapeHtml(t.material_name)}</h4>
+            <p class="text-[10px] font-mono text-slate-400">${App.escapeHtml(t.material_code)}</p>
+            
+            ${t.batch_no ? `
+              <div class="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-900 text-[10px] font-mono border border-purple-200">
+                <span class="font-bold">Batch: ${App.escapeHtml(t.batch_no)}</span>
+                ${t.exp_date ? `<span class="text-purple-600">| Exp: ${App.escapeHtml(t.exp_date)}</span>` : ''}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="text-right shrink-0">
+            <span class="font-mono font-black text-blue-800 text-sm block">${App.formatNumber(qty)}</span>
+            <span class="text-[9px] text-slate-400 block">${App.escapeHtml(unit)}</span>
+          </div>
+        </div>
+
+        <!-- Location Route -->
+        <div class="p-2 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded-md bg-amber-100/80 text-amber-900 font-mono font-bold text-[11px] border border-amber-200">${App.escapeHtml(fromLoc)}</span>
+            <span class="material-symbols-outlined text-[16px] text-blue-600">arrow_forward</span>
+            <span class="px-2 py-0.5 rounded-md bg-emerald-100/80 text-emerald-900 font-mono font-bold text-[11px] border border-emerald-200">${App.escapeHtml(toLoc)}</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500 font-medium">${App.formatDate(dateStr)}</span>
+        </div>
+
+        ${t.notes || t.completion_notes ? `
+          <div class="text-[10.5px] text-slate-600 italic bg-blue-50/40 p-2 rounded-lg border border-blue-100">
+            ${App.escapeHtml(t.notes || t.completion_notes)}
+          </div>
+        ` : ''}
+
+      </div>
+    `;
+  }).join('');
+}
+
+function filterOperatorTransferHistory() {
+  const q = (document.getElementById('opTransferHistorySearchInput')?.value || '').toLowerCase().trim();
+  if (!q) {
+    renderMyTransferHistory(allOperatorTransferHistory);
+    return;
+  }
+
+  const filtered = allOperatorTransferHistory.filter(t => 
+    (t.task_no || '').toLowerCase().includes(q) ||
+    (t.material_name || '').toLowerCase().includes(q) ||
+    (t.material_code || '').toLowerCase().includes(q) ||
+    (t.from_location || '').toLowerCase().includes(q) ||
+    (t.to_location || '').toLowerCase().includes(q) ||
+    (t.notes || '').toLowerCase().includes(q) ||
+    (t.batch_no || '').toLowerCase().includes(q)
+  );
+
+  renderMyTransferHistory(filtered);
+}
+
+async function loadOperatorInventoryStats() {
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=list&task_type=RACK_MOVEMENT&my_tasks=1');
+    if (res.success && Array.isArray(res.data)) {
+      const total = res.data.length;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayCount = res.data.filter(t => (t.completed_at || t.created_at || '').startsWith(todayStr)).length;
+
+      const totalEl = document.getElementById('homeStatTransferTotal');
+      const todayEl = document.getElementById('homeStatTransferToday');
+      const badgeEl = document.getElementById('homeBadgeTransfer');
+
+      if (totalEl) totalEl.innerText = App.formatNumber(total);
+      if (todayEl) todayEl.innerText = App.formatNumber(todayCount);
+      if (badgeEl) {
+        if (todayCount > 0) {
+          badgeEl.innerText = todayCount;
+          badgeEl.classList.remove('hidden');
+        } else {
+          badgeEl.classList.add('hidden');
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error loading inventory stats:', err);
+  }
+}
+
 
 
 

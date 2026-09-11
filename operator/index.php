@@ -23,29 +23,29 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="absolute bottom-[-50px] left-10 w-44 h-44 bg-teal-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
     
     <!-- TOP APP BAR (TOGGLE MENU, OPERATOR PROFILE & QUICK ACTIONS) -->
-    <header class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white px-3.5 py-3 flex items-center justify-between shadow-md flex-shrink-0 z-10 border-b border-emerald-900/40">
+    <header class="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-900 text-white px-3.5 py-3 flex items-center justify-between shadow-md flex-shrink-0 z-10 border-b border-blue-900/40">
       
       <!-- Left: Toggle Menu Button & Operator Identity -->
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <!-- TOGGLE MENU BUTTON -->
         <button type="button" onclick="toggleOperatorDrawer()" id="btnOpMenuToggle" title="Menu & Pengaturan" 
-          class="w-9 h-9 rounded-2xl bg-emerald-900/70 hover:bg-emerald-900 active:scale-90 flex items-center justify-center text-emerald-100 hover:text-white transition-all border border-emerald-500/40 shadow-xs shrink-0 cursor-pointer">
+          class="w-9 h-9 rounded-2xl bg-blue-900/70 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 hover:text-white transition-all border border-blue-500/40 shadow-xs shrink-0 cursor-pointer">
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
 
         <div onclick="openShiftSwitcherModal()" title="Klik untuk Ganti Shift Kerja Aktif" class="flex items-center gap-2 min-w-0 truncate cursor-pointer group">
-          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-200 p-0.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
-            <div class="w-full h-full rounded-[14px] bg-emerald-900 flex items-center justify-center text-emerald-300 font-black">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-300 p-0.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
+            <div class="w-full h-full rounded-[14px] bg-blue-900 flex items-center justify-center text-blue-200 font-black">
               <span class="material-symbols-outlined text-[20px]">engineering</span>
             </div>
           </div>
           <div class="min-w-0 truncate">
             <div class="flex items-center gap-1.5">
-              <h2 class="font-black text-sm leading-tight text-white tracking-tight truncate group-hover:text-emerald-200 transition-colors"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h2>
-              <span class="w-2 h-2 rounded-full bg-emerald-300 shrink-0"></span>
+              <h2 class="font-black text-sm leading-tight text-white tracking-tight truncate group-hover:text-blue-200 transition-colors"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h2>
+              <span class="w-2 h-2 rounded-full bg-blue-300 shrink-0"></span>
             </div>
-            <p class="text-[10px] text-emerald-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
-              <span id="headerUserShiftDisplay" class="truncate font-bold bg-emerald-900/60 px-1.5 py-0.2 rounded border border-emerald-500/40 text-emerald-200"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></span>
+            <p class="text-[10px] text-blue-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
+              <span id="headerUserShiftDisplay" class="truncate font-bold bg-blue-900/60 px-1.5 py-0.2 rounded border border-blue-500/40 text-blue-200"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></span>
             </p>
           </div>
         </div>
@@ -53,17 +53,17 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Right: Quick Actions -->
       <div class="flex items-center gap-1.5 shrink-0 ml-2">
-        <button onclick="refreshOperatorData()" title="Sinkronisasi Data" class="w-8 h-8 rounded-xl bg-emerald-900/60 hover:bg-emerald-900 active:scale-90 flex items-center justify-center text-emerald-100 transition-all border border-emerald-600/40 shadow-xs">
+        <button onclick="refreshOperatorData()" title="Sinkronisasi Data" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 transition-all border border-blue-600/40 shadow-xs">
           <span id="btnSyncIcon" class="material-symbols-outlined text-[18px]">sync</span>
         </button>
 
         <?php if (Auth::isAdmin()): ?>
-          <a href="../admin/" title="Admin Dashboard" class="w-8 h-8 rounded-xl bg-emerald-900/60 hover:bg-emerald-900 active:scale-90 flex items-center justify-center text-emerald-100 transition-all border border-emerald-600/40 shadow-xs">
+          <a href="../admin/" title="Admin Dashboard" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 transition-all border border-blue-600/40 shadow-xs">
             <span class="material-symbols-outlined text-[18px]">desktop_windows</span>
           </a>
         <?php endif; ?>
 
-        <a href="../logout" title="Logout" class="w-8 h-8 rounded-xl bg-emerald-900/60 hover:bg-rose-700 active:scale-90 text-emerald-100 hover:text-white flex items-center justify-center transition-all border border-emerald-600/40 shadow-xs">
+        <a href="../logout" title="Logout" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-rose-700 active:scale-90 text-blue-100 hover:text-white flex items-center justify-center transition-all border border-blue-600/40 shadow-xs">
           <span class="material-symbols-outlined text-[18px]">logout</span>
         </a>
       </div>
@@ -75,7 +75,14 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ========================================================================= -->
       <!-- 0. SCREEN: HOME LAUNCHER / APP MENU GRID (DEFAULT VIEW) -->
       <!-- ========================================================================= -->
-      <?php $isFulfillmentOnly = Auth::isOperatorFulfillment(); ?>
+      <?php
+      $isFulfillmentOnly = Auth::isOperatorFulfillment();
+      // $isInventoryOnly sebelumnya tidak pernah didefinisikan, sehingga
+      // IS_INVENTORY_ONLY di baris ~2298 selalu bernilai false. Akibatnya lima
+      // jalur khusus operator_inventory tidak pernah aktif — termasuk pembatasan
+      // menu "Strict 1-menu access" di assets/js/operator.js:117.
+      $isInventoryOnly = Auth::isOperatorInventory();
+      ?>
       <div id="op-tab-home" class="space-y-4 animate-fade-in">
         
         <?php if ($isFulfillmentOnly): ?>
@@ -155,7 +162,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <span class="material-symbols-outlined text-[34px]">shopping_cart_checkout</span>
                 </div>
                 <div>
-                  <h5 class="font-black text-base tracking-tight leading-tight">Request Consumable</h5>
+                  <h5 class="font-black text-base tracking-tight leading-tight">Request Fulfillments</h5>
                   <p class="text-xs text-amber-100 mt-0.5">Form Pengajuan Material & Monitoring ACC</p>
                   <div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-950/40 text-[10px] font-bold text-amber-200 border border-amber-300/30">
                     <span class="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>
@@ -171,7 +178,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <?php else: ?>
-        <!-- Welcome Hero Banner Card (Standard Operator) -->
+        <!-- Welcome Hero Banner Card (Operator Inventory / Warehouse Operator) -->
         <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-emerald-600/30 relative overflow-hidden">
           <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
           <div class="absolute right-3 top-3 opacity-15 pointer-events-none">
@@ -233,7 +240,7 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="material-symbols-outlined text-emerald-700 text-[18px]">grid_view</span>
             <span>Menu Operator</span>
           </h4>
-          <span class="text-[11px] text-slate-400 font-bold">7 Modul</span>
+          <span class="text-[11px] text-slate-400 font-bold">8 Modul</span>
         </div>
 
         <!-- APP LAUNCHER GRID (NATIVE MOBILE APP TILES - URUT SESUAI ABJAD A-Z) -->
@@ -345,6 +352,22 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
+          <!-- 8. TRANSFER LOKASI (MOVEMENT PRODUCT LOCATION TO LOCATION) -->
+          <div onclick="switchOpTab('location_transfer')" 
+            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
+            <div class="relative">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-[24px]">swap_horiz</span>
+              </div>
+              <span id="homeBadgeTransfer" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-[9px] shadow-xs leading-none">
+                0
+              </span>
+            </div>
+            <div class="mt-2 w-full">
+              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-blue-700 transition-colors">Transfer Antar Lokasi</h5>
+            </div>
+          </div>
+
         </div>
 
         <!-- Quick Urgent Task Alert Banner (If Any Active Tasks) -->
@@ -358,7 +381,7 @@ require_once __DIR__ . '/../includes/header.php';
               <p class="text-[10px] text-amber-800">Ketuk untuk mulai memproses serah terima</p>
             </div>
           </div>
-          <button onclick="switchOpTab('tasks')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all shrink-0">
+          <button onclick="switchOpTab('tasks')" class="px-3.5 py-1.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all shrink-0 cursor-pointer">
             Buka &rarr;
           </button>
         </div>
@@ -372,7 +395,7 @@ require_once __DIR__ . '/../includes/header.php';
         
         <!-- Screen Back Bar -->
         <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-blue-800 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Menu Utama</span>
           </button>
@@ -422,9 +445,6 @@ require_once __DIR__ . '/../includes/header.php';
               <span id="iconToggleAllHistory" class="material-symbols-outlined text-[16px]">unfold_more</span>
               <span id="labelToggleAllHistory">Buka Semua</span>
             </button>
-            <button type="button" onclick="loadOperatorTasks()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors cursor-pointer" title="Refresh Riwayat">
-              <span class="material-symbols-outlined text-[18px]">refresh</span>
-            </button>
           </div>
 
           <!-- Date Filter Header Indicator -->
@@ -453,7 +473,7 @@ require_once __DIR__ . '/../includes/header.php';
         
         <!-- Screen Back Bar -->
         <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-indigo-800 bg-slate-100 hover:bg-indigo-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-[#262363] bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Menu Utama</span>
           </button>
@@ -484,7 +504,7 @@ require_once __DIR__ . '/../includes/header.php';
         
         <!-- Screen Back Bar -->
         <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-blue-800 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Menu Utama</span>
           </button>
@@ -523,9 +543,9 @@ require_once __DIR__ . '/../includes/header.php';
 
             <form id="formBlankCountEntry" onsubmit="handleBlankCountSubmit(event)" class="space-y-3 text-xs">
               <div>
-                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Pilih / Cari Material Packaging <span class="text-rose-500">*</span></label>
+                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Pilih / Cari Kemas <span class="text-rose-500">*</span></label>
                 <select id="blankMaterialSelect" required onchange="handleBlankMaterialChange()" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600 focus:bg-white transition-colors">
-                  <option value="">-- Ketik / Pilih Material Packaging --</option>
+                  <option value="">-- Ketik / Pilih Kemas --</option>
                 </select>
               </div>
 
@@ -576,10 +596,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="material-symbols-outlined text-slate-500 text-[16px]">history</span>
                 <span>Hasil Hitungan Saya Hari Ini (<span id="opMyBlankCountBadge">0</span>)</span>
               </h4>
-              <button type="button" onclick="loadOperatorBlankCounts()" class="text-[11px] text-emerald-700 font-bold hover:underline flex items-center gap-0.5">
-                <span class="material-symbols-outlined text-[14px]">refresh</span>
-                <span>Refresh</span>
-              </button>
             </div>
 
             <div id="opBlankCountHistoryContainer" class="space-y-2 max-h-56 overflow-y-auto">
@@ -623,7 +639,7 @@ require_once __DIR__ . '/../includes/header.php';
         
         <!-- Screen Back Bar -->
         <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
-          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-blue-800 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Menu Utama</span>
           </button>
@@ -645,43 +661,118 @@ require_once __DIR__ . '/../includes/header.php';
               class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-emerald-600 transition-colors">
           </div>
 
-          <!-- 2. Box Tambah Packaging ke Keranjang Draft (Sequential Flow) -->
+          <!-- 2. Box Tambah Item ke Keranjang Draft (Sequential Flow) -->
           <div class="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
             <p class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-900 flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px]">add_circle</span>
-              <span>Tambah Packaging ke Keranjang Draft:</span>
+              <span>Tambah Item ke Keranjang Draft:</span>
             </p>
 
-            <!-- A. Pilih Material Packaging -->
+            <!-- A. Pilih Tipe Material (Kemas vs Gimmick) -->
             <div>
-              <label class="block font-bold text-slate-700 mb-1 text-[11px]">Pilih Material Packaging <span class="text-rose-500">*</span></label>
-              <select id="opInboundMaterialSelect" onchange="updateOpInboundStockBadge()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600">
-                <option value="">-- Pilih Material Packaging --</option>
+              <label class="block font-bold text-slate-700 mb-1.5 text-[11px] flex items-center justify-between">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-[#262363]">category</span>
+                  <span>Tipe Barang Masuk: <span class="text-rose-500">*</span></span>
+                </span>
+                <span class="text-[10px] text-slate-500 font-semibold">Wajib Dipilih</span>
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btnOpInboundTypeKemas" onclick="setOpInboundType('PACKAGING')"
+                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white">
+                  <span class="text-base">📦</span>
+                  <span>Kemas</span>
+                  <span id="opInboundCheckKemas" class="material-symbols-outlined text-[16px] ml-auto">check_circle</span>
+                </button>
+                <button type="button" id="btnOpInboundTypeGimmick" onclick="setOpInboundType('GIMMICK')"
+                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300">
+                  <span class="text-base">🎁</span>
+                  <span>Gimmick</span>
+                  <span id="opInboundCheckGimmick" class="material-symbols-outlined text-[16px] ml-auto hidden">check_circle</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- B. Pilih Kemas / Gimmick -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-[11px]">
+                Pilih <span id="opInboundTypeLabel">Kemas</span> <span class="text-rose-500">*</span>
+              </label>
+              <select id="opInboundMaterialSelect" onchange="handleOpInboundMaterialChange()" class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-emerald-600">
+                <option value="">-- Pilih Kemas --</option>
               </select>
               <div id="opInboundStockBadge" class="text-[10px] text-slate-500 mt-1"></div>
             </div>
 
-            <!-- B. Input Lokasi Rak (Autofill dari Material atau Edit Manual) -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center justify-between">
-                <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[15px] text-emerald-600">grid_view</span>
-                  <span>Lokasi Rak Simpan</span>
-                </span>
-                <span class="text-[10px] text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.2 rounded">Autofill / Edit</span>
-              </label>
-              <input type="text" id="opInboundLocation" placeholder="Lokasi Rak otomatis terisi dari material, atau ketik lokasi baru..." 
-                class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600 transition-colors">
+            <!-- C. Section Khusus Gimmick (Batch & Exp Date) -->
+            <div id="opInboundGimmickSection" class="hidden space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block font-bold text-slate-700 text-[11px]">No. Batch <span class="text-rose-500">*</span></label>
+                    <span class="text-[9px] text-slate-400 italic">Ketik / pilih batch</span>
+                  </div>
+                  <input type="text" id="opInboundBatchNo" list="opInboundBatchList" oninput="onOpInboundBatchInput(this)" placeholder="No. Batch..." 
+                    class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold font-mono outline-none focus:border-amber-600 transition-colors shadow-2xs" autocomplete="off">
+                  <datalist id="opInboundBatchList"></datalist>
+                  <!-- Sugest Batch Chips / Pills -->
+                  <div id="opInboundBatchSuggestions" class="flex flex-wrap gap-1 mt-1.5 min-h-[22px]">
+                    <span class="text-[10px] text-slate-400 italic">Pilih gimmick dahulu</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between mb-1">
+                    <label class="block font-bold text-slate-700 text-[11px]">Exp Date</label>
+                    <span class="text-[9px] text-amber-600 font-bold font-mono">DD-MM-YY</span>
+                  </div>
+                  <input type="text" id="opInboundExpDate" oninput="onOpInboundExpDateInput(this)" placeholder="DD-MM-YY (cth: 25-12-26)..." maxlength="8"
+                    class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold font-mono outline-none focus:border-amber-600 transition-colors shadow-2xs" autocomplete="off">
+                  <!-- Sugest Exp Date Chips / Pills -->
+                  <div id="opInboundExpSuggestions" class="flex flex-wrap gap-1 mt-1.5 min-h-[22px]">
+                    <span class="text-[10px] text-slate-400 italic">Pilih batch dahulu</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <!-- C. Jumlah Masuk (Qty) -->
+            <!-- D. Input Lokasi Rak Simpan (Bukan Dropdown Select) -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-emerald-600">grid_view</span>
+                  <span>Lokasi Rak Simpan <span class="text-rose-500">*</span></span>
+                </label>
+                <span id="opInboundLocHint" class="text-[10px] text-slate-400 font-semibold italic">Ketik atau pilih dari sugesti</span>
+              </div>
+              <div class="relative">
+                <input type="text" id="opInboundLocationInput" list="opInboundCommonRacksList" placeholder="Ketik / scan lokasi rak simpan..." 
+                  class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-emerald-600 transition-colors shadow-2xs" 
+                  oninput="onOpInboundLocationInput(this)" autocomplete="off">
+                <datalist id="opInboundCommonRacksList">
+                  <option value="Rak G-01"></option>
+                  <option value="Rak G-02"></option>
+                  <option value="Rak G-03"></option>
+                  <option value="Rak G-04"></option>
+                  <option value="Rak G-05"></option>
+                  <option value="B1-A-01-001"></option>
+                  <option value="B1-A-01-002"></option>
+                  <option value="B1-A-01-003"></option>
+                </datalist>
+              </div>
+              <!-- Sugest Lokasi Chips / Pills untuk di-klik & dipilih -->
+              <div id="opInboundLocationSuggestions" class="flex flex-wrap gap-1 mt-1.5 min-h-[22px]">
+                <span class="text-[10px] text-slate-400 italic">Pilih material untuk melihat sugesti lokasi...</span>
+              </div>
+            </div>
+
+            <!-- E. Jumlah Masuk (Qty) -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-[11px]">Jumlah Masuk (Qty) <span class="text-rose-500">*</span></label>
               <input type="number" step="any" id="opInboundQty" min="0.001" placeholder="0" 
                 class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-black text-base text-emerald-800 outline-none focus:border-emerald-600 text-center">
             </div>
 
-            <!-- D. Catatan Item / Penerimaan -->
+            <!-- F. Catatan Item / Penerimaan -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
                 <span class="material-symbols-outlined text-[15px] text-slate-400">notes</span>
@@ -691,9 +782,9 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-emerald-600">
             </div>
 
-            <!-- E. Tombol Masukkan ke Draft -->
+            <!-- G. Tombol Masukkan ke Draft -->
             <button type="button" onclick="addInboundDraftItem()" 
-              class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              class="w-full py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[17px]">add_shopping_cart</span>
               <span>+ Masukkan ke Draft Penerimaan</span>
             </button>
@@ -702,7 +793,7 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Draft Items List / Table -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-700">Daftar Packaging dalam Draft (<span id="opDraftCount">0</span>)</h4>
+              <h4 class="font-bold text-[11px] uppercase tracking-wider text-slate-700">Daftar Item dalam Draft (<span id="opDraftCount">0</span>)</h4>
               <button type="button" onclick="clearInboundDraft()" class="text-[10px] text-rose-600 hover:underline font-bold">Bersihkan Draft</button>
             </div>
 
@@ -762,13 +853,13 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- Screen Header & Sub-Tab Switcher -->
         <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
           <div class="flex items-center justify-between">
-            <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-amber-800 bg-slate-100 hover:bg-amber-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors">
+            <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-[#262363] bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer">
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
               <span>Menu Utama</span>
             </button>
 
             <div class="text-right">
-              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Request Consumable</h3>
+              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Request Fulfillments</h3>
               <span class="text-[10px] text-amber-700 font-bold">Form Permintaan Barang</span>
             </div>
           </div>
@@ -810,18 +901,19 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <!-- Divider -->
-            <div class="border-t border-slate-100 pt-3 space-y-2.5">
-              <!-- 2. Pilih Material -->
+            <div class="border-t border-slate-100 pt-3 space-y-3">
+
+              <!-- 2. Pilih Kemas (Packaging Only - Tanpa Gimmick) -->
               <div>
                 <label class="block font-bold text-slate-800 mb-1 text-xs">
-                  Pilih Material Packaging <span class="text-rose-500">*</span>
+                  Pilih <span id="opReqMaterialTypeLabel">Kemas</span> <span class="text-rose-500">*</span>
                 </label>
-                <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-amber-600">
-                  <option value="">-- Pilih Material Packaging --</option>
+                <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-[#262363]">
+                  <option value="">-- Pilih Kemas --</option>
                 </select>
-                <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-amber-50/80 rounded-xl border border-amber-200 flex items-center justify-between text-xs">
+                <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
                   <span class="text-slate-600 font-medium">Sisa Stok di Gudang:</span>
-                  <span id="opReqStockVal" class="font-mono font-black text-amber-950">0 Pcs</span>
+                  <span id="opReqStockVal" class="font-mono font-black text-blue-950">0 Pcs</span>
                 </div>
               </div>
 
@@ -832,10 +924,10 @@ require_once __DIR__ . '/../includes/header.php';
                     <label class="block font-bold text-slate-800 mb-1 text-xs">
                       Qty <span class="text-rose-500">*</span>
                     </label>
-                    <input type="number" id="opReqQty" min="0.001" step="any" oninput="validateOpReqQtyLive()" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors">
+                    <input type="number" id="opReqQty" min="0.001" step="any" oninput="validateOpReqQtyLive()" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-[#262363] transition-colors">
                   </div>
                   <div class="w-2/3">
-                    <button type="button" id="btnOpReqAddDraft" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
+                    <button type="button" id="btnOpReqAddDraft" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
                       <span class="material-symbols-outlined text-[18px]">add_circle</span>
                       <span>+ Masukkan Draft</span>
                     </button>
@@ -896,7 +988,7 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- 6. Submit Button -->
             <div class="pt-2 border-t border-slate-100">
-              <button type="button" id="btnSubmitConsumableRequest" onclick="handleConsumableRequestSubmit()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <button type="button" id="btnSubmitConsumableRequest" onclick="handleConsumableRequestSubmit()" class="w-full py-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[18px]">send</span>
                 <span>Kirim Permintaan ke Admin (Minta ACC)</span>
               </button>
@@ -909,10 +1001,6 @@ require_once __DIR__ . '/../includes/header.php';
         <div id="opReqSubViewHistory" class="hidden space-y-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-slate-700">Daftar Pengajuan Saya</span>
-            <button type="button" onclick="loadOperatorConsumableRequests()" class="text-xs font-bold text-amber-700 hover:underline flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">refresh</span>
-              <span>Refresh</span>
-            </button>
           </div>
 
           <div id="opReqHistoryContainer" class="space-y-2.5">
@@ -1039,6 +1127,269 @@ require_once __DIR__ . '/../includes/header.php';
 
       </div>
 
+      <!-- ========================================================================= -->
+      <!-- 7. SCREEN: ORIGIN TO DESTINATION (TRANSFER ANTAR LOKASI) -->
+      <!-- ========================================================================= -->
+      <div id="op-tab-location_transfer" class="hidden space-y-3.5 animate-fade-in">
+        
+        <!-- Screen Header & Sub-Tab Switcher -->
+        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+          <div class="flex items-center justify-between">
+            <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-[#262363] bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span>Menu Utama</span>
+            </button>
+
+            <div class="text-right">
+              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Movement Product Location To Location</h3>
+              <span class="text-[10px] text-blue-700 font-bold">Transfer Antar Lokasi Mandiri</span>
+            </div>
+          </div>
+
+          <!-- Sub-Tab Switch Buttons -->
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+            <button type="button" id="btnOpTransferSubTabForm" onclick="switchOpTransferSubTab('form')" class="py-2 rounded-lg font-bold text-xs bg-white text-blue-900 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[16px] text-blue-600">swap_horiz</span>
+              <span>Transfer Baru</span>
+            </button>
+            <button type="button" id="btnOpTransferSubTabHistory" onclick="switchOpTransferSubTab('history')" class="py-2 rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">history</span>
+              <span>Riwayat Transfer</span>
+              <span id="badgeOpTransferHistoryCount" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. SUB-VIEW: FORM TRANSFER BARU -->
+        <div id="opTransferSubViewForm" class="space-y-3.5">
+          
+          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-3.5">
+            
+            <!-- Header with Title & Reset Button -->
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[18px] text-blue-600">swap_horiz</span>
+                <h4 class="font-black text-xs uppercase tracking-wider text-slate-800">Form Transfer Lokasi</h4>
+              </div>
+              <button type="button" onclick="resetOpTransferForm()" class="text-[10px] text-slate-400 hover:text-rose-600 font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="Kosongkan Form">
+                <span class="material-symbols-outlined text-[14px]">refresh</span>
+                <span>Reset Form</span>
+              </button>
+            </div>
+
+            <!-- Type Filter Chips (Semua | Kemas | Gimmick) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block font-bold text-slate-700 text-xs">Pilih Kategori Item:</label>
+                <span id="opTransferTypeCountBadge" class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Semua Kategori</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
+                <button type="button" id="btnOpTransferTypeAll" onclick="setOpTransferTypeFilter('ALL')" 
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-700 shadow-xs cursor-pointer">
+                  Semua
+                </button>
+                <button type="button" id="btnOpTransferTypePackaging" onclick="setOpTransferTypeFilter('PACKAGING')" 
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  📦 Kemas
+                </button>
+                <button type="button" id="btnOpTransferTypeGimmick" onclick="setOpTransferTypeFilter('GIMMICK')" 
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  🎁 Gimmick
+                </button>
+              </div>
+            </div>
+
+            <!-- A. Pilih Material (Kemas & Gimmick) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block font-bold text-slate-700 text-xs">Pilih Material / Produk <span class="text-rose-500">*</span></label>
+                <span id="opTransferSelectedTypeBadge" class="text-[10px] text-slate-500 font-semibold">Kemas & Gimmick</span>
+              </div>
+
+              <select id="opTransferMaterialSelect" onchange="onOpTransferMaterialChange(this.value)" 
+                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+                <option value="">-- Pilih Material (Kemas / Gimmick) --</option>
+              </select>
+            </div>
+
+            <!-- Detail Info Material Terpilih -->
+            <div id="opTransferMaterialInfoBox" class="hidden p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2 text-xs">
+              <!-- Nama Produk Header -->
+              <div class="space-y-0.5 border-b border-blue-200/60 pb-1.5">
+                <div class="flex items-center justify-between">
+                  <span id="opTransferInfoBadge" class="px-2 py-0.5 rounded text-[9px] font-black bg-blue-200 text-blue-900 uppercase tracking-wide">KEMAS</span>
+                  <span id="opTransferInfoBarcode" class="font-mono font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded text-[10px] hidden">-</span>
+                </div>
+                <h5 id="opTransferInfoName" class="font-black text-slate-900 text-xs leading-snug pt-0.5">-</h5>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-[11px]">
+                <div>
+                  <span class="text-slate-500 block text-[10px]">SKU / Kode Item:</span>
+                  <span id="opTransferInfoCode" class="font-mono font-bold text-slate-900">-</span>
+                </div>
+                <div class="text-right">
+                  <span class="text-slate-500 block text-[10px]">Total Stok:</span>
+                  <span id="opTransferInfoStock" class="font-mono font-black text-blue-800 text-xs">0 Pcs</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1 border-t border-blue-200/50 text-[11px]">
+                <span class="text-slate-500">Lokasi Rak Default:</span>
+                <span id="opTransferInfoCurrentRack" class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.2 rounded">-</span>
+              </div>
+            </div>
+
+            <!-- BATCH / EXP DATE SELECTION (KHUSUS GIMMICK / ITEM DENGAN BATCH) -->
+            <div id="opTransferBatchContainer" class="hidden space-y-2 p-3 bg-purple-50/70 rounded-xl border border-purple-200 text-xs">
+              <div class="flex items-center justify-between">
+                <label class="block font-bold text-purple-900 text-xs flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px] text-purple-700">inventory</span>
+                  <span>Pilih Batch / Exp Date (Gimmick)</span>
+                </label>
+                <span id="opTransferBatchCountBadge" class="text-[9px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.2 rounded">0 Batch</span>
+              </div>
+
+              <select id="opTransferBatchSelect" onchange="onOpTransferBatchChange(this.value)" 
+                class="w-full p-2 bg-white border border-purple-300 rounded-xl text-xs font-mono font-bold text-purple-950 outline-none focus:border-purple-600">
+                <option value="">-- Pilih Batch No / Exp Date --</option>
+              </select>
+
+              <div id="opTransferBatchDetails" class="hidden pt-1 border-t border-purple-200/60 flex items-center justify-between text-[11px]">
+                <div>
+                  <span class="text-slate-500">Exp Date: </span>
+                  <b id="opTransferBatchExpDate" class="font-mono text-purple-900">-</b>
+                </div>
+                <div>
+                  <span class="text-slate-500">Stok Batch: </span>
+                  <b id="opTransferBatchQty" class="font-mono text-purple-900">0</b>
+                </div>
+              </div>
+            </div>
+
+            <!-- B. Lokasi Asal & Lokasi Tujuan -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-amber-600">shelves</span>
+                  <span>Origin (Lokasi Asal) <span class="text-rose-500">*</span></span>
+                </label>
+                <input type="text" id="opTransferFromLocation" placeholder="Contoh: Rak G-01..." list="opTransferCommonRacksList"
+                  class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+              </div>
+
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-emerald-600">move_up</span>
+                  <span>Destination (Lokasi Tujuan) <span class="text-rose-500">*</span></span>
+                </label>
+                <input type="text" id="opTransferToLocation" placeholder="Contoh: Rak B-02..." list="opTransferCommonRacksList"
+                  class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+              </div>
+            </div>
+
+            <datalist id="opTransferCommonRacksList">
+              <option value="Rak G-01"></option>
+              <option value="Rak G-02"></option>
+              <option value="Rak G-03"></option>
+              <option value="Rak G-04"></option>
+              <option value="Rak G-05"></option>
+              <option value="B1-A-01-001"></option>
+              <option value="B1-A-01-002"></option>
+              <option value="B1-A-01-003"></option>
+              <option value="Gudang Gimmick Pusat"></option>
+              <option value="Line Packing 1"></option>
+              <option value="Line Packing 2"></option>
+            </datalist>
+
+            <!-- C. Qty Pindah -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-slate-700 text-xs">Jumlah Qty Ditransfer <span class="text-rose-500">*</span></label>
+                <span id="opTransferUnitLabel" class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Pcs</span>
+              </div>
+              <input type="number" step="any" id="opTransferQty" min="0.001" placeholder="0" 
+                class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-black text-base text-blue-800 outline-none focus:border-blue-600 text-center">
+            </div>
+
+            <!-- D. Catatan Transfer (Opsional) -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-slate-400">notes</span>
+                <span>Catatan Perpindahan (Opsional)</span>
+              </label>
+              <input type="text" id="opTransferItemNotes" placeholder="Contoh: Penataan ulang rack, perpindahan buffer..." 
+                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-blue-600 focus:bg-white">
+            </div>
+
+            <!-- E. Tombol Masukkan ke Draft -->
+            <button type="button" onclick="addTransferDraftItem()" 
+              class="w-full py-3 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">add_task</span>
+              <span>+ Masukkan ke Draft Transfer</span>
+            </button>
+          </div>
+
+          <!-- Draft Items List -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700">Daftar Item Transfer (<span id="opTransferDraftCount">0</span>)</h4>
+              <button type="button" onclick="clearTransferDraft()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer">Bersihkan Draft</button>
+            </div>
+
+            <div id="opTransferDraftList" class="space-y-2 max-h-48 overflow-y-auto">
+              <div class="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                Draft transfer masih kosong. Masukkan item di atas.
+              </div>
+            </div>
+
+            <div id="opTransferDraftSummaryBox" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs font-semibold text-blue-900">
+              <span>Total Item Transfer:</span>
+              <span id="opTransferDraftTotalQty" class="text-sm font-black text-blue-800">0 Pcs</span>
+            </div>
+
+            <!-- Global Notes & Submit Button -->
+            <div class="pt-2 border-t border-slate-100 space-y-2.5">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Catatan Global (Opsional)</label>
+                <input type="text" id="opTransferGlobalNotes" placeholder="Catatan untuk seluruh batch transfer ini..." 
+                  class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-600 focus:bg-white">
+              </div>
+
+              <button type="button" id="btnSubmitTransferDraft" onclick="handleTransferDraftSubmit()" 
+                class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                <span>Submit Transfer & Update Lokasi Rak</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. SUB-VIEW: RIWAYAT TRANSFER SAYA -->
+        <div id="opTransferSubViewHistory" class="hidden space-y-3">
+          
+          <!-- Search & Filter Bar -->
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-2">
+            <div class="relative flex-1">
+              <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+              <input type="text" id="opTransferHistorySearchInput" oninput="filterOperatorTransferHistory()" placeholder="Cari SKU, Nama, No. Task, Rak..." 
+                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-blue-600">
+            </div>
+            <button type="button" onclick="loadMyTransferHistory()" class="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer" title="Refresh Riwayat">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+            </button>
+          </div>
+
+          <div id="opTransferHistoryContainer" class="space-y-2.5">
+            <div class="p-6 bg-white rounded-2xl text-center text-slate-400 text-xs shadow-xs border border-slate-200">
+              <span class="material-symbols-outlined text-[20px] animate-spin text-blue-600 mb-1">progress_activity</span>
+              <p>Memuat riwayat transfer lokasi...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
 
     <!-- PREMIUM BOTTOM NAVIGATION BAR -->
@@ -1070,14 +1421,21 @@ require_once __DIR__ . '/../includes/header.php';
         <button onclick="switchOpTab('inbound')" id="bottom-nav-inbound" 
           class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
           <span class="material-symbols-outlined text-[20px] leading-none">move_to_inbox</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Barang Masuk</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Masuk</span>
+        </button>
+
+        <!-- Transfer Antar Lokasi Button -->
+        <button onclick="switchOpTab('location_transfer')" id="bottom-nav-transfer" 
+          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-[20px] leading-none">swap_horiz</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Transfer</span>
         </button>
 
         <!-- Barang Keluar (Picking / Tasks) Button -->
         <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
           class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
           <span class="material-symbols-outlined text-[20px] leading-none">outbox</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Barang Keluar</span>
+          <span class="text-[9px] tracking-tight whitespace-nowrap">Keluar</span>
         </button>
 
         <!-- Handover Shift Button -->
@@ -1152,9 +1510,14 @@ require_once __DIR__ . '/../includes/header.php';
             <span>Home</span>
           </button>
 
+          <button onclick="closeOperatorDrawer(); switchOpTab('location_transfer');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
+            <span class="material-symbols-outlined text-blue-400 text-[20px]">swap_horiz</span>
+            <span>Transfer Antar Lokasi</span>
+          </button>
+
           <button onclick="closeOperatorDrawer(); switchOpTab('request_consumable');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
             <span class="material-symbols-outlined text-amber-400 text-[20px]">shopping_cart_checkout</span>
-            <span>Request Consumable</span>
+            <span>Request Fulfillments</span>
           </button>
 
           <!-- SETTING MENU ITEM (OPENS PROFILE VIEW) -->
@@ -1341,7 +1704,7 @@ require_once __DIR__ . '/../includes/header.php';
         <p class="text-[10px] text-emerald-100 font-bold tracking-wide mt-1">Dibuat oleh: dhanielo-marthinz IMS</p>
       </div>
       <p class="text-xs text-emerald-100/90 leading-relaxed max-w-xs mx-auto">
-        Aplikasi manajemen operasional stok material packaging gudang dengan sinkronisasi data real-time, blank counting opname, dan verifikasi serah terima picking.
+        Aplikasi manajemen operasional stok kemas gudang dengan sinkronisasi data real-time, blank counting opname, dan verifikasi serah terima picking.
       </p>
     </div>
 
@@ -1354,7 +1717,7 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-amber-600 text-[18px] shrink-0 mt-0.5">assignment</span>
           <div>
             <b class="text-slate-900">Tugas Pengambilan:</b>
-            <p class="text-[11px] text-slate-500">Serah terima material packaging ke line produksi dengan pencatatan riil pemotongan stok.</p>
+            <p class="text-[11px] text-slate-500">Serah terima kemas ke line produksi dengan pencatatan riil pemotongan stok.</p>
           </div>
         </div>
 
@@ -1403,12 +1766,12 @@ require_once __DIR__ . '/../includes/header.php';
     
     <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
       <div class="flex items-center gap-2">
-        <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-xs">
-          <span class="material-symbols-outlined text-[20px]">task_alt</span>
+        <div id="submitTaskModalIconBg" class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold shadow-xs">
+          <span id="submitTaskModalIcon" class="material-symbols-outlined text-[20px]">task_alt</span>
         </div>
         <div>
-          <h3 class="font-black text-slate-900 text-xs uppercase tracking-wider">Submit Pengambilan</h3>
-          <p class="text-[10px] text-slate-500">Konfirmasi serah terima ke line & potong stok</p>
+          <h3 id="submitTaskModalTitle" class="font-black text-slate-900 text-xs uppercase tracking-wider">Submit Pengambilan</h3>
+          <p id="submitTaskModalSubtitle" class="text-[10px] text-slate-500">Konfirmasi serah terima ke line & potong stok</p>
         </div>
       </div>
       <button onclick="App.closeModal('modalSubmitTask')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
@@ -1420,17 +1783,17 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5 text-xs">
       <h4 id="submitMaterialTitle" class="font-black text-slate-900 text-xs"></h4>
       <div class="grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-        <p>Lokasi: <b id="submitRackLocationLabel" class="text-slate-900"></b></p>
-        <p>Tujuan: <b id="submitDestinationLabel" class="text-slate-900"></b></p>
+        <p><span id="submitRackFromHeader">Lokasi:</span> <b id="submitRackLocationLabel" class="text-slate-900"></b></p>
+        <p><span id="submitRackToHeader">Tujuan:</span> <b id="submitDestinationLabel" class="text-slate-900"></b></p>
       </div>
-      <p class="text-[11px] text-amber-800 font-bold">Target Diminta: <b id="submitTargetQtyLabel"></b></p>
+      <p class="text-[11px] text-amber-800 font-bold"><span id="submitQtyHeaderLabel">Target Diminta:</span> <b id="submitTargetQtyLabel"></b></p>
     </div>
 
     <form id="formFinalSubmit" onsubmit="handleFinalTaskSubmit(event)" class="space-y-3 text-xs">
       <input type="hidden" id="submitTaskId">
 
       <div>
-        <label class="block font-bold text-slate-800 mb-1 text-xs">
+        <label id="submitActualQtyLabel" class="block font-bold text-slate-800 mb-1 text-xs">
           Jumlah Riil yang Diserahkan (<span id="submitUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
         </label>
         <input type="number" step="any" id="submitActualQty" required min="0.001" 
@@ -1445,10 +1808,10 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <div>
+      <div id="submitReceiverContainer">
         <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center justify-between">
-          <span>Nama Penerima di Line / PIC <span class="text-rose-500 font-bold">*</span></span>
-          <span class="text-[10px] text-rose-600 font-semibold">Wajib Diisi</span>
+          <span id="submitReceiverLabel">Nama Penerima di Line / PIC <span class="text-rose-500 font-bold">*</span></span>
+          <span id="submitReceiverStatusLabel" class="text-[10px] text-rose-600 font-semibold">Wajib Diisi</span>
         </label>
         <input type="text" id="submitReceiverName" required placeholder="Contoh: Pak Joko / Budi (Line Hanasui)" 
           class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-amber-600 focus:bg-white text-xs font-semibold">
@@ -1456,7 +1819,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center justify-between">
-          <span>Catatan / No. Surat Jalan</span>
+          <span id="submitNotesLabel">Catatan / No. Surat Jalan</span>
           <span class="text-[10px] text-slate-400 font-normal">Opsional</span>
         </label>
         <input type="text" id="submitNotes" placeholder="Contoh: Surat Jalan No. SJ-0123 / Catatan line..." 
@@ -1464,15 +1827,15 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Task Picking Photo Proof & Surat Jalan Section -->
-      <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-200 space-y-2">
+      <div id="submitPhotoSection" class="bg-amber-50/50 p-3 rounded-xl border border-amber-200 space-y-2">
         <div class="flex items-center justify-between">
-          <label class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
+          <label id="submitPhotoLabel" class="block font-bold text-slate-700 text-[11px] flex items-center gap-1">
             <span class="material-symbols-outlined text-[16px] text-amber-600">receipt_long</span>
             <span>Foto Surat Jalan & Bukti Serah Terima <span class="text-rose-500 font-bold">*</span></span>
           </label>
           <span id="taskPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-amber-100 px-2 py-0.5 rounded-full">0 Foto</span>
         </div>
-        <p class="text-[10px] text-slate-500">Lampirkan foto fisik Surat Jalan atau bukti penyerahan barang di line.</p>
+        <p id="submitPhotoSubtitle" class="text-[10px] text-slate-500">Lampirkan foto fisik Surat Jalan atau bukti penyerahan barang di line.</p>
         <div class="flex items-center gap-2">
           <input type="file" id="taskCompletePhoto" accept="image/*" class="hidden" multiple onchange="previewTaskCompletePhoto(event)">
           <button type="button" onclick="document.getElementById('taskCompletePhoto').click()" 
@@ -1493,7 +1856,7 @@ require_once __DIR__ . '/../includes/header.php';
         <button type="submit" id="btnFinalSubmit" 
           class="w-full py-3 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5">
           <span class="material-symbols-outlined text-[18px]">check_circle</span>
-          <span>Konfirmasi & Potong Stok</span>
+          <span id="btnFinalSubmitText">Konfirmasi & Potong Stok</span>
         </button>
       </div>
     </form>
@@ -1813,7 +2176,7 @@ require_once __DIR__ . '/../includes/header.php';
         <button type="button" onclick="App.closeModal('modalChangeMyShift')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors">
           Batal
         </button>
-        <button type="submit" id="btnSaveMyShift" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer">
+        <button type="submit" id="btnSaveMyShift" class="flex-1 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
           <span>Simpan Shift</span>
         </button>
@@ -1866,7 +2229,7 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <div class="pt-2">
-        <button type="submit" id="btnGateConfirmShift" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700 hover:from-emerald-700 hover:to-teal-800 active:scale-98 text-white font-black text-xs rounded-xl shadow-lg shadow-emerald-700/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+        <button type="submit" id="btnGateConfirmShift" class="w-full py-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-98 text-white font-black text-xs rounded-xl shadow-lg shadow-[#262363]/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[18px]">check_circle</span>
           <span>Konfirmasi & Buka Menu</span>
         </button>
@@ -1924,7 +2287,7 @@ require_once __DIR__ . '/../includes/header.php';
         <span class="material-symbols-outlined text-[18px]">content_copy</span>
         <span id="btnCopyShareTextLabel">Salin Teks</span>
       </button>
-      <button type="button" onclick="openWhatsAppShare()" class="py-3 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white font-black text-xs shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+      <button type="button" onclick="openWhatsAppShare()" class="py-3 px-3 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-98 text-white font-black text-xs shadow-md shadow-[#262363]/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
         <span class="material-symbols-outlined text-[18px]">send</span>
         <span>Kirim WhatsApp</span>
       </button>
@@ -1937,7 +2300,9 @@ require_once __DIR__ . '/../includes/header.php';
   let CURRENT_USER_SHIFT = <?= json_encode($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)') ?>;
   let CURRENT_USER_ROLE = <?= json_encode($user['role'] ?? 'operator') ?>;
   let IS_FULFILLMENT_ONLY = <?= $isFulfillmentOnly ? 'true' : 'false' ?>;
+  let IS_INVENTORY_ONLY = <?= $isInventoryOnly ? 'true' : 'false' ?>;
 </script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/operator.js?v=<?= time() ?>"></script>
+<?php $appJsAlreadyLoaded = true; ?>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

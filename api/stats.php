@@ -13,6 +13,7 @@ try {
         $search     = trim($_GET['search'] ?? '');
         $category   = trim($_GET['category'] ?? 'all');
         $status     = trim($_GET['status'] ?? 'all');
+        $itemType   = strtoupper(trim($_GET['item_type'] ?? 'ALL')); // 'ALL', 'PACKAGING', 'GIMMICK'
 
         $now = new DateTime();
         $startDateStr = $now->format('Y-m-d');
@@ -97,6 +98,12 @@ try {
         ";
 
         $params = [$startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime, $startDateTime, $endDateTime];
+
+        if ($itemType === 'GIMMICK') {
+            $sql .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $sql .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
 
         if (!empty($search)) {
             $sql .= " AND (m.code LIKE ? OR m.name LIKE ? OR m.description LIKE ? OR m.rack_location LIKE ?)";
@@ -196,7 +203,7 @@ try {
         }
 
         // ================= TOP 10 BARANG MASUK =================
-        $stmtTopIn = $pdo->prepare("
+        $topInSql = "
             SELECT 
                 m.id,
                 m.code,
@@ -210,16 +217,20 @@ try {
             FROM stock_mutations sm
             JOIN materials m ON sm.material_id = m.id
             WHERE sm.type = 'INBOUND' AND sm.created_at BETWEEN ? AND ?
-            GROUP BY m.id
-            HAVING total_qty > 0
-            ORDER BY total_qty DESC, tx_count DESC
-            LIMIT 10
-        ");
-        $stmtTopIn->execute([$startDateTime, $endDateTime]);
+        ";
+        $topInParams = [$startDateTime, $endDateTime];
+        if ($itemType === 'GIMMICK') {
+            $topInSql .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $topInSql .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
+        $topInSql .= " GROUP BY m.id HAVING total_qty > 0 ORDER BY total_qty DESC, tx_count DESC LIMIT 10";
+        $stmtTopIn = $pdo->prepare($topInSql);
+        $stmtTopIn->execute($topInParams);
         $topInbound = $stmtTopIn->fetchAll();
 
         // ================= TOP 10 BARANG KELUAR =================
-        $stmtTopOut = $pdo->prepare("
+        $topOutSql = "
             SELECT 
                 m.id,
                 m.code,
@@ -233,45 +244,72 @@ try {
             FROM stock_mutations sm
             JOIN materials m ON sm.material_id = m.id
             WHERE sm.type IN ('OUTBOUND', 'TASK_PICKING') AND sm.created_at BETWEEN ? AND ?
-            GROUP BY m.id
-            HAVING total_qty > 0
-            ORDER BY total_qty DESC, tx_count DESC
-            LIMIT 10
-        ");
-        $stmtTopOut->execute([$startDateTime, $endDateTime]);
+        ";
+        $topOutParams = [$startDateTime, $endDateTime];
+        if ($itemType === 'GIMMICK') {
+            $topOutSql .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $topOutSql .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
+        $topOutSql .= " GROUP BY m.id HAVING total_qty > 0 ORDER BY total_qty DESC, tx_count DESC LIMIT 10";
+        $stmtTopOut = $pdo->prepare($topOutSql);
+        $stmtTopOut->execute($topOutParams);
         $topOutbound = $stmtTopOut->fetchAll();
 
         // ================= CATEGORY DISTRIBUTION =================
-        $stmtCat = $pdo->query("
+        $catSql = "
             SELECT 
                 COALESCE(category, 'Umum') AS category,
                 COUNT(*) AS total_sku,
                 COALESCE(SUM(current_stock), 0) AS total_stock
             FROM materials
-            GROUP BY category
-            ORDER BY total_stock DESC
-        ");
+            WHERE 1=1
+        ";
+        if ($itemType === 'GIMMICK') {
+            $catSql .= " AND item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $catSql .= " AND (item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+        }
+        $catSql .= " GROUP BY category ORDER BY total_stock DESC";
+        $stmtCat = $pdo->query($catSql);
         $categoryStats = $stmtCat->fetchAll();
 
         // Total stock in entire warehouse grouped by unit (Physical Total)
-        $stmtUnit = $pdo->query("
+        $unitSql = "
             SELECT 
                 COALESCE(NULLIF(TRIM(unit), ''), 'Pcs') AS unit,
                 COUNT(*) AS sku_count,
                 COALESCE(SUM(current_stock), 0) AS total_stock
             FROM materials
-            GROUP BY COALESCE(NULLIF(TRIM(unit), ''), 'Pcs')
-            ORDER BY total_stock DESC
-        ");
+            WHERE 1=1
+        ";
+        if ($itemType === 'GIMMICK') {
+            $unitSql .= " AND item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $unitSql .= " AND (item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+        }
+        $unitSql .= " GROUP BY COALESCE(NULLIF(TRIM(unit), ''), 'Pcs') ORDER BY total_stock DESC";
+        $stmtUnit = $pdo->query($unitSql);
         $warehouseStockByUnit = [];
         while ($uRow = $stmtUnit->fetch(PDO::FETCH_ASSOC)) {
             $warehouseStockByUnit[$uRow['unit']] = (float)$uRow['total_stock'];
         }
 
-        $totalWarehouseStock = (float)$pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials")->fetchColumn();
-        $totalMasterSku = (int)$pdo->query("SELECT COUNT(*) FROM materials")->fetchColumn();
-        $totalAllInbound = (float)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM inbound_transactions")->fetchColumn();
-        $totalAllOutbound = (float)$pdo->query("SELECT COALESCE(SUM(qty), 0) FROM outbound_transactions")->fetchColumn();
+        $matCond = "1=1";
+        if ($itemType === 'GIMMICK') {
+            $matCond = "item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $matCond = "(item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+        }
+
+        $totalWarehouseStock = (float)$pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials WHERE {$matCond}")->fetchColumn();
+        $totalMasterSku = (int)$pdo->query("SELECT COUNT(*) FROM materials WHERE {$matCond}")->fetchColumn();
+        
+        $inboundJoinSql = "SELECT COALESCE(SUM(t.qty), 0) FROM inbound_transactions t JOIN materials m ON t.material_id = m.id WHERE {$matCond}";
+        $totalAllInbound = (float)$pdo->query($inboundJoinSql)->fetchColumn();
+
+        $outboundJoinSql = "SELECT COALESCE(SUM(t.qty), 0) FROM outbound_transactions t JOIN materials m ON t.material_id = m.id WHERE {$matCond}";
+        $totalAllOutbound = (float)$pdo->query($outboundJoinSql)->fetchColumn();
 
         // ================= OPERATOR PROCESS KPIS =================
         $taskDateCondition = "";
@@ -320,7 +358,7 @@ try {
                 COALESCE(AVG(CASE WHEN t.status = 'COMPLETED' AND t.duration_seconds > 0 THEN t.duration_seconds ELSE NULL END), 0) AS avg_duration_seconds
             FROM users u
             LEFT JOIN tasks t ON t.assigned_to = u.id " . ($taskDateCondition ? "AND DATE(t.created_at) BETWEEN ? AND ?" : "") . "
-            WHERE LOWER(u.role) = 'operator' AND LOWER(u.username) NOT IN ('admin', 'superadmin', 'daniel')
+            WHERE (LOWER(u.role) IN ('operator', 'operator_inventory', 'operator_fulfillment') OR LOWER(u.role) LIKE 'operator%') AND LOWER(u.username) NOT IN ('admin', 'superadmin', 'daniel')
             GROUP BY u.id
             ORDER BY completed_count DESC, total_picked_qty DESC
         ");
@@ -395,21 +433,29 @@ try {
 
     // Default: Overall KPI stats
     $today = date('Y-m-d');
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL'));
+
+    $matCond = "1=1";
+    if ($itemType === 'GIMMICK') {
+        $matCond = "item_type = 'GIMMICK'";
+    } elseif ($itemType === 'PACKAGING') {
+        $matCond = "(item_type = 'PACKAGING' OR item_type IS NULL OR item_type = '')";
+    }
 
     // 1. Total items count
-    $stmt = $pdo->query("SELECT COUNT(*) FROM materials");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE {$matCond}");
     $totalMaterials = (int)$stmt->fetchColumn();
 
     // 2. Total physical stock sum
-    $stmt = $pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials");
+    $stmt = $pdo->query("SELECT COALESCE(SUM(current_stock), 0) FROM materials WHERE {$matCond}");
     $totalStockUnits = (float)$stmt->fetchColumn();
 
     // 3. Low stock count (<= min_stock and > 0)
-    $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock <= min_stock AND current_stock > 0");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock <= min_stock AND current_stock > 0 AND {$matCond}");
     $lowStockCount = (int)$stmt->fetchColumn();
 
     // 4. Out of stock count (<= 0)
-    $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock <= 0");
+    $stmt = $pdo->query("SELECT COUNT(*) FROM materials WHERE current_stock <= 0 AND {$matCond}");
     $outOfStockCount = (int)$stmt->fetchColumn();
 
     // 5. Active Tasks (PENDING or IN_PROGRESS)
@@ -421,19 +467,21 @@ try {
     $urgentTasksCount = (int)$stmt->fetchColumn();
 
     // 7. Today Inbound Qty
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(qty), 0) FROM inbound_transactions WHERE DATE(created_at) = ?");
+    $inboundTodaySql = "SELECT COALESCE(SUM(t.qty), 0) FROM inbound_transactions t JOIN materials m ON t.material_id = m.id WHERE DATE(t.created_at) = ? AND {$matCond}";
+    $stmt = $pdo->prepare($inboundTodaySql);
     $stmt->execute([$today]);
     $todayInboundQty = (float)$stmt->fetchColumn();
 
     // 8. Today Outbound Qty
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(qty), 0) FROM outbound_transactions WHERE DATE(created_at) = ?");
+    $outboundTodaySql = "SELECT COALESCE(SUM(t.qty), 0) FROM outbound_transactions t JOIN materials m ON t.material_id = m.id WHERE DATE(t.created_at) = ? AND {$matCond}";
+    $stmt = $pdo->prepare($outboundTodaySql);
     $stmt->execute([$today]);
     $todayOutboundQty = (float)$stmt->fetchColumn();
 
     // Operator specific stats
     $myActiveTasks = 0;
     $myCompletedTasksToday = 0;
-    if (Auth::role() === 'operator') {
+    if (Auth::role() === 'operator' || Auth::role() === 'operator_inventory' || Auth::role() === 'operator_fulfillment') {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND status IN ('PENDING', 'IN_PROGRESS')");
         $stmt->execute([Auth::id()]);
         $myActiveTasks = (int)$stmt->fetchColumn();
@@ -461,5 +509,5 @@ try {
     ]);
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Gagal memuat statistik: ' . $e->getMessage()]);
+    apiFail($e, 'Gagal memuat statistik.');
 }
