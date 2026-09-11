@@ -122,8 +122,8 @@ require_once __DIR__ . '/includes/header.php';
             <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
           </div>
           <div>
-            <h2 class="text-2xl font-black text-[#5147E6] tracking-tight uppercase leading-tight">Login Portal</h2>
-            <p class="text-[11px] text-slate-500 font-medium">Masuk untuk mengelola stok & operasional</p>
+            <h2 class="text-2xl font-black text-[#5147E6] tracking-tight uppercase leading-tight">IMS LOGIN</h2>
+            <p class="text-[11.5px] font-semibold" style="color: #4f46e5;">Masuk untuk mengelola stok & operasional</p>
           </div>
         </div>
 
@@ -145,34 +145,34 @@ require_once __DIR__ . '/includes/header.php';
           
           <!-- Username Input -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+            <label class="block text-xs font-black mb-1.5" style="color: #272466;">
               Username <span class="text-rose-500">*</span>
             </label>
             <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style="color: #5147E6;">
                 <span class="material-symbols-outlined text-[19px]">account_circle</span>
               </span>
               <input type="text" id="username" required placeholder="Masukkan username akun Anda..." autocomplete="username"
-                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
+                class="w-full pl-10 pr-4 py-3 bg-slate-50/90 border border-indigo-200/80 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs" style="color: #272466;">
             </div>
           </div>
 
           <!-- Password Input with Show/Hide Eye Toggle -->
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-slate-700">
+              <label class="block text-xs font-black" style="color: #272466;">
                 Password <span class="text-rose-500">*</span>
               </label>
             </div>
             <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style="color: #5147E6;">
                 <span class="material-symbols-outlined text-[19px]">lock</span>
               </span>
               <input type="password" id="password" required placeholder="Masukkan kata sandi..." autocomplete="current-password"
-                class="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
+                class="w-full pl-10 pr-11 py-3 bg-slate-50/90 border border-indigo-200/80 rounded-xl text-xs font-bold outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs" style="color: #272466;">
               
               <button type="button" onclick="togglePasswordVisibility()" title="Tampilkan / Sembunyikan Password" 
-                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#5147E6] transition-colors cursor-pointer">
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center hover:opacity-80 transition-colors cursor-pointer" style="color: #5147E6;">
                 <span id="iconTogglePass" class="material-symbols-outlined text-[19px]">visibility</span>
               </button>
             </div>
@@ -180,11 +180,11 @@ require_once __DIR__ . '/includes/header.php';
 
           <!-- Security Notice & Remember Session -->
           <div class="flex items-center justify-between pt-0.5 text-xs">
-            <label class="flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
-              <input type="checkbox" id="rememberMe" checked class="w-3.5 h-3.5 rounded border-slate-300 text-[#5147E6] focus:ring-[#5147E6]">
-              <span class="text-[11px]">Ingat Sesi Login</span>
+            <label class="flex items-center gap-2 font-bold cursor-pointer" style="color: #272466;">
+              <input type="checkbox" id="rememberMe" checked class="w-3.5 h-3.5 rounded border-indigo-300 text-[#5147E6] focus:ring-[#5147E6]">
+              <span class="text-[11.5px]">Ingat Sesi Login</span>
             </label>
-            <span class="text-[11px] text-slate-400 flex items-center gap-1">
+            <span class="text-[11px] font-semibold flex items-center gap-1" style="color: #4f46e5;">
               <span class="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
               <span>Sesi Terisolasi</span>
             </span>
@@ -201,7 +201,7 @@ require_once __DIR__ . '/includes/header.php';
             <button type="submit" id="btnSubmit" 
               class="w-full py-3.5 px-5 text-white font-black text-xs rounded-xl shadow-lg shadow-[#5147E6]/30 hover:shadow-[#5147E6]/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
               style="background: linear-gradient(135deg, #5147E6 0%, #584CE7 50%, #634DE9 100%);">
-              <span>Masuk Sekarang (Login)</span>
+              <span>IMS Login</span>
               <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
           </div>
@@ -211,10 +211,10 @@ require_once __DIR__ . '/includes/header.php';
 
       <!-- Footer Branding & Copyright -->
       <div class="pt-6 mt-4 border-t border-slate-100 text-center space-y-1">
-        <p class="text-[11px] text-slate-400 font-medium">
-          IMS &bull; Inventory Management System &copy; <?= date('Y') ?>
+        <p class="text-[11px] font-semibold" style="color: #64748b;">
+          IMS &copy; <?= date('Y') ?>
         </p>
-        <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
+        <p class="text-[10px] font-bold tracking-wide" style="color: #64748b;">
           Powered By <span class="text-[#5147E6] font-black">Dhanielo_Marthinz IMS</span>
         </p>
       </div>

@@ -1,7 +1,7 @@
 <?php
 // includes/header.php - White & Green Enterprise Theme with Google Material Symbols
 if (!isset($pageTitle)) {
-    $pageTitle = 'IMS - Inventory Management System';
+    $pageTitle = 'IMS';
 }
 $baseUrl = Auth::getBaseUrl();
 $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favicon.svg';

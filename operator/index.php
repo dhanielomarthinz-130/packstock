@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 Auth::requireOperator();
 
-$pageTitle = "Panel Operator - IMS Mobile (Inventory Management System)";
+$pageTitle = "Panel Operator - IMS Mobile";
 $baseUrl = Auth::getBaseUrl();
 $user = Auth::user();
 require_once __DIR__ . '/../includes/header.php';

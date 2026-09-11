@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../includes/auth.php';
 Auth::requireAdmin();
 
-$pageTitle = "Admin Control - IMS (Inventory Management System)";
+$pageTitle = "Admin Control - IMS";
 $baseUrl = Auth::getBaseUrl();
 require_once __DIR__ . '/../includes/header.php';
 ?>
