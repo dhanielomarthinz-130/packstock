@@ -306,7 +306,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     if (el) el.classList.add('hidden');
     if (navBtn) {
       navBtn.classList.remove('bg-blue-600', 'bg-emerald-600', 'text-white', 'shadow-xs', 'font-bold');
-      navBtn.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
+      navBtn.classList.add('text-slate-200', 'hover:text-white', 'hover:bg-white/10', 'font-semibold');
     }
   });
 
@@ -315,7 +315,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   const activeNav = document.getElementById('nav-' + activeNavId);
   if (activeTab) activeTab.classList.remove('hidden');
   if (activeNav) {
-    activeNav.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
+    activeNav.classList.remove('text-slate-200', 'hover:text-white', 'hover:bg-white/10', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
     activeNav.classList.add('bg-blue-600', 'text-white', 'shadow-xs', 'font-bold');
 
     // Update active section highlight and auto-expand if collapsed

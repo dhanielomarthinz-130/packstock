@@ -11,19 +11,19 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
 
   <!-- SIDEBAR NAVIGATION (ENTERPRISE SUITE) -->
-  <aside id="adminSidebar" class="w-64 bg-white text-slate-700 flex flex-col flex-shrink-0 border-r border-slate-200/90 select-none shadow-xs z-20 transition-all duration-300">
+  <aside id="adminSidebar" class="w-64 flex flex-col flex-shrink-0 select-none shadow-2xl z-20 transition-all duration-300" style="background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%);">
     <!-- Brand Logo & Mini Toggle -->
-    <div class="h-16 flex items-center justify-between px-4 bg-white border-b border-slate-100 flex-shrink-0">
+    <div class="sidebar-header h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
       <div class="flex items-center gap-3 sidebar-brand-container overflow-hidden">
-        <div class="w-9 h-9 rounded-xl bg-[#262363] text-white flex items-center justify-center shadow-sm shadow-[#262363]/30 flex-shrink-0">
+        <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/20 text-white flex items-center justify-center shadow-inner flex-shrink-0">
           <span class="material-symbols-outlined text-[22px]">inventory_2</span>
         </div>
         <div class="sidebar-brand-text truncate">
-          <h2 class="font-extrabold text-slate-900 text-sm tracking-tight">PackStock</h2>
-          <p class="text-[10px] text-slate-400 font-medium tracking-wide">Stock Control Panel</p>
+          <h2 class="sidebar-brand-title font-extrabold text-white text-sm tracking-tight">PackStock</h2>
+          <p class="sidebar-brand-subtitle text-[10px] text-indigo-200/80 font-medium tracking-wide">Stock Control Panel</p>
         </div>
       </div>
-      <button type="button" onclick="toggleAdminSidebar()" class="sidebar-brand-text p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer" title="Minimize Sidebar">
+      <button type="button" onclick="toggleAdminSidebar()" class="sidebar-brand-text p-1.5 rounded-lg text-indigo-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" title="Minimize Sidebar">
         <span class="material-symbols-outlined text-[18px]">dock_to_left</span>
       </button>
     </div>
@@ -324,19 +324,19 @@ require_once __DIR__ . '/../includes/header.php';
     </nav>
 
     <!-- User Profile & Logout Box -->
-    <div class="p-3 bg-slate-50/90 border-t border-slate-200/80 flex-shrink-0">
-      <div class="sidebar-user-card p-2 bg-white rounded-xl border border-slate-200/80 shadow-2xs flex items-center justify-between gap-2">
+    <div class="sidebar-footer-box p-3 border-t border-white/10 flex-shrink-0">
+      <div class="sidebar-user-card p-2 rounded-xl flex items-center justify-between gap-2">
         <button type="button" onclick="openProfileModal()" title="Klik untuk edit nama & update password" 
-          class="flex items-center gap-2.5 overflow-hidden text-left flex-1 hover:opacity-80 transition-opacity group">
+          class="flex items-center gap-2.5 overflow-hidden text-left flex-1 hover:opacity-90 transition-opacity group">
           <div class="w-9 h-9 rounded-xl <?= Auth::isSuperAdmin() ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white' : 'bg-gradient-to-br from-emerald-500 to-emerald-700 text-white' ?> flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-xs group-hover:scale-105 transition-transform">
             <span class="material-symbols-outlined text-[20px]"><?= Auth::isSuperAdmin() ? 'shield_person' : 'account_circle' ?></span>
           </div>
           <div class="sidebar-user-details truncate leading-tight">
-            <p class="text-xs font-black text-slate-900 truncate group-hover:text-emerald-700 transition-colors"><?= htmlspecialchars(Auth::name()) ?></p>
-            <p class="text-[11px] font-mono text-emerald-700 font-bold truncate">@<?= htmlspecialchars(Auth::username()) ?></p>
+            <p class="text-xs font-black text-white truncate"><?= htmlspecialchars(Auth::name()) ?></p>
+            <p class="text-[11px] font-mono text-emerald-300 font-bold truncate">@<?= htmlspecialchars(Auth::username()) ?></p>
           </div>
         </button>
-        <a href="../logout" title="Logout dari Sesi" class="sidebar-user-logout p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors flex-shrink-0">
+        <a href="../logout" title="Logout dari Sesi" class="sidebar-user-logout p-2 rounded-lg text-indigo-200 hover:text-rose-400 hover:bg-rose-500/20 transition-colors flex-shrink-0">
           <span class="material-symbols-outlined text-[19px]">logout</span>
         </a>
       </div>

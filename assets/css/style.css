@@ -123,6 +123,11 @@ body {
 .sidebar-section-header {
   user-select: none;
   cursor: pointer;
+  color: rgba(224, 231, 255, 0.75) !important;
+}
+
+.sidebar-section-title {
+  color: rgba(224, 231, 255, 0.85) !important;
 }
 
 .sidebar-section-chevron {
@@ -137,100 +142,113 @@ body {
   display: none !important;
 }
 
-/* Active Sidebar Section Group: Soft Blue with subtle contrast */
+/* Active Sidebar Section Group: Glass-morphism contrast */
 .sidebar-section.is-active-section {
-  background: #edf3fc !important;
-  border: 1.5px solid #bfd6f6 !important;
-  box-shadow: 0 4px 14px -3px rgba(38, 35, 99, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.02) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 4px 14px -3px rgba(0, 0, 0, 0.35) !important;
 }
 
 .sidebar-section.is-active-section .sidebar-section-header {
-  background-color: #dbe8fa !important;
-  border: 1px solid #c2daf8 !important;
-  box-shadow: 0 1px 2px rgba(38, 35, 99, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
   margin-bottom: 4px !important;
+  color: #ffffff !important;
 }
 
 .sidebar-section.is-active-section .sidebar-section-header:hover {
-  background-color: #d1e2f7 !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 .sidebar-section.is-active-section .sidebar-section-title {
-  color: #1e1b4b !important;
+  color: #ffffff !important;
   font-weight: 900 !important;
   letter-spacing: 0.04em !important;
 }
 
+.sidebar-section .sidebar-section-header span.w-5.h-5 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #93c5fd !important;
+}
+
 .sidebar-section.is-active-section .sidebar-section-header span.w-5.h-5 {
-  background-color: #ffffff !important;
-  border-color: #b5d0f6 !important;
-  color: #262363 !important;
-  box-shadow: 0 1px 2px rgba(38, 35, 99, 0.1) !important;
+  background-color: rgba(59, 130, 246, 0.35) !important;
+  border-color: rgba(147, 197, 253, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
 }
 
 .sidebar-section.is-active-section .sidebar-section-chevron {
-  color: #262363 !important;
+  color: #93c5fd !important;
 }
 
 .sidebar-section.is-active-section .section-active-badge {
   display: inline-flex !important;
   align-items: center;
-  background-color: #262363 !important;
+  background-color: #3b82f6 !important;
   color: #ffffff !important;
   font-weight: 900 !important;
   font-size: 8px !important;
   padding: 1px 6px !important;
   border-radius: 9999px !important;
-  box-shadow: 0 1px 3px rgba(38, 35, 99, 0.35) !important;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.5) !important;
 }
 
 .sidebar-section.is-active-section .sidebar-nav-btn:not(.bg-blue-600) {
-  color: #334155 !important;
+  color: rgba(241, 245, 249, 0.9) !important;
 }
 
 .sidebar-section.is-active-section .sidebar-nav-btn:not(.bg-blue-600):hover {
-  background-color: #deecfc !important;
-  color: #0f172a !important;
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
 }
 
 #adminSidebar.collapsed .sidebar-section-header {
   display: none !important;
 }
 
-/* Sidebar Icons High Clarity & Sharp Definition (Patrikan Icon Sidebar) */
+/* Sidebar Icons High Clarity & Sharp Definition */
 #adminSidebar .material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
   vertical-align: middle;
   transition: all 0.18s ease-in-out;
 }
 
-/* 1. Inactive Sidebar Nav Button Icons: Solid Navy Blue (#262363) */
+/* 1. Inactive Sidebar Nav Button Icons: Light Sky Blue / Indigo */
 #adminSidebar .sidebar-nav-btn .material-symbols-outlined {
-  color: #262363 !important;
+  color: #a5b4fc !important;
 }
 
-/* Inactive Sidebar Section Header Icons: Solid Navy Blue (#262363) */
+/* Inactive Sidebar Section Header Icons */
 #adminSidebar .sidebar-section-header .material-symbols-outlined {
-  color: #262363 !important;
+  color: #93c5fd !important;
 }
 #adminSidebar .sidebar-section-chevron {
-  color: #64748b !important;
+  color: rgba(199, 210, 254, 0.6) !important;
 }
 
 #adminSidebar .sidebar-nav-btn {
   transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  color: rgba(241, 245, 249, 0.82) !important;
+}
+
+#adminSidebar .sidebar-nav-btn:not(.bg-blue-600):hover {
+  background-color: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
 }
 
 #adminSidebar .sidebar-nav-btn:not(.bg-blue-600):hover .material-symbols-outlined {
-  color: #1e1b4f !important;
+  color: #ffffff !important;
   transform: scale(1.08);
 }
 
-/* 2. Active / Clicked Sidebar Nav Button: Solid Navy Background (#262363) with White Icon (#ffffff) */
+/* 2. Active / Clicked Sidebar Nav Button: Vibrant Royal Blue Gradient with Glow */
 #adminSidebar .sidebar-nav-btn.bg-blue-600 {
-  background-color: #262363 !important;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 12px -2px rgba(38, 35, 99, 0.45) !important;
+  box-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
 }
 
 #adminSidebar .sidebar-nav-btn.bg-blue-600 .material-symbols-outlined,
@@ -246,10 +264,71 @@ body {
 
 /* Active Badge Style */
 .section-active-badge {
-  background-color: #262363 !important;
+  background-color: #3b82f6 !important;
   color: #ffffff !important;
   font-weight: 900 !important;
-  box-shadow: 0 1px 3px rgba(38, 35, 99, 0.3) !important;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4) !important;
+}
+
+/* Custom Scrollbar for Sidebar Navigation */
+#adminSidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+#adminSidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+#adminSidebar nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+#adminSidebar nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Akses Lapangan Button in Dark Sidebar */
+#adminSidebar .sidebar-field-access-btn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+#adminSidebar .sidebar-field-access-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(147, 197, 253, 0.4) !important;
+}
+#adminSidebar .sidebar-field-access-btn p.font-bold {
+  color: #ffffff !important;
+}
+#adminSidebar .sidebar-field-access-btn p.text-\[10px\] {
+  color: rgba(199, 210, 254, 0.75) !important;
+}
+#adminSidebar .sidebar-chevron {
+  color: rgba(199, 210, 254, 0.5) !important;
+}
+#adminSidebar .sidebar-field-access-btn:hover .sidebar-chevron {
+  color: #ffffff !important;
+}
+
+/* User Profile Card & Footer in Dark Sidebar */
+#adminSidebar .sidebar-footer-box {
+  background: rgba(0, 0, 0, 0.20) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+#adminSidebar .sidebar-user-card {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+}
+#adminSidebar .sidebar-user-card p.font-black {
+  color: #ffffff !important;
+}
+#adminSidebar .sidebar-user-card p.font-mono {
+  color: #6ee7b7 !important;
+}
+#adminSidebar .sidebar-user-logout {
+  color: rgba(224, 231, 255, 0.6) !important;
+}
+#adminSidebar .sidebar-user-logout:hover {
+  color: #f87171 !important;
+  background-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 /* Mobile Frame Wrapper for Operator View */
@@ -459,6 +538,10 @@ table th {
 /* SIDEBAR MINIMIZE & MAXIMIZE (COLLAPSIBLE SIDEBAR) */
 /* ========================================================================= */
 #adminSidebar {
+  background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%) !important;
+  color: #f1f5f9 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 4px 0 24px rgba(15, 12, 53, 0.3) !important;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
