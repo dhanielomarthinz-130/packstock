@@ -13,18 +13,21 @@ require_once __DIR__ . '/../includes/header.php';
   <!-- SIDEBAR NAVIGATION (ENTERPRISE SUITE) -->
   <aside id="adminSidebar" class="w-64 flex flex-col flex-shrink-0 select-none shadow-2xl z-20 transition-all duration-300" style="background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%);">
     <!-- Brand Logo & Mini Toggle -->
-    <div class="sidebar-header h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
-      <div class="flex items-center gap-3 sidebar-brand-container overflow-hidden">
-        <div class="w-9 h-9 rounded-xl bg-white border border-white/20 flex items-center justify-center shadow-inner flex-shrink-0 p-1 overflow-hidden">
+    <div class="sidebar-header h-16 flex items-center justify-between px-3.5 border-b border-white/10 flex-shrink-0 bg-white/[0.02]">
+      <div class="flex items-center gap-2.5 sidebar-brand-container min-w-0 flex-1 overflow-hidden">
+        <div class="w-9 h-9 rounded-xl bg-white shadow-md shadow-black/20 flex items-center justify-center flex-shrink-0 p-1 ring-1 ring-white/20 overflow-hidden">
           <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
         </div>
-        <div class="sidebar-brand-text truncate">
-          <h2 class="sidebar-brand-title font-extrabold text-white text-sm tracking-tight">IMS</h2>
-          <p class="sidebar-brand-subtitle text-[10px] text-indigo-200/80 font-medium tracking-wide">Inventory Management System</p>
+        <div class="sidebar-brand-text min-w-0 flex-1">
+          <div class="flex items-center gap-1.5 leading-none">
+            <h2 class="sidebar-brand-title font-black text-white text-[15px] tracking-tight">IMS</h2>
+            <span class="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-white/15 text-indigo-100 border border-white/20 leading-none">IEG</span>
+          </div>
+          <p class="sidebar-brand-subtitle text-[9.5px] font-medium text-indigo-200/80 tracking-tight mt-1 leading-none truncate" title="Inventory Management System">Inventory Management System</p>
         </div>
       </div>
-      <button type="button" onclick="toggleAdminSidebar()" class="sidebar-brand-text p-1.5 rounded-lg text-indigo-200 hover:text-white hover:bg-white/10 transition-colors cursor-pointer" title="Minimize Sidebar">
-        <span class="material-symbols-outlined text-[18px]">dock_to_left</span>
+      <button type="button" onclick="toggleAdminSidebar()" class="sidebar-brand-text w-7 h-7 rounded-lg text-indigo-200/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all flex items-center justify-center shrink-0 cursor-pointer ml-1" title="Minimize Sidebar">
+        <span class="material-symbols-outlined text-[17px]">dock_to_left</span>
       </button>
     </div>
 
