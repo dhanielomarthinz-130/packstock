@@ -3678,7 +3678,7 @@ window.addEventListener('resize', hideFloatingDropdown);
 
 let currentInboundItemType = 'PACKAGING';
 let currentOutboundItemType = 'PACKAGING';
-let currentStItemType = '';
+let currentStItemType = 'PACKAGING';
 
 async function setInboundItemType(type) {
   hideFloatingDropdown();
@@ -3797,7 +3797,7 @@ async function setOutboundItemType(type) {
 
 async function setStockTransferItemType(type) {
   hideFloatingDropdown();
-  currentStItemType = (type === 'GIMMICK') ? 'GIMMICK' : (type === 'PACKAGING' ? 'PACKAGING' : '');
+  currentStItemType = (type === 'GIMMICK') ? 'GIMMICK' : 'PACKAGING';
   if (currentStItemType === 'GIMMICK' && (!allMaterials || !allMaterials.some(m => m.item_type === 'GIMMICK'))) {
     await ensureMaterialsLoaded(true);
   } else {
@@ -3807,14 +3807,9 @@ async function setStockTransferItemType(type) {
   const btnGimmick = document.getElementById('stTypeGimmick');
   if (btnKemas && btnGimmick) {
     if (currentStItemType === 'GIMMICK') {
-      btnGimmick.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-xs cursor-pointer flex items-center gap-1';
-      btnKemas.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
-    } else if (currentStItemType === 'PACKAGING') {
-      btnKemas.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all bg-indigo-600 text-white shadow-xs cursor-pointer flex items-center gap-1';
-      btnGimmick.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
+      updateTypeCardUI(btnGimmick, btnKemas);
     } else {
-      btnKemas.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
-      btnGimmick.className = 'px-3 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
+      updateTypeCardUI(btnKemas, btnGimmick);
     }
   }
 
@@ -3823,12 +3818,9 @@ async function setStockTransferItemType(type) {
     if (currentStItemType === 'GIMMICK') {
       badge.className = 'px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs';
       badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span><span>Mode: 🎁 Gimmick (Lengkap Batch &amp; Exp Date)</span>';
-    } else if (currentStItemType === 'PACKAGING') {
+    } else {
       badge.className = 'px-3 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs';
       badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-600"></span><span>Mode: 📦 Kemas (Tanpa Batch &amp; Exp Date)</span>';
-    } else {
-      badge.className = 'px-3 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold flex items-center gap-1.5';
-      badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span><span>Belum Pilih Tipe Stock</span>';
     }
   }
 
@@ -12989,26 +12981,17 @@ function switchStockTransferSubView(view = 'history') {
 }
 
 function resetStockTransferForm() {
-  currentStItemType = '';
-  setStockTransferItemType('');
+  currentStItemType = 'PACKAGING';
+  setStockTransferItemType('PACKAGING');
   setStFormFromTo('IN_VAS');
   const notesInput = document.getElementById('stGlobalNotes');
   if (notesInput) notesInput.value = '';
   const tbody = document.getElementById('stItemsTableBody');
   if (tbody) {
-    tbody.innerHTML = `
-      <tr class="st-prompt-row">
-        <td colspan="8" class="p-12 text-center text-slate-400 bg-slate-50/50">
-          <div class="flex flex-col items-center justify-center gap-2.5">
-            <span class="material-symbols-outlined text-4xl text-indigo-400">touch_app</span>
-            <p class="text-sm font-extrabold text-slate-800">Silakan Pilih Tipe Stock di Atas Terlebih Dahulu</p>
-            <p class="text-xs text-slate-500 max-w-md">Pilih <span class="font-bold text-indigo-600">📦 Kemas</span> (tanpa Batch &amp; Exp Date) atau <span class="font-bold text-indigo-600">🎁 Gimmick</span> (lengkap dengan Batch &amp; Exp Date) untuk memulai transfer antar lokasi / gudang.</p>
-          </div>
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = '';
   }
   stRowCounter = 0;
+  addStockTransferTableRow();
   calculateStockTransferTotals();
 }
 
@@ -13020,10 +13003,6 @@ async function openStockTransferModal(defaultDir = 'IN_VAS', initialMaterialId =
 
   await ensureMaterialsLoaded();
 
-  // Type Stock Wajib di Pilih: Secara default TIDAK TERPILIH apapun
-  currentStItemType = '';
-  setStockTransferItemType('');
-
   setStFormFromTo(defaultDir);
 
   const notesInput = document.getElementById('stGlobalNotes');
@@ -13031,24 +13010,15 @@ async function openStockTransferModal(defaultDir = 'IN_VAS', initialMaterialId =
 
   const tbody = document.getElementById('stItemsTableBody');
   if (tbody) {
-    tbody.innerHTML = `
-      <tr class="st-prompt-row">
-        <td colspan="8" class="p-12 text-center text-slate-400 bg-slate-50/50">
-          <div class="flex flex-col items-center justify-center gap-2.5">
-            <span class="material-symbols-outlined text-4xl text-indigo-400">touch_app</span>
-            <p class="text-sm font-extrabold text-slate-800">Silakan Pilih Tipe Stock di Atas Terlebih Dahulu</p>
-            <p class="text-xs text-slate-500 max-w-md">Pilih <span class="font-bold text-indigo-600">📦 Kemas</span> (tanpa Batch &amp; Exp Date) atau <span class="font-bold text-indigo-600">🎁 Gimmick</span> (lengkap dengan Batch &amp; Exp Date) untuk memulai transfer antar lokasi / gudang.</p>
-          </div>
-        </td>
-      </tr>
-    `;
+    tbody.innerHTML = '';
   }
   stRowCounter = 0;
+  addStockTransferTableRow();
   calculateStockTransferTotals();
 
   // If specific materialId passed, detect and auto-select type
   if (initialMaterialId) {
-    const mat = allMaterials.find(m => m.id == initialMaterialId);
+    const mat = (allMaterials || []).find(m => m.id == initialMaterialId);
     if (mat) {
       setStockTransferItemType(mat.item_type === 'GIMMICK' ? 'GIMMICK' : 'PACKAGING');
       const firstRowMatInput = tbody?.querySelector('.st-row-material');
@@ -13060,8 +13030,11 @@ async function openStockTransferModal(defaultDir = 'IN_VAS', initialMaterialId =
       }
       const firstRow = tbody?.querySelector('tr:not(.st-prompt-row)');
       if (firstRow) loadStRowSuggestions(firstRow, mat.id);
+      return;
     }
   }
+
+  setStockTransferItemType('PACKAGING');
 }
 
 function onStGlobalDirectionChange() {

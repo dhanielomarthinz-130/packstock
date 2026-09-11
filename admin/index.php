@@ -3245,19 +3245,6 @@ require_once __DIR__ . '/../includes/header.php';
                 <p class="text-[11px] text-slate-500 font-medium">Transfer stok barang multi-item antara Gudang Besar dan Zone VAS</p>
               </div>
             </div>
-
-            <!-- Pilihan Tipe: Kemas vs Gimmick -->
-            <div id="stTopTypeSelector" class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs self-start md:self-auto">
-              <span class="text-[10px] font-extrabold text-slate-500 uppercase px-1.5">Tipe:</span>
-              <button type="button" id="stTypeKemas" onclick="setStockTransferItemType('PACKAGING')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
-                <span>📦</span>
-                <span>Kemas</span>
-              </button>
-              <button type="button" id="stTypeGimmick" onclick="setStockTransferItemType('GIMMICK')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
-                <span>🎁</span>
-                <span>Gimmick</span>
-              </button>
-            </div>
           </div>
 
           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
@@ -3269,13 +3256,80 @@ require_once __DIR__ . '/../includes/header.php';
                 </span>
                 <span class="text-xs text-slate-500 font-medium">Input mutasi transfer barang keluar/masuk antar lokasi gudang &amp; VAS</span>
               </div>
-              <div id="stActiveTypeBadge" class="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                <span>Belum Pilih Tipe Stock</span>
+              <div id="stActiveTypeBadge" class="px-3 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-amber-600"></span>
+                <span>Mode: 📦 Kemas (Tanpa Batch &amp; Exp Date)</span>
               </div>
             </div>
 
             <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-4 text-xs">
+              
+              <!-- ================= LANGKAH 1: WAJIB PILIH TIPE BARANG (ATAS KE BAWAH) ================= -->
+              <div class="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-blue-50/30 border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-[#262363] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">1</span>
+                    <div>
+                      <h4 class="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <span>Pilih Tipe Transfer Barang</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">Wajib Dipilih *</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium">Tentukan jenis persediaan yang akan ditransfer: Stock Kemas atau Stock Gimmick</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto font-mono">Langkah 1 dari 2</span>
+                </div>
+
+                <!-- 2 Card Pilihan: Kemas vs Gimmick -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Kemas Card -->
+                  <button type="button" id="stTypeKemas" onclick="setStockTransferItemType('PACKAGING')"
+                    class="type-card-active p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-[#262363] text-white border-[#262363] shadow-md ring-2 ring-[#262363]/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">
+                        📦
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
+                          <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+
+                  <!-- Gimmick Card -->
+                  <button type="button" id="stTypeGimmick" onclick="setStockTransferItemType('GIMMICK')"
+                    class="type-card-inactive p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50/90 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl shrink-0">
+                        🎁
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
+                          <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
+                        </div>
+                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk merchandise/hadiah promosi (dilengkapi batch &amp; exp date)</p>
+                      </div>
+                    </div>
+                    <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= LANGKAH 2: INFORMASI & DETAIL TRANSFER ================= -->
+              <div class="flex items-center gap-2 pt-1 pb-0.5">
+                <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm">Informasi &amp; Detail Transfer Antar Lokasi</h4>
+              </div>
+
               <!-- Meta Information Row -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div>
