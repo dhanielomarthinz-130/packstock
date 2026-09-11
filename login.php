@@ -43,7 +43,7 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Top Status Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/30 shadow-xs backdrop-blur-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-[10px] font-black tracking-wider uppercase text-white">IMS</span>
+          <span class="text-[10px] font-black tracking-wider uppercase" style="color: #ffffff;">IMS</span>
         </div>
 
         <!-- Logo & Title -->
@@ -53,13 +53,13 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div>
             <div class="flex items-center gap-2 leading-none">
-              <h1 class="text-2xl font-black tracking-tight leading-tight text-white">IMS</h1>
+              <h1 class="text-2xl font-black leading-tight" style="color: #ffffff; letter-spacing: 0.22em;">IMS</h1>
             </div>
-            <p class="text-[11px] font-bold tracking-wide mt-1 text-indigo-100">Inventory Management System</p>
+            <p class="text-[11px] font-bold tracking-wide mt-1" style="color: rgba(255, 255, 255, 0.92);">Inventory Management System</p>
           </div>
         </div>
 
-        <p class="text-xs leading-relaxed pt-1.5 font-normal text-white/90">
+        <p class="text-xs leading-relaxed pt-1.5 font-normal" style="color: rgba(255, 255, 255, 0.92);">
           Sistem manajemen persediaan Stock Kemas / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
@@ -68,44 +68,44 @@ require_once __DIR__ . '/includes/header.php';
       <div class="my-5 space-y-2.5 relative z-10">
         
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">sync_alt</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate text-white">Real-Time Stock Mutation</h4>
-            <p class="text-[10.5px] truncate text-white/80">Pelacakan stok & pemotongan otomatis</p>
+            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Real-Time Stock Mutation</h4>
+            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.85);">Pelacakan stok & pemotongan otomatis</p>
           </div>
         </div>
 
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">checklist</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate text-white">Dynamic Count & Opname</h4>
-            <p class="text-[10.5px] truncate text-white/80">Hitung fisik akurat tanpa bias sistem</p>
+            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Dynamic Count & Opname</h4>
+            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.85);">Hitung fisik akurat tanpa bias sistem</p>
           </div>
         </div>
 
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
+          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate text-white">Picking Task Dispatch</h4>
-            <p class="text-[10.5px] truncate text-white/80">Serah terima Stock Kemas / Consumable</p>
+            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Picking Task Dispatch</h4>
+            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.85);">Serah terima Stock Kemas / Consumable</p>
           </div>
         </div>
 
       </div>
 
       <!-- Bottom Security & Version Badge -->
-      <div class="pt-3 border-t border-white/20 flex items-center justify-between text-[10.5px] relative z-10 text-white/80">
-        <span class="flex items-center gap-1.5 font-semibold text-white">
+      <div class="pt-3 border-t border-white/20 flex items-center justify-between text-[10.5px] relative z-10" style="color: rgba(255, 255, 255, 0.85);">
+        <span class="flex items-center gap-1.5 font-semibold" style="color: #ffffff;">
           <span class="material-symbols-outlined text-[14px]">lock</span>
           <span>SSL 256-bit Encrypted</span>
         </span>
-        <span class="font-mono text-indigo-100">2026 Edition</span>
+        <span class="font-mono" style="color: rgba(255, 255, 255, 0.9);">2026 Edition</span>
       </div>
 
     </div>
