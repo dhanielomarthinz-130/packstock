@@ -351,6 +351,7 @@ if ($type === 'gimmick_template') {
     $headers = [
         'SKU',
         'Nama Barang',
+        'Lokasi Rak',
         'Area',
         'SAP Code',
         'Barcode',
@@ -361,11 +362,11 @@ if ($type === 'gimmick_template') {
         'Status Aktif'
     ];
 
-    $colWidths = [28, 45, 12, 16, 18, 26, 14, 18, 16, 14];
+    $colWidths = [28, 45, 18, 12, 16, 18, 26, 14, 18, 16, 14];
     $rows = [
-        ['GIMMICK-AMPLOP-HANASUI', '[NOT FOR SALE] Hanasui Amplop Cantik', 'Pusat', '7000050037', '126', '126', 'Gimmick', 1831, 1831, 'AKTIF'],
-        ['GIMMICK-BAR-SOAP-CHARCOAL', '[NOT FOR SALE] Hanasui Sheet Mask & Stick Mask Bar Soap Charcoal', 'Pusat', '', '212', '(90)NA18210500451', 'Gimmick', 50, 50, 'AKTIF'],
-        ['GIMMICK-BOBA-DOLL', '[NOT FOR SALE] HANASUI Boba Doll', 'Pusat', '7000050040', '149', '149', 'Gimmick', 4, 4, 'AKTIF'],
+        ['GIMMICK-AMPLOP-HANASUI', '[NOT FOR SALE] Hanasui Amplop Cantik', 'Rak G-01', 'Pusat', '7000050037', '126', '126', 'Gimmick', 1831, 1831, 'AKTIF'],
+        ['GIMMICK-BAR-SOAP-CHARCOAL', '[NOT FOR SALE] Hanasui Sheet Mask & Stick Mask Bar Soap Charcoal', 'Rak G-02', 'Pusat', '', '212', '(90)NA18210500451', 'Gimmick', 50, 50, 'AKTIF'],
+        ['GIMMICK-BOBA-DOLL', '[NOT FOR SALE] HANASUI Boba Doll', 'Rak G-03', 'Pusat', '7000050040', '149', '149', 'Gimmick', 4, 4, 'AKTIF'],
     ];
 
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);

@@ -1064,9 +1064,10 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("DELETE FROM inbound_transactions WHERE material_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM outbound_transactions WHERE material_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM tasks WHERE material_id = ?")->execute([$id]);
+        $pdo->prepare("DELETE FROM material_batches WHERE material_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM materials WHERE id = ?")->execute([$id]);
         $pdo->commit();
-        echo json_encode(['success' => true, 'message' => 'Kemas berhasil dihapus!']);
+        echo json_encode(['success' => true, 'message' => 'Item berhasil dihapus!']);
     } catch (Exception $e) {
         $pdo->rollBack();
         http_response_code(500);

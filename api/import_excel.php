@@ -635,7 +635,7 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $header = $rows[$headerRowIdx];
-    $skuIdx = -1; $nameIdx = -1; $areaIdx = -1; $sapIdx = -1; $barcodeIdx = -1; $bpomIdx = -1;
+    $skuIdx = -1; $nameIdx = -1; $rackIdx = -1; $areaIdx = -1; $sapIdx = -1; $barcodeIdx = -1; $bpomIdx = -1;
     $catIdx = -1; $onHandIdx = -1; $availIdx = -1; $kecilIdx = -1; $besarIdx = -1; $statusIdx = -1; $reserveIdx = -1;
 
     foreach ($header as $colIdx => $colName) {
@@ -644,6 +644,7 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         elseif (strpos($c, 'BARCODE') !== false || strpos($c, 'EAN') !== false) $barcodeIdx = $colIdx;
         elseif ($c === 'SKU' || strpos($c, 'KODE BARANG') !== false || strpos($c, 'KODE ITEM') !== false || $c === 'ITEM NO') $skuIdx = $colIdx;
         elseif (strpos($c, 'NAMA BARANG') !== false || strpos($c, 'NAMA ITEM') !== false || strpos($c, 'DESCRIPTION') !== false) $nameIdx = $colIdx;
+        elseif (strpos($c, 'LOKASI') !== false || strpos($c, 'RACK') !== false || strpos($c, 'RAK') !== false) $rackIdx = $colIdx;
         elseif ($c === 'AREA') $areaIdx = $colIdx;
         elseif (strpos($c, 'SAP') !== false) $sapIdx = $colIdx;
         elseif (strpos($c, 'KATEGORI') !== false) $catIdx = $colIdx;
@@ -693,6 +694,7 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($name)) $name = $sku;
 
         $area = ($areaIdx !== -1 && !empty($r[$areaIdx])) ? trim((string)$r[$areaIdx]) : 'Pusat';
+        $rack = ($rackIdx !== -1 && !empty($r[$rackIdx])) ? trim((string)$r[$rackIdx]) : ('Gudang Gimmick ' . $area);
         $sapCode = ($sapIdx !== -1 && !empty($r[$sapIdx])) ? trim((string)$r[$sapIdx]) : '';
         if ($sapCode === '0') $sapCode = '';
         $barcode = ($barcodeIdx !== -1 && !empty($r[$barcodeIdx])) ? trim((string)$r[$barcodeIdx]) : '';
@@ -740,7 +742,7 @@ if ($action === 'preview_gimmick' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'sap_code' => $sapCode,
             'category' => $cat,
             'unit' => 'Pcs',
-            'rack_location' => 'Gudang Gimmick ' . $area,
+            'rack_location' => $rack,
             'ending_stock' => $onHand,
             'available_qty' => $avail,
             'qty_gudang_kecil' => $kecil,

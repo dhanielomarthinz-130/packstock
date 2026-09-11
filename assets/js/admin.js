@@ -14114,9 +14114,16 @@ async function loadGimmickStock(page = 1) {
     }
 
     const items = res.data || [];
-    const pagination = res.pagination || { total_items: items.length, total_pages: 1, current_page: 1, limit: 50 };
+    const p = res.pagination || {};
+    const pagination = {
+      total_items: p.total_rows ?? p.total_items ?? items.length,
+      total_pages: p.total_pages ?? 1,
+      current_page: p.page ?? p.current_page ?? 1,
+      limit: p.per_page ?? p.limit ?? 50
+    };
 
-    renderGimmickTable(items, (pagination.current_page - 1) * pagination.limit);
+    const calculatedStartIdx = (pagination.current_page - 1) * pagination.limit;
+    renderGimmickTable(items, Number.isFinite(calculatedStartIdx) ? calculatedStartIdx : 0);
     renderGimmickPagination(pagination);
   } catch (err) {
     if (tbody) {
@@ -14286,6 +14293,7 @@ function calculateShelfLifeMonths(expDateStr) {
 
 // Render Gimmick Table Rows (Breakdown per batch, sorted by Location)
 function renderGimmickTable(items, startIdx = 0) {
+  startIdx = Number.isFinite(startIdx) ? startIdx : 0;
   const tbody = document.getElementById('gimmickTableBody');
   if (!tbody) return;
 
@@ -14463,12 +14471,16 @@ function renderGimmickTable(items, startIdx = 0) {
     const actionCellHtml = `
       <div class="inline-flex items-center justify-end gap-1.5">
         <button type="button" onclick="openEditGimmickModal(${m.id})" title="Edit Data Gimmick" 
-          class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-200 transition-colors inline-flex items-center justify-center shadow-2xs">
+          class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 border border-amber-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">edit</span>
         </button>
         <button type="button" onclick="quickScanItemByCode('${escapeHtml(m.barcode || m.barcode_bpom || m.sap_code || m.code)}')" title="Buka Detail Barcode & Quick Action" 
-          class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs">
+          class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">barcode_scanner</span>
+        </button>
+        <button type="button" onclick="confirmDeleteGimmick(${m.id}, '${escapeHtml(m.name)}')" title="Hapus Master Gimmick (Super Admin)" 
+          class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">delete</span>
         </button>
       </div>
     `;
@@ -14895,42 +14907,68 @@ function renderGimmickPagination(p) {
   const btnsEl = document.getElementById('gimmickPaginationBtns');
   if (!infoEl || !btnsEl) return;
 
-  const total = p.total_items || 0;
-  const start = total > 0 ? (p.current_page - 1) * p.limit + 1 : 0;
-  const end = Math.min(p.current_page * p.limit, total);
+  const total = Number.isFinite(p.total_items) ? p.total_items : (p.total_rows || 0);
+  const curPage = Number.isFinite(p.current_page) ? p.current_page : (p.page || 1);
+  const perPage = Number.isFinite(p.limit) ? p.limit : (p.per_page || 50);
+  const totalPages = Number.isFinite(p.total_pages) ? p.total_pages : 1;
+
+  const start = total > 0 ? (curPage - 1) * perPage + 1 : 0;
+  const end = Math.min(curPage * perPage, total);
 
   infoEl.innerHTML = `Menampilkan <b>${start} - ${end}</b> dari <b>${App.formatNumber(total)}</b> SKU Gimmick`;
 
   let btnsHtml = '';
-  if (p.total_pages > 1) {
+  if (totalPages > 1) {
     btnsHtml += `
-      <button onclick="loadGimmickStock(${p.current_page - 1})" ${p.current_page <= 1 ? 'disabled' : ''} 
-        class="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+      <button onclick="loadGimmickStock(${curPage - 1})" ${curPage <= 1 ? 'disabled' : ''} 
+        class="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
         &laquo; Prev
       </button>
     `;
 
-    for (let i = 1; i <= p.total_pages; i++) {
-      if (i === 1 || i === p.total_pages || (i >= p.current_page - 2 && i <= p.current_page + 2)) {
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= curPage - 2 && i <= curPage + 2)) {
         btnsHtml += `
           <button onclick="loadGimmickStock(${i})" 
-            class="px-2.5 py-1 rounded font-bold border ${i === p.current_page ? 'bg-[#262363] text-white border-[#262363]' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
+            class="px-2.5 py-1 rounded font-bold border cursor-pointer ${i === curPage ? 'bg-[#262363] text-white border-[#262363]' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">
             ${i}
           </button>
         `;
-      } else if (i === p.current_page - 3 || i === p.current_page + 3) {
+      } else if (i === curPage - 3 || i === curPage + 3) {
         btnsHtml += `<span class="px-1 text-slate-400 font-bold">...</span>`;
       }
     }
 
     btnsHtml += `
-      <button onclick="loadGimmickStock(${p.current_page + 1})" ${p.current_page >= p.total_pages ? 'disabled' : ''} 
-        class="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed">
+      <button onclick="loadGimmickStock(${curPage + 1})" ${curPage >= totalPages ? 'disabled' : ''} 
+        class="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer">
         Next &raquo;
       </button>
     `;
   }
   btnsEl.innerHTML = btnsHtml;
+}
+
+async function confirmDeleteGimmick(id, name) {
+  if (!confirm(`Apakah Anda yakin ingin menghapus data master Gimmick "${name}"?\n\nPERINGATAN: Seluruh riwayat mutasi, batch, dan stok SKU ini akan dihapus secara permanen!`)) {
+    return;
+  }
+  try {
+    const res = await App.fetchJson('../api/materials.php?action=delete', {
+      method: 'POST',
+      body: JSON.stringify({ id })
+    });
+    if (res.success) {
+      App.toast(res.message || 'Gimmick berhasil dihapus', 'success');
+      loadGimmickStock(currentGimmickPage);
+      if (typeof loadGimmickStats === 'function') loadGimmickStats();
+      if (typeof loadMaterials === 'function') loadMaterials();
+    } else {
+      App.toast(res.message || 'Gagal menghapus Gimmick', 'error');
+    }
+  } catch (err) {
+    App.toast('Terjadi kesalahan: ' + err.message, 'error');
+  }
 }
 
 // Add / Edit Gimmick Modal Handlers
