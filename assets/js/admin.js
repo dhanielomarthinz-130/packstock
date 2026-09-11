@@ -13929,10 +13929,12 @@ async function triggerGoogleSheetsSync(mode = 'update', btnElement = null) {
   const modeText = (mode === 'update') ? '⚡ Update Terbaru (Delta)' : '🔄 Full Sync (Timpa Semua)';
   const targetLabelMap = {
     'inventory': 'Stock Kemas',
+    'gimmick': 'Stock Gimmick',
     'vas': 'Stock VAS',
+    'reorder': 'Reorder Kemas',
     'inbound': 'Barang Masuk',
     'outbound': 'Barang Keluar',
-    'all': 'Semua 4 Menu'
+    'all': 'Semua Menu (6 Tab)'
   };
   const targetLabel = targetLabelMap[selectedTarget] || selectedTarget.toUpperCase();
 

@@ -23,7 +23,9 @@ function getGoogleSheetsConfig(string $path): array {
         'auto_sync' => false,
         'last_synced' => [
             'inventory' => null,
+            'gimmick'   => null,
             'vas'       => null,
+            'reorder'   => null,
             'inbound'   => null,
             'outbound'  => null
         ]
@@ -155,8 +157,8 @@ if ($action === 'sync') {
 
     $targetsToProcess = [];
     if ($target === 'all') {
-        $targetsToProcess = ['inventory', 'vas', 'inbound', 'outbound'];
-    } elseif (in_array($target, ['inventory', 'vas', 'inbound', 'outbound'])) {
+        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
+    } elseif (in_array($target, ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'])) {
         $targetsToProcess = [$target];
     } else {
         echo json_encode(['success' => false, 'message' => "Target sync '{$target}' tidak valid."]);
@@ -262,11 +264,11 @@ if ($action === 'get_payload') {
 
     $targetsToProcess = [];
     if ($target === 'all') {
-        $targetsToProcess = ['inventory', 'vas', 'inbound', 'outbound'];
-    } elseif (in_array($target, ['inventory', 'vas', 'inbound', 'outbound'])) {
+        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
+    } elseif (in_array($target, ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'])) {
         $targetsToProcess = [$target];
     } else {
-        $targetsToProcess = ['inventory', 'vas', 'inbound', 'outbound'];
+        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
     }
 
     $sheetsPayload = [];
@@ -303,7 +305,7 @@ if ($action === 'get_payload') {
 // =========================================================================
 if ($action === 'mark_synced') {
     $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
-    $targetsToProcess = ($target === 'all') ? ['inventory', 'vas', 'inbound', 'outbound'] : [$target];
+    $targetsToProcess = ($target === 'all') ? ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'] : [$target];
     $nowStr = date('Y-m-d H:i:s');
 
     foreach ($targetsToProcess as $t) {
@@ -350,11 +352,12 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                        COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
                    )) as initial_upload_stock
             FROM materials m
+            WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
         ";
         
         $params = [];
         if ($mode === 'update' && !empty($lastSyncTime)) {
-            $query .= " WHERE m.updated_at > ? OR m.created_at > ?";
+            $query .= " AND (m.updated_at > ? OR m.created_at > ?)";
             $params = [$lastSyncTime, $lastSyncTime];
         }
         $query .= " ORDER BY m.code ASC";
@@ -410,6 +413,315 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 'Satuan',
                 'Lokasi Rak',
                 'Status Stok',
+                'Terakhir Update'
+            ],
+            'rows' => $rows
+        ];
+    }
+
+    if ($target === 'gimmick') {
+        $query = "
+            SELECT m.*,
+                   COALESCE((
+                       SELECT SUM(qty_change) 
+                       FROM stock_mutations 
+                       WHERE material_id = m.id 
+                         AND qty_change > 0 
+                         AND type != 'INITIAL_IMPORT'
+                   ), 0) as total_inbound,
+                   COALESCE((
+                       SELECT SUM(ABS(qty_change)) 
+                       FROM stock_mutations 
+                       WHERE material_id = m.id 
+                         AND qty_change < 0
+                   ), 0) as total_outbound,
+                   COALESCE((
+                       SELECT qty_change 
+                       FROM stock_mutations 
+                       WHERE material_id = m.id 
+                         AND type = 'INITIAL_IMPORT' 
+                       ORDER BY id ASC LIMIT 1
+                   ), (
+                       m.current_stock - 
+                       COALESCE((SELECT SUM(qty_change) FROM stock_mutations WHERE material_id = m.id AND type != 'INITIAL_IMPORT'), 0)
+                   )) as initial_upload_stock
+            FROM materials m
+            WHERE m.item_type = 'GIMMICK'
+        ";
+        
+        $params = [];
+        if ($mode === 'update' && !empty($lastSyncTime)) {
+            $query .= " AND (m.updated_at > ? OR m.created_at > ?)";
+            $params = [$lastSyncTime, $lastSyncTime];
+        }
+        $query .= " ORDER BY m.code ASC";
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $rows = [];
+
+        while ($r = $stmt->fetch()) {
+            $stock = (float)$r['current_stock'];
+            $min = (float)$r['min_stock'];
+            $vas = (float)($r['vas_stock'] ?? 0);
+            $qKecil = (float)($r['qty_gudang_kecil'] ?? 0);
+            $qBesar = (float)($r['qty_gudang_besar'] ?? 0);
+            
+            $status = 'AMAN';
+            if ($stock <= 0) {
+                $status = 'HABIS';
+            } elseif ($stock <= $min) {
+                $status = 'MENIPIS';
+            }
+
+            $rows[] = [
+                $r['code'], // Primary Key
+                $r['name'],
+                $r['category'] ?: 'Gimmick',
+                (float)$r['initial_upload_stock'],
+                (float)$r['total_inbound'],
+                (float)$r['total_outbound'],
+                $stock,
+                $qKecil,
+                $qBesar,
+                $vas,
+                $r['unit'] ?: 'Pcs',
+                $r['rack_location'] ?: '-',
+                $status,
+                $r['updated_at'] ?: date('Y-m-d H:i:s')
+            ];
+        }
+
+        if (empty($rows) && $mode === 'update') {
+            return buildSheetData($pdo, 'gimmick', 'full', null);
+        }
+
+        return [
+            'name' => 'Stock Gimmick',
+            'key_index' => 0,
+            'headers' => [
+                'Item No (SKU)',
+                'Nama Gimmick',
+                'Kategori',
+                'Stok Awal',
+                'Total Masuk (+)',
+                'Total Keluar (-)',
+                'Sisa Stok Akhir',
+                'Qty Gudang Kecil',
+                'Qty Gudang Besar',
+                'Stok Zone VAS',
+                'Satuan',
+                'Lokasi Rak',
+                'Status Stok',
+                'Terakhir Update'
+            ],
+            'rows' => $rows
+        ];
+    }
+
+    if ($target === 'reorder') {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        
+        // Ensure table material_po_trackings exists
+        if ($driver === 'sqlite') {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS material_po_trackings (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  material_id INTEGER NOT NULL,
+                  po_number TEXT NOT NULL,
+                  supplier_name TEXT NULL,
+                  ordered_qty REAL NOT NULL DEFAULT 0,
+                  order_date TEXT NOT NULL,
+                  eta_date TEXT NOT NULL,
+                  status TEXT DEFAULT 'ORDERED',
+                  notes TEXT NULL,
+                  created_by INTEGER NOT NULL,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            ");
+        } else {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `material_po_trackings` (
+                  `id` INT AUTO_INCREMENT PRIMARY KEY,
+                  `material_id` INT NOT NULL,
+                  `po_number` VARCHAR(100) NOT NULL,
+                  `supplier_name` VARCHAR(150) NULL,
+                  `ordered_qty` DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                  `order_date` DATE NOT NULL,
+                  `eta_date` DATE NOT NULL,
+                  `status` ENUM('ORDERED', 'SHIPPED', 'RECEIVED', 'CANCELLED') DEFAULT 'ORDERED',
+                  `notes` TEXT NULL,
+                  `created_by` INT NOT NULL,
+                  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                  INDEX (`material_id`),
+                  INDEX (`status`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+        }
+
+        $date14Expr = ($driver === 'sqlite') ? "datetime('now', '-14 days')" : "DATE_SUB(CURDATE(), INTERVAL 14 DAY)";
+        $date30Expr = ($driver === 'sqlite') ? "datetime('now', '-30 days')" : "DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+
+        $query = "
+            SELECT m.*,
+                   COALESCE(out_14.total_outbound_14d, 0) AS total_outbound_14d,
+                   COALESCE(out_30.total_outbound_30d, 0) AS total_outbound_30d,
+                   COALESCE(out_all.total_outbound_all, 0) AS total_outbound_all,
+                   COALESCE(po_active.active_po_count, 0) AS active_po_count,
+                   po_active.latest_po_number,
+                   po_active.latest_po_qty,
+                   po_active.latest_po_eta,
+                   po_active.latest_supplier
+            FROM materials m
+            LEFT JOIN (
+                SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_14d
+                FROM stock_mutations
+                WHERE qty_change < 0 AND created_at >= {$date14Expr}
+                GROUP BY material_id
+            ) out_14 ON m.id = out_14.material_id
+            LEFT JOIN (
+                SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_30d
+                FROM stock_mutations
+                WHERE qty_change < 0 AND created_at >= {$date30Expr}
+                GROUP BY material_id
+            ) out_30 ON m.id = out_30.material_id
+            LEFT JOIN (
+                SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_all
+                FROM stock_mutations
+                WHERE qty_change < 0
+                GROUP BY material_id
+            ) out_all ON m.id = out_all.material_id
+            LEFT JOIN (
+                SELECT t1.material_id,
+                       COUNT(t1.id) AS active_po_count,
+                       t1.po_number AS latest_po_number,
+                       t1.ordered_qty AS latest_po_qty,
+                       t1.eta_date AS latest_po_eta,
+                       t1.supplier_name AS latest_supplier
+                FROM material_po_trackings t1
+                INNER JOIN (
+                    SELECT material_id, MAX(id) AS max_id
+                    FROM material_po_trackings
+                    WHERE status IN ('ORDERED', 'SHIPPED')
+                    GROUP BY material_id
+                ) t2 ON t1.id = t2.max_id
+                GROUP BY t1.material_id
+            ) po_active ON m.id = po_active.material_id
+            WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
+        ";
+        $params = [];
+        if ($mode === 'update' && !empty($lastSyncTime)) {
+            $query .= " AND (m.updated_at > ? OR m.created_at > ?)";
+            $params = [$lastSyncTime, $lastSyncTime];
+        }
+        $query .= " ORDER BY (m.current_stock <= 0) DESC, (m.current_stock <= m.min_stock) DESC, m.name ASC";
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $leadTimeDays = 7;
+        $rows = [];
+
+        while ($r = $stmt->fetch()) {
+            $stock = (float)$r['current_stock'];
+            $minStock = (float)$r['min_stock'];
+
+            $out14 = (float)$r['total_outbound_14d'];
+            $out30 = (float)$r['total_outbound_30d'];
+            $outAll = (float)$r['total_outbound_all'];
+
+            if ($out14 > 0) {
+                $dailyUsage = $out14 / 14.0;
+            } elseif ($out30 > 0) {
+                $dailyUsage = $out30 / 30.0;
+            } elseif ($outAll > 0) {
+                $dailyUsage = $outAll / 60.0;
+            } else {
+                $dailyUsage = 0.0;
+            }
+
+            $leadTimeDemand = $dailyUsage * $leadTimeDays;
+            $reorderPoint = $leadTimeDemand + $minStock;
+
+            $urgencyLabel = 'Aman';
+            if ($stock <= 0) {
+                $urgencyLabel = 'HABIS (0)';
+            } elseif ($stock <= $leadTimeDemand || ($minStock > 0 && $stock <= ($minStock * 0.5))) {
+                $urgencyLabel = 'HARUS PO (Kritis)';
+            } elseif ($stock <= $minStock || ($reorderPoint > 0 && $stock <= $reorderPoint)) {
+                $urgencyLabel = 'Menipis';
+            }
+
+            $runwayText = 'Statis / Tidak Ada Pemakaian';
+            if ($stock <= 0) {
+                $runwayText = '0 Hari (Habis)';
+            } elseif ($dailyUsage > 0) {
+                $days = round($stock / $dailyUsage, 1);
+                $runwayText = "{$days} Hari";
+            }
+
+            $suggestedQty = 0;
+            if ($urgencyLabel !== 'Aman') {
+                $targetBuffer = max($minStock * 2, $leadTimeDemand * 3, $minStock + ($dailyUsage * 14));
+                $diff = $targetBuffer - $stock;
+                $suggestedQty = max(1, ceil($diff));
+                if ($suggestedQty > 100) {
+                    $suggestedQty = ceil($suggestedQty / 10) * 10;
+                }
+            }
+
+            $poStatus = ($r['active_po_count'] > 0) ? 'Sudah Di-order PO' : 'Belum Ada PO';
+
+            $rows[] = [
+                $r['code'], // Key col 0
+                $r['name'],
+                $r['category'] ?: 'Kemas',
+                $r['rack_location'] ?: '-',
+                $stock,
+                $minStock,
+                round($dailyUsage, 2),
+                round($leadTimeDemand, 2),
+                round($reorderPoint, 2),
+                $runwayText,
+                $suggestedQty,
+                $r['unit'] ?: 'Pcs',
+                $urgencyLabel,
+                $poStatus,
+                $r['latest_po_number'] ?: '-',
+                (float)($r['latest_po_qty'] ?? 0),
+                $r['latest_po_eta'] ?: '-',
+                $r['latest_supplier'] ?: '-',
+                $r['updated_at'] ?: date('Y-m-d H:i:s')
+            ];
+        }
+
+        if (empty($rows) && $mode === 'update') {
+            return buildSheetData($pdo, 'reorder', 'full', null);
+        }
+
+        return [
+            'name' => 'Reorder Kemas',
+            'key_index' => 0,
+            'headers' => [
+                'Item No (SKU)',
+                'Nama Kemas',
+                'Kategori',
+                'Lokasi Rak',
+                'Stok Saat Ini',
+                'Safety Stock (Min)',
+                'Pemakaian Harian',
+                'Kebutuhan Lead Time (7 Hari)',
+                'Reorder Point (ROP)',
+                'Estimasi Sisa Hari',
+                'Saran Qty Order',
+                'Satuan',
+                'Status Kritis',
+                'Status PO',
+                'No. PO Terakhir',
+                'Qty PO',
+                'ETA Kedatangan',
+                'Supplier',
                 'Terakhir Update'
             ],
             'rows' => $rows

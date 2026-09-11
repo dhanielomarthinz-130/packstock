@@ -1278,6 +1278,13 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Action Buttons -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('gimmick', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Gimmick ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">sync</span>
+              <span>Sync Gimmick</span>
+            </button>
+            <?php endif; ?>
+
             <a href="export.php?type=gimmick_template" target="_blank" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download Format Excel Stok Gimmick">
               <span class="material-symbols-outlined text-[18px]">download</span>
               <span>Template Excel</span>
@@ -2825,6 +2832,13 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex items-center gap-2 flex-wrap">
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('reorder', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Reorder Kemas ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">sync</span>
+              <span>Sync Reorder</span>
+            </button>
+            <?php endif; ?>
+
             <button type="button" onclick="shareReorderAlertsWhatsApp()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Kirim Rekap Kebutuhan PO via WhatsApp">
               <span class="material-symbols-outlined text-[18px]">share</span>
               <span>Share Rekap PO (WA)</span>
@@ -6354,20 +6368,20 @@ require_once __DIR__ . '/../includes/header.php';
   <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
     
     <!-- Modal Header -->
-    <div class="bg-gradient-to-r from-emerald-800 to-teal-900 px-6 py-4 text-white flex items-center justify-between shrink-0">
+    <div style="background: linear-gradient(135deg, #5147E6 0%, #584CE7 50%, #634DE9 100%);" class="px-6 py-4 text-white flex items-center justify-between shrink-0 shadow-md">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-          <span class="material-symbols-outlined text-2xl text-emerald-300">table_chart</span>
+        <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/20 shadow-xs">
+          <span class="material-symbols-outlined text-2xl text-white">table_chart</span>
         </div>
         <div>
           <h3 class="font-extrabold text-base tracking-tight flex items-center gap-2">
             <span>Sinkronisasi Google Sheets</span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-700/80 text-emerald-100 border border-emerald-500/50">Live Sync</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-white/20 text-white border border-white/30 backdrop-blur-xs">Live Sync</span>
           </h3>
-          <p class="text-xs text-emerald-200/90">Kirim data ke Google Sheets dalam 1-Klik</p>
+          <p class="text-xs text-indigo-100/90">Kirim data ke Google Sheets dalam 1-Klik</p>
         </div>
       </div>
-      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="text-blue-200 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+      <button type="button" onclick="closeGoogleSheetsSyncModal()" class="text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer">
         <span class="material-symbols-outlined text-xl">close</span>
       </button>
     </div>
@@ -6383,11 +6397,19 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-500 transition-all group select-none">
-            <input type="radio" name="gsTargetRadio" value="inventory" class="w-4 h-4 text-emerald-600 accent-emerald-600" checked>
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-[#584CE7] transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="inventory" class="w-4 h-4 text-[#584CE7] accent-[#584CE7]" checked>
             <div>
-              <div class="font-bold text-xs text-slate-900 group-hover:text-emerald-700">Stock Inventory</div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-[#584CE7]">Stock Inventory</div>
               <div class="text-[10px] text-slate-500">Katalog master stok kemasan</div>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="gimmick" class="w-4 h-4 text-amber-600 accent-amber-600">
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-amber-700">Stock Gimmick</div>
+              <div class="text-[10px] text-slate-500">Katalog stok gimmick & merchandise</div>
             </div>
           </label>
 
@@ -6399,6 +6421,14 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </label>
 
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-rose-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="reorder" class="w-4 h-4 text-rose-600 accent-rose-600">
+            <div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-rose-700">Reorder Kemas</div>
+              <div class="text-[10px] text-slate-500">Peringatan stok menipis & rekomendasi PO</div>
+            </div>
+          </label>
+
           <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-emerald-500 transition-all group select-none">
             <input type="radio" name="gsTargetRadio" value="inbound" class="w-4 h-4 text-emerald-600 accent-emerald-600">
             <div>
@@ -6407,20 +6437,20 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </label>
 
-          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-amber-500 transition-all group select-none">
-            <input type="radio" name="gsTargetRadio" value="outbound" class="w-4 h-4 text-amber-600 accent-amber-600">
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-blue-500 transition-all group select-none">
+            <input type="radio" name="gsTargetRadio" value="outbound" class="w-4 h-4 text-blue-600 accent-blue-600">
             <div>
-              <div class="font-bold text-xs text-slate-900 group-hover:text-amber-700">Barang Keluar</div>
+              <div class="font-bold text-xs text-slate-900 group-hover:text-blue-700">Barang Keluar</div>
               <div class="text-[10px] text-slate-500">Riwayat pengeluaran barang</div>
             </div>
           </label>
         </div>
 
-        <label class="flex items-center gap-3 p-3 bg-emerald-50/70 border border-emerald-300 rounded-xl cursor-pointer hover:bg-emerald-50 transition-all group select-none mt-2">
-          <input type="radio" name="gsTargetRadio" value="all" class="w-4 h-4 text-emerald-700 accent-emerald-700">
+        <label class="flex items-center gap-3 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl cursor-pointer hover:bg-indigo-50 transition-all group select-none mt-2">
+          <input type="radio" name="gsTargetRadio" value="all" class="w-4 h-4 text-[#584CE7] accent-[#584CE7]">
           <div>
-            <div class="font-black text-xs text-emerald-950">🔥 Sync Semua 4 Menu Sekaligus</div>
-            <div class="text-[10px] text-emerald-700">Otomatis mengirim data Stock Inventory, VAS, Barang Masuk & Keluar ke 4 tab terpisah</div>
+            <div class="font-black text-xs text-indigo-950">🔥 Sync Semua Menu Sekaligus (6 Tab)</div>
+            <div class="text-[10px] text-indigo-700">Otomatis mengirim data Stock Kemas, Gimmick, VAS, Reorder, Barang Masuk & Keluar ke 6 tab terpisah</div>
           </div>
         </label>
       </div>
@@ -6433,14 +6463,14 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Button 1: Incremental Update Only -->
           <button id="btnGsSyncUpdate" type="button" onclick="triggerGoogleSheetsSync('update', this)" class="p-4 bg-[#262363] hover:bg-[#1c1a4a] active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-[#262363] disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
-              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-900/60 text-emerald-200 border border-emerald-400/40">Dianjurkan</span>
-              <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform gs-btn-icon">bolt</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Dianjurkan</span>
+              <span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform gs-btn-icon text-amber-400">bolt</span>
             </div>
             <div class="mt-3">
               <h4 class="font-black text-sm text-white flex items-center gap-1.5">
                 <span class="gs-btn-title">⚡ Sync Update Terbaru</span>
               </h4>
-              <p class="text-[11px] text-emerald-100/90 mt-1 leading-relaxed">
+              <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
                 Hanya mengirim data yang <b>berubah / baru</b> sejak sync terakhir.
               </p>
             </div>
@@ -6449,14 +6479,14 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Button 2: Full Sync Overhaul -->
           <button id="btnGsSyncFull" type="button" onclick="triggerGoogleSheetsSync('full', this)" class="p-4 bg-[#262363] hover:bg-[#1c1a4a] active:scale-[0.98] text-white rounded-xl shadow-md transition-all flex flex-col justify-between text-left group cursor-pointer border border-[#262363] disabled:opacity-60 disabled:cursor-not-allowed">
             <div class="flex items-center justify-between w-full">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200">Reset Total</span>
-              <span class="material-symbols-outlined text-2xl text-slate-500 group-hover:rotate-180 transition-transform duration-500 gs-btn-icon">sync</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-white/10 text-slate-200 border border-white/20">Reset Total</span>
+              <span class="material-symbols-outlined text-2xl text-slate-300 group-hover:rotate-180 transition-transform duration-500 gs-btn-icon">sync</span>
             </div>
             <div class="mt-3">
-              <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+              <h4 class="font-bold text-sm text-white flex items-center gap-1.5">
                 <span class="gs-btn-title">🔄 Sync Full (Timpa Semua)</span>
               </h4>
-              <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+              <p class="text-[11px] text-slate-300 mt-1 leading-relaxed">
                 Memperbarui seluruh data tabel dari awal dari baris pertama.
               </p>
             </div>
@@ -6482,8 +6512,7 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <!-- Modal Footer -->
-    <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
-      <span class="text-[11px] text-slate-500 font-medium">💡 Pengaturan URL Web App & Script dapat dikelola di menu <b>Bersihkan Database (Maintenance)</b>.</span>
+    <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-end shrink-0">
       <button type="button" onclick="closeGoogleSheetsSyncModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold transition-colors cursor-pointer">
         Tutup
       </button>
