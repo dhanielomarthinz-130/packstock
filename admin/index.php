@@ -15,8 +15,8 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Brand Logo & Mini Toggle -->
     <div class="sidebar-header h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0">
       <div class="flex items-center gap-3 sidebar-brand-container overflow-hidden">
-        <div class="w-9 h-9 rounded-xl bg-white/10 border border-white/20 text-white flex items-center justify-center shadow-inner flex-shrink-0">
-          <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+        <div class="w-9 h-9 rounded-xl bg-white border border-white/20 flex items-center justify-center shadow-inner flex-shrink-0 p-1 overflow-hidden">
+          <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
         </div>
         <div class="sidebar-brand-text truncate">
           <h2 class="sidebar-brand-title font-extrabold text-white text-sm tracking-tight">PackStock</h2>
