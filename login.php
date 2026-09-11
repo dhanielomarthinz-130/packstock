@@ -215,7 +215,7 @@ require_once __DIR__ . '/includes/header.php';
           IMS &bull; Inventory Management System &copy; <?= date('Y') ?>
         </p>
         <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
-          Powered By <span class="text-[#272466] font-black">IEG IMS</span>
+          Powered By <span class="text-[#272466] font-black">Dhanielo_Marthinz IMS</span>
         </p>
       </div>
 
