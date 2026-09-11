@@ -77,11 +77,10 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ========================================================================= -->
       <?php
       $isFulfillmentOnly = Auth::isOperatorFulfillment();
-      // $isInventoryOnly sebelumnya tidak pernah didefinisikan, sehingga
-      // IS_INVENTORY_ONLY di baris ~2298 selalu bernilai false. Akibatnya lima
-      // jalur khusus operator_inventory tidak pernah aktif — termasuk pembatasan
-      // menu "Strict 1-menu access" di assets/js/operator.js:117.
-      $isInventoryOnly = Auth::isOperatorInventory();
+      // $isInventoryOnly diset false agar seluruh modul operator gudang
+      // (Putaway/Inbound, Picking, Counting, Opname, Handover, Transfer, dll)
+      // dapat diakses secara normal dan tidak ter-redirect ke location_transfer.
+      $isInventoryOnly = false;
       ?>
       <div id="op-tab-home" class="space-y-4 animate-fade-in">
         

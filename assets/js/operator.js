@@ -9,21 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(updateLiveClock, 1000);
   updateGreeting();
 
-  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
-    loadOperatorInventoryStats();
-    loadMyTransferHistory();
-    initMandatoryShiftGate();
-
-    setInterval(() => {
-      if (document.hidden) return;
-      loadOperatorInventoryStats();
-      if (currentOpTab === 'location_transfer' && currentOpTransferSubTab === 'history') {
-        loadMyTransferHistory(true);
-      }
-    }, 45000);
-    return;
-  }
-
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     loadFulfillmentStats();
     loadOperatorConsumableRequests();
@@ -50,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (currentOpTab === 'opname') { loadOperatorBlankCounts(true); loadOperatorRecountTasks(true); }
     else if (currentOpTab === 'handover') loadHandovers(true);
     else if (currentOpTab === 'home') loadOperatorStats(true);
+    else if (currentOpTab === 'location_transfer' && currentOpTransferSubTab === 'history') loadMyTransferHistory(true);
   }, 45000);
 });
 
@@ -80,13 +66,7 @@ async function refreshOperatorData() {
   const icon = document.getElementById('btnSyncIcon');
   if (icon) icon.classList.add('animate-spin');
 
-  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
-    await Promise.all([
-      loadOperatorInventoryStats(),
-      loadMyTransferHistory(),
-      populateTransferMaterials()
-    ]);
-  } else if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+  if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     await Promise.all([
       loadFulfillmentStats(),
       loadOperatorConsumableRequests(),
@@ -113,13 +93,6 @@ async function refreshOperatorData() {
 
 // Mobile Screen / Tab Switcher
 function switchOpTab(tabName) {
-  // Strict 1-menu access for operator_inventory
-  if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
-    if (tabName !== 'home' && tabName !== 'location_transfer') {
-      tabName = 'location_transfer';
-    }
-  }
-
   // Strict 1-menu access for operator_fulfillment
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
     if (tabName !== 'home' && tabName !== 'request_consumable') {
@@ -164,10 +137,10 @@ function switchOpTab(tabName) {
 
   // Trigger sub-view data loading
   if (tabName === 'home') {
-    if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
-      loadOperatorInventoryStats();
-    } else if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
+    if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
       loadFulfillmentStats();
+    } else {
+      loadOperatorStats();
     }
   }
   if (tabName === 'location_transfer') initOperatorTransferView();
@@ -5536,9 +5509,7 @@ async function handleTransferDraftSubmit() {
       // Reload materials & history
       await populateTransferMaterials();
       await loadMyTransferHistory();
-      if (typeof IS_INVENTORY_ONLY !== 'undefined' && IS_INVENTORY_ONLY) {
-        loadOperatorInventoryStats();
-      }
+      loadOperatorStats();
 
       // Switch to History sub-tab
       switchOpTransferSubTab('history');
