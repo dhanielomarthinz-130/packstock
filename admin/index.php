@@ -1281,7 +1281,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (Auth::isAdmin()): ?>
             <button type="button" onclick="openGoogleSheetsSyncModal('gimmick', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Gimmick ke Google Sheet">
               <span class="material-symbols-outlined text-[18px]">sync</span>
-              <span>Sync Gimmick</span>
+              <span>Sync Google Sheet</span>
             </button>
             <?php endif; ?>
 
@@ -2835,7 +2835,7 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (Auth::isAdmin()): ?>
             <button type="button" onclick="openGoogleSheetsSyncModal('reorder', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Reorder Kemas ke Google Sheet">
               <span class="material-symbols-outlined text-[18px]">sync</span>
-              <span>Sync Reorder</span>
+              <span>Sync Google Sheet</span>
             </button>
             <?php endif; ?>
 
