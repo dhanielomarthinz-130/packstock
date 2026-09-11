@@ -12723,11 +12723,31 @@ function renderLocationTransferHistory(tasks) {
     const dateStr = t.created_at ? t.created_at.split(' ')[0] : '-';
     const timeStr = t.created_at ? t.created_at.split(' ')[1] || '' : '';
 
+    let photos = [];
+    if (t.photo_path) {
+      try {
+        photos = JSON.parse(t.photo_path);
+        if (!Array.isArray(photos)) photos = [t.photo_path];
+      } catch (e) {
+        photos = [t.photo_path];
+      }
+    }
+
     return `
       <tr class="hover:bg-slate-50/60 transition-colors border-b border-slate-100">
         <td class="p-3 whitespace-nowrap">
           <span class="font-mono font-black text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">${escapeHtml(t.task_no)}</span>
+          ${t.reference_no ? `<div class="text-[10px] font-bold text-slate-700 mt-1 flex items-center gap-0.5"><span class="material-symbols-outlined text-[12px] text-blue-600">tag</span><span>SJ: ${escapeHtml(t.reference_no)}</span></div>` : ''}
           <div class="text-[10px] text-slate-400 mt-1 font-mono">${dateStr} ${timeStr}</div>
+          ${photos.length > 0 ? `
+            <div class="flex items-center gap-1 mt-1.5 flex-wrap">
+              ${photos.map(p => `
+                <a href="../${escapeHtml(p)}" target="_blank" rel="noopener" class="w-6 h-6 rounded border border-slate-200 overflow-hidden inline-block hover:opacity-80 transition-opacity" title="Lihat Bukti Foto">
+                  <img src="../${escapeHtml(p)}" class="w-full h-full object-cover">
+                </a>
+              `).join('')}
+            </div>
+          ` : ''}
         </td>
         <td class="p-3">
           <div class="font-bold text-slate-900">${escapeHtml(t.material_name)}</div>

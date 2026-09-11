@@ -552,7 +552,8 @@ class Database {
             "ALTER TABLE `tasks` ADD COLUMN `to_location` VARCHAR(100) NULL",
             "ALTER TABLE `tasks` ADD COLUMN `batch_id` INT NULL",
             "ALTER TABLE `tasks` ADD COLUMN `batch_no` VARCHAR(100) NULL",
-            "ALTER TABLE `tasks` ADD COLUMN `exp_date` DATE NULL"
+            "ALTER TABLE `tasks` ADD COLUMN `exp_date` DATE NULL",
+            "ALTER TABLE `tasks` ADD COLUMN `reference_no` VARCHAR(100) NULL"
         ];
 
         foreach ($migrations as $mSql) {
@@ -883,7 +884,8 @@ class Database {
             "ALTER TABLE tasks ADD COLUMN to_location TEXT NULL",
             "ALTER TABLE tasks ADD COLUMN batch_id INTEGER NULL",
             "ALTER TABLE tasks ADD COLUMN batch_no TEXT NULL",
-            "ALTER TABLE tasks ADD COLUMN exp_date TEXT NULL"
+            "ALTER TABLE tasks ADD COLUMN exp_date TEXT NULL",
+            "ALTER TABLE tasks ADD COLUMN reference_no TEXT NULL"
         ];
 
         foreach ($sqliteMigrations as $sql) {

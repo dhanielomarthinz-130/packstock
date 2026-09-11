@@ -282,7 +282,10 @@ if (($action === 'create_operator_movement' || $action === 'batch_create_operato
     $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
     if (empty($input) && !empty($_POST)) $input = $_POST;
 
-    $items = $input['items'] ?? [];
+    $items = $input['items'] ?? $_POST['items'] ?? [];
+    if (is_string($items)) {
+        $items = json_decode($items, true) ?: [];
+    }
     if (empty($items) && isset($input['material_id'])) {
         $items = [$input];
     }
@@ -292,7 +295,9 @@ if (($action === 'create_operator_movement' || $action === 'batch_create_operato
         exit;
     }
 
-    $globalNotes = trim($input['notes'] ?? '');
+    $globalNotes = trim($input['notes'] ?? $_POST['notes'] ?? '');
+    $referenceNo = trim($input['no_sj'] ?? $input['reference_no'] ?? $_POST['no_sj'] ?? $_POST['reference_no'] ?? '');
+    $photoPath   = handleUploadedTaskPhotos();
     $authId = Auth::id();
     $authName = Auth::name() ?? 'Operator';
 
@@ -318,10 +323,10 @@ if (($action === 'create_operator_movement' || $action === 'batch_create_operato
         $stmtInsert = $pdo->prepare("
             INSERT INTO tasks (
                 task_no, material_id, target_qty, actual_qty, priority, destination, 
-                assigned_to, assigned_by, status, notes, completion_notes, task_type, 
+                assigned_to, assigned_by, status, notes, completion_notes, photo_path, reference_no, task_type, 
                 from_location, to_location, batch_id, batch_no, exp_date, 
                 started_at, completed_at, duration_seconds, created_at
-            ) VALUES (?, ?, ?, ?, 'NORMAL', ?, ?, ?, 'COMPLETED', ?, ?, 'RACK_MOVEMENT', ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            ) VALUES (?, ?, ?, ?, 'NORMAL', ?, ?, ?, 'COMPLETED', ?, ?, ?, ?, 'RACK_MOVEMENT', ?, ?, ?, ?, ?, ?, ?, 1, ?)
         ");
 
         $stmtUpMat = $pdo->prepare("UPDATE materials SET rack_location = ? WHERE id = ?");
@@ -379,11 +384,12 @@ if (($action === 'create_operator_movement' || $action === 'batch_create_operato
 
             $destinationDesc = "Pindah ke {$toLocation}";
             $compNote = "Transfer mandiri oleh {$authName} dari {$fromLocation} ke {$toLocation}";
+            if (!empty($referenceNo)) $compNote .= " (No. SJ: {$referenceNo})";
             if (!empty($notes)) $compNote .= " ({$notes})";
 
             $stmtInsert->execute([
                 $taskNo, $materialId, $qty, $qty, $destinationDesc,
-                $authId, $authId, $notes, $compNote,
+                $authId, $authId, $notes, $compNote, $photoPath, !empty($referenceNo) ? $referenceNo : null,
                 $fromLocation, $toLocation,
                 $batchId > 0 ? $batchId : null,
                 !empty($batchNo) ? $batchNo : null,
@@ -402,6 +408,7 @@ if (($action === 'create_operator_movement' || $action === 'batch_create_operato
             // 3. Catat Mutasi Audit Trail TRANSFER_LOCATION
             $stockBefore = (float)$mat['current_stock'];
             $mutNotes = "Transfer Antar Lokasi dari {$fromLocation} ke {$toLocation} (Qty: {$qty} {$mat['unit']}) oleh Operator {$authName}";
+            if (!empty($referenceNo)) $mutNotes .= " [No. SJ: {$referenceNo}]";
             if (!empty($notes)) $mutNotes .= " (Catatan: {$notes})";
             $stmtMut->execute([$materialId, $stockBefore, $stockBefore, $taskNo, $mutNotes, $authId, $now]);
 

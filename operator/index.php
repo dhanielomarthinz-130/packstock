@@ -1171,10 +1171,20 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="material-symbols-outlined text-[18px] text-blue-600">swap_horiz</span>
                 <h4 class="font-black text-xs uppercase tracking-wider text-slate-800">Form Transfer Lokasi</h4>
               </div>
-              <button type="button" onclick="resetOpTransferForm()" class="text-[10px] text-slate-400 hover:text-rose-600 font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="Kosongkan Form">
+              <button type="button" onclick="resetOpTransferForm(true)" class="text-[10px] text-slate-400 hover:text-rose-600 font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="Kosongkan Form">
                 <span class="material-symbols-outlined text-[14px]">refresh</span>
                 <span>Reset Form</span>
               </button>
+            </div>
+
+            <!-- No. Surat Jalan (SJ) / Dokumen Transfer -->
+            <div>
+              <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">tag</span>
+                <span>No. Surat Jalan (SJ) / Dokumen Transfer <span class="text-[10px] font-normal text-slate-400">(Opsional)</span></span>
+              </label>
+              <input type="text" id="opTransferDocNo" placeholder="Contoh: SJ-2026/001 atau No. Dokumen Transfer..." 
+                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-blue-600 transition-colors">
             </div>
 
             <!-- Type Filter Chips (Semua | Kemas | Gimmick) -->
@@ -1348,12 +1358,40 @@ require_once __DIR__ . '/../includes/header.php';
               <span id="opTransferDraftTotalQty" class="text-sm font-black text-blue-800">0 Pcs</span>
             </div>
 
-            <!-- Global Notes & Submit Button -->
-            <div class="pt-2 border-t border-slate-100 space-y-2.5">
+            <!-- Global Notes, Photo Upload & Submit Button -->
+            <div class="pt-2 border-t border-slate-100 space-y-3">
               <div>
-                <label class="block font-bold text-slate-700 mb-1 text-[11px]">Catatan Global (Opsional)</label>
+                <label class="block font-bold text-slate-700 mb-1 text-[11px] flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px] text-slate-400">notes</span>
+                  <span>Catatan Global (Opsional)</span>
+                </label>
                 <input type="text" id="opTransferGlobalNotes" placeholder="Catatan untuk seluruh batch transfer ini..." 
                   class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-600 focus:bg-white">
+              </div>
+
+              <!-- Multi-Photo Upload Section (Image Foto Bukti / SJ) -->
+              <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="block font-bold text-slate-700 text-xs flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px] text-blue-600">photo_camera</span>
+                    <span>Image Foto / Bukti Fisik / SJ <span class="text-[10px] font-normal text-slate-400">(Bisa &gt; 1 Foto)</span></span>
+                  </label>
+                  <span id="opTransferPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <input type="file" id="opTransferPhoto" accept="image/*" class="hidden" multiple onchange="previewOpTransferPhoto(event)">
+                  <button type="button" onclick="document.getElementById('opTransferPhoto').click()" 
+                    class="px-3 py-2 bg-white hover:bg-blue-50 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px] text-blue-600">add_a_photo</span>
+                    <span>Pilih / Ambil Foto</span>
+                  </button>
+                  <button type="button" id="btnOpClearTransferPhotos" onclick="clearOpTransferPhotos()" 
+                    class="hidden px-2.5 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl border border-rose-200 transition-colors text-xs flex items-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                    <span>Hapus</span>
+                  </button>
+                </div>
+                <div id="opTransferPhotoPreviewContainer" class="hidden flex flex-wrap gap-2 pt-1 max-h-28 overflow-y-auto"></div>
               </div>
 
               <button type="button" id="btnSubmitTransferDraft" onclick="handleTransferDraftSubmit()" 

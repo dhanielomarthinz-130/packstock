@@ -5207,7 +5207,60 @@ function onOpTransferBatchChange(batchVal) {
   }
 }
 
-function resetOpTransferForm() {
+// Operator Location Transfer Multi-Photo State
+let opTransferSelectedFiles = [];
+
+function previewOpTransferPhoto(e) {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  opTransferSelectedFiles = opTransferSelectedFiles.concat(files);
+  renderOpTransferPhotoPreviews();
+}
+
+function renderOpTransferPhotoPreviews() {
+  const container = document.getElementById('opTransferPhotoPreviewContainer');
+  const badge = document.getElementById('opTransferPhotoCountBadge');
+  const clearBtn = document.getElementById('btnOpClearTransferPhotos');
+  if (!container) return;
+
+  if (badge) badge.innerText = `${opTransferSelectedFiles.length} Foto`;
+
+  if (opTransferSelectedFiles.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (clearBtn) clearBtn.classList.remove('hidden');
+
+  container.innerHTML = opTransferSelectedFiles.map((file, idx) => {
+    const url = URL.createObjectURL(file);
+    return `
+      <div class="relative group w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs bg-slate-900 flex items-center justify-center flex-shrink-0">
+        <img src="${url}" alt="Preview Bukti" class="w-full h-full object-cover">
+        <button type="button" onclick="removeSelectedOpTransferFile(${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity" title="Hapus foto ini">
+          <span class="material-symbols-outlined text-[11px]">close</span>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeSelectedOpTransferFile(index) {
+  opTransferSelectedFiles.splice(index, 1);
+  renderOpTransferPhotoPreviews();
+}
+
+function clearOpTransferPhotos() {
+  const input = document.getElementById('opTransferPhoto');
+  if (input) input.value = '';
+  opTransferSelectedFiles = [];
+  renderOpTransferPhotoPreviews();
+}
+
+function resetOpTransferForm(clearAll = false) {
   const select = document.getElementById('opTransferMaterialSelect');
   if (select) {
     select.value = '';
@@ -5251,6 +5304,14 @@ function resetOpTransferForm() {
 
   const unitLabel = document.getElementById('opTransferUnitLabel');
   if (unitLabel) unitLabel.innerText = 'Pcs';
+
+  if (clearAll) {
+    const docNo = document.getElementById('opTransferDocNo');
+    if (docNo) docNo.value = '';
+    const gNotes = document.getElementById('opTransferGlobalNotes');
+    if (gNotes) gNotes.value = '';
+    clearOpTransferPhotos();
+  }
 
   currentSelectedMaterialBatches = [];
   renderTransferMaterialOptions(allTransferMaterials);
@@ -5434,6 +5495,7 @@ async function handleTransferDraftSubmit() {
     return;
   }
 
+  const docNo = (document.getElementById('opTransferDocNo')?.value || '').trim();
   const globalNotes = (document.getElementById('opTransferGlobalNotes')?.value || '').trim();
   const btn = document.getElementById('btnSubmitTransferDraft');
 
@@ -5446,21 +5508,30 @@ async function handleTransferDraftSubmit() {
   }
 
   try {
-    const payload = {
-      items: transferDraftItems,
-      notes: globalNotes
-    };
+    const formData = new FormData();
+    formData.append('no_sj', docNo);
+    formData.append('reference_no', docNo);
+    formData.append('notes', globalNotes);
+    formData.append('items', JSON.stringify(transferDraftItems));
 
-    const res = await App.fetchJson('../api/tasks.php?action=batch_create_operator_movement', {
+    for (let i = 0; i < opTransferSelectedFiles.length; i++) {
+      formData.append('photos[]', opTransferSelectedFiles[i]);
+    }
+
+    const response = await fetch('../api/tasks.php?action=batch_create_operator_movement', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: formData
     });
+    const res = await response.json();
 
     if (res.success) {
       App.toast(res.message || 'Transfer Antar Lokasi berhasil diproses!', 'success');
       transferDraftItems = [];
       renderTransferDraftList();
+      if (document.getElementById('opTransferDocNo')) document.getElementById('opTransferDocNo').value = '';
       if (document.getElementById('opTransferGlobalNotes')) document.getElementById('opTransferGlobalNotes').value = '';
+      clearOpTransferPhotos();
+      resetOpTransferForm();
 
       // Reload materials & history
       await populateTransferMaterials();
@@ -5551,10 +5622,20 @@ function renderMyTransferHistory(tasks) {
     const unit = t.material_unit || 'Pcs';
     const dateStr = t.completed_at || t.created_at;
 
+    let photos = [];
+    if (t.photo_path) {
+      try {
+        photos = JSON.parse(t.photo_path);
+        if (!Array.isArray(photos)) photos = [t.photo_path];
+      } catch (e) {
+        photos = [t.photo_path];
+      }
+    }
+
     return `
       <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-3.5 space-y-2 hover:border-blue-300 transition-colors">
         
-        <!-- Header: Task No & Status Badge -->
+        <!-- Header: Task No, SJ & Status Badge -->
         <div class="flex items-start justify-between gap-2">
           <div>
             <div class="flex items-center gap-1.5 flex-wrap">
@@ -5562,6 +5643,12 @@ function renderMyTransferHistory(tasks) {
                 ${isGimmick ? 'GIMMICK' : 'KEMAS'}
               </span>
               <span class="font-mono font-black text-blue-900 text-xs">${App.escapeHtml(t.task_no)}</span>
+              ${t.reference_no ? `
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-300 flex items-center gap-0.5" title="No. Surat Jalan / Dokumen Transfer">
+                  <span class="material-symbols-outlined text-[11px] text-blue-600">tag</span>
+                  <span>SJ: ${App.escapeHtml(t.reference_no)}</span>
+                </span>
+              ` : ''}
               <span class="px-2 py-0.2 rounded-full font-black text-[9px] ${isCompleted ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-amber-100 text-amber-800 border border-amber-300'}">
                 ${isCompleted ? 'SELESAI DIPINDAH' : 'PROSES'}
               </span>
@@ -5599,6 +5686,22 @@ function renderMyTransferHistory(tasks) {
           </div>
         ` : ''}
 
+        ${photos.length > 0 ? `
+          <div class="pt-2 border-t border-slate-100 flex items-center gap-2 flex-wrap">
+            <span class="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-blue-600">photo_camera</span>
+              <span>Foto Bukti (${photos.length}):</span>
+            </span>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${photos.map(p => `
+                <a href="../${App.escapeHtml(p)}" target="_blank" rel="noopener" class="block w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity bg-slate-100 shrink-0" title="Buka Foto Bukti Transfer">
+                  <img src="../${App.escapeHtml(p)}" alt="Bukti Transfer" class="w-full h-full object-cover">
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
       </div>
     `;
   }).join('');
@@ -5613,6 +5716,7 @@ function filterOperatorTransferHistory() {
 
   const filtered = allOperatorTransferHistory.filter(t => 
     (t.task_no || '').toLowerCase().includes(q) ||
+    (t.reference_no || '').toLowerCase().includes(q) ||
     (t.material_name || '').toLowerCase().includes(q) ||
     (t.material_code || '').toLowerCase().includes(q) ||
     (t.from_location || '').toLowerCase().includes(q) ||
