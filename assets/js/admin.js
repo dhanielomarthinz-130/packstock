@@ -12057,25 +12057,21 @@ async function setLocationTransferItemType(type) {
   }
   const btnKemas = document.getElementById('mvtTypeKemas');
   const btnGimmick = document.getElementById('mvtTypeGimmick');
+  if (btnKemas && btnGimmick) {
+    if (currentMvtItemType === 'GIMMICK') {
+      updateTypeCardUI(btnGimmick, btnKemas);
+    } else {
+      updateTypeCardUI(btnKemas, btnGimmick);
+    }
+  }
+
   const batchHeader = document.getElementById('mvtHeaderBatchCol');
   const expHeader = document.getElementById('mvtHeaderExpCol');
 
   if (currentMvtItemType === 'PACKAGING') {
-    if (btnKemas) {
-      btnKemas.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-white bg-[#262363] shadow-xs cursor-pointer flex items-center gap-1';
-    }
-    if (btnGimmick) {
-      btnGimmick.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
-    }
     if (batchHeader) batchHeader.classList.add('hidden');
     if (expHeader) expHeader.classList.add('hidden');
   } else {
-    if (btnKemas) {
-      btnKemas.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1';
-    }
-    if (btnGimmick) {
-      btnGimmick.className = 'px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-white bg-[#262363] shadow-xs cursor-pointer flex items-center gap-1';
-    }
     if (batchHeader) batchHeader.classList.remove('hidden');
     if (expHeader) expHeader.classList.remove('hidden');
   }

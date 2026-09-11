@@ -3045,23 +3045,73 @@ require_once __DIR__ . '/../includes/header.php';
                   <span>Form Request Movement Item &amp; Penugasan Operator</span>
                 </h3>
                 <p class="text-xs text-slate-500 mt-0.5">Admin merequest perpindahan barang dari Origin (Lokasi Asal) ke Destination (Lokasi Tujuan) dan menugaskan ke Operator</p>
-              </div>
-
-              <!-- Pilihan Tipe: Kemas vs Gimmick -->
-              <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
-                <span class="text-[10px] font-extrabold text-slate-500 uppercase px-1.5">Tipe Item:</span>
-                <button type="button" id="mvtTypeKemas" onclick="setLocationTransferItemType('PACKAGING')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-white bg-[#262363] shadow-xs cursor-pointer flex items-center gap-1">
-                  <span>📦</span>
-                  <span>Kemas (Tanpa Batch)</span>
-                </button>
-                <button type="button" id="mvtTypeGimmick" onclick="setLocationTransferItemType('GIMMICK')" class="px-3.5 py-1 text-xs font-bold rounded-lg transition-all text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer flex items-center gap-1">
-                  <span>🎁</span>
-                  <span>Gimmick (Batch &amp; Exp)</span>
-                </button>
-              </div>
             </div>
 
             <form id="formLocationTransfer" onsubmit="submitLocationTransfer(event)" class="space-y-4 text-xs">
+              
+              <!-- ================= LANGKAH 1: WAJIB PILIH TIPE BARANG (ATAS KE BAWAH) ================= -->
+              <div class="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/20 to-blue-50/30 border border-slate-200 rounded-2xl shadow-2xs space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-slate-200/60 pb-2.5">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-6 h-6 rounded-lg bg-[#262363] text-white flex items-center justify-center text-xs font-black shadow-xs shrink-0">1</span>
+                    <div>
+                      <h4 class="font-black text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                        <span>Pilih Tipe Movement Barang</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 border border-rose-200">Wajib Dipilih *</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium">Tentukan jenis persediaan yang akan dipindahkan: Stock Kemas atau Stock Gimmick</p>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 self-start sm:self-auto font-mono">Langkah 1 dari 2</span>
+                </div>
+
+                <!-- 2 Card Pilihan: Kemas vs Gimmick -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Kemas Card -->
+                  <button type="button" id="mvtTypeKemas" onclick="setLocationTransferItemType('PACKAGING')"
+                    class="type-card-active p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-[#262363] text-white border-[#262363] shadow-md ring-2 ring-[#262363]/20">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-2xl shrink-0">
+                        📦
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
+                          <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+
+                  <!-- Gimmick Card -->
+                  <button type="button" id="mvtTypeGimmick" onclick="setLocationTransferItemType('GIMMICK')"
+                    class="type-card-inactive p-3.5 rounded-2xl border-2 transition-all flex items-center justify-between text-left cursor-pointer bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50/90 shadow-2xs">
+                    <div class="flex items-center gap-3 min-w-0">
+                      <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-2xl shrink-0">
+                        🎁
+                      </div>
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
+                          <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
+                      <span class="material-symbols-outlined text-[16px] font-black">check</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ================= LANGKAH 2: INFORMASI & DETAIL PENUGASAN ================= -->
+              <div class="flex items-center gap-2 pt-1 pb-0.5">
+                <span class="w-6 h-6 rounded-lg bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-black shrink-0">2</span>
+                <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm">Pengaturan PIC &amp; Detail Penugasan</h4>
+              </div>
               
               <!-- Batch Defaults Toolbar -->
               <div class="p-4 bg-gradient-to-r from-blue-50/50 via-slate-50 to-indigo-50/40 border border-slate-200 rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs shadow-2xs">
