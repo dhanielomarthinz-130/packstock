@@ -2292,7 +2292,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
                           <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
                       </div>
                     </div>
                     <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -2312,7 +2311,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
                           <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
                       </div>
                     </div>
                     <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -2595,7 +2593,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
                           <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
                       </div>
                     </div>
                     <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -2615,7 +2612,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
                           <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
                       </div>
                     </div>
                     <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -3294,7 +3290,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
                           <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
                       </div>
                     </div>
                     <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -3314,7 +3309,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
                           <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk merchandise/hadiah promosi (dilengkapi batch &amp; exp date)</p>
                       </div>
                     </div>
                     <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -3602,7 +3596,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-white truncate">Stock Kemas</span>
                           <span class="type-tag-badge text-[10px] font-black px-2 py-0.5 rounded-md bg-white/20 text-white shrink-0">Packaging</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-white/80 font-medium mt-0.5 truncate">Karton, botol, cap, label, sticker &amp; consumable</p>
                       </div>
                     </div>
                     <div class="type-check-icon w-6 h-6 rounded-full bg-white text-[#262363] flex items-center justify-center shrink-0 ml-2 shadow-xs">
@@ -3622,7 +3615,6 @@ require_once __DIR__ . '/../includes/header.php';
                           <span class="type-card-title font-black text-xs sm:text-sm text-slate-800 truncate">Stock Gimmick</span>
                           <span class="type-tag-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 shrink-0">Merchandise</span>
                         </div>
-                        <p class="type-card-desc text-[11px] text-slate-400 font-medium mt-0.5 truncate">Produk hadiah promosi (dilengkapi batch &amp; exp date)</p>
                       </div>
                     </div>
                     <div class="type-check-icon hidden w-6 h-6 rounded-full bg-[#262363] text-white flex items-center justify-center shrink-0 ml-2 shadow-xs">
