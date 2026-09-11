@@ -12,22 +12,22 @@ if (Auth::check()) {
     }
 }
 
-$pageTitle = "Login Portal - IMS (Inventory Management System)";
+$pageTitle = "IMS";
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<div class="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
+<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none" style="background: radial-gradient(circle at 10% 20%, #f0f3ff 0%, #e8edff 45%, #f4f6fb 90%);">
   
   <!-- Atmospheric Glowing Ambient Orbs -->
-  <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-[#5147E6]/25 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-  <div class="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-[#634DE9]/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#584CE7]/15 rounded-full blur-[140px] pointer-events-none"></div>
+  <div class="absolute -top-40 -left-40 w-[550px] h-[550px] bg-[#5147E6]/15 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute -bottom-40 -right-40 w-[550px] h-[550px] bg-[#634DE9]/12 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] bg-[#584CE7]/10 rounded-full blur-[140px] pointer-events-none"></div>
 
-  <!-- Background Grid Pattern -->
-  <div class="absolute inset-0 bg-[linear-gradient(to_right,#33415515_1px,transparent_1px),linear-gradient(to_bottom,#33415515_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
+  <!-- Background Grid Pattern in Soft Indigo Tint -->
+  <div class="absolute inset-0 bg-[linear-gradient(to_right,#5147e612_1px,transparent_1px),linear-gradient(to_bottom,#5147e612_1px,transparent_1px)] bg-[size:36px_36px] pointer-events-none"></div>
 
   <!-- MAIN LOGIN CARD (PREMIUM DUAL-PANE ENTERPRISE SUITE) -->
-  <div class="w-full max-w-[880px] grid grid-cols-1 lg:grid-cols-12 rounded-[32px] sm:rounded-[36px] bg-white shadow-2xl shadow-[#5147E6]/30 overflow-hidden relative z-10 border border-slate-700/60">
+  <div class="w-full max-w-[880px] grid grid-cols-1 lg:grid-cols-12 rounded-[32px] sm:rounded-[36px] bg-white shadow-2xl shadow-[#5147E6]/20 overflow-hidden relative z-10 border border-indigo-100/90">
     
     <!-- ========================================================================= -->
     <!-- LEFT PANEL: BRANDING (VIBRANT ROYAL INDIGO THEME) -->
@@ -43,7 +43,7 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Top Status Pill -->
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/30 shadow-xs backdrop-blur-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-[10px] font-black tracking-wider uppercase text-white">Enterprise IMS v2.4</span>
+          <span class="text-[10px] font-black tracking-wider uppercase text-white">IMS</span>
         </div>
 
         <!-- Logo & Title -->
