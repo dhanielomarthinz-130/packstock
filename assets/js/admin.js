@@ -3813,17 +3813,6 @@ async function setStockTransferItemType(type) {
     }
   }
 
-  const badge = document.getElementById('stActiveTypeBadge');
-  if (badge) {
-    if (currentStItemType === 'GIMMICK') {
-      badge.className = 'px-3 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs';
-      badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span><span>Mode: 🎁 Gimmick (Lengkap Batch &amp; Exp Date)</span>';
-    } else {
-      badge.className = 'px-3 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs';
-      badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-600"></span><span>Mode: 📦 Kemas (Tanpa Batch &amp; Exp Date)</span>';
-    }
-  }
-
   // Header Batch & Exp Date column visibility (Kemas TANPA Batch & Exp Date, Gimmick LENGKAP Batch & Exp Date)
   const thBatch = document.getElementById('stThBatchExp');
   if (thBatch) {

@@ -3302,10 +3302,6 @@ require_once __DIR__ . '/../includes/header.php';
                 </span>
                 <span class="text-xs text-slate-500 font-medium">Input mutasi transfer barang keluar/masuk antar lokasi gudang &amp; VAS</span>
               </div>
-              <div id="stActiveTypeBadge" class="px-3 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
-                <span class="w-2 h-2 rounded-full bg-amber-600"></span>
-                <span>Mode: 📦 Kemas (Tanpa Batch &amp; Exp Date)</span>
-              </div>
             </div>
 
             <form id="formStockTransferBatch" onsubmit="submitStockTransferBatch(event)" class="space-y-4 text-xs">
