@@ -3045,6 +3045,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <span>Form Request Movement Item &amp; Penugasan Operator</span>
                 </h3>
                 <p class="text-xs text-slate-500 mt-0.5">Admin merequest perpindahan barang dari Origin (Lokasi Asal) ke Destination (Lokasi Tujuan) dan menugaskan ke Operator</p>
+              </div>
             </div>
 
             <form id="formLocationTransfer" onsubmit="submitLocationTransfer(event)" class="space-y-4 text-xs">
