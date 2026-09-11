@@ -60,7 +60,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <p class="text-xs leading-relaxed pt-1.5 font-normal" style="color: rgba(255, 255, 255, 0.92);">
-          Sistem manajemen persediaan Stock Kemas / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
+          Sistem manajemen persediaan Stock Kemas / Gimmick / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
 
@@ -68,7 +68,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="my-5 space-y-2.5 relative z-10">
         
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
+          <div class="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">sync_alt</span>
           </div>
           <div class="min-w-0">
@@ -78,7 +78,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
+          <div class="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">checklist</span>
           </div>
           <div class="min-w-0">
@@ -88,12 +88,12 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0" style="color: #ffffff;">
+          <div class="w-8 h-8 rounded-xl bg-white/25 text-white flex items-center justify-center shrink-0" style="color: #ffffff;">
             <span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
           </div>
           <div class="min-w-0">
             <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Picking Task Dispatch</h4>
-            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.85);">Serah terima Stock Kemas / Consumable</p>
+            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.85);">Serah terima Stock Kemas / Gimmick / Consumable</p>
           </div>
         </div>
 
