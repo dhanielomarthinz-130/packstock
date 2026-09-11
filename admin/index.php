@@ -11,7 +11,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
 
   <!-- SIDEBAR NAVIGATION (ENTERPRISE SUITE) -->
-  <aside id="adminSidebar" class="w-64 flex flex-col flex-shrink-0 select-none shadow-2xl z-20 transition-all duration-300" style="background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%);">
+  <aside id="adminSidebar" class="w-64 flex flex-col flex-shrink-0 select-none shadow-2xl z-20 transition-all duration-300" style="background: linear-gradient(180deg, #5147E6 0%, #584CE7 50%, #634DE9 100%);">
     <!-- Brand Logo & Mini Toggle -->
     <div class="sidebar-header h-16 flex items-center justify-between px-3.5 border-b border-white/10 flex-shrink-0 bg-white/[0.02]">
       <div class="flex items-center gap-2.5 sidebar-brand-container min-w-0 flex-1 overflow-hidden">

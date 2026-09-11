@@ -538,10 +538,10 @@ table th {
 /* SIDEBAR MINIMIZE & MAXIMIZE (COLLAPSIBLE SIDEBAR) */
 /* ========================================================================= */
 #adminSidebar {
-  background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%) !important;
+  background: linear-gradient(180deg, #5147E6 0%, #584CE7 50%, #634DE9 100%) !important;
   color: #f1f5f9 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 4px 0 24px rgba(15, 12, 53, 0.3) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 4px 0 24px rgba(81, 71, 230, 0.25) !important;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
