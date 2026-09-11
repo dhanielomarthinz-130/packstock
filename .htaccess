@@ -95,9 +95,11 @@ RewriteRule ^ - [L]
 # genggam operator di jaringan gudang, ini perbedaan yang terasa.
 # =========================================================================
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
-    AddOutputFilterByType DEFLATE text/javascript application/javascript application/x-javascript
-    AddOutputFilterByType DEFLATE application/json application/xml image/svg+xml
+    <IfModule mod_filter.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
+        AddOutputFilterByType DEFLATE text/javascript application/javascript application/x-javascript
+        AddOutputFilterByType DEFLATE application/json application/xml image/svg+xml
+    </IfModule>
 </IfModule>
 
 # =========================================================================

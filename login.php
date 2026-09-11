@@ -19,31 +19,31 @@ require_once __DIR__ . '/includes/header.php';
 <div class="min-h-screen bg-slate-950 flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none">
   
   <!-- Atmospheric Glowing Ambient Orbs -->
-  <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-  <div class="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
-  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+  <div class="absolute -top-40 -left-40 w-[500px] h-[500px] bg-[#5147E6]/25 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+  <div class="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-[#634DE9]/20 rounded-full blur-[120px] pointer-events-none animate-pulse"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#584CE7]/15 rounded-full blur-[140px] pointer-events-none"></div>
 
   <!-- Background Grid Pattern -->
   <div class="absolute inset-0 bg-[linear-gradient(to_right,#33415515_1px,transparent_1px),linear-gradient(to_bottom,#33415515_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none"></div>
 
   <!-- MAIN LOGIN CARD (PREMIUM DUAL-PANE ENTERPRISE SUITE) -->
-  <div class="w-full max-w-[880px] grid grid-cols-1 lg:grid-cols-12 rounded-[32px] sm:rounded-[36px] bg-white shadow-2xl shadow-indigo-950/60 overflow-hidden relative z-10 border border-slate-700/60">
+  <div class="w-full max-w-[880px] grid grid-cols-1 lg:grid-cols-12 rounded-[32px] sm:rounded-[36px] bg-white shadow-2xl shadow-[#5147E6]/30 overflow-hidden relative z-10 border border-slate-700/60">
     
     <!-- ========================================================================= -->
-    <!-- LEFT PANEL: BRANDING (SIDEBAR THEME) -->
+    <!-- LEFT PANEL: BRANDING (VIBRANT ROYAL INDIGO THEME) -->
     <!-- ========================================================================= -->
-    <div class="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-white/10" style="background: linear-gradient(180deg, #272466 0%, #29266B 25%, #2C2971 50%, #2E2B78 75%, #302E81 100%);">
+    <div class="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r border-white/10" style="background: linear-gradient(180deg, #5147E6 0%, #584CE7 50%, #634DE9 100%);">
       
       <!-- Subtle Ambient Glow inside Panel -->
-      <div class="absolute -right-12 -top-12 w-44 h-44 bg-indigo-400/25 rounded-full blur-2xl pointer-events-none"></div>
-      <div class="absolute -left-12 -bottom-12 w-44 h-44 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -right-12 -top-12 w-44 h-44 bg-white/20 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -left-12 -bottom-12 w-44 h-44 bg-indigo-300/25 rounded-full blur-2xl pointer-events-none"></div>
 
       <!-- Brand Header -->
       <div class="space-y-4 relative z-10">
         <!-- Top Status Pill -->
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 shadow-xs backdrop-blur-xs">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/30 shadow-xs backdrop-blur-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-[10px] font-black tracking-wider uppercase" style="color: #e0e7ff;">Enterprise IMS v2.4</span>
+          <span class="text-[10px] font-black tracking-wider uppercase text-white">Enterprise IMS v2.4</span>
         </div>
 
         <!-- Logo & Title -->
@@ -53,13 +53,13 @@ require_once __DIR__ . '/includes/header.php';
           </div>
           <div>
             <div class="flex items-center gap-2 leading-none">
-              <h1 class="text-2xl font-black tracking-tight leading-tight" style="color: #ffffff;">IMS</h1>
+              <h1 class="text-2xl font-black tracking-tight leading-tight text-white">IMS</h1>
             </div>
-            <p class="text-[11px] font-bold tracking-wide mt-1" style="color: #c7d2fe;">Inventory Management System</p>
+            <p class="text-[11px] font-bold tracking-wide mt-1 text-indigo-100">Inventory Management System</p>
           </div>
         </div>
 
-        <p class="text-xs leading-relaxed pt-1.5 font-normal" style="color: rgba(255, 255, 255, 0.88);">
+        <p class="text-xs leading-relaxed pt-1.5 font-normal text-white/90">
           Sistem manajemen persediaan Stock Kemas / Consumable terpadu dengan sinkronisasi mutasi real-time dan penugasan PIC.
         </p>
       </div>
@@ -67,51 +67,51 @@ require_once __DIR__ . '/includes/header.php';
       <!-- Feature Highlight List -->
       <div class="my-5 space-y-2.5 relative z-10">
         
-        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.08] border border-white/15 hover:bg-white/[0.14] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0" style="color: #ffffff;">
+        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
+          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[18px]">sync_alt</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Real-Time Stock Mutation</h4>
-            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.78);">Pelacakan stok & pemotongan otomatis</p>
+            <h4 class="font-bold text-xs truncate text-white">Real-Time Stock Mutation</h4>
+            <p class="text-[10.5px] truncate text-white/80">Pelacakan stok & pemotongan otomatis</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.08] border border-white/15 hover:bg-white/[0.14] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0" style="color: #ffffff;">
+        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
+          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[18px]">checklist</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Dynamic Count & Opname</h4>
-            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.78);">Hitung fisik akurat tanpa bias sistem</p>
+            <h4 class="font-bold text-xs truncate text-white">Dynamic Count & Opname</h4>
+            <p class="text-[10.5px] truncate text-white/80">Hitung fisik akurat tanpa bias sistem</p>
           </div>
         </div>
 
-        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.08] border border-white/15 hover:bg-white/[0.14] transition-all shadow-2xs">
-          <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center shrink-0" style="color: #ffffff;">
+        <div class="flex items-center gap-3 p-2.5 rounded-2xl bg-white/[0.12] border border-white/20 hover:bg-white/[0.18] transition-all shadow-2xs">
+          <div class="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center shrink-0">
             <span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
           </div>
           <div class="min-w-0">
-            <h4 class="font-bold text-xs truncate" style="color: #ffffff;">Picking Task Dispatch</h4>
-            <p class="text-[10.5px] truncate" style="color: rgba(255, 255, 255, 0.78);">Serah terima Stock Kemas / Consumable</p>
+            <h4 class="font-bold text-xs truncate text-white">Picking Task Dispatch</h4>
+            <p class="text-[10.5px] truncate text-white/80">Serah terima Stock Kemas / Consumable</p>
           </div>
         </div>
 
       </div>
 
       <!-- Bottom Security & Version Badge -->
-      <div class="pt-3 border-t border-white/15 flex items-center justify-between text-[10.5px] relative z-10" style="color: rgba(255, 255, 255, 0.75);">
-        <span class="flex items-center gap-1.5 font-semibold" style="color: #e0e7ff;">
+      <div class="pt-3 border-t border-white/20 flex items-center justify-between text-[10.5px] relative z-10 text-white/80">
+        <span class="flex items-center gap-1.5 font-semibold text-white">
           <span class="material-symbols-outlined text-[14px]">lock</span>
           <span>SSL 256-bit Encrypted</span>
         </span>
-        <span class="font-mono" style="color: #c7d2fe;">2026 Edition</span>
+        <span class="font-mono text-indigo-100">2026 Edition</span>
       </div>
 
     </div>
 
     <!-- ========================================================================= -->
-    <!-- RIGHT PANEL: AUTHENTICATION FORM (EXECUTIVE WHITE WITH INDIGO ACCENT) -->
+    <!-- RIGHT PANEL: AUTHENTICATION FORM (EXECUTIVE WHITE WITH ROYAL INDIGO ACCENT) -->
     <!-- ========================================================================= -->
     <div class="lg:col-span-7 bg-white p-6 sm:p-8 lg:p-10 flex flex-col justify-between">
       
@@ -122,7 +122,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
           </div>
           <div>
-            <h2 class="text-2xl font-black text-[#272466] tracking-tight uppercase leading-tight">Login Portal</h2>
+            <h2 class="text-2xl font-black text-[#5147E6] tracking-tight uppercase leading-tight">Login Portal</h2>
             <p class="text-[11px] text-slate-500 font-medium">Masuk untuk mengelola stok & operasional</p>
           </div>
         </div>
@@ -153,7 +153,7 @@ require_once __DIR__ . '/includes/header.php';
                 <span class="material-symbols-outlined text-[19px]">account_circle</span>
               </span>
               <input type="text" id="username" required placeholder="Masukkan username akun Anda..." autocomplete="username"
-                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#272466] focus:ring-4 focus:ring-[#272466]/10 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
+                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
             </div>
           </div>
 
@@ -169,10 +169,10 @@ require_once __DIR__ . '/includes/header.php';
                 <span class="material-symbols-outlined text-[19px]">lock</span>
               </span>
               <input type="password" id="password" required placeholder="Masukkan kata sandi..." autocomplete="current-password"
-                class="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#272466] focus:ring-4 focus:ring-[#272466]/10 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
+                class="w-full pl-10 pr-11 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-[#5147E6] focus:ring-4 focus:ring-[#5147E6]/15 transition-all placeholder:text-slate-400 placeholder:font-normal shadow-2xs">
               
               <button type="button" onclick="togglePasswordVisibility()" title="Tampilkan / Sembunyikan Password" 
-                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#272466] transition-colors cursor-pointer">
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-[#5147E6] transition-colors cursor-pointer">
                 <span id="iconTogglePass" class="material-symbols-outlined text-[19px]">visibility</span>
               </button>
             </div>
@@ -181,7 +181,7 @@ require_once __DIR__ . '/includes/header.php';
           <!-- Security Notice & Remember Session -->
           <div class="flex items-center justify-between pt-0.5 text-xs">
             <label class="flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
-              <input type="checkbox" id="rememberMe" checked class="w-3.5 h-3.5 rounded border-slate-300 text-[#272466] focus:ring-[#272466]">
+              <input type="checkbox" id="rememberMe" checked class="w-3.5 h-3.5 rounded border-slate-300 text-[#5147E6] focus:ring-[#5147E6]">
               <span class="text-[11px]">Ingat Sesi Login</span>
             </label>
             <span class="text-[11px] text-slate-400 flex items-center gap-1">
@@ -196,11 +196,11 @@ require_once __DIR__ . '/includes/header.php';
             <span id="loginAlertText" class="font-semibold">Username atau kata sandi yang Anda masukkan salah!</span>
           </div>
 
-          <!-- Submit Button in Sidebar Gradient Theme -->
+          <!-- Submit Button in Vibrant Royal Indigo Gradient -->
           <div class="pt-2">
             <button type="submit" id="btnSubmit" 
-              class="w-full py-3.5 px-5 text-white font-black text-xs rounded-xl shadow-lg shadow-[#272466]/25 hover:shadow-[#272466]/40 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
-              style="background: linear-gradient(135deg, #272466 0%, #29266B 35%, #302E81 100%);">
+              class="w-full py-3.5 px-5 text-white font-black text-xs rounded-xl shadow-lg shadow-[#5147E6]/30 hover:shadow-[#5147E6]/50 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
+              style="background: linear-gradient(135deg, #5147E6 0%, #584CE7 50%, #634DE9 100%);">
               <span>Masuk Sekarang (Login)</span>
               <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
             </button>
@@ -215,7 +215,7 @@ require_once __DIR__ . '/includes/header.php';
           IMS &bull; Inventory Management System &copy; <?= date('Y') ?>
         </p>
         <p class="text-[10px] text-slate-400 font-semibold tracking-wide">
-          Powered By <span class="text-[#272466] font-black">Dhanielo_Marthinz IMS</span>
+          Powered By <span class="text-[#5147E6] font-black">Dhanielo_Marthinz IMS</span>
         </p>
       </div>
 
