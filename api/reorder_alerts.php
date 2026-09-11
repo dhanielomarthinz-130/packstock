@@ -67,7 +67,25 @@ if ($action === 'list') {
                po_active.latest_po_number,
                po_active.latest_po_qty,
                po_active.latest_po_eta,
-               po_active.latest_supplier
+               po_active.latest_supplier,
+               in_rec.latest_inbound_id,
+               in_rec.latest_inbound_no,
+               in_rec.latest_inbound_po,
+               in_rec.latest_inbound_supplier,
+               in_rec.latest_inbound_qty,
+               in_rec.latest_inbound_photo_path,
+               in_rec.latest_inbound_notes,
+               in_rec.latest_inbound_batch_no,
+               in_rec.latest_inbound_exp_date,
+               in_rec.latest_inbound_location,
+               in_rec.latest_inbound_date,
+               in_rec.latest_inbound_receiver,
+               in_rec.latest_inbound_receiver_role,
+               in_rec.latest_inbound_receiver_username,
+               po_rec_track.track_received_po,
+               po_rec_track.track_received_qty,
+               po_rec_track.track_received_date,
+               po_rec_track.track_received_supplier
         FROM materials m
         LEFT JOIN (
             SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_14d
@@ -103,6 +121,46 @@ if ($action === 'list') {
             ) t2 ON t1.id = t2.max_id
             GROUP BY t1.material_id
         ) po_active ON m.id = po_active.material_id
+        LEFT JOIN (
+            SELECT in1.material_id,
+                   in1.id as latest_inbound_id,
+                   in1.inbound_no as latest_inbound_no,
+                   in1.po_number as latest_inbound_po,
+                   in1.supplier as latest_inbound_supplier,
+                   in1.qty as latest_inbound_qty,
+                   in1.photo_path as latest_inbound_photo_path,
+                   in1.notes as latest_inbound_notes,
+                   in1.batch_no as latest_inbound_batch_no,
+                   in1.exp_date as latest_inbound_exp_date,
+                   in1.location as latest_inbound_location,
+                   COALESCE(in1.completed_at, in1.created_at) as latest_inbound_date,
+                   COALESCE(u_in.name, in1.received_by, 'Admin') as latest_inbound_receiver,
+                   COALESCE(u_in.role, 'operator') as latest_inbound_receiver_role,
+                   COALESCE(u_in.username, 'admin') as latest_inbound_receiver_username
+            FROM inbound_transactions in1
+            INNER JOIN (
+                SELECT material_id, MAX(id) as max_id
+                FROM inbound_transactions
+                WHERE po_number IS NOT NULL AND TRIM(po_number) != '' AND po_number != '-'
+                GROUP BY material_id
+            ) in2 ON in1.id = in2.max_id
+            LEFT JOIN users u_in ON (in1.received_by = u_in.id OR in1.received_by = u_in.username OR in1.received_by = u_in.name)
+        ) in_rec ON m.id = in_rec.material_id
+        LEFT JOIN (
+            SELECT t1.material_id,
+                   t1.po_number as track_received_po,
+                   t1.ordered_qty as track_received_qty,
+                   t1.updated_at as track_received_date,
+                   t1.supplier_name as track_received_supplier
+            FROM material_po_trackings t1
+            INNER JOIN (
+                SELECT material_id, MAX(id) AS max_id
+                FROM material_po_trackings
+                WHERE status = 'RECEIVED'
+                GROUP BY material_id
+            ) t2 ON t1.id = t2.max_id
+            GROUP BY t1.material_id
+        ) po_rec_track ON m.id = po_rec_track.material_id
         WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
     ";
     $params = [];
@@ -209,6 +267,63 @@ if ($action === 'list') {
             $totalPoQtyEstimate += $suggestedQty;
         }
 
+
+        $hasActivePo = ((int)$r['active_po_count'] > 0);
+        $hasInboundPo = !empty($r['latest_inbound_po']);
+        $hasTrackReceivedPo = !empty($r['track_received_po']);
+
+        $isPoReceived = false;
+        $receivedPoNumber = null;
+        $receivedPoDate = null;
+        $receivedPoQty = 0;
+        $receivedInboundId = null;
+        $receivedInboundNo = null;
+        $receivedSupplier = null;
+        $receivedReceiver = null;
+        $receivedLocation = null;
+        $receivedBatchNo = null;
+        $receivedExpDate = null;
+        $receivedNotes = null;
+        $receivedPhotos = [];
+
+        if ($hasInboundPo) {
+            $isPoReceived = true;
+            $receivedPoNumber = $r['latest_inbound_po'];
+            $receivedPoDate = $r['latest_inbound_date'];
+            $receivedPoQty = (float)$r['latest_inbound_qty'];
+            $receivedInboundId = (int)$r['latest_inbound_id'];
+            $receivedInboundNo = $r['latest_inbound_no'];
+            $receivedSupplier = $r['latest_inbound_supplier'];
+            $receivedReceiver = $r['latest_inbound_receiver'];
+            $receivedLocation = $r['latest_inbound_location'];
+            $receivedBatchNo = $r['latest_inbound_batch_no'];
+            $receivedExpDate = $r['latest_inbound_exp_date'];
+            $receivedNotes = $r['latest_inbound_notes'];
+
+            $rawPhotos = (string)($r['latest_inbound_photo_path'] ?? '');
+            if (!empty($rawPhotos)) {
+                if (str_starts_with(trim($rawPhotos), '[')) {
+                    $dec = json_decode($rawPhotos, true);
+                    $receivedPhotos = is_array($dec) ? $dec : [$rawPhotos];
+                } else {
+                    $receivedPhotos = [$rawPhotos];
+                }
+            }
+        } elseif ($hasTrackReceivedPo) {
+            $isPoReceived = true;
+            $receivedPoNumber = $r['track_received_po'];
+            $receivedPoDate = $r['track_received_date'];
+            $receivedPoQty = (float)$r['track_received_qty'];
+            $receivedSupplier = $r['track_received_supplier'];
+        }
+
+        $poOverallStatus = 'NONE';
+        if ($hasActivePo) {
+            $poOverallStatus = 'ORDERED';
+        } elseif ($isPoReceived) {
+            $poOverallStatus = 'RECEIVED';
+        }
+
         $itemData = [
             'id'                  => (int)$r['id'],
             'code'                => $r['code'],
@@ -228,11 +343,30 @@ if ($action === 'list') {
             'urgency_status'      => $urgencyStatus,
             'urgency_label'       => $urgencyLabel,
             'urgency_color'       => $urgencyColor,
-            'is_ordered'          => ($r['active_po_count'] > 0),
-            'latest_po_number'    => $r['latest_po_number'],
-            'latest_po_qty'       => (float)$r['latest_po_qty'],
-            'latest_po_eta'       => $r['latest_po_eta'],
-            'latest_supplier'     => $r['latest_supplier'],
+            
+            // PO Tracking & Inbound Status
+            'is_ordered'             => $hasActivePo,
+            'po_status'              => $poOverallStatus,
+            'latest_po_number'       => $r['latest_po_number'],
+            'latest_po_qty'          => (float)$r['latest_po_qty'],
+            'latest_po_eta'          => $r['latest_po_eta'],
+            'latest_supplier'        => $r['latest_supplier'],
+            
+            // Received PO / Putaway Inbound Details
+            'is_po_received'         => $isPoReceived,
+            'received_po_number'     => $receivedPoNumber,
+            'received_po_date'       => $receivedPoDate,
+            'received_po_qty'        => $receivedPoQty,
+            'received_inbound_id'    => $receivedInboundId,
+            'received_inbound_no'    => $receivedInboundNo,
+            'received_supplier'      => $receivedSupplier,
+            'received_receiver'      => $receivedReceiver,
+            'received_location'      => $receivedLocation,
+            'received_batch_no'      => $receivedBatchNo,
+            'received_exp_date'      => $receivedExpDate,
+            'received_notes'         => $receivedNotes,
+            'received_photos'        => $receivedPhotos,
+            'received_photos_count'  => count($receivedPhotos)
         ];
 
         // Filter based on filter_type
@@ -362,7 +496,13 @@ if ($action === 'export') {
                po_active.latest_po_number,
                po_active.latest_po_qty,
                po_active.latest_po_eta,
-               po_active.latest_supplier
+               po_active.latest_supplier,
+               in_rec.latest_inbound_po,
+               in_rec.latest_inbound_date,
+               in_rec.latest_inbound_qty,
+               in_rec.latest_inbound_supplier,
+               po_rec_track.track_received_po,
+               po_rec_track.track_received_supplier
         FROM materials m
         LEFT JOIN (
             SELECT material_id, SUM(ABS(qty_change)) AS total_outbound_14d
@@ -386,6 +526,33 @@ if ($action === 'export') {
             ) t2 ON t1.id = t2.max_id
             GROUP BY t1.material_id
         ) po_active ON m.id = po_active.material_id
+        LEFT JOIN (
+            SELECT in1.material_id,
+                   in1.po_number as latest_inbound_po,
+                   in1.supplier as latest_inbound_supplier,
+                   in1.qty as latest_inbound_qty,
+                   COALESCE(in1.completed_at, in1.created_at) as latest_inbound_date
+            FROM inbound_transactions in1
+            INNER JOIN (
+                SELECT material_id, MAX(id) as max_id
+                FROM inbound_transactions
+                WHERE po_number IS NOT NULL AND TRIM(po_number) != '' AND po_number != '-'
+                GROUP BY material_id
+            ) in2 ON in1.id = in2.max_id
+        ) in_rec ON m.id = in_rec.material_id
+        LEFT JOIN (
+            SELECT t1.material_id,
+                   t1.po_number as track_received_po,
+                   t1.supplier_name as track_received_supplier
+            FROM material_po_trackings t1
+            INNER JOIN (
+                SELECT material_id, MAX(id) AS max_id
+                FROM material_po_trackings
+                WHERE status = 'RECEIVED'
+                GROUP BY material_id
+            ) t2 ON t1.id = t2.max_id
+            GROUP BY t1.material_id
+        ) po_rec_track ON m.id = po_rec_track.material_id
         WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')
           AND (m.current_stock <= m.min_stock OR m.current_stock <= 0)
         ORDER BY (m.current_stock <= 0) DESC, m.name ASC
@@ -412,6 +579,25 @@ if ($action === 'export') {
             if ($t) $etaFormatted = date('d/m/Y', $t);
         }
 
+        $poStatusText = 'Belum Ada PO';
+        $poNumberText = '-';
+        $supplierText = '-';
+
+        if ((int)$r['active_po_count'] > 0) {
+            $poStatusText = 'Sedang Dipesan';
+            $poNumberText = $r['latest_po_number'] ?: '-';
+            $supplierText = $r['latest_supplier'] ?: '-';
+        } elseif (!empty($r['latest_inbound_po'])) {
+            $poStatusText = 'PO Selesai Masuk (Received)';
+            $poNumberText = $r['latest_inbound_po'];
+            $supplierText = $r['latest_inbound_supplier'] ?: '-';
+            $etaFormatted = !empty($r['latest_inbound_date']) ? date('d/m/Y', strtotime($r['latest_inbound_date'])) : 'Selesai';
+        } elseif (!empty($r['track_received_po'])) {
+            $poStatusText = 'PO Selesai Masuk (Received)';
+            $poNumberText = $r['track_received_po'];
+            $supplierText = $r['track_received_supplier'] ?: '-';
+        }
+
         $rows[] = [
             $no++,
             $r['code'],
@@ -427,9 +613,9 @@ if ($action === 'export') {
             $runwayText,
             $suggestedQty,
             $urgency,
-            $r['active_po_count'] > 0 ? 'Sedang Dipesan' : 'Belum Ada PO',
-            $r['latest_po_number'] ?: '-',
-            $r['latest_supplier'] ?: '-',
+            $poStatusText,
+            $poNumberText,
+            $supplierText,
             $etaFormatted
         ];
     }

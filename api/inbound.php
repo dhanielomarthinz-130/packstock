@@ -111,6 +111,63 @@ if ($action === 'list') {
     exit;
 }
 
+// 1.1 GET SINGLE INBOUND DETAIL (By ID, Inbound No, or PO Number)
+if ($action === 'detail') {
+    $id         = (int)($_GET['id'] ?? 0);
+    $inboundNo  = trim($_GET['inbound_no'] ?? '');
+    $poNumber   = trim($_GET['po_number'] ?? '');
+    $materialId = (int)($_GET['material_id'] ?? 0);
+
+    $query = "
+        SELECT i.*, 
+               COALESCE(i.started_at, i.created_at) as started_at,
+               COALESCE(i.completed_at, i.created_at) as completed_at,
+               COALESCE(i.duration_seconds, 0) as duration_seconds,
+               m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+               COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code,
+               COALESCE(u.name, i.received_by, 'Admin') as receiver_name,
+               COALESCE(u.username, i.received_by, 'admin') as receiver_username,
+               COALESCE(u.role, 'admin') as receiver_role,
+               COALESCE(u.shift, 'Head Office') as receiver_shift
+        FROM inbound_transactions i
+        JOIN materials m ON i.material_id = m.id
+        LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username OR i.received_by = u.name)
+        WHERE 1=1
+    ";
+    $params = [];
+
+    if ($id > 0) {
+        $query .= " AND i.id = ?";
+        $params[] = $id;
+    } elseif (!empty($inboundNo)) {
+        $query .= " AND i.inbound_no = ?";
+        $params[] = $inboundNo;
+    } elseif (!empty($poNumber)) {
+        $query .= " AND UPPER(TRIM(i.po_number)) = UPPER(TRIM(?))";
+        $params[] = $poNumber;
+        if ($materialId > 0) {
+            $query .= " AND i.material_id = ?";
+            $params[] = $materialId;
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Parameter ID atau No. Inbound / PO diperlukan']);
+        exit;
+    }
+
+    $query .= " ORDER BY i.id DESC LIMIT 1";
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $detail = $stmt->fetch();
+
+    if ($detail) {
+        $detail['qty'] = (float)$detail['qty'];
+        echo json_encode(['success' => true, 'data' => $detail]);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Data penerimaan barang masuk tidak ditemukan']);
+    }
+    exit;
+}
+
 // Helper to process uploaded photos
 function handleUploadedInboundPhotos(): ?string {
     if (!isset($_FILES['photos'])) {
@@ -259,6 +316,18 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($notes)) $mutNotes .= " - {$notes}";
         $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, Auth::id(), $now]);
 
+        // Auto-update status di PO tracking jika ada PO aktif dengan nomor yang sama
+        if (!empty($poNumber) && $poNumber !== '-') {
+            try {
+                $stmtPoUpd = $pdo->prepare("
+                    UPDATE material_po_trackings 
+                    SET status = 'RECEIVED', updated_at = CURRENT_TIMESTAMP 
+                    WHERE material_id = ? AND UPPER(TRIM(po_number)) = UPPER(TRIM(?)) AND status IN ('ORDERED', 'SHIPPED')
+                ");
+                $stmtPoUpd->execute([$materialId, $poNumber]);
+            } catch (Throwable $pe) {}
+        }
+
         $pdo->commit();
 
         echo json_encode([
@@ -400,6 +469,18 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($location)) $mutNotes .= " [Lokasi: {$location}]";
             if (!empty($combinedNotes)) $mutNotes .= " - {$combinedNotes}";
             $stmtMut->execute([$materialId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $authId, $now]);
+
+            // Auto-update status di PO tracking jika ada PO aktif dengan nomor yang sama
+            if (!empty($poNumber) && $poNumber !== '-') {
+                try {
+                    $stmtPoUpd = $pdo->prepare("
+                        UPDATE material_po_trackings 
+                        SET status = 'RECEIVED', updated_at = CURRENT_TIMESTAMP 
+                        WHERE material_id = ? AND UPPER(TRIM(po_number)) = UPPER(TRIM(?)) AND status IN ('ORDERED', 'SHIPPED')
+                    ");
+                    $stmtPoUpd->execute([$materialId, $poNumber]);
+                } catch (Throwable $pe) {}
+            }
 
             $processedItems++;
             $totalQtyProcessed += $qty;

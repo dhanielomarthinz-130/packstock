@@ -4889,9 +4889,16 @@ function renderInboundRows(data, tbody) {
 let currentSelectedInboundIdx = null;
 let currentEditInboundId = null;
 
-function openInboundDetailModal(idx) {
-  currentSelectedInboundIdx = idx;
-  const i = window._currentInboundList?.[idx];
+function openInboundDetailModal(itemOrIdx) {
+  let i;
+  if (typeof itemOrIdx === 'object' && itemOrIdx !== null) {
+    i = itemOrIdx;
+    window._lastSelectedInboundDetail = i;
+  } else {
+    currentSelectedInboundIdx = itemOrIdx;
+    i = window._currentInboundList?.[itemOrIdx];
+    window._lastSelectedInboundDetail = i;
+  }
   if (!i) return;
 
   const noEl = document.getElementById('detailInboundNo');
@@ -4902,7 +4909,9 @@ function openInboundDetailModal(idx) {
   // Parse photos
   let photos = [];
   if (i.photo_path) {
-    if (i.photo_path.startsWith('[')) {
+    if (Array.isArray(i.photo_path)) {
+      photos = i.photo_path;
+    } else if (typeof i.photo_path === 'string' && i.photo_path.startsWith('[')) {
       try { photos = JSON.parse(i.photo_path); } catch (e) { photos = [i.photo_path]; }
     } else {
       photos = [i.photo_path];
@@ -5046,6 +5055,14 @@ function openInboundDetailModal(idx) {
   `;
 
   document.getElementById('detailInboundContent').innerHTML = content;
+  const btnEdit = document.getElementById('btnEditFromInboundDetail');
+  if (btnEdit) {
+    if (typeof itemOrIdx === 'number' && window._currentInboundList?.[itemOrIdx]) {
+      btnEdit.classList.remove('hidden');
+    } else {
+      btnEdit.classList.add('hidden');
+    }
+  }
   App.openModal('modalInboundDetail');
 }
 
@@ -11276,7 +11293,37 @@ function renderReorderAlertsTable() {
 
     // PO Tracking Status Badge
     let poBadge = '';
-    if (it.is_ordered) {
+    if (it.is_po_received && it.received_po_number) {
+      const photoBadge = (it.received_photos_count > 0)
+        ? `<span class="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-100/90 px-1 py-0.2 rounded mt-0.5 border border-emerald-200">📷 ${it.received_photos_count} Foto Bukti</span>`
+        : '';
+
+      poBadge = `
+        <div onclick="showPoInboundDetail(${it.id})" class="inline-block p-2 bg-emerald-50 hover:bg-emerald-100/90 border border-emerald-300 rounded-xl text-left text-[10px] max-w-[190px] cursor-pointer transition-all hover:scale-[1.02] shadow-2xs group" title="Klik untuk lihat detail barang masuk & foto bukti">
+          <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center gap-1 font-black text-emerald-950">
+              <span class="material-symbols-outlined text-[14px] text-emerald-700">verified</span>
+              <span>PO #${escapeHtml(it.received_po_number)}</span>
+            </div>
+            <span class="material-symbols-outlined text-[13px] text-emerald-600 group-hover:translate-x-0.5 transition-transform">visibility</span>
+          </div>
+          <div class="mt-0.5 font-extrabold text-emerald-900 text-[10px] flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+            <span>PO Selesai Masuk</span>
+          </div>
+          <p class="text-[9.5px] text-emerald-800 font-mono mt-0.5 font-bold">
+            +${App.formatNumber(it.received_po_qty || 0)} ${escapeHtml(it.unit)} &bull; ${it.received_po_date ? App.formatDate(it.received_po_date) : '-'}
+          </p>
+          ${photoBadge}
+          ${it.is_ordered ? `
+            <div class="mt-1 pt-1 border-t border-emerald-200 text-[9px] text-blue-700 font-bold flex items-center gap-1">
+              <span class="material-symbols-outlined text-[11px]">local_shipping</span>
+              <span>Next PO #${escapeHtml(it.latest_po_number)}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    } else if (it.is_ordered) {
       poBadge = `
         <div class="inline-block p-1.5 bg-blue-50 border border-blue-200 rounded-lg text-left text-[10px] max-w-[170px]">
           <div class="flex items-center gap-1 font-bold text-blue-900">
@@ -11359,7 +11406,13 @@ function renderReorderAlertsTable() {
 
         <!-- 10. Aksi -->
         <td class="p-3.5 align-middle text-center whitespace-nowrap">
-          <div class="flex items-center justify-center gap-1">
+          <div class="flex items-center justify-center gap-1.5">
+            ${it.is_po_received ? `
+              <button onclick="showPoInboundDetail(${it.id})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="Lihat Detail Penerimaan Putaway & Foto">
+                <span class="material-symbols-outlined text-[15px]">visibility</span>
+                <span>Detail Inbound</span>
+              </button>
+            ` : ''}
             <button onclick="openRecordPOModal(${it.id})" class="px-2.5 py-1.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="Catat No. PO Purchasing">
               <span class="material-symbols-outlined text-[15px]">post_add</span>
               <span>Catat PO</span>
@@ -11374,6 +11427,51 @@ function renderReorderAlertsTable() {
       </tr>
     `;
   }).join('');
+}
+
+async function showPoInboundDetail(matId) {
+  const item = (allReorderAlerts || []).find(m => m.id === matId);
+  if (!item) return;
+
+  try {
+    let inboundData = null;
+    if (item.received_inbound_id) {
+      const res = await App.fetchApi(`../api/inbound.php?action=detail&id=${item.received_inbound_id}`);
+      if (res && res.success && res.data) {
+        inboundData = res.data;
+      }
+    } else if (item.received_po_number) {
+      const res = await App.fetchApi(`../api/inbound.php?action=detail&po_number=${encodeURIComponent(item.received_po_number)}&material_id=${item.id}`);
+      if (res && res.success && res.data) {
+        inboundData = res.data;
+      }
+    }
+
+    if (!inboundData) {
+      // Fallback constructed from reorder alert item data
+      inboundData = {
+        inbound_no: item.received_inbound_no || ('INB-' + (item.received_po_number || item.code)),
+        created_at: item.received_po_date || new Date().toISOString(),
+        completed_at: item.received_po_date || new Date().toISOString(),
+        material_name: item.name,
+        material_code: item.code,
+        material_unit: item.unit,
+        material_category: item.category,
+        qty: item.received_po_qty || 0,
+        rack_location: item.received_location || item.rack_location,
+        receiver_name: item.received_receiver || 'Petugas Putaway',
+        receiver_role: 'operator',
+        po_number: item.received_po_number,
+        notes: item.received_notes || ('Barang PO #' + item.received_po_number + ' telah diterima di Putaway.'),
+        photo_path: item.received_photos || []
+      };
+    }
+
+    openInboundDetailModal(inboundData);
+  } catch (err) {
+    console.error('Failed to show PO inbound detail:', err);
+    App.showToast('Gagal memuat detail barang masuk: ' + (err.message || err), 'error');
+  }
 }
 
 function setReorderFilterType(type) {
