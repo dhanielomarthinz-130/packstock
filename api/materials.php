@@ -58,18 +58,40 @@ if ($action === 'barcode_lookup') {
 
 // 0.2 GIMMICK KPI STATS
 if ($action === 'gimmick_stats') {
-    $stmt = $pdo->query("
-        SELECT 
-            COUNT(*) as total_sku,
-            COALESCE(SUM(current_stock), 0) as total_on_hand,
-            COALESCE(SUM(qty_gudang_kecil), 0) as total_gudang_kecil,
-            COALESCE(SUM(qty_gudang_besar), 0) as total_gudang_besar,
-            COALESCE(SUM(CASE WHEN status_active = 1 OR status_active = '1' OR status_active = 'AKTIF' THEN 1 ELSE 0 END), 0) as active_sku
-        FROM materials 
-        WHERE item_type = 'GIMMICK'
-    ");
-    $stats = $stmt->fetch();
-    echo json_encode(['success' => true, 'data' => $stats]);
+    try {
+        $stmt = $pdo->query("
+            SELECT 
+                COUNT(*) as total_sku,
+                COALESCE(SUM(current_stock), 0) as total_on_hand,
+                COALESCE(SUM(qty_gudang_kecil), 0) as total_gudang_kecil,
+                COALESCE(SUM(qty_gudang_besar), 0) as total_gudang_besar,
+                COALESCE(SUM(CASE WHEN status_active = 1 OR status_active = '1' OR status_active = 'AKTIF' THEN 1 ELSE 0 END), 0) as active_sku
+            FROM materials 
+            WHERE item_type = 'GIMMICK'
+        ");
+        $stats = $stmt ? $stmt->fetch() : null;
+        if (!$stats) {
+            $stats = [
+                'total_sku' => 0,
+                'total_on_hand' => 0,
+                'total_gudang_kecil' => 0,
+                'total_gudang_besar' => 0,
+                'active_sku' => 0
+            ];
+        }
+        echo json_encode(['success' => true, 'data' => $stats]);
+    } catch (Throwable $e) {
+        echo json_encode([
+            'success' => true,
+            'data' => [
+                'total_sku' => 0,
+                'total_on_hand' => 0,
+                'total_gudang_kecil' => 0,
+                'total_gudang_besar' => 0,
+                'active_sku' => 0
+            ]
+        ]);
+    }
     exit;
 }
 
@@ -371,11 +393,11 @@ if ($action === 'list') {
                COALESCE(sm_agg.total_inbound, 0) as total_inbound,
                COALESCE(sm_agg.total_outbound, 0) as total_outbound,
                COALESCE(sm_init.qty_change, (m.current_stock - COALESCE(sm_agg.total_net_flow, 0))) as initial_upload_stock,
-               COALESCE((SELECT COUNT(*) FROM material_batches WHERE material_id = m.id AND qty > 0), 0) as batch_count,
-               (SELECT MIN(exp_date) FROM material_batches WHERE material_id = m.id AND qty > 0 AND exp_date IS NOT NULL AND exp_date != '') as earliest_exp_date,
-               COALESCE((SELECT GROUP_CONCAT(DISTINCT batch_no) FROM material_batches WHERE material_id = m.id AND qty > 0), '') as batch_numbers,
-               COALESCE((SELECT GROUP_CONCAT(DISTINCT location) FROM material_batches WHERE material_id = m.id AND qty > 0 AND location IS NOT NULL AND location != '' AND location != 'Pusat'), '') as batch_locations,
-               COALESCE((SELECT json_group_array(json_object('batch_no', batch_no, 'exp_date', exp_date, 'location', location, 'qty', qty)) FROM (SELECT batch_no, exp_date, location, qty FROM material_batches WHERE material_id = m.id AND qty > 0 ORDER BY CASE WHEN location IS NULL OR location = '' OR location = 'Pusat' OR location = '-' THEN 1 ELSE 0 END, location ASC, exp_date ASC)), '[]') as batches_json
+               0 as batch_count,
+               NULL as earliest_exp_date,
+               '' as batch_numbers,
+               '' as batch_locations,
+               '[]' as batches_json
         FROM materials m
         LEFT JOIN (
             SELECT material_id,
@@ -386,7 +408,7 @@ if ($action === 'list') {
             GROUP BY material_id
         ) sm_agg ON m.id = sm_agg.material_id
         LEFT JOIN (
-            SELECT material_id, qty_change
+            SELECT material_id, MAX(qty_change) as qty_change
             FROM stock_mutations
             WHERE type = 'INITIAL_IMPORT'
             GROUP BY material_id
@@ -491,21 +513,32 @@ if ($action === 'list') {
 
     $query .= " LIMIT {$perPage} OFFSET {$offset}";
 
-    $stmt = $pdo->prepare($query);
-    $stmt->execute($params);
-    $materials = $stmt->fetchAll();
+    try {
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $materials = $stmt->fetchAll();
+    } catch (Throwable $e) {
+        apiFail($e, 'Gagal mengambil data material dari database.');
+        exit;
+    }
 
     // Fetch all active dynamic count materials for fast lookup
-    $stmtFrozen = $pdo->query("
-        SELECT soi.material_id, so.opname_no
-        FROM stock_opname_items soi
-        JOIN stock_opnames so ON soi.opname_id = so.id
-        WHERE so.counting_type = 'DYNAMIC_COUNT' 
-          AND so.status IN ('OPEN', 'COUNTING', 'RECOUNTING')
-    ");
     $frozenMap = [];
-    while ($fRow = $stmtFrozen->fetch()) {
-        $frozenMap[(int)$fRow['material_id']] = $fRow['opname_no'];
+    try {
+        $stmtFrozen = $pdo->query("
+            SELECT soi.material_id, so.opname_no
+            FROM stock_opname_items soi
+            JOIN stock_opnames so ON soi.opname_id = so.id
+            WHERE so.counting_type = 'DYNAMIC_COUNT' 
+              AND so.status IN ('OPEN', 'COUNTING', 'RECOUNTING')
+        ");
+        if ($stmtFrozen) {
+            while ($fRow = $stmtFrozen->fetch()) {
+                $frozenMap[(int)$fRow['material_id']] = $fRow['opname_no'];
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('[PackStock] Error reading dynamic count items: ' . $e->getMessage());
     }
 
     // Pre-calculate granular batch movement breakdown (Stok Awal, Inbound, Outbound, Sisa Stok, Stok Zone VAS)
@@ -524,9 +557,32 @@ if ($action === 'list') {
         $mat['vas_stock'] = (float)($mat['vas_stock'] ?? 0);
         $mat['min_stock'] = (float)$mat['min_stock'];
 
-        if (isset($batchBreakdown[$mid])) {
+        if (isset($batchBreakdown[$mid]) && !empty($batchBreakdown[$mid])) {
             $mat['batches_json'] = json_encode($batchBreakdown[$mid]);
             $mat['batch_count'] = count($batchBreakdown[$mid]);
+            $bNums = [];
+            $bLocs = [];
+            $minExp = null;
+            foreach ($batchBreakdown[$mid] as $bItem) {
+                if (!empty($bItem['batch_no'])) $bNums[] = $bItem['batch_no'];
+                if (!empty($bItem['location']) && $bItem['location'] !== 'Pusat') $bLocs[] = $bItem['location'];
+                if (!empty($bItem['exp_date'])) {
+                    if ($minExp === null || $bItem['exp_date'] < $minExp) {
+                        $minExp = $bItem['exp_date'];
+                    }
+                }
+            }
+            $mat['batch_numbers'] = implode(', ', array_unique($bNums));
+            $mat['batch_locations'] = implode(', ', array_unique($bLocs));
+            if (!empty($minExp)) {
+                $mat['earliest_exp_date'] = $minExp;
+            }
+        } else {
+            $mat['batches_json'] = '[]';
+            $mat['batch_count'] = 0;
+            $mat['batch_numbers'] = '';
+            $mat['batch_locations'] = '';
+            $mat['earliest_exp_date'] = null;
         }
 
         if ($mat['current_stock'] <= 0) {

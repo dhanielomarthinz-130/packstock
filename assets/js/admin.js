@@ -1520,6 +1520,18 @@ async function loadMaterials() {
   const category = document.getElementById('inventoryCategoryFilter')?.value || 'all';
   const status = document.getElementById('inventoryStatusFilter')?.value || 'all';
 
+  const tbody = document.getElementById('inventoryTableBody');
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="12" class="p-8 text-center text-slate-400">
+          <span class="material-symbols-outlined text-[32px] text-amber-500 animate-spin mb-1">progress_activity</span>
+          <p class="text-xs font-semibold text-slate-600">Memuat data stock kemas...</p>
+        </td>
+      </tr>
+    `;
+  }
+
   const query = new URLSearchParams({
     action: 'list',
     item_type: 'PACKAGING',
@@ -1530,25 +1542,49 @@ async function loadMaterials() {
     page: inventoryPage
   });
 
-  const res = await App.fetchJson(`../api/materials.php?${query.toString()}`);
-  if (res && res.success) {
-    const packagingList = res.data || [];
+  try {
+    const res = await App.fetchJson(`../api/materials.php?${query.toString()}`);
+    if (res && res.success) {
+      const packagingList = res.data || [];
 
-    // Halaman yang diminta bisa melampaui hasil setelah filter dipersempit.
-    // Mundur ke halaman terakhir yang masih berisi, lalu muat ulang.
-    if (res.pagination && res.pagination.total_pages > 0 && inventoryPage > res.pagination.total_pages) {
-      inventoryPage = res.pagination.total_pages;
-      return loadMaterials();
+      // Halaman yang diminta bisa melampaui hasil setelah filter dipersempit.
+      // Mundur ke halaman terakhir yang masih berisi, lalu muat ulang.
+      if (res.pagination && res.pagination.total_pages > 0 && inventoryPage > res.pagination.total_pages) {
+        inventoryPage = res.pagination.total_pages;
+        return loadMaterials();
+      }
+
+      renderMaterialsTable(packagingList);
+      renderInventoryPagination(res.pagination);
+      populateCategoryFilters();
+
+      // Cache dropdown TIDAK boleh diisi dari hasil paginasi — isinya hanya satu
+      // halaman, sehingga material di halaman lain akan hilang dari pilihan.
+      // Pemuatan cache diserahkan sepenuhnya ke ensureMaterialsLoaded().
+      ensureMaterialsLoaded().then(() => populateMaterialSelects());
+    } else {
+      if (tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="12" class="p-8 text-center text-rose-500">
+              <span class="material-symbols-outlined text-[32px] text-rose-400 mb-1">error</span>
+              <p class="text-xs font-bold">${escapeHtml(res?.message || 'Gagal memuat data stock kemas.')}</p>
+            </td>
+          </tr>
+        `;
+      }
     }
-
-    renderMaterialsTable(packagingList);
-    renderInventoryPagination(res.pagination);
-    populateCategoryFilters();
-
-    // Cache dropdown TIDAK boleh diisi dari hasil paginasi — isinya hanya satu
-    // halaman, sehingga material di halaman lain akan hilang dari pilihan.
-    // Pemuatan cache diserahkan sepenuhnya ke ensureMaterialsLoaded().
-    ensureMaterialsLoaded().then(() => populateMaterialSelects());
+  } catch (err) {
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12" class="p-8 text-center text-rose-500">
+            <span class="material-symbols-outlined text-[32px] text-rose-400 mb-1">error</span>
+            <p class="text-xs font-bold">Terjadi kesalahan koneksi: ${escapeHtml(err.message)}</p>
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 

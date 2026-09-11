@@ -274,143 +274,165 @@ if (!function_exists('recordBatchTransfer')) {
 
 if (!function_exists('getBatchMovementBreakdown')) {
     function getBatchMovementBreakdown(PDO $pdo, ?int $targetMaterialId = null): array {
-        $matWhere = $targetMaterialId && $targetMaterialId > 0 ? "WHERE material_id = " . (int)$targetMaterialId : "";
-        $matWhereAnd = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
+        try {
+            $matWhere = $targetMaterialId && $targetMaterialId > 0 ? "WHERE material_id = " . (int)$targetMaterialId : "";
+            $matWhereAnd = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
 
-        // Inbounds map
-        $inbMap = [];
-        $stmtInb = $pdo->query("
-            SELECT material_id, UPPER(TRIM(COALESCE(batch_no, ''))) as batch_no, UPPER(TRIM(COALESCE(location, ''))) as location, SUM(qty) as total_qty
-            FROM inbound_transactions
-            {$matWhere}
-            GROUP BY material_id, UPPER(TRIM(COALESCE(batch_no, ''))), UPPER(TRIM(COALESCE(location, '')))
-        ");
-        if ($stmtInb) {
-            while ($r = $stmtInb->fetch(PDO::FETCH_ASSOC)) {
-                $key = $r['material_id'] . '|' . $r['batch_no'] . '|' . $r['location'];
-                $inbMap[$key] = (float)$r['total_qty'];
-            }
-        }
-
-        // Outbounds map
-        $outMap = [];
-        $stmtOut = $pdo->query("
-            SELECT material_id, UPPER(TRIM(COALESCE(batch_no, ''))) as batch_no, UPPER(TRIM(COALESCE(location, ''))) as location, SUM(qty) as total_qty
-            FROM outbound_transactions
-            {$matWhere}
-            GROUP BY material_id, UPPER(TRIM(COALESCE(batch_no, ''))), UPPER(TRIM(COALESCE(location, '')))
-        ");
-        if ($stmtOut) {
-            while ($r = $stmtOut->fetch(PDO::FETCH_ASSOC)) {
-                $key = $r['material_id'] . '|' . $r['batch_no'] . '|' . $r['location'];
-                $outMap[$key] = (float)$r['total_qty'];
-            }
-        }
-
-        // VAS transfers map
-        $vasOutFromWhMap = [];
-        $vasInToWhMap = [];
-        $stmtVasTx = $pdo->query("
-            SELECT material_id, type, UPPER(TRIM(COALESCE(batch_no, ''))) as batch_no, 
-                   UPPER(TRIM(COALESCE(from_location, ''))) as from_location, 
-                   UPPER(TRIM(COALESCE(to_location, ''))) as to_location, 
-                   SUM(qty) as total_qty
-            FROM vas_transactions
-            {$matWhere}
-            GROUP BY material_id, type, UPPER(TRIM(COALESCE(batch_no, ''))), UPPER(TRIM(COALESCE(from_location, ''))), UPPER(TRIM(COALESCE(to_location, '')))
-        ");
-        if ($stmtVasTx) {
-            while ($r = $stmtVasTx->fetch(PDO::FETCH_ASSOC)) {
-                $type = $r['type'];
-                if ($type === 'TRANSFER_IN') {
-                    $key = $r['material_id'] . '|' . $r['batch_no'] . '|' . $r['from_location'];
-                    $vasOutFromWhMap[$key] = ($vasOutFromWhMap[$key] ?? 0) + (float)$r['total_qty'];
-                } elseif ($type === 'TRANSFER_OUT') {
-                    $key = $r['material_id'] . '|' . $r['batch_no'] . '|' . $r['to_location'];
-                    $vasInToWhMap[$key] = ($vasInToWhMap[$key] ?? 0) + (float)$r['total_qty'];
+            // Inbounds map
+            $inbMap = [];
+            $stmtInb = $pdo->query("
+                SELECT material_id, 
+                       COALESCE(batch_no, '') as batch_no, 
+                       COALESCE(location, '') as location, 
+                       SUM(qty) as total_qty
+                FROM inbound_transactions
+                {$matWhere}
+                GROUP BY material_id, COALESCE(batch_no, ''), COALESCE(location, '')
+            ");
+            if ($stmtInb) {
+                while ($r = $stmtInb->fetch(PDO::FETCH_ASSOC)) {
+                    $bNo = strtoupper(trim($r['batch_no']));
+                    $loc = strtoupper(trim($r['location']));
+                    $key = $r['material_id'] . '|' . $bNo . '|' . $loc;
+                    $inbMap[$key] = (float)$r['total_qty'];
                 }
             }
-        }
 
-        // VAS net stock map per material_id and batch_no
-        $vasStockMap = [];
-        $stmtVasStock = $pdo->query("
-            SELECT material_id, UPPER(TRIM(COALESCE(batch_no, ''))) as batch_no, 
-                   SUM(CASE WHEN type = 'TRANSFER_IN' THEN qty WHEN type IN ('TRANSFER_OUT', 'VAS_OUTBOUND') THEN -qty ELSE 0 END) as net_qty
-            FROM vas_transactions
-            {$matWhere}
-            GROUP BY material_id, UPPER(TRIM(COALESCE(batch_no, '')))
-        ");
-        if ($stmtVasStock) {
-            while ($r = $stmtVasStock->fetch(PDO::FETCH_ASSOC)) {
-                $key = $r['material_id'] . '|' . $r['batch_no'];
-                $vasStockMap[$key] = max(0, (float)$r['net_qty']);
+            // Outbounds map
+            $outMap = [];
+            $stmtOut = $pdo->query("
+                SELECT material_id, 
+                       COALESCE(batch_no, '') as batch_no, 
+                       COALESCE(location, '') as location, 
+                       SUM(qty) as total_qty
+                FROM outbound_transactions
+                {$matWhere}
+                GROUP BY material_id, COALESCE(batch_no, ''), COALESCE(location, '')
+            ");
+            if ($stmtOut) {
+                while ($r = $stmtOut->fetch(PDO::FETCH_ASSOC)) {
+                    $bNo = strtoupper(trim($r['batch_no']));
+                    $loc = strtoupper(trim($r['location']));
+                    $key = $r['material_id'] . '|' . $bNo . '|' . $loc;
+                    $outMap[$key] = (float)$r['total_qty'];
+                }
             }
-        }
 
-        // Also check material_batches where location like VAS
-        $stmtMatBatchesVas = $pdo->query("
-            SELECT material_id, UPPER(TRIM(COALESCE(batch_no, ''))) as batch_no, SUM(qty) as total_qty
-            FROM material_batches
-            WHERE UPPER(location) LIKE '%VAS%' {$matWhereAnd}
-            GROUP BY material_id, UPPER(TRIM(COALESCE(batch_no, '')))
-        ");
-        if ($stmtMatBatchesVas) {
-            while ($r = $stmtMatBatchesVas->fetch(PDO::FETCH_ASSOC)) {
-                $key = $r['material_id'] . '|' . $r['batch_no'];
-                $vasStockMap[$key] = ($vasStockMap[$key] ?? 0) + (float)$r['total_qty'];
-            }
-        }
-
-        // Fetch batches (excluding pure VAS rows, sorted)
-        $batchSql = "
-            SELECT id, material_id, batch_no, exp_date, location, qty, notes, created_at, updated_at
-            FROM material_batches
-            WHERE UPPER(location) NOT LIKE '%VAS%' {$matWhereAnd}
-            ORDER BY material_id ASC, (CASE WHEN location IS NULL OR location = '' OR location = 'Pusat' OR location = '-' THEN 1 ELSE 0 END), location ASC, (CASE WHEN exp_date IS NULL OR exp_date = '' THEN 1 ELSE 0 END), exp_date ASC, id ASC
-        ";
-        $batches = $pdo->query($batchSql)->fetchAll(PDO::FETCH_ASSOC);
-
-        $resultMap = [];
-        foreach ($batches as $b) {
-            $mid = (int)$b['material_id'];
-            $bNo = strtoupper(trim($b['batch_no'] ?? ''));
-            $loc = strtoupper(trim($b['location'] ?? ''));
-            $key = "{$mid}|{$bNo}|{$loc}";
-            $keyNoLoc = "{$mid}|{$bNo}|";
-
-            $inbound = ($inbMap[$key] ?? 0) + ($inbMap[$keyNoLoc] ?? 0) + ($vasInToWhMap[$key] ?? 0);
-            $outbound = ($outMap[$key] ?? 0) + ($outMap[$keyNoLoc] ?? 0) + ($vasOutFromWhMap[$key] ?? 0);
-
-            if ($outbound == 0) {
-                $vasKeyBatchOnly = "{$mid}|{$bNo}";
-                foreach ($vasOutFromWhMap as $vk => $vq) {
-                    if (str_starts_with($vk, $vasKeyBatchOnly . '|')) {
-                        $outbound += $vq;
+            // VAS transfers map
+            $vasOutFromWhMap = [];
+            $vasInToWhMap = [];
+            $stmtVasTx = $pdo->query("
+                SELECT material_id, type, 
+                       COALESCE(batch_no, '') as batch_no, 
+                       COALESCE(from_location, '') as from_location, 
+                       COALESCE(to_location, '') as to_location, 
+                       SUM(qty) as total_qty
+                FROM vas_transactions
+                {$matWhere}
+                GROUP BY material_id, type, COALESCE(batch_no, ''), COALESCE(from_location, ''), COALESCE(to_location, '')
+            ");
+            if ($stmtVasTx) {
+                while ($r = $stmtVasTx->fetch(PDO::FETCH_ASSOC)) {
+                    $type = $r['type'];
+                    $bNo = strtoupper(trim($r['batch_no']));
+                    if ($type === 'TRANSFER_IN') {
+                        $fromLoc = strtoupper(trim($r['from_location']));
+                        $key = $r['material_id'] . '|' . $bNo . '|' . $fromLoc;
+                        $vasOutFromWhMap[$key] = ($vasOutFromWhMap[$key] ?? 0) + (float)$r['total_qty'];
+                    } elseif ($type === 'TRANSFER_OUT') {
+                        $toLoc = strtoupper(trim($r['to_location']));
+                        $key = $r['material_id'] . '|' . $bNo . '|' . $toLoc;
+                        $vasInToWhMap[$key] = ($vasInToWhMap[$key] ?? 0) + (float)$r['total_qty'];
                     }
                 }
             }
 
-            $endingStock = max(0, (float)$b['qty']);
-            $initialStock = max(0, $endingStock - $inbound + $outbound);
-            $vasQty = max(0, (float)($vasStockMap["{$mid}|{$bNo}"] ?? 0));
+            // VAS net stock map per material_id and batch_no
+            $vasStockMap = [];
+            $stmtVasStock = $pdo->query("
+                SELECT material_id, COALESCE(batch_no, '') as batch_no, 
+                       SUM(CASE WHEN type = 'TRANSFER_IN' THEN qty WHEN type IN ('TRANSFER_OUT', 'VAS_OUTBOUND') THEN -qty ELSE 0 END) as net_qty
+                FROM vas_transactions
+                {$matWhere}
+                GROUP BY material_id, COALESCE(batch_no, '')
+            ");
+            if ($stmtVasStock) {
+                while ($r = $stmtVasStock->fetch(PDO::FETCH_ASSOC)) {
+                    $bNo = strtoupper(trim($r['batch_no']));
+                    $key = $r['material_id'] . '|' . $bNo;
+                    $vasStockMap[$key] = max(0, (float)$r['net_qty']);
+                }
+            }
 
-            $resultMap[$mid][] = [
-                'id' => (int)$b['id'],
-                'material_id' => $mid,
-                'batch_no' => $b['batch_no'],
-                'exp_date' => $b['exp_date'],
-                'location' => $b['location'],
-                'initial_stock' => $initialStock,
-                'total_inbound' => $inbound,
-                'total_outbound' => $outbound,
-                'qty' => $endingStock,
-                'ending_stock' => $endingStock,
-                'vas_qty' => $vasQty,
-                'notes' => $b['notes'] ?? ''
-            ];
+            // Also check material_batches where location like VAS
+            $stmtMatBatchesVas = $pdo->query("
+                SELECT material_id, COALESCE(batch_no, '') as batch_no, SUM(qty) as total_qty
+                FROM material_batches
+                WHERE UPPER(location) LIKE '%VAS%' {$matWhereAnd}
+                GROUP BY material_id, COALESCE(batch_no, '')
+            ");
+            if ($stmtMatBatchesVas) {
+                while ($r = $stmtMatBatchesVas->fetch(PDO::FETCH_ASSOC)) {
+                    $bNo = strtoupper(trim($r['batch_no']));
+                    $key = $r['material_id'] . '|' . $bNo;
+                    $vasStockMap[$key] = ($vasStockMap[$key] ?? 0) + (float)$r['total_qty'];
+                }
+            }
+
+            // Fetch batches (excluding pure VAS rows, sorted)
+            $batchSql = "
+                SELECT id, material_id, batch_no, exp_date, location, qty, notes, created_at, updated_at
+                FROM material_batches
+                WHERE UPPER(location) NOT LIKE '%VAS%' {$matWhereAnd}
+                ORDER BY material_id ASC, (CASE WHEN location IS NULL OR location = '' OR location = 'Pusat' OR location = '-' THEN 1 ELSE 0 END), location ASC, (CASE WHEN exp_date IS NULL OR exp_date = '' THEN 1 ELSE 0 END), exp_date ASC, id ASC
+            ";
+            $stmtBatches = $pdo->query($batchSql);
+            $batches = $stmtBatches ? $stmtBatches->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            $resultMap = [];
+            foreach ($batches as $b) {
+                $mid = (int)$b['material_id'];
+                $bNo = strtoupper(trim($b['batch_no'] ?? ''));
+                $loc = strtoupper(trim($b['location'] ?? ''));
+                $key = "{$mid}|{$bNo}|{$loc}";
+                $keyNoLoc = "{$mid}|{$bNo}|";
+
+                $inbound = ($inbMap[$key] ?? 0) + ($inbMap[$keyNoLoc] ?? 0) + ($vasInToWhMap[$key] ?? 0);
+                $outbound = ($outMap[$key] ?? 0) + ($outMap[$keyNoLoc] ?? 0) + ($vasOutFromWhMap[$key] ?? 0);
+
+                if ($outbound == 0) {
+                    $vasKeyBatchOnly = "{$mid}|{$bNo}";
+                    foreach ($vasOutFromWhMap as $vk => $vq) {
+                        if (str_starts_with($vk, $vasKeyBatchOnly . '|')) {
+                            $outbound += $vq;
+                        }
+                    }
+                }
+
+                $endingStock = max(0, (float)$b['qty']);
+                $initialStock = max(0, $endingStock - $inbound + $outbound);
+                $vasQty = max(0, (float)($vasStockMap["{$mid}|{$bNo}"] ?? 0));
+
+                $resultMap[$mid][] = [
+                    'id' => (int)$b['id'],
+                    'material_id' => $mid,
+                    'batch_no' => $b['batch_no'],
+                    'exp_date' => $b['exp_date'],
+                    'location' => $b['location'],
+                    'initial_stock' => $initialStock,
+                    'total_inbound' => $inbound,
+                    'total_outbound' => $outbound,
+                    'qty' => $endingStock,
+                    'ending_stock' => $endingStock,
+                    'vas_qty' => $vasQty,
+                    'notes' => $b['notes'] ?? ''
+                ];
+            }
+
+            return $resultMap;
+        } catch (Throwable $e) {
+            error_log('[PackStock] Error in getBatchMovementBreakdown: ' . $e->getMessage());
+            return [];
         }
-
-        return $resultMap;
     }
 }

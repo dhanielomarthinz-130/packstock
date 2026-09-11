@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 9;
+    private const CURRENT_SCHEMA_VERSION = 10;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -146,14 +146,31 @@ class Database {
             }
 
             // Clean any duplicate menu permissions
-            $pdo->exec("
-                DELETE FROM menu_permissions 
-                WHERE id NOT IN (
-                    SELECT MAX(id) 
-                    FROM menu_permissions 
-                    GROUP BY role, COALESCE(user_id, 0), menu_key
-                )
-            ");
+            try {
+                if ($driver === 'mysql') {
+                    $pdo->exec("
+                        DELETE FROM menu_permissions 
+                        WHERE id NOT IN (
+                            SELECT max_id FROM (
+                                SELECT MAX(id) AS max_id 
+                                FROM menu_permissions 
+                                GROUP BY role, COALESCE(user_id, 0), menu_key
+                            ) AS tmp_menu_perm
+                        )
+                    ");
+                } else {
+                    $pdo->exec("
+                        DELETE FROM menu_permissions 
+                        WHERE id NOT IN (
+                            SELECT MAX(id) 
+                            FROM menu_permissions 
+                            GROUP BY role, COALESCE(user_id, 0), menu_key
+                        )
+                    ");
+                }
+            } catch (Throwable $e) {
+                // Ignore cleanup error if table doesn't exist or already clean
+            }
 
             $stmtVer = $pdo->prepare("INSERT OR REPLACE INTO `_schema_version` (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)");
             if ($driver === 'mysql') {
