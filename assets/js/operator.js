@@ -41,11 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Digital Clock Updater
 function updateLiveClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   const clockEl = document.getElementById('liveClock');
-  if (clockEl) {
-    const now = new Date();
-    clockEl.innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  }
+  if (clockEl) clockEl.innerText = timeStr;
+  const bottomClock = document.getElementById('bottomNavClock');
+  if (bottomClock) bottomClock.innerText = timeStr;
 }
 
 // Dynamic Greeting (Pagi / Siang / Sore / Malam)
@@ -92,6 +93,34 @@ async function refreshOperatorData() {
 }
 
 // Mobile Screen / Tab Switcher
+let _lastOpTab = 'home';
+
+function updateBottomNav(tabName) {
+  const navHome = document.getElementById('bottomNavHome');
+  const navSub  = document.getElementById('bottomNavSub');
+  if (!navHome || !navSub) return;
+
+  if (tabName === 'home') {
+    navHome.classList.remove('hidden');
+    navSub.classList.add('hidden');
+  } else {
+    navHome.classList.add('hidden');
+    navSub.classList.remove('hidden');
+  }
+
+  // Update bottom clock on home bar
+  const clockEl = document.getElementById('bottomNavClock');
+  if (clockEl) {
+    const now = new Date();
+    clockEl.innerText = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  }
+}
+
+function goBackFromSubMenu() {
+  // Go back to home or last parent page
+  switchOpTab('home');
+}
+
 function switchOpTab(tabName) {
   // Strict 1-menu access for operator_fulfillment
   if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
@@ -100,6 +129,7 @@ function switchOpTab(tabName) {
     }
   }
 
+  _lastOpTab = currentOpTab;
   currentOpTab = tabName;
   const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover', 'location_transfer'];
 
@@ -115,25 +145,8 @@ function switchOpTab(tabName) {
     if (viewport) viewport.scrollTop = 0;
   }
 
-  // Update bottom navigation bar active states
-  const bottomNavs = ['home', 'inbound', 'tasks', 'handover', 'dynamic_count', 'opname', 'req-form', 'req-hist', 'transfer-form', 'transfer-hist'];
-  bottomNavs.forEach(nav => {
-    const navBtn = document.getElementById('bottom-nav-' + nav);
-    if (navBtn) {
-      const isMatch = (nav === tabName) ||
-        (nav === 'req-form' && tabName === 'request_consumable' && currentOpReqSubTab === 'form') ||
-        (nav === 'req-hist' && tabName === 'request_consumable' && currentOpReqSubTab === 'history') ||
-        (nav === 'transfer-form' && tabName === 'location_transfer' && currentOpTransferSubTab === 'form') ||
-        (nav === 'transfer-hist' && tabName === 'location_transfer' && currentOpTransferSubTab === 'history');
-      if (isMatch) {
-        navBtn.classList.remove('text-slate-400', 'font-semibold');
-        navBtn.classList.add('text-emerald-700', 'font-bold');
-      } else {
-        navBtn.classList.remove('text-emerald-700', 'font-bold');
-        navBtn.classList.add('text-slate-400', 'font-semibold');
-      }
-    }
-  });
+  // Update premium bottom nav (Home vs Sub state)
+  updateBottomNav(tabName);
 
   // Trigger sub-view data loading
   if (tabName === 'home') {
@@ -157,6 +170,7 @@ function switchOpTab(tabName) {
   if (tabName === 'history') renderCompletedHistory();
   if (tabName === 'handover') loadHandovers();
 }
+
 
 // Side Drawer Navigation (Toggle in Top-Left)
 function toggleOperatorDrawer() {

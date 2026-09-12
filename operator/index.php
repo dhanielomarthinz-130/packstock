@@ -26,43 +26,43 @@ $user = Auth::user();
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="mobile-preview-container min-h-screen bg-slate-950 sm:py-6 flex items-center justify-center relative overflow-hidden">
+<div class="mobile-preview-container min-h-screen sm:py-6 flex items-center justify-center relative overflow-hidden" style="background: radial-gradient(ellipse at 20% 20%, #1e1048 0%, #0f0720 50%, #090419 100%);">
   <!-- Ambient Background Glowing Orbs for Desktop Showcase -->
-  <div class="hidden sm:block absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-600/15 rounded-full blur-3xl pointer-events-none"></div>
-  <div class="hidden sm:block absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-600/15 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="hidden sm:block absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="hidden sm:block absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-  <!-- MOBILE APP WRAPPER (Smartphone Frame on Desktop, Fullscreen on Mobile) -->
-  <div class="mobile-app-wrapper flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-800 shadow-2xl shadow-emerald-950/40 relative font-sans" style="background-image: linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px), linear-gradient(to bottom, #f8fafc, #f1f5f9 95%, #e2e8f0); background-size: 24px 24px, 24px 24px, 100% 100%;">
+  <!-- MOBILE APP WRAPPER -->
+  <div class="mobile-app-wrapper flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-900 shadow-2xl shadow-violet-950/50 relative font-sans" style="background: linear-gradient(180deg, #f8f7ff 0%, #f3f2fd 50%, #ede9fe 100%);">
     
     <!-- Premium Ambient Background Orbs -->
-    <div class="absolute top-[250px] -left-16 w-52 h-52 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none z-0"></div>
-    <div class="absolute bottom-20 -right-16 w-52 h-52 bg-indigo-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
-    <div class="absolute bottom-[-50px] left-10 w-44 h-44 bg-teal-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute top-[250px] -left-16 w-52 h-52 bg-violet-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute bottom-20 -right-16 w-52 h-52 bg-indigo-400/10 rounded-full blur-3xl pointer-events-none z-0"></div>
+    <div class="absolute bottom-[-50px] left-10 w-44 h-44 bg-purple-400/10 rounded-full blur-3xl pointer-events-none z-0"></div>
     
-    <!-- TOP APP BAR (TOGGLE MENU, OPERATOR PROFILE & QUICK ACTIONS) -->
-    <header class="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-900 text-white px-3.5 py-3 flex items-center justify-between shadow-md flex-shrink-0 z-10 border-b border-blue-900/40">
+    <!-- TOP APP BAR: DEEP VIOLET PREMIUM -->
+    <header class="text-white px-3.5 py-3 flex items-center justify-between shadow-lg flex-shrink-0 z-10" style="background: linear-gradient(135deg, #3730A3 0%, #4C1D95 40%, #5B21B6 80%, #4338CA 100%); border-bottom: 1px solid rgba(139,92,246,0.3);">
       
       <!-- Left: Toggle Menu Button & Operator Identity -->
       <div class="flex items-center gap-2 min-w-0 flex-1">
         <!-- TOGGLE MENU BUTTON -->
         <button type="button" onclick="toggleOperatorDrawer()" id="btnOpMenuToggle" title="Menu & Pengaturan" 
-          class="w-9 h-9 rounded-2xl bg-blue-900/70 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 hover:text-white transition-all border border-blue-500/40 shadow-xs shrink-0 cursor-pointer">
+          class="w-9 h-9 rounded-2xl active:scale-90 flex items-center justify-center text-violet-100 hover:text-white transition-all shrink-0 cursor-pointer" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
 
         <div title="Shift Otomatis: Terkunci Sesuai Jam Kerja" class="flex items-center gap-2 min-w-0 truncate">
-          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-300 p-0.5 shadow-md flex-shrink-0">
-            <div class="w-full h-full rounded-[14px] bg-blue-900 flex items-center justify-center text-blue-200 font-black">
+          <div class="w-9 h-9 rounded-2xl p-0.5 shadow-md flex-shrink-0" style="background: linear-gradient(135deg, #A78BFA, #7C3AED);">
+            <div class="w-full h-full rounded-[14px] flex items-center justify-center text-violet-100 font-black" style="background: rgba(91,33,182,0.7);">
               <span class="material-symbols-outlined text-[20px]">engineering</span>
             </div>
           </div>
           <div class="min-w-0 truncate">
             <div class="flex items-center gap-1.5">
               <h2 class="font-black text-sm leading-tight text-white tracking-tight truncate"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h2>
-              <span class="w-2 h-2 rounded-full bg-blue-300 shrink-0"></span>
+              <span class="w-2 h-2 rounded-full bg-violet-300 shrink-0"></span>
             </div>
-            <p class="text-[10px] text-blue-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
-              <span id="headerUserShiftDisplay" class="truncate font-bold bg-blue-900/60 px-1.5 py-0.2 rounded border border-blue-500/40 text-blue-200"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></span>
+            <p class="text-[10px] text-violet-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
+              <span id="headerUserShiftDisplay" class="truncate font-bold px-1.5 py-0.2 rounded" style="background: rgba(109,40,217,0.5); border: 1px solid rgba(167,139,250,0.4); color: #DDD6FE;"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></span>
             </p>
           </div>
         </div>
@@ -70,17 +70,17 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Right: Quick Actions -->
       <div class="flex items-center gap-1.5 shrink-0 ml-2">
-        <button onclick="refreshOperatorData()" title="Sinkronisasi Data" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 transition-all border border-blue-600/40 shadow-xs">
+        <button onclick="refreshOperatorData()" title="Sinkronisasi Data" class="w-8 h-8 rounded-xl active:scale-90 flex items-center justify-center text-violet-100 transition-all shadow-xs cursor-pointer" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
           <span id="btnSyncIcon" class="material-symbols-outlined text-[18px]">sync</span>
         </button>
 
         <?php if (Auth::isAdmin()): ?>
-          <a href="../admin/" title="Admin Dashboard" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-blue-900 active:scale-90 flex items-center justify-center text-blue-100 transition-all border border-blue-600/40 shadow-xs">
+          <a href="../admin/" title="Admin Dashboard" class="w-8 h-8 rounded-xl active:scale-90 flex items-center justify-center text-violet-100 transition-all shadow-xs" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
             <span class="material-symbols-outlined text-[18px]">desktop_windows</span>
           </a>
         <?php endif; ?>
 
-        <a href="../logout" title="Logout" class="w-8 h-8 rounded-xl bg-blue-900/60 hover:bg-rose-700 active:scale-90 text-blue-100 hover:text-white flex items-center justify-center transition-all border border-blue-600/40 shadow-xs">
+        <a href="../logout" title="Logout" class="w-8 h-8 rounded-xl active:scale-90 text-violet-100 hover:text-white flex items-center justify-center transition-all shadow-xs hover:bg-rose-600" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
           <span class="material-symbols-outlined text-[18px]">logout</span>
         </a>
       </div>
@@ -1446,66 +1446,47 @@ require_once __DIR__ . '/../includes/header.php';
 
     </div>
 
-    <!-- PREMIUM BOTTOM NAVIGATION BAR -->
-    <nav class="bg-white/95 backdrop-blur-md border-t border-slate-200/80 px-2 py-2.5 flex items-center justify-around flex-shrink-0 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.03)] rounded-b-[40px] sm:rounded-b-none">
+    <!-- ======================================================= -->
+    <!-- PREMIUM MINIMAL BOTTOM NAV BAR -->
+    <!-- Home View: hanya status bar / tanpa tombol -->
+    <!-- Sub-View: Back + Home -->
+    <!-- ======================================================= -->
+    <nav id="bottomNavBar" class="flex-shrink-0 z-20">
       
-      <!-- Home Button -->
-      <button onclick="switchOpTab('home')" id="bottom-nav-home" 
-        class="flex flex-col items-center gap-0.5 text-emerald-700 font-bold active:scale-95 transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[20px] leading-none">home</span>
-        <span class="text-[9px] tracking-tight">Beranda</span>
-      </button>
+      <!-- HOME STATE: Minimal footer bar (tidak ada tombol navigasi) -->
+      <div id="bottomNavHome" class="bg-white/95 backdrop-blur-md border-t border-slate-100 px-5 py-3 flex items-center justify-between rounded-b-[40px] sm:rounded-b-none shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
+        <div class="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Sistem Aktif</span>
+        </div>
+        <div class="flex items-center gap-1 text-[10px] font-mono text-slate-300 font-bold">
+          <span class="material-symbols-outlined text-[13px] text-violet-400">schedule</span>
+          <span id="bottomNavClock">--:--</span>
+        </div>
+        <div class="text-[10px] text-slate-300 font-bold tracking-wider uppercase">IMS Mobile</div>
+      </div>
 
-      <?php if ($isFulfillmentOnly): ?>
-        <!-- Form Request Button -->
-        <button onclick="switchOpTab('request_consumable'); switchOpReqSubTab('form');" id="bottom-nav-req-form" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">add_shopping_cart</span>
-          <span class="text-[9px] tracking-tight">Buat Req</span>
-        </button>
+      <!-- SUB-VIEW STATE: Back + Home (ditampilkan saat masuk ke menu) -->
+      <div id="bottomNavSub" class="hidden bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 py-2.5 rounded-b-[40px] sm:rounded-b-none shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
+        <div class="flex items-center gap-2">
 
-        <!-- Riwayat ACC Button -->
-        <button onclick="switchOpTab('request_consumable'); switchOpReqSubTab('history');" id="bottom-nav-req-hist" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">fact_check</span>
-          <span class="text-[9px] tracking-tight">Riwayat ACC</span>
-        </button>
-      <?php else: ?>
-        <!-- Barang Masuk (Inbound) Button -->
-        <button onclick="switchOpTab('inbound')" id="bottom-nav-inbound" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">move_to_inbox</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Masuk</span>
-        </button>
+          <!-- Back Button -->
+          <button onclick="goBackFromSubMenu()" id="btnBottomBack"
+            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all text-slate-700 font-bold text-xs cursor-pointer border border-slate-200/80">
+            <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            <span>Kembali</span>
+          </button>
 
-        <!-- Transfer Antar Lokasi Button -->
-        <button onclick="switchOpTab('location_transfer')" id="bottom-nav-transfer" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">swap_horiz</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Transfer</span>
-        </button>
+          <!-- Home Button -->
+          <button onclick="switchOpTab('home')" id="btnBottomHome"
+            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl active:scale-95 transition-all text-white font-black text-xs cursor-pointer shadow-lg shadow-violet-600/20"
+            style="background: linear-gradient(135deg, #6340DC 0%, #7C3AED 50%, #5B21B6 100%);">
+            <span class="material-symbols-outlined text-[20px]">home</span>
+            <span>Home</span>
+          </button>
 
-        <!-- Barang Keluar (Picking / Tasks) Button -->
-        <button onclick="switchOpTab('tasks')" id="bottom-nav-tasks" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">outbox</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Keluar</span>
-        </button>
-
-        <!-- Handover Shift Button -->
-        <button onclick="switchOpTab('handover')" id="bottom-nav-handover" 
-          class="flex flex-col items-center gap-0.5 text-slate-400 font-semibold active:scale-95 transition-all cursor-pointer">
-          <span class="material-symbols-outlined text-[20px] leading-none">published_with_changes</span>
-          <span class="text-[9px] tracking-tight whitespace-nowrap">Handover</span>
-        </button>
-      <?php endif; ?>
-
-      <!-- Logout Button -->
-      <a href="../logout" 
-        class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-600 font-semibold active:scale-95 transition-all cursor-pointer decoration-none">
-        <span class="material-symbols-outlined text-[20px] leading-none">logout</span>
-        <span class="text-[9px] tracking-tight">Logout</span>
-      </a>
+        </div>
+      </div>
 
     </nav>
 
@@ -1514,91 +1495,91 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- ========================================================================= -->
     <div id="operatorDrawerBackdrop" onclick="closeOperatorDrawer()" class="absolute inset-0 bg-slate-950/70 backdrop-blur-xs z-40 hidden transition-opacity duration-300 opacity-0"></div>
 
-    <div id="operatorDrawer" class="absolute inset-y-0 left-0 w-72 max-w-[80%] bg-slate-900 text-white z-50 shadow-2xl flex flex-col justify-between transform -translate-x-full transition-transform duration-300 ease-in-out border-r border-slate-800">
+    <div id="operatorDrawer" class="absolute inset-y-0 left-0 w-72 max-w-[80%] text-white z-50 shadow-2xl flex flex-col justify-between transform -translate-x-full transition-transform duration-300 ease-in-out" style="background: linear-gradient(180deg, #1e1048 0%, #130a2e 100%); border-right: 1px solid rgba(139,92,246,0.2);">
       
       <!-- Drawer Top: Header & User Card -->
       <div class="p-4 space-y-4">
         
         <!-- Drawer App Brand & Close -->
-        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center justify-between pb-3" style="border-bottom: 1px solid rgba(139,92,246,0.2);">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-white border border-slate-700 p-1 flex items-center justify-center shadow-xs overflow-hidden">
+            <div class="w-8 h-8 rounded-xl bg-white p-1 flex items-center justify-center shadow-xs overflow-hidden">
               <img src="<?= (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') ?>/assets/img/logo-IEG.png" alt="IEG Logo" class="w-full h-full object-contain">
             </div>
             <div>
               <h3 class="font-black text-xs tracking-tight text-white uppercase">IMS Mobile</h3>
-              <p class="text-[9px] text-emerald-400 font-semibold">Inventory Management System</p>
+              <p class="text-[9px] font-semibold" style="color: #A78BFA;">Inventory Management System</p>
             </div>
           </div>
-          <button onclick="closeOperatorDrawer()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors">
+          <button onclick="closeOperatorDrawer()" class="w-7 h-7 rounded-lg flex items-center justify-center transition-colors" style="background: rgba(139,92,246,0.2); color: #A78BFA;">
             <span class="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <!-- Mini Profile Card in Drawer -->
-        <div onclick="closeOperatorDrawer(); openSettingProfileModal();" class="p-3 bg-gradient-to-br from-slate-800 to-slate-800/60 rounded-2xl border border-slate-700/80 shadow-xs cursor-pointer hover:border-emerald-500/50 transition-all group">
+        <div onclick="closeOperatorDrawer(); openSettingProfileModal();" class="p-3 rounded-2xl cursor-pointer transition-all group" style="background: rgba(109,40,217,0.2); border: 1px solid rgba(139,92,246,0.3);">
           <div class="flex items-center gap-2.5">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-sm shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform">
+            <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #7C3AED, #4C1D95);">
               <span class="material-symbols-outlined text-[22px]">engineering</span>
             </div>
             <div class="min-w-0 truncate">
-              <h4 class="font-black text-xs text-white leading-tight truncate group-hover:text-emerald-300 transition-colors"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h4>
-              <p class="text-[10px] text-slate-400 font-mono mt-0.5">@<?= htmlspecialchars($user['username'] ?? 'user') ?></p>
-              <span class="inline-block px-2 py-0.2 mt-1 rounded-md text-[9px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-600/40">
+              <h4 class="font-black text-xs text-white leading-tight truncate group-hover:text-violet-300 transition-colors"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h4>
+              <p class="text-[10px] font-mono mt-0.5" style="color: #A78BFA;">@<?= htmlspecialchars($user['username'] ?? 'user') ?></p>
+              <span class="inline-block px-2 py-0.2 mt-1 rounded-md text-[9px] font-black uppercase" style="background: rgba(91,33,182,0.5); color: #DDD6FE; border: 1px solid rgba(139,92,246,0.4);">
                 <?= htmlspecialchars(strtoupper($user['role'] ?? 'OPERATOR')) ?>
               </span>
             </div>
           </div>
-          <div class="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
-            <span>Shift: <b class="text-slate-200"><?= htmlspecialchars($user['shift'] ?? 'Reguler') ?></b></span>
-            <span class="text-emerald-400 font-bold flex items-center gap-0.5">Lihat Profil &rarr;</span>
-          </div>
+            <div class="mt-2.5 pt-2 flex items-center justify-between text-[10px]" style="border-top: 1px solid rgba(139,92,246,0.2); color: #A78BFA;">
+              <span>Shift: <b class="text-white"><?= htmlspecialchars($user['shift'] ?? 'Reguler') ?></b></span>
+              <span class="font-bold flex items-center gap-0.5" style="color: #A78BFA;">Lihat Profil &rarr;</span>
+            </div>
         </div>
 
         <!-- Navigation Links in Drawer -->
         <div class="space-y-1 pt-1">
-          <p class="text-[10px] uppercase font-black tracking-wider text-slate-400 px-2 pb-1">Navigasi & Menu</p>
+          <p class="text-[10px] uppercase font-black tracking-wider px-2 pb-1" style="color: rgba(167,139,250,0.6);">Navigasi &amp; Menu</p>
           
-          <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
-            <span class="material-symbols-outlined text-emerald-400 text-[20px]">home</span>
+          <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" style="--hover-bg: rgba(109,40,217,0.3);" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
+            <span class="material-symbols-outlined text-[20px]" style="color: #A78BFA;">home</span>
             <span>Home</span>
           </button>
 
-          <button onclick="closeOperatorDrawer(); switchOpTab('location_transfer');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
+          <button onclick="closeOperatorDrawer(); switchOpTab('location_transfer');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <span class="material-symbols-outlined text-blue-400 text-[20px]">swap_horiz</span>
             <span>Transfer Antar Lokasi</span>
           </button>
 
-          <button onclick="closeOperatorDrawer(); switchOpTab('request_consumable');" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
+          <button onclick="closeOperatorDrawer(); switchOpTab('request_consumable');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <span class="material-symbols-outlined text-amber-400 text-[20px]">shopping_cart_checkout</span>
             <span>Request Fulfillments</span>
           </button>
 
           <!-- SETTING MENU ITEM (OPENS PROFILE VIEW) -->
-          <button onclick="closeOperatorDrawer(); openSettingProfileModal();" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center justify-between text-xs font-bold text-slate-200 hover:text-white transition-colors group">
+          <button onclick="closeOperatorDrawer(); openSettingProfileModal();" class="w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-bold text-violet-100 hover:text-white transition-colors group" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <div class="flex items-center gap-3">
-              <span class="material-symbols-outlined text-indigo-400 text-[20px]">settings</span>
+              <span class="material-symbols-outlined text-violet-400 text-[20px]">settings</span>
               <span>Settings</span>
             </div>
-            <span class="material-symbols-outlined text-[16px] text-slate-400 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+            <span class="material-symbols-outlined text-[16px] text-violet-600 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
           </button>
 
           <!-- ABOUT MENU ITEM (OPENS ABOUT MODAL) -->
-          <button onclick="closeOperatorDrawer(); openAboutModal();" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center justify-between text-xs font-bold text-slate-200 hover:text-white transition-colors group">
+          <button onclick="closeOperatorDrawer(); openAboutModal();" class="w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-bold text-violet-100 hover:text-white transition-colors group" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-sky-400 text-[20px]">info</span>
               <span>About</span>
             </div>
-            <span class="material-symbols-outlined text-[16px] text-slate-400 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+            <span class="material-symbols-outlined text-[16px] text-violet-600 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
           </button>
 
-          <button onclick="closeOperatorDrawer(); refreshOperatorData();" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-slate-200 hover:text-white transition-colors">
+          <button onclick="closeOperatorDrawer(); refreshOperatorData();" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <span class="material-symbols-outlined text-teal-400 text-[20px]">sync</span>
-            <span>Sync</span>
+            <span>Sync Data</span>
           </button>
 
           <?php if (Auth::isAdmin()): ?>
-            <a href="../admin/" class="w-full p-2.5 rounded-xl hover:bg-slate-800 flex items-center gap-3 text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors">
+            <a href="../admin/" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-amber-300 hover:text-amber-200 transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
               <span class="material-symbols-outlined text-amber-400 text-[20px]">desktop_windows</span>
               <span>Buka Admin Panel</span>
             </a>
@@ -1608,8 +1589,8 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Drawer Bottom: Logout -->
-      <div class="p-4 border-t border-slate-800 bg-slate-950/50">
-        <a href="../logout" class="w-full py-2.5 px-3 rounded-xl bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 flex items-center justify-center gap-2 text-xs font-bold transition-all">
+      <div class="p-4" style="border-top: 1px solid rgba(139,92,246,0.2); background: rgba(0,0,0,0.2);">
+        <a href="../logout" class="w-full py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold transition-all" style="background: rgba(225,29,72,0.15); border: 1px solid rgba(225,29,72,0.25); color: #FDA4AF;" onmouseover="this.style.background='rgba(225,29,72,0.7)'; this.style.color='white';" onmouseout="this.style.background='rgba(225,29,72,0.15)'; this.style.color='#FDA4AF';">
           <span class="material-symbols-outlined text-[18px]">logout</span>
           <span>Keluar dari Aplikasi</span>
         </a>
