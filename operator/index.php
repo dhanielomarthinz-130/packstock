@@ -194,215 +194,194 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <?php else: ?>
-        <!-- Welcome Hero Banner Card (Operator Inventory / Warehouse Operator) -->
-        <div class="bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-900 text-white rounded-3xl p-4 sm:p-5 shadow-lg border border-emerald-600/30 relative overflow-hidden">
-          <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none"></div>
-          <div class="absolute right-3 top-3 opacity-15 pointer-events-none">
-            <span class="material-symbols-outlined text-[76px]">warehouse</span>
+        <!-- Welcome Hero Banner Card - PREMIUM VIOLET -->
+        <div class="text-white rounded-3xl p-4 sm:p-5 shadow-xl relative overflow-hidden" style="background: linear-gradient(135deg, #3730A3 0%, #4C1D95 40%, #6D28D9 80%, #5B21B6 100%);">
+          <!-- Decorative orbs -->
+          <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-violet-400/15 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="absolute right-4 top-0 opacity-10 pointer-events-none">
+            <span class="material-symbols-outlined text-[90px]">warehouse</span>
           </div>
+          <!-- Shiny line -->
+          <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-300/40 to-transparent pointer-events-none"></div>
 
-          <div class="relative z-10 space-y-2">
-            <div class="flex items-center justify-between">
-              <span id="homeGreetingText" class="text-xs uppercase tracking-wider font-black text-emerald-200 flex items-center gap-1">
-                <span>Selamat Bertugas</span>
-              </span>
-              <span class="px-2.5 py-0.5 bg-emerald-950/70 rounded-full text-[10px] font-extrabold text-emerald-200 border border-emerald-600/40 flex items-center gap-1 shadow-2xs">
+          <div class="relative z-10">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <p id="homeGreetingText" class="text-[10px] uppercase tracking-[0.15em] font-extrabold text-violet-300">Selamat Bertugas</p>
+                <h3 class="text-xl font-black tracking-tight leading-tight mt-0.5">
+                  Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
+                </h3>
+              </div>
+              <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-2xl shrink-0" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Online</span>
-              </span>
-            </div>
-            <h3 class="text-lg font-black tracking-tight leading-snug">
-              Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
-            </h3>
-
-            <!-- Quick Shift Indicator Strip (Auto Locked) -->
-            <div class="flex items-center justify-between pt-2 border-t border-emerald-600/40">
-              <div class="flex items-center gap-1.5 text-xs text-emerald-100 font-medium truncate">
-                <span class="material-symbols-outlined text-[16px] text-emerald-300 shrink-0">schedule</span>
-                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></b></span>
+                <span class="text-[10px] font-bold text-white/90">Online</span>
               </div>
-              <span class="px-2.5 py-1 rounded-xl bg-white/20 text-white text-[10px] font-black flex items-center gap-1 border border-white/25 shadow-xs shrink-0" title="Shift terdeteksi otomatis sesuai jam kerja sistem dan terkunci">
-                <span class="material-symbols-outlined text-[13px]">lock</span>
-                <span>Shift Otomatis</span>
+            </div>
+
+            <!-- Shift Strip — hanya tampilkan info, tanpa badge "Shift Otomatis" -->
+            <div class="flex items-center gap-2 pt-3" style="border-top: 1px solid rgba(255,255,255,0.12);">
+              <span class="material-symbols-outlined text-[15px] text-violet-300 shrink-0">schedule</span>
+              <span class="text-[11px] text-violet-100/90 font-medium truncate">
+                Shift aktif: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></b>
               </span>
             </div>
           </div>
         </div>
 
-        <!-- Quick KPI Summary Strip -->
-        <div class="grid grid-cols-3 gap-2.5">
-          <div onclick="switchOpTab('tasks')" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-amber-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-amber-700">Tugas Picking</span>
-            <span id="homeStatTasks" class="font-mono font-black text-amber-600 text-lg leading-tight block">0</span>
-            <span class="text-[9px] text-slate-500 font-semibold block">Serah Terima</span>
+        <!-- Quick KPI Summary Strip — Premium Redesign -->
+        <div class="grid grid-cols-3 gap-2">
+          <div onclick="switchOpTab('tasks')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-200 cursor-pointer active:scale-95 transition-all text-center group">
+            <div class="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-1.5 group-hover:bg-amber-100 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-amber-500">assignment</span>
+            </div>
+            <span id="homeStatTasks" class="font-mono font-black text-amber-600 text-base leading-none block">0</span>
+            <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">Picking</span>
           </div>
 
-          <div onclick="switchOpTab('dynamic_count')" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-indigo-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-indigo-700">Dynamic</span>
-            <span id="homeStatDynamic" class="font-mono font-black text-indigo-600 text-lg leading-tight block">0</span>
-            <span class="text-[9px] text-slate-500 font-semibold block">Task SKU</span>
+          <div onclick="switchOpTab('dynamic_count')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-violet-200 cursor-pointer active:scale-95 transition-all text-center group">
+            <div class="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center mx-auto mb-1.5 group-hover:bg-violet-100 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-violet-500">checklist</span>
+            </div>
+            <span id="homeStatDynamic" class="font-mono font-black text-violet-600 text-base leading-none block">0</span>
+            <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">Counting</span>
           </div>
 
-          <div onclick="switchOpTab('opname')" class="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs hover:border-emerald-400 cursor-pointer active:scale-95 transition-all text-center space-y-0.5 group">
-            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block group-hover:text-emerald-700">Opname</span>
-            <span id="homeStatOpname" class="font-mono font-black text-emerald-700 text-lg leading-tight block">0</span>
-            <span class="text-[9px] text-slate-500 font-semibold block">Blank Count</span>
+          <div onclick="switchOpTab('opname')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 cursor-pointer active:scale-95 transition-all text-center group">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-1.5 group-hover:bg-emerald-100 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-emerald-500">inventory_2</span>
+            </div>
+            <span id="homeStatOpname" class="font-mono font-black text-emerald-700 text-base leading-none block">0</span>
+            <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">Opname</span>
           </div>
         </div>
 
-        <!-- Section Title: Menu Aplikasi -->
-        <div class="flex items-center justify-between px-1 pt-1">
-          <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-emerald-700 text-[18px]">grid_view</span>
-            <span>Menu Operator</span>
-          </h4>
-          <span class="text-[11px] text-slate-400 font-bold">8 Modul</span>
+        <!-- Section Title: Menu — tanpa "8 Modul" -->
+        <div class="flex items-center gap-2 px-1">
+          <span class="material-symbols-outlined text-violet-500 text-[16px]">grid_view</span>
+          <h4 class="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">Menu Operator</h4>
         </div>
 
-        <!-- APP LAUNCHER GRID (NATIVE MOBILE APP TILES - URUT SESUAI ABJAD A-Z) -->
-        <div class="grid grid-cols-3 gap-y-4 gap-x-2">
+        <!-- APP LAUNCHER GRID — PREMIUM LARGE TILES -->
+        <div class="grid grid-cols-3 gap-3">
 
-          <!-- 1. COUNTING (DYNAMIC COUNTING / TASK SKU) -->
+          <!-- 1. COUNTING -->
           <div onclick="switchOpTab('dynamic_count')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">checklist</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-violet-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-violet-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">checklist</span>
               </div>
-              <span id="homeBadgeDynamicCount" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-indigo-600 text-white font-black text-[9px] shadow-xs leading-none">
-                0
-              </span>
+              <span id="homeBadgeDynamicCount" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-indigo-700 transition-colors">Counting</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-violet-700 transition-colors">Counting</h5>
           </div>
 
-          <!-- 2. HANDOVER (SERAH TERIMA SHIFT) -->
+          <!-- 2. HANDOVER -->
           <div onclick="switchOpTab('handover')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">published_with_changes</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-rose-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-rose-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-rose-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">published_with_changes</span>
               </div>
-              <span id="homeBadgeHandover" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-black text-[9px] shadow-xs leading-none">
-                New
-              </span>
+              <span id="homeBadgeHandover" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">!</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-rose-700 transition-colors">Handover</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-rose-700 transition-colors">Handover</h5>
           </div>
 
-          <!-- 3. HISTORY (RIWAYAT SELESAI) -->
+          <!-- 3. HISTORY -->
           <div onclick="switchOpTab('history')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">history</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-300">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center shadow-md shadow-slate-500/20 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">history</span>
               </div>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-slate-800 transition-colors">History</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-slate-800 transition-colors">History</h5>
           </div>
 
-          <!-- 4. PICKING (TUGAS PENGAMBILAN PACKAGING) -->
+          <!-- 4. PICKING -->
           <div onclick="switchOpTab('tasks')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">assignment</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">assignment</span>
               </div>
-              <span id="homeBadgeTasks" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-black text-[9px] shadow-xs leading-none">
-                0
-              </span>
+              <span id="homeBadgeTasks" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Picking</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-amber-700 transition-colors">Picking</h5>
           </div>
 
-          <!-- 5. PUTAWAY (PENERIMAAN BARANG MASUK) -->
+          <!-- 5. PUTAWAY -->
           <div onclick="switchOpTab('inbound')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">move_to_inbox</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-teal-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shadow-md shadow-teal-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">move_to_inbox</span>
               </div>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-teal-700 transition-colors">Putaway</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-teal-700 transition-colors">Putaway</h5>
           </div>
 
-          <!-- 6. REQ CONSUMABLE (FORM REQUEST CONSUMABLE) -->
+          <!-- 6. REQ CONSUMABLE -->
           <div onclick="switchOpTab('request_consumable')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">shopping_cart_checkout</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-amber-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">shopping_cart_checkout</span>
               </div>
-              <span id="homeBadgeConsumableReq" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-amber-600 text-white font-black text-[9px] shadow-xs leading-none">
-                0
-              </span>
+              <span id="homeBadgeConsumableReq" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-amber-700 transition-colors">Req Consumable</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-amber-700 transition-colors">Req. Material</h5>
           </div>
 
-          <!-- 7. STOCK OPNAME (PURE BLANK COUNT) -->
+          <!-- 7. STOCK OPNAME -->
           <div onclick="switchOpTab('opname')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">inventory_2</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">inventory_2</span>
               </div>
-              <span id="homeBadgeOpname" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none">
-                Aktif
-              </span>
+              <span id="homeBadgeOpname" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">!</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-emerald-700 transition-colors">Stock Opname</h5>
           </div>
 
-          <!-- 8. TRANSFER LOKASI (MOVEMENT PRODUCT LOCATION TO LOCATION) -->
+          <!-- 8. TRANSFER LOKASI -->
           <div onclick="switchOpTab('location_transfer')" 
-            class="flex flex-col items-center text-center p-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group">
-            <div class="relative">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                <span class="material-symbols-outlined text-[24px]">swap_horiz</span>
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-blue-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">swap_horiz</span>
               </div>
-              <span id="homeBadgeTransfer" class="hidden absolute -top-1.5 -right-1.5 px-1.5 py-0.5 rounded-full bg-blue-600 text-white font-black text-[9px] shadow-xs leading-none">
-                0
-              </span>
+              <span id="homeBadgeTransfer" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <div class="mt-2 w-full">
-              <h5 class="font-bold text-slate-800 text-[10px] tracking-tight leading-snug group-hover:text-blue-700 transition-colors">Transfer Antar Lokasi</h5>
-            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-blue-700 transition-colors">Transfer Lokasi</h5>
+          </div>
+
+          <!-- PLACEHOLDER TILE (agar grid simetris 3 kolom) -->
+          <div class="flex flex-col items-center text-center py-4 px-2 rounded-2xl relative bg-transparent">
           </div>
 
         </div>
 
-        <!-- Quick Urgent Task Alert Banner (If Any Active Tasks) -->
-        <div id="homeUrgentBanner" class="hidden bg-amber-50 border-2 border-amber-300 rounded-2xl p-3.5 flex items-center justify-between shadow-xs">
+        <!-- Quick Urgent Task Alert Banner -->
+        <div id="homeUrgentBanner" class="hidden rounded-2xl p-3.5 flex items-center justify-between shadow-sm" style="background: #FFF7ED; border: 1.5px solid #FCD34D;">
           <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <span class="material-symbols-outlined text-[22px]">notification_important</span>
             </div>
             <div>
               <p class="text-xs font-bold text-amber-950" id="homeUrgentText">Ada tugas siap dikerjakan</p>
-              <p class="text-[10px] text-amber-800">Ketuk untuk mulai memproses serah terima</p>
+              <p class="text-[10px] text-amber-700">Ketuk untuk mulai memproses</p>
             </div>
           </div>
-          <button onclick="switchOpTab('tasks')" class="px-3.5 py-1.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all shrink-0 cursor-pointer">
+          <button onclick="switchOpTab('tasks')" class="px-3.5 py-1.5 active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all shrink-0 cursor-pointer" style="background: #4C1D95;">
             Buka &rarr;
           </button>
         </div>
         <?php endif; ?>
       </div>
+
 
       <!-- ========================================================================= -->
       <!-- 1. SCREEN: TUGAS PENGAMBILAN PACKAGING (PICKING TASK & OUTBOUND HISTORY) -->

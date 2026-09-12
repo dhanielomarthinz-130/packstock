@@ -3759,12 +3759,13 @@ function initMandatoryShiftGate() {
     }
   });
 
-  // Check if operator has confirmed their shift for this session
-  const isConfirmed = sessionStorage.getItem('packstock_op_shift_confirmed');
+  // Shift sudah otomatis terdeteksi dari server (PHP).
+  // Modal konfirmasi shift tidak diperlukan — langsung auto-confirm.
+  sessionStorage.setItem('packstock_op_shift_confirmed', 'true');
   const gateModal = document.getElementById('modalMandatoryShiftGate');
-  if (!isConfirmed && gateModal) {
-    gateModal.classList.remove('hidden');
-    gateModal.classList.add('flex');
+  if (gateModal) {
+    gateModal.classList.add('hidden');
+    gateModal.classList.remove('flex');
   }
 }
 
