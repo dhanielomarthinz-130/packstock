@@ -26,13 +26,60 @@ $user = Auth::user();
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="mobile-preview-container min-h-screen sm:py-6 flex items-center justify-center relative overflow-hidden" style="background: radial-gradient(ellipse at 20% 20%, #1e1048 0%, #0f0720 50%, #090419 100%);">
+<style>
+  /* Lock Viewport for Mobile Android/iOS - Bottom Bar Always Pinned Without Scroll */
+  @media (max-width: 639px) {
+    html, body {
+      height: 100% !important;
+      height: 100dvh !important;
+      overflow: hidden !important;
+      overscroll-behavior: none !important;
+      position: fixed !important;
+      width: 100% !important;
+    }
+    .mobile-preview-container {
+      height: 100% !important;
+      height: 100dvh !important;
+      min-height: 100% !important;
+      max-height: 100dvh !important;
+      overflow: hidden !important;
+      padding: 0 !important;
+      align-items: stretch !important;
+    }
+    .mobile-app-wrapper {
+      height: 100% !important;
+      height: 100dvh !important;
+      max-height: 100% !important;
+      max-height: 100dvh !important;
+      border-radius: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      overflow: hidden !important;
+    }
+    #operatorViewport {
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      height: auto !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      overscroll-behavior-y: contain !important;
+    }
+    #bottomNavBar {
+      position: relative !important;
+      flex-shrink: 0 !important;
+      z-index: 30 !important;
+      width: 100% !important;
+    }
+  }
+</style>
+
+<div class="mobile-preview-container h-[100dvh] h-screen sm:h-auto sm:min-h-screen sm:py-6 flex items-center justify-center relative overflow-hidden" style="background: radial-gradient(ellipse at 20% 20%, #1e1048 0%, #0f0720 50%, #090419 100%);">
   <!-- Ambient Background Glowing Orbs for Desktop Showcase -->
   <div class="hidden sm:block absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl pointer-events-none"></div>
   <div class="hidden sm:block absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
   <!-- MOBILE APP WRAPPER -->
-  <div class="mobile-app-wrapper flex flex-col h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden sm:rounded-[42px] sm:border-[8px] sm:border-slate-900 shadow-2xl shadow-violet-950/50 relative font-sans" style="background: linear-gradient(180deg, #f8f7ff 0%, #f3f2fd 50%, #ede9fe 100%);">
+  <div class="mobile-app-wrapper flex flex-col h-[100dvh] h-screen sm:h-[880px] w-full sm:max-w-md overflow-hidden rounded-none sm:rounded-[42px] border-0 sm:border-[8px] sm:border-slate-900 shadow-2xl shadow-violet-950/50 relative font-sans" style="background: linear-gradient(180deg, #f8f7ff 0%, #f3f2fd 50%, #ede9fe 100%);">
     
     <!-- Premium Ambient Background Orbs -->
     <div class="absolute top-[250px] -left-16 w-52 h-52 bg-violet-400/15 rounded-full blur-3xl pointer-events-none z-0"></div>
@@ -87,7 +134,7 @@ require_once __DIR__ . '/../includes/header.php';
     </header>
 
     <!-- MAIN SCROLLABLE VIEWPORT -->
-    <div id="operatorViewport" class="flex-1 overflow-y-auto p-4 space-y-4 pb-6">
+    <div id="operatorViewport" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 pb-10 overscroll-contain">
 
       <!-- ========================================================================= -->
       <!-- 0. SCREEN: HOME LAUNCHER / APP MENU GRID (DEFAULT VIEW) -->
@@ -1430,23 +1477,23 @@ require_once __DIR__ . '/../includes/header.php';
     <!-- Home View: hanya status bar / tanpa tombol -->
     <!-- Sub-View: Back + Home -->
     <!-- ======================================================= -->
-    <nav id="bottomNavBar" class="flex-shrink-0 z-20">
+    <nav id="bottomNavBar" class="flex-shrink-0 z-30 sticky bottom-0 w-full" style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);">
       
       <!-- HOME STATE: Minimal footer bar (tidak ada tombol navigasi) -->
-      <div id="bottomNavHome" class="bg-white/95 backdrop-blur-md border-t border-slate-100 px-5 py-3 flex items-center justify-between rounded-b-[40px] sm:rounded-b-none shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
+      <div id="bottomNavHome" class="bg-white/95 backdrop-blur-md border-t border-slate-100 px-5 py-2.5 flex items-center justify-between sm:rounded-b-[40px] shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
         <div class="flex items-center gap-2 text-[10px] text-slate-400 font-semibold">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>Sistem Aktif</span>
         </div>
-        <div class="flex items-center gap-1 text-[10px] font-mono text-slate-300 font-bold">
-          <span class="material-symbols-outlined text-[13px] text-violet-400">schedule</span>
+        <div class="flex items-center gap-1 text-[10px] font-mono text-slate-400 font-bold">
+          <span class="material-symbols-outlined text-[13px] text-indigo-500">schedule</span>
           <span id="bottomNavClock">--:--</span>
         </div>
-        <div class="text-[10px] text-slate-300 font-bold tracking-wider uppercase">IMS Mobile</div>
+        <div class="text-[10px] text-slate-400 font-bold tracking-wider uppercase">IMS Mobile</div>
       </div>
 
       <!-- SUB-VIEW STATE: Back + Home (ditampilkan saat masuk ke menu) -->
-      <div id="bottomNavSub" class="hidden bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 py-2.5 rounded-b-[40px] sm:rounded-b-none shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
+      <div id="bottomNavSub" class="hidden bg-white/95 backdrop-blur-md border-t border-slate-100 px-4 py-2.5 sm:rounded-b-[40px] shadow-[0_-4px_24px_rgba(99,77,233,0.08)]">
         <div class="flex items-center gap-2">
 
           <!-- Back Button -->
@@ -1458,7 +1505,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- Home Button -->
           <button onclick="switchOpTab('home')" id="btnBottomHome"
-            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl active:scale-95 transition-all text-white font-black text-xs cursor-pointer shadow-lg shadow-violet-600/20"
+            class="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl active:scale-95 transition-all text-white font-black text-xs cursor-pointer shadow-lg shadow-indigo-600/20"
             style="background: linear-gradient(135deg, #6340DC 0%, #7C3AED 50%, #5B21B6 100%);">
             <span class="material-symbols-outlined text-[20px]">home</span>
             <span>Home</span>

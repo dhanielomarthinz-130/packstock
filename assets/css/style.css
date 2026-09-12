@@ -335,17 +335,21 @@ body {
 .mobile-app-wrapper {
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
   position: relative;
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 @media (min-width: 640px) {
   .mobile-preview-container {
     padding: 16px 0;
     min-height: 100vh;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -353,10 +357,11 @@ body {
   }
   
   .mobile-app-wrapper {
-    height: 840px;
-    border-radius: 24px;
+    height: 880px;
+    max-height: 880px;
+    border-radius: 42px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    border: 6px solid #e2e8f0;
+    border: 8px solid #0f172a;
     overflow: hidden;
   }
 }
