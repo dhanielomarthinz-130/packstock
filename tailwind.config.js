@@ -9,8 +9,8 @@ module.exports = {
   ],
   safelist: [
     // Kelas yang dirakit dinamis di admin.js dan tidak terbaca pemindai.
-    { pattern: /^(bg|text|border|ring|from|to)-(rose|blue|emerald|amber|slate|navy|brand)-(50|100|200|300|400|500|600|700|800|900|950)$/ },
-    { pattern: /^(bg|text|border)-(rose|blue|emerald|amber|slate)-(50|100|500|600|700)\/\d{1,3}$/ },
+    { pattern: /^(bg|text|border|ring|from|to)-(rose|blue|emerald|amber|slate|navy|brand|indigo|purple|violet)-(50|100|200|300|400|500|600|700|800|900|950)$/ },
+    { pattern: /^(bg|text|border)-(rose|blue|emerald|amber|slate|indigo|purple|violet)-(50|100|500|600|700)\/\d{1,3}$/ },
   ],
   theme: {
     extend: {

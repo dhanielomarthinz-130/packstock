@@ -238,11 +238,11 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">Picking</span>
           </div>
 
-          <div onclick="switchOpTab('dynamic_count')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-violet-200 cursor-pointer active:scale-95 transition-all text-center group">
-            <div class="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center mx-auto mb-1.5 group-hover:bg-violet-100 transition-colors">
-              <span class="material-symbols-outlined text-[18px] text-violet-500">checklist</span>
+          <div onclick="switchOpTab('dynamic_count')" class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200 cursor-pointer active:scale-95 transition-all text-center group">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center mx-auto mb-1.5 group-hover:bg-indigo-100 transition-colors">
+              <span class="material-symbols-outlined text-[18px] text-indigo-600">checklist</span>
             </div>
-            <span id="homeStatDynamic" class="font-mono font-black text-violet-600 text-base leading-none block">0</span>
+            <span id="homeStatDynamic" class="font-mono font-black text-indigo-600 text-base leading-none block">0</span>
             <span class="text-[9px] text-slate-400 font-semibold block mt-0.5">Counting</span>
           </div>
 
@@ -257,7 +257,7 @@ require_once __DIR__ . '/../includes/header.php';
 
         <!-- Section Title: Menu — tanpa "8 Modul" -->
         <div class="flex items-center gap-2 px-1">
-          <span class="material-symbols-outlined text-violet-500 text-[16px]">grid_view</span>
+          <span class="material-symbols-outlined text-indigo-600 text-[16px]">grid_view</span>
           <h4 class="text-[11px] font-black uppercase tracking-[0.12em] text-slate-600">Menu Operator</h4>
         </div>
 
@@ -266,14 +266,14 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- 1. COUNTING -->
           <div onclick="switchOpTab('dynamic_count')" 
-            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-violet-200">
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200">
             <div class="relative mb-2.5">
-              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-violet-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white flex items-center justify-center shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;background:linear-gradient(135deg, #6366F1 0%, #4338CA 100%);">
                 <span class="material-symbols-outlined text-[26px]">checklist</span>
               </div>
-              <span id="homeBadgeDynamicCount" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-violet-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
+              <span id="homeBadgeDynamicCount" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-violet-700 transition-colors">Counting</h5>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-indigo-700 transition-colors">Counting</h5>
           </div>
 
           <!-- 2. HANDOVER -->
