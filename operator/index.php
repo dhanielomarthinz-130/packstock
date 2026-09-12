@@ -1546,22 +1546,13 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <!-- Navigation Links in Drawer -->
-        <div class="space-y-1 pt-1">
-          <p class="text-[10px] uppercase font-black tracking-wider px-2 pb-1" style="color: rgba(167,139,250,0.6);">Navigasi &amp; Menu</p>
+        <div class="space-y-1.5 pt-1">
+          <p class="text-[10px] uppercase font-black tracking-wider px-2 pb-1" style="color: rgba(167,139,250,0.6);">Navigasi</p>
           
-          <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" style="--hover-bg: rgba(109,40,217,0.3);" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
+          <!-- HOME MENU ITEM -->
+          <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <span class="material-symbols-outlined text-[20px]" style="color: #A78BFA;">home</span>
             <span>Home</span>
-          </button>
-
-          <button onclick="closeOperatorDrawer(); switchOpTab('location_transfer');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
-            <span class="material-symbols-outlined text-blue-400 text-[20px]">swap_horiz</span>
-            <span>Transfer Antar Lokasi</span>
-          </button>
-
-          <button onclick="closeOperatorDrawer(); switchOpTab('request_consumable');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
-            <span class="material-symbols-outlined text-amber-400 text-[20px]">shopping_cart_checkout</span>
-            <span>Request Fulfillments</span>
           </button>
 
           <!-- SETTING MENU ITEM (OPENS PROFILE VIEW) -->
@@ -1570,7 +1561,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-violet-400 text-[20px]">settings</span>
               <span>Settings</span>
             </div>
-            <span class="material-symbols-outlined text-[16px] text-violet-600 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+            <span class="material-symbols-outlined text-[16px] text-violet-500 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
           </button>
 
           <!-- ABOUT MENU ITEM (OPENS ABOUT MODAL) -->
@@ -1579,12 +1570,7 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-sky-400 text-[20px]">info</span>
               <span>About</span>
             </div>
-            <span class="material-symbols-outlined text-[16px] text-violet-600 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
-          </button>
-
-          <button onclick="closeOperatorDrawer(); refreshOperatorData();" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
-            <span class="material-symbols-outlined text-teal-400 text-[20px]">sync</span>
-            <span>Sync Data</span>
+            <span class="material-symbols-outlined text-[16px] text-violet-500 group-hover:translate-x-0.5 transition-transform">chevron_right</span>
           </button>
 
           <?php if (Auth::isAdmin()): ?>
