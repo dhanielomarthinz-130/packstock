@@ -3,6 +3,23 @@
 require_once __DIR__ . '/../includes/auth.php';
 Auth::requireOperator();
 
+// Sinkronisasi shift operator otomatis berdasarkan jam aktual server (WIB)
+// Shift 1: 06:00 - 16:00 WIB
+// Shift 2: 16:00 - 06:00 WIB (16:00 - 00:00)
+$currentHour = (int)date('G');
+$expectedShift = ($currentHour >= 6 && $currentHour < 16) 
+    ? 'Shift 1 (Pagi 06:00 - 16:00)' 
+    : 'Shift 2 (Siang 16:00 - 00:00)';
+
+if (isset($_SESSION['user']) && ($_SESSION['user']['shift'] ?? '') !== $expectedShift) {
+    $_SESSION['user']['shift'] = $expectedShift;
+    try {
+        $pdoSync = Database::getConnection();
+        $stmtSync = $pdoSync->prepare("UPDATE users SET shift = ? WHERE id = ?");
+        $stmtSync->execute([$expectedShift, $_SESSION['user']['id']]);
+    } catch (Exception $e) {}
+}
+
 $pageTitle = "Panel Operator - IMS Mobile";
 $baseUrl = Auth::getBaseUrl();
 $user = Auth::user();
@@ -33,19 +50,19 @@ require_once __DIR__ . '/../includes/header.php';
           <span class="material-symbols-outlined text-[22px]">menu</span>
         </button>
 
-        <div onclick="openShiftSwitcherModal()" title="Klik untuk Ganti Shift Kerja Aktif" class="flex items-center gap-2 min-w-0 truncate cursor-pointer group">
-          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-300 p-0.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
+        <div title="Shift Otomatis: Terkunci Sesuai Jam Kerja" class="flex items-center gap-2 min-w-0 truncate">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-300 p-0.5 shadow-md flex-shrink-0">
             <div class="w-full h-full rounded-[14px] bg-blue-900 flex items-center justify-center text-blue-200 font-black">
               <span class="material-symbols-outlined text-[20px]">engineering</span>
             </div>
           </div>
           <div class="min-w-0 truncate">
             <div class="flex items-center gap-1.5">
-              <h2 class="font-black text-sm leading-tight text-white tracking-tight truncate group-hover:text-blue-200 transition-colors"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h2>
+              <h2 class="font-black text-sm leading-tight text-white tracking-tight truncate"><?= htmlspecialchars($user['name'] ?? 'Operator') ?></h2>
               <span class="w-2 h-2 rounded-full bg-blue-300 shrink-0"></span>
             </div>
             <p class="text-[10px] text-blue-100/90 flex items-center gap-1 font-medium truncate mt-0.5">
-              <span id="headerUserShiftDisplay" class="truncate font-bold bg-blue-900/60 px-1.5 py-0.2 rounded border border-blue-500/40 text-blue-200"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></span>
+              <span id="headerUserShiftDisplay" class="truncate font-bold bg-blue-900/60 px-1.5 py-0.2 rounded border border-blue-500/40 text-blue-200"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></span>
             </p>
           </div>
         </div>
@@ -106,16 +123,16 @@ require_once __DIR__ . '/../includes/header.php';
               Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
             </h3>
 
-            <!-- Quick Shift Indicator & Switcher Strip -->
+            <!-- Quick Shift Indicator Strip (Auto Locked) -->
             <div class="flex items-center justify-between pt-2 border-t border-amber-600/40">
               <div class="flex items-center gap-1.5 text-xs text-amber-100 font-medium truncate">
                 <span class="material-symbols-outlined text-[16px] text-amber-300 shrink-0">schedule</span>
-                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></b></span>
+                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></b></span>
               </div>
-              <button type="button" onclick="openShiftSwitcherModal()" class="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-[10px] font-black transition-all flex items-center gap-1 border border-white/25 shadow-xs shrink-0 cursor-pointer">
-                <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
-                <span>Ganti Shift</span>
-              </button>
+              <span class="px-2.5 py-1 rounded-xl bg-white/20 text-white text-[10px] font-black flex items-center gap-1 border border-white/25 shadow-xs shrink-0" title="Shift terdeteksi otomatis sesuai jam kerja sistem dan terkunci">
+                <span class="material-symbols-outlined text-[13px]">lock</span>
+                <span>Shift Otomatis</span>
+              </span>
             </div>
           </div>
         </div>
@@ -198,16 +215,16 @@ require_once __DIR__ . '/../includes/header.php';
               Halo, <?= htmlspecialchars(explode(' ', $user['name'] ?? 'Operator')[0]) ?>!
             </h3>
 
-            <!-- Quick Shift Indicator & Switcher Strip -->
+            <!-- Quick Shift Indicator Strip (Auto Locked) -->
             <div class="flex items-center justify-between pt-2 border-t border-emerald-600/40">
               <div class="flex items-center gap-1.5 text-xs text-emerald-100 font-medium truncate">
                 <span class="material-symbols-outlined text-[16px] text-emerald-300 shrink-0">schedule</span>
-                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? 'Shift 1 (Pagi)') ?></b></span>
+                <span class="truncate">Shift: <b id="homeCurrentShiftLabel" class="text-white font-black"><?= htmlspecialchars($user['shift'] ?? $expectedShift) ?></b></span>
               </div>
-              <button type="button" onclick="openShiftSwitcherModal()" class="px-2.5 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-[10px] font-black transition-all flex items-center gap-1 border border-white/25 shadow-xs shrink-0 cursor-pointer">
-                <span class="material-symbols-outlined text-[14px]">swap_horiz</span>
-                <span>Ganti Shift</span>
-              </button>
+              <span class="px-2.5 py-1 rounded-xl bg-white/20 text-white text-[10px] font-black flex items-center gap-1 border border-white/25 shadow-xs shrink-0" title="Shift terdeteksi otomatis sesuai jam kerja sistem dan terkunci">
+                <span class="material-symbols-outlined text-[13px]">lock</span>
+                <span>Shift Otomatis</span>
+              </span>
             </div>
           </div>
         </div>
@@ -1064,7 +1081,7 @@ require_once __DIR__ . '/../includes/header.php';
               <div>
                 <label class="block font-bold text-slate-700 mb-1 text-[11px]">Shift Asal Saya (Pengirim) <span class="text-rose-500">*</span></label>
                 <select id="handoverFromShift" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-rose-500 focus:bg-white text-xs font-semibold">
-                  <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
+                  <option value="Shift 1 (Pagi 06:00 - 16:00)">Shift 1 (Pagi 06:00 - 16:00)</option>
                   <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
                 </select>
               </div>
@@ -1073,7 +1090,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <label class="block font-bold text-slate-700 mb-1 text-[11px]">Shift Tujuan (Penerima) <span class="text-rose-500">*</span></label>
                 <select id="handoverToShift" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl outline-none focus:border-rose-500 focus:bg-white text-xs font-semibold">
                   <option value="">-- Pilih Shift Tujuan --</option>
-                  <option value="Shift 1 (Pagi 08:00 - 16:00)">Shift 1 (Pagi 08:00 - 16:00)</option>
+                  <option value="Shift 1 (Pagi 06:00 - 16:00)">Shift 1 (Pagi 06:00 - 16:00)</option>
                   <option value="Shift 2 (Siang 16:00 - 00:00)">Shift 2 (Siang 16:00 - 00:00)</option>
                   <option value="Semua Shift / Umum">Semua Shift / Umum</option>
                 </select>
@@ -2193,10 +2210,10 @@ require_once __DIR__ . '/../includes/header.php';
     <form id="formChangeMyShift" onsubmit="submitChangeMyShift(event)" class="space-y-2.5 text-xs">
       <div class="space-y-2" id="shiftRadioGroup">
         <label class="flex items-center gap-3 p-3 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 cursor-pointer transition-all has-checked:border-emerald-600 has-checked:bg-emerald-50/80 shadow-2xs">
-          <input type="radio" name="myActiveShift" value="Shift 1 (Pagi 08:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
+          <input type="radio" name="myActiveShift" value="Shift 1 (Pagi 06:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
           <div>
             <div class="font-black text-slate-900 text-xs">Shift 1 (Pagi)</div>
-            <div class="text-[10px] text-slate-500 font-mono">08:00 - 16:00 WIB</div>
+            <div class="text-[10px] text-slate-500 font-mono">06:00 - 16:00 WIB</div>
           </div>
         </label>
 
@@ -2232,27 +2249,27 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <div>
-      <h3 class="font-black text-slate-900 text-base tracking-tight">Pilih Shift Kerja Hari Ini</h3>
-      <p class="text-xs text-slate-500 mt-1">Konfirmasi shift Anda untuk membuka seluruh menu & tugas operator</p>
+      <h3 class="font-black text-slate-900 text-base tracking-tight">Shift Kerja Hari Ini</h3>
+      <p class="text-xs text-slate-500 mt-1">Shift kerja otomatis terdeteksi sesuai jam operasional saat ini & dikunci oleh sistem</p>
     </div>
 
     <form id="formMandatoryShiftGate" onsubmit="submitMandatoryShiftGate(event)" class="space-y-3 text-left">
       <div class="space-y-2.5">
         
         <!-- Option Shift 1 -->
-        <label id="gateLabelShift1" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 cursor-pointer transition-all has-checked:border-emerald-600 has-checked:bg-emerald-50/80 shadow-2xs relative">
-          <input type="radio" name="gateActiveShift" value="Shift 1 (Pagi 08:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
+        <label id="gateLabelShift1" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 transition-all shadow-2xs relative">
+          <input type="radio" name="gateActiveShift" value="Shift 1 (Pagi 06:00 - 16:00)" class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" required>
           <div class="flex-1">
             <div class="flex items-center justify-between">
               <span class="font-black text-slate-900 text-xs">Shift 1 (Pagi)</span>
               <span id="gateBadgeShift1" class="text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full hidden">Otomatis Terpilih</span>
             </div>
-            <div class="text-[10px] text-slate-500 font-mono mt-0.5">08:00 - 16:00 WIB</div>
+            <div class="text-[10px] text-slate-500 font-mono mt-0.5">06:00 - 16:00 WIB</div>
           </div>
         </label>
 
         <!-- Option Shift 2 -->
-        <label id="gateLabelShift2" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 cursor-pointer transition-all has-checked:border-indigo-600 has-checked:bg-indigo-50/80 shadow-2xs relative">
+        <label id="gateLabelShift2" class="flex items-center gap-3 p-3.5 rounded-2xl border-2 border-slate-200 transition-all shadow-2xs relative">
           <input type="radio" name="gateActiveShift" value="Shift 2 (Siang 16:00 - 00:00)" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500" required>
           <div class="flex-1">
             <div class="flex items-center justify-between">
@@ -2334,7 +2351,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- Scripts with Cache Buster -->
 <script>
-  let CURRENT_USER_SHIFT = <?= json_encode($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)') ?>;
+  let CURRENT_USER_SHIFT = <?= json_encode($user['shift'] ?? $expectedShift) ?>;
   let CURRENT_USER_ROLE = <?= json_encode($user['role'] ?? 'operator') ?>;
   let IS_FULFILLMENT_ONLY = <?= $isFulfillmentOnly ? 'true' : 'false' ?>;
   let IS_INVENTORY_ONLY = <?= $isInventoryOnly ? 'true' : 'false' ?>;

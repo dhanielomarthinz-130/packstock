@@ -3640,125 +3640,108 @@ Dikirim via PackStock Mobile WMS`;
 // SELF-SERVICE ROLLING SHIFT SWITCHER (OPERATOR)
 // =========================================================================
 function openShiftSwitcherModal() {
-  const radios = document.querySelectorAll('input[name="myActiveShift"]');
-  radios.forEach(r => {
-    if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
-      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase()) || r.value.toLowerCase().includes(CURRENT_USER_SHIFT.toLowerCase())) {
-        r.checked = true;
-      }
-    }
-  });
-  App.openModal('modalChangeMyShift');
+  App.toast('Shift kerja ditentukan otomatis oleh sistem berdasarkan jam operasional (Shift 1: 06:00-16:00, Shift 2: 16:00-00:00) dan dikunci.', 'info', 'Shift Terkunci');
 }
 
 async function submitChangeMyShift(e) {
   e.preventDefault();
-  const selectedRadio = document.querySelector('input[name="myActiveShift"]:checked');
-  if (!selectedRadio) {
-    App.toast('Silakan pilih salah satu shift kerja.', 'warning');
-    return;
-  }
-
-  const chosenShift = selectedRadio.value;
-  const btn = document.getElementById('btnSaveMyShift');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Menyimpan...</span>';
-
-  try {
-    const res = await App.fetchJson('../api/users.php?action=update_my_shift', {
-      method: 'POST',
-      body: JSON.stringify({ shift: chosenShift })
-    });
-
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Shift</span>';
-
-    if (res.success) {
-      CURRENT_USER_SHIFT = chosenShift;
-      sessionStorage.setItem('packstock_op_shift_confirmed', 'true');
-
-      // Update Header & Home UI
-      const headerDisplay = document.getElementById('headerUserShiftDisplay');
-      if (headerDisplay) headerDisplay.innerText = chosenShift;
-
-      const homeLabel = document.getElementById('homeCurrentShiftLabel');
-      if (homeLabel) homeLabel.innerText = chosenShift;
-
-      const fromShiftSel = document.getElementById('handoverFromShift');
-      if (fromShiftSel) fromShiftSel.value = chosenShift;
-
-      App.toast(res.message, 'success', 'Shift Diperbarui');
-      App.closeModal('modalChangeMyShift');
-
-      // Refresh handovers to re-evaluate notification badges for this new shift
-      loadHandovers(true);
-    } else {
-      App.toast(res.message || 'Gagal mengubah shift.', 'error');
-    }
-  } catch (err) {
-    btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Shift</span>';
-    App.toast('Terjadi kesalahan jaringan.', 'error');
-  }
+  App.toast('Shift kerja dikunci otomatis oleh sistem dan tidak dapat diubah manual.', 'info');
+  App.closeModal('modalChangeMyShift');
 }
 
 // =========================================================================
-// MANDATORY SHIFT GATEKEEPER & TIME-BASED AUTO-SELECTION
+// MANDATORY SHIFT GATEKEEPER & TIME-BASED AUTO-SELECTION (LOCKED)
 // =========================================================================
 function initMandatoryShiftGate() {
   const now = new Date();
   const hour = now.getHours();
-  // 08:00 to 15:59 -> Shift 1
-  // 16:00 to 07:59 -> Shift 2
-  const isShift1Time = (hour >= 8 && hour < 16);
+  // Shift 1: 06:00 to 15:59 WIB
+  // Shift 2: 16:00 to 05:59 WIB (16:00 - 00:00)
+  const isShift1Time = (hour >= 6 && hour < 16);
+  const detectedShift = isShift1Time ? 'Shift 1 (Pagi 06:00 - 16:00)' : 'Shift 2 (Siang 16:00 - 00:00)';
 
-  // Determine active shift priority:
-  // 1. If CURRENT_USER_SHIFT is set and valid, prioritize user's saved shift preference.
-  // 2. Fall back to clock time (isShift1Time) only if CURRENT_USER_SHIFT is empty.
-  let isShift1Selected = isShift1Time;
-  if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
-    const lowerShift = CURRENT_USER_SHIFT.toLowerCase();
-    if (lowerShift.includes('shift 1') || lowerShift.includes('pagi')) {
-      isShift1Selected = true;
-    } else if (lowerShift.includes('shift 2') || lowerShift.includes('siang') || lowerShift.includes('sore')) {
-      isShift1Selected = false;
-    }
-  }
-
-  // Set default radio selection based on determined shift
+  // Radio elements
   const gateRadio1 = document.querySelector('input[name="gateActiveShift"][value*="Shift 1"]');
   const gateRadio2 = document.querySelector('input[name="gateActiveShift"][value*="Shift 2"]');
+  const gateLabel1 = document.getElementById('gateLabelShift1');
+  const gateLabel2 = document.getElementById('gateLabelShift2');
   const badge1 = document.getElementById('gateBadgeShift1');
   const badge2 = document.getElementById('gateBadgeShift2');
 
-  const isUserDefined = typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT !== '';
-
-  if (isShift1Selected) {
-    if (gateRadio1) gateRadio1.checked = true;
+  if (isShift1Time) {
+    if (gateRadio1) {
+      gateRadio1.checked = true;
+      gateRadio1.disabled = false;
+    }
+    if (gateRadio2) {
+      gateRadio2.checked = false;
+      gateRadio2.disabled = true; // Tidak bisa diubah
+    }
+    if (gateLabel1) {
+      gateLabel1.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      gateLabel1.classList.add('border-emerald-600', 'bg-emerald-50/80', 'ring-2', 'ring-emerald-500/20');
+    }
+    if (gateLabel2) {
+      gateLabel2.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      gateLabel2.classList.remove('border-indigo-600', 'bg-indigo-50/80', 'ring-2', 'ring-indigo-500/20');
+    }
     if (badge1) {
-      badge1.innerText = isUserDefined ? 'Shift Terdaftar' : 'Otomatis Terpilih';
+      badge1.innerHTML = '<span class="material-symbols-outlined text-[11px] align-middle mr-0.5">lock</span>Otomatis (Terkunci)';
+      badge1.className = 'text-[9px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full inline-flex items-center';
       badge1.classList.remove('hidden');
     }
-    if (badge2) badge2.classList.add('hidden');
-  } else {
-    if (gateRadio2) gateRadio2.checked = true;
     if (badge2) {
-      badge2.innerText = isUserDefined ? 'Shift Terdaftar' : 'Otomatis Terpilih';
+      badge2.classList.add('hidden');
+    }
+  } else {
+    if (gateRadio2) {
+      gateRadio2.checked = true;
+      gateRadio2.disabled = false;
+    }
+    if (gateRadio1) {
+      gateRadio1.checked = false;
+      gateRadio1.disabled = true; // Tidak bisa diubah
+    }
+    if (gateLabel2) {
+      gateLabel2.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      gateLabel2.classList.add('border-indigo-600', 'bg-indigo-50/80', 'ring-2', 'ring-indigo-500/20');
+    }
+    if (gateLabel1) {
+      gateLabel1.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+      gateLabel1.classList.remove('border-emerald-600', 'bg-emerald-50/80', 'ring-2', 'ring-emerald-500/20');
+    }
+    if (badge2) {
+      badge2.innerHTML = '<span class="material-symbols-outlined text-[11px] align-middle mr-0.5">lock</span>Otomatis (Terkunci)';
+      badge2.className = 'text-[9px] font-bold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-full inline-flex items-center';
       badge2.classList.remove('hidden');
     }
-    if (badge1) badge1.classList.add('hidden');
+    if (badge1) {
+      badge1.classList.add('hidden');
+    }
   }
 
-  // Also pre-check in regular shift modal
+  // Set CURRENT_USER_SHIFT to the auto-detected shift
+  CURRENT_USER_SHIFT = detectedShift;
+
+  // Sync displayed labels on screen immediately
+  const headerDisplay = document.getElementById('headerUserShiftDisplay');
+  if (headerDisplay) headerDisplay.innerText = detectedShift;
+  const homeLabel = document.getElementById('homeCurrentShiftLabel');
+  if (homeLabel) homeLabel.innerText = detectedShift;
+  const fromShiftSel = document.getElementById('handoverFromShift');
+  if (fromShiftSel) fromShiftSel.value = detectedShift;
+
+  // Also pre-check in regular shift modal if present
   const shiftRadios = document.querySelectorAll('input[name="myActiveShift"]');
   shiftRadios.forEach(r => {
-    if (typeof CURRENT_USER_SHIFT !== 'undefined' && CURRENT_USER_SHIFT) {
-      if (r.value === CURRENT_USER_SHIFT || CURRENT_USER_SHIFT.toLowerCase().includes(r.value.toLowerCase()) || r.value.toLowerCase().includes(CURRENT_USER_SHIFT.toLowerCase())) {
-        r.checked = true;
-      }
+    if (isShift1Time && r.value.includes('Shift 1')) {
+      r.checked = true;
+      r.disabled = false;
+    } else if (!isShift1Time && r.value.includes('Shift 2')) {
+      r.checked = true;
+      r.disabled = false;
     } else {
-      if (isShift1Time && r.value.includes('Shift 1')) r.checked = true;
-      if (!isShift1Time && r.value.includes('Shift 2')) r.checked = true;
+      r.disabled = true;
     }
   });
 

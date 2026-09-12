@@ -380,6 +380,20 @@ if ($action === 'update_my_shift') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $newShift = trim($input['shift'] ?? '');
 
+    // Shift otomatis berbasis jam server (WIB)
+    // Shift 1: 06:00 - 16:00 WIB
+    // Shift 2: 16:00 - 06:00 WIB (16:00 - 00:00)
+    $currentHour = (int)date('G');
+    $autoShift = ($currentHour >= 6 && $currentHour < 16) 
+        ? 'Shift 1 (Pagi 06:00 - 16:00)' 
+        : 'Shift 2 (Siang 16:00 - 00:00)';
+
+    // Untuk role operator, shift dikunci otomatis mengikuti jam kerja
+    $isOperator = str_starts_with($_SESSION['user']['role'] ?? '', 'operator');
+    if ($isOperator) {
+        $newShift = $autoShift;
+    }
+
     if (empty($newShift)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Pilih shift kerja aktif terlebih dahulu!']);
@@ -396,7 +410,7 @@ if ($action === 'update_my_shift') {
 
     echo json_encode([
         'success' => true, 
-        'message' => 'Shift aktif berhasil diperbarui ke ' . $newShift,
+        'message' => 'Shift aktif berhasil dikonfirmasi ke ' . $newShift,
         'shift' => $newShift
     ]);
     exit;

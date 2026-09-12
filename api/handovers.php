@@ -65,7 +65,9 @@ if ($action === 'submit') {
         exit;
     }
 
-    $fromShift = trim($_POST['from_shift'] ?? '') ?: ($currentUser['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)');
+    $currentHour = (int)date('G');
+    $autoShift = ($currentHour >= 6 && $currentHour < 16) ? 'Shift 1 (Pagi 06:00 - 16:00)' : 'Shift 2 (Siang 16:00 - 00:00)';
+    $fromShift = trim($_POST['from_shift'] ?? '') ?: ($currentUser['shift'] ?? $autoShift);
     if (!empty($fromShift) && $fromShift !== ($currentUser['shift'] ?? '')) {
         $stmtUp = $pdo->prepare("UPDATE users SET shift = ? WHERE id = ?");
         $stmtUp->execute([$fromShift, $currentUser['id']]);

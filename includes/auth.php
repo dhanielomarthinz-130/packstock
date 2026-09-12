@@ -414,12 +414,22 @@ class Auth {
             // Token CSRF baru mengikuti sesi yang baru.
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 
-            $userShift = !empty($shift) ? $shift : ($user['shift'] ?? 'Shift 1 (Pagi 08:00 - 16:00)');
+            // Hitung shift otomatis berdasarkan jam kerja sistem (WIB)
+            // Shift 1: 06:00 - 16:00 WIB
+            // Shift 2: 16:00 - 06:00 WIB (16:00 - 00:00)
+            $currentHour = (int)date('G');
+            $autoShift = ($currentHour >= 6 && $currentHour < 16) 
+                ? 'Shift 1 (Pagi 06:00 - 16:00)' 
+                : 'Shift 2 (Siang 16:00 - 00:00)';
+
+            // Untuk role operator, shift WAJIB otomatis mengikuti jam kerja dan tidak bisa diubah
+            $isOperatorRole = str_starts_with($user['role'] ?? '', 'operator');
+            $userShift = $isOperatorRole ? $autoShift : (!empty($shift) ? $shift : ($user['shift'] ?? $autoShift));
             
-            // If shift was chosen and differs from DB, update DB
-            if (!empty($shift) && $shift !== ($user['shift'] ?? '')) {
+            // Perbarui DB jika shift berbeda
+            if ($userShift !== ($user['shift'] ?? '')) {
                 $stmtUpdateShift = $pdo->prepare("UPDATE users SET shift = ? WHERE id = ?");
-                $stmtUpdateShift->execute([$shift, $user['id']]);
+                $stmtUpdateShift->execute([$userShift, $user['id']]);
             }
 
             $_SESSION['user'] = [
