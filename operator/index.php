@@ -1175,28 +1175,31 @@ require_once __DIR__ . '/../includes/header.php';
       <div id="op-tab-location_transfer" class="hidden space-y-3.5 animate-fade-in">
         
         <!-- Screen Header & Sub-Tab Switcher -->
-        <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
+        <div class="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-sm space-y-3">
           <div class="flex items-center justify-between">
-            <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-[#262363] bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span>Menu Utama</span>
-            </button>
-
-            <div class="text-right">
-              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Movement Product Location To Location</h3>
-              <span class="text-[10px] text-blue-700 font-bold">Transfer Antar Lokasi Mandiri</span>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0" style="background: linear-gradient(135deg, #6366F1, #4338CA);">
+                <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+              </div>
+              <div class="min-w-0">
+                <h3 class="font-black text-sm text-slate-900 leading-tight">Transfer Lokasi</h3>
+                <p class="text-[10px] text-slate-400 font-medium truncate">Pindah Rak & Posisi Penyimpanan</p>
+              </div>
             </div>
+            <button type="button" onclick="resetOpTransferForm(true)" class="w-8 h-8 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition-colors cursor-pointer shrink-0" title="Reset Form">
+              <span class="material-symbols-outlined text-[18px]">refresh</span>
+            </button>
           </div>
 
           <!-- Sub-Tab Switch Buttons -->
-          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
-            <button type="button" id="btnOpTransferSubTabForm" onclick="switchOpTransferSubTab('form')" class="py-2 rounded-lg font-bold text-xs bg-white text-blue-900 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-              <span class="material-symbols-outlined text-[16px] text-blue-600">swap_horiz</span>
+          <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100/80 rounded-xl">
+            <button type="button" id="btnOpTransferSubTabForm" onclick="switchOpTransferSubTab('form')" class="py-2 rounded-lg font-black text-xs bg-white text-indigo-700 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px] text-indigo-600">add_circle</span>
               <span>Transfer Baru</span>
             </button>
-            <button type="button" id="btnOpTransferSubTabHistory" onclick="switchOpTransferSubTab('history')" class="py-2 rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-              <span class="material-symbols-outlined text-[16px]">history</span>
-              <span>Riwayat Transfer</span>
+            <button type="button" id="btnOpTransferSubTabHistory" onclick="switchOpTransferSubTab('history')" class="py-2 rounded-lg font-bold text-xs text-slate-500 hover:text-slate-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <span class="material-symbols-outlined text-[17px]">history</span>
+              <span>Riwayat</span>
               <span id="badgeOpTransferHistoryCount" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
             </button>
           </div>
@@ -1205,47 +1208,25 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- 1. SUB-VIEW: FORM TRANSFER BARU -->
         <div id="opTransferSubViewForm" class="space-y-3.5">
           
-          <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm space-y-3.5">
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3.5">
             
-            <!-- Header with Title & Reset Button -->
-            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[18px] text-blue-600">swap_horiz</span>
-                <h4 class="font-black text-xs uppercase tracking-wider text-slate-800">Form Transfer Lokasi</h4>
-              </div>
-              <button type="button" onclick="resetOpTransferForm(true)" class="text-[10px] text-slate-400 hover:text-rose-600 font-bold flex items-center gap-0.5 cursor-pointer transition-colors" title="Kosongkan Form">
-                <span class="material-symbols-outlined text-[14px]">refresh</span>
-                <span>Reset Form</span>
-              </button>
-            </div>
-
-            <!-- No. Surat Jalan (SJ) / Dokumen Transfer -->
-            <div>
-              <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px] text-blue-600">tag</span>
-                <span>No. Surat Jalan (SJ) / Dokumen Transfer <span class="text-[10px] font-normal text-slate-400">(Opsional)</span></span>
-              </label>
-              <input type="text" id="opTransferDocNo" placeholder="Contoh: SJ-2026/001 atau No. Dokumen Transfer..." 
-                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:bg-white focus:border-blue-600 transition-colors">
-            </div>
-
             <!-- Type Filter Chips (Semua | Kemas | Gimmick) -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
-                <label class="block font-bold text-slate-700 text-xs">Pilih Kategori Item:</label>
-                <span id="opTransferTypeCountBadge" class="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Semua Kategori</span>
+                <label class="block font-bold text-slate-700 text-xs">Kategori Material:</label>
+                <span id="opTransferTypeCountBadge" class="text-[10px] text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Semua Item</span>
               </div>
-              <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
+              <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-100/90 rounded-xl border border-slate-200/50">
                 <button type="button" id="btnOpTransferTypeAll" onclick="setOpTransferTypeFilter('ALL')" 
-                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-blue-700 shadow-xs cursor-pointer">
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all bg-white text-indigo-700 shadow-xs cursor-pointer">
                   Semua
                 </button>
                 <button type="button" id="btnOpTransferTypePackaging" onclick="setOpTransferTypeFilter('PACKAGING')" 
-                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
                   📦 Kemas
                 </button>
                 <button type="button" id="btnOpTransferTypeGimmick" onclick="setOpTransferTypeFilter('GIMMICK')" 
-                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  class="py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
                   🎁 Gimmick
                 </button>
               </div>
@@ -1253,42 +1234,42 @@ require_once __DIR__ . '/../includes/header.php';
 
             <!-- A. Pilih Material (Kemas & Gimmick) -->
             <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label class="block font-bold text-slate-700 text-xs">Pilih Material / Produk <span class="text-rose-500">*</span></label>
-                <span id="opTransferSelectedTypeBadge" class="text-[10px] text-slate-500 font-semibold">Kemas & Gimmick</span>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block font-bold text-slate-700 text-xs flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[16px] text-indigo-600">inventory_2</span>
+                  <span>Pilih Material / Produk <span class="text-rose-500">*</span></span>
+                </label>
+                <span id="opTransferSelectedTypeBadge" class="text-[10px] text-slate-400 font-medium">Kemas & Gimmick</span>
               </div>
 
               <select id="opTransferMaterialSelect" onchange="onOpTransferMaterialChange(this.value)" 
-                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 focus:bg-white transition-all shadow-2xs">
                 <option value="">-- Pilih Material (Kemas / Gimmick) --</option>
               </select>
             </div>
 
             <!-- Detail Info Material Terpilih -->
-            <div id="opTransferMaterialInfoBox" class="hidden p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-2 text-xs">
-              <!-- Nama Produk Header -->
-              <div class="space-y-0.5 border-b border-blue-200/60 pb-1.5">
-                <div class="flex items-center justify-between">
-                  <span id="opTransferInfoBadge" class="px-2 py-0.5 rounded text-[9px] font-black bg-blue-200 text-blue-900 uppercase tracking-wide">KEMAS</span>
-                  <span id="opTransferInfoBarcode" class="font-mono font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded text-[10px] hidden">-</span>
-                </div>
-                <h5 id="opTransferInfoName" class="font-black text-slate-900 text-xs leading-snug pt-0.5">-</h5>
-              </div>
-
-              <div class="grid grid-cols-2 gap-2 text-[11px]">
-                <div>
-                  <span class="text-slate-500 block text-[10px]">SKU / Kode Item:</span>
-                  <span id="opTransferInfoCode" class="font-mono font-bold text-slate-900">-</span>
-                </div>
+            <div id="opTransferMaterialInfoBox" class="hidden p-3 bg-indigo-50/60 border border-indigo-100 rounded-2xl space-y-2 text-xs">
+              <div class="flex items-center justify-between border-b border-indigo-100 pb-1.5">
+                <span id="opTransferInfoBadge" class="px-2 py-0.5 rounded-md text-[9px] font-black bg-indigo-200 text-indigo-900 uppercase tracking-wide">KEMAS</span>
+                <span id="opTransferInfoBarcode" class="font-mono font-bold text-purple-900 bg-purple-100 px-2 py-0.5 rounded text-[10px] hidden">-</span>
                 <div class="text-right">
-                  <span class="text-slate-500 block text-[10px]">Total Stok:</span>
-                  <span id="opTransferInfoStock" class="font-mono font-black text-blue-800 text-xs">0 Pcs</span>
+                  <span class="text-slate-400 text-[10px]">Stok Tersedia:</span>
+                  <span id="opTransferInfoStock" class="font-mono font-black text-indigo-800 text-xs ml-1">0 Pcs</span>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between pt-1 border-t border-blue-200/50 text-[11px]">
-                <span class="text-slate-500">Lokasi Rak Default:</span>
-                <span id="opTransferInfoCurrentRack" class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.2 rounded">-</span>
+              <h5 id="opTransferInfoName" class="font-bold text-slate-800 text-xs leading-snug pt-0.5">-</h5>
+
+              <div class="flex items-center justify-between pt-1 border-t border-indigo-100/70 text-[11px]">
+                <div>
+                  <span class="text-slate-400 text-[10px]">Kode SKU: </span>
+                  <span id="opTransferInfoCode" class="font-mono font-bold text-slate-700">-</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 text-[10px]">Rak Saat Ini: </span>
+                  <span id="opTransferInfoCurrentRack" class="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md">-</span>
+                </div>
               </div>
             </div>
 
@@ -1320,23 +1301,23 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
 
             <!-- B. Lokasi Asal & Lokasi Tujuan -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 bg-slate-50/80 rounded-2xl border border-slate-100">
               <div>
                 <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
                   <span class="material-symbols-outlined text-[15px] text-amber-600">shelves</span>
-                  <span>Origin (Lokasi Asal) <span class="text-rose-500">*</span></span>
+                  <span>Rak Asal (Origin) <span class="text-rose-500">*</span></span>
                 </label>
                 <input type="text" id="opTransferFromLocation" placeholder="Contoh: Rak G-01..." list="opTransferCommonRacksList"
-                  class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+                  class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-2xs">
               </div>
 
               <div>
                 <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
                   <span class="material-symbols-outlined text-[15px] text-emerald-600">move_up</span>
-                  <span>Destination (Lokasi Tujuan) <span class="text-rose-500">*</span></span>
+                  <span>Rak Tujuan (Destination) <span class="text-rose-500">*</span></span>
                 </label>
                 <input type="text" id="opTransferToLocation" placeholder="Contoh: Rak B-02..." list="opTransferCommonRacksList"
-                  class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:bg-white transition-colors">
+                  class="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:border-indigo-600 transition-all shadow-2xs">
               </div>
             </div>
 
@@ -1357,33 +1338,34 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- C. Qty Pindah -->
             <div>
               <div class="flex items-center justify-between mb-1">
-                <label class="block font-bold text-slate-700 text-xs">Jumlah Qty Ditransfer <span class="text-rose-500">*</span></label>
+                <label class="block font-bold text-slate-700 text-xs">Jumlah Qty Dipindahkan <span class="text-rose-500">*</span></label>
                 <span id="opTransferUnitLabel" class="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded-md">Pcs</span>
               </div>
               <input type="number" step="any" id="opTransferQty" min="0.001" placeholder="0" 
-                class="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-black text-base text-blue-800 outline-none focus:border-blue-600 text-center">
+                class="w-full p-2.5 bg-white border border-slate-200 rounded-xl font-black text-lg text-indigo-700 outline-none focus:border-indigo-600 text-center shadow-2xs">
             </div>
 
             <!-- D. Catatan Transfer (Opsional) -->
             <div>
               <label class="block font-bold text-slate-700 mb-1 text-xs flex items-center gap-1">
                 <span class="material-symbols-outlined text-[15px] text-slate-400">notes</span>
-                <span>Catatan Perpindahan (Opsional)</span>
+                <span>Catatan Rak (Opsional)</span>
               </label>
-              <input type="text" id="opTransferItemNotes" placeholder="Contoh: Penataan ulang rack, perpindahan buffer..." 
-                class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold outline-none focus:border-blue-600 focus:bg-white">
+              <input type="text" id="opTransferItemNotes" placeholder="Contoh: Penataan ulang rack, buffer..." 
+                class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold outline-none focus:border-indigo-600 focus:bg-white transition-all">
             </div>
 
             <!-- E. Tombol Masukkan ke Draft -->
             <button type="button" onclick="addTransferDraftItem()" 
-              class="w-full py-3 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              class="w-full py-3 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-600/20 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              style="background: linear-gradient(135deg, #6340DC 0%, #7C3AED 50%, #5B21B6 100%);">
               <span class="material-symbols-outlined text-[18px]">add_task</span>
               <span>+ Masukkan ke Draft Transfer</span>
             </button>
           </div>
 
           <!-- Draft Items List -->
-          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
             <div class="flex items-center justify-between">
               <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700">Daftar Item Transfer (<span id="opTransferDraftCount">0</span>)</h4>
               <button type="button" onclick="clearTransferDraft()" class="text-[10px] text-rose-600 hover:underline font-bold cursor-pointer">Bersihkan Draft</button>
@@ -1395,9 +1377,9 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
             </div>
 
-            <div id="opTransferDraftSummaryBox" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between text-xs font-semibold text-blue-900">
+            <div id="opTransferDraftSummaryBox" class="hidden p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between text-xs font-semibold text-indigo-900">
               <span>Total Item Transfer:</span>
-              <span id="opTransferDraftTotalQty" class="text-sm font-black text-blue-800">0 Pcs</span>
+              <span id="opTransferDraftTotalQty" class="text-sm font-black text-indigo-800">0 Pcs</span>
             </div>
 
             <!-- Global Notes, Photo Upload & Submit Button -->
@@ -1408,23 +1390,23 @@ require_once __DIR__ . '/../includes/header.php';
                   <span>Catatan Global (Opsional)</span>
                 </label>
                 <input type="text" id="opTransferGlobalNotes" placeholder="Catatan untuk seluruh batch transfer ini..." 
-                  class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-600 focus:bg-white">
+                  class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-indigo-600 focus:bg-white transition-all">
               </div>
 
-              <!-- Multi-Photo Upload Section (Image Foto Bukti / SJ) -->
-              <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+              <!-- Multi-Photo Upload Section (Image Foto Bukti) -->
+              <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2">
                 <div class="flex items-center justify-between">
                   <label class="block font-bold text-slate-700 text-xs flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px] text-blue-600">photo_camera</span>
-                    <span>Image Foto / Bukti Fisik / SJ <span class="text-[10px] font-normal text-slate-400">(Bisa &gt; 1 Foto)</span></span>
+                    <span class="material-symbols-outlined text-[16px] text-indigo-600">photo_camera</span>
+                    <span>Foto Bukti Fisik / Rak <span class="text-[10px] font-normal text-slate-400">(Opsional)</span></span>
                   </label>
                   <span id="opTransferPhotoCountBadge" class="text-[10px] font-extrabold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">0 Foto</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <input type="file" id="opTransferPhoto" accept="image/*" class="hidden" multiple onchange="previewOpTransferPhoto(event)">
                   <button type="button" onclick="document.getElementById('opTransferPhoto').click()" 
-                    class="px-3 py-2 bg-white hover:bg-blue-50 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer">
-                    <span class="material-symbols-outlined text-[17px] text-blue-600">add_a_photo</span>
+                    class="px-3 py-2 bg-white hover:bg-indigo-50 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors flex items-center gap-1.5 text-xs shadow-2xs cursor-pointer">
+                    <span class="material-symbols-outlined text-[17px] text-indigo-600">add_a_photo</span>
                     <span>Pilih / Ambil Foto</span>
                   </button>
                   <button type="button" id="btnOpClearTransferPhotos" onclick="clearOpTransferPhotos()" 
@@ -1437,7 +1419,8 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
 
               <button type="button" id="btnSubmitTransferDraft" onclick="handleTransferDraftSubmit()" 
-                class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                class="w-full py-3.5 text-white font-black text-xs rounded-xl shadow-lg shadow-indigo-600/25 active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                style="background: linear-gradient(135deg, #6340DC 0%, #7C3AED 50%, #5B21B6 100%);">
                 <span class="material-symbols-outlined text-[18px]">check_circle</span>
                 <span>Submit Transfer & Update Lokasi Rak</span>
               </button>
