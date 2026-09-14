@@ -912,8 +912,31 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $code = strtoupper(trim($input['code'] ?? ''));
     $name = trim($input['name'] ?? '');
     $itemType = strtoupper(trim($input['item_type'] ?? 'PACKAGING'));
-    if (!in_array($itemType, ['PACKAGING', 'GIMMICK'])) $itemType = 'PACKAGING';
-    $category = trim($input['category'] ?? ($itemType === 'GIMMICK' ? 'Gimmick' : 'Karton Box'));
+    $category = trim($input['category'] ?? '');
+    if (empty($category)) {
+        if ($itemType === 'GIMMICK') {
+            $category = 'Gimmick';
+        } else {
+            $searchKeywords = strtolower($name . ' ' . $code);
+            if (preg_match('/box|dus|karton|corrugated|carton|kardus/i', $searchKeywords)) {
+                $category = 'Karton Box';
+            } elseif (preg_match('/lakban|tape|seal|isolasi/i', $searchKeywords)) {
+                $category = 'Lakban & Seal';
+            } elseif (preg_match('/bubble|wrap|stretch/i', $searchKeywords)) {
+                $category = 'Plastik/Wrap';
+            } elseif (preg_match('/plastik|polybag|pouch|ziplock|klip/i', $searchKeywords)) {
+                $category = 'Plastik Kemasan';
+            } elseif (preg_match('/label|stiker|sticker|thermal/i', $searchKeywords)) {
+                $category = 'Label & Stiker';
+            } elseif (preg_match('/card|kartu|insert|ucapan/i', $searchKeywords)) {
+                $category = 'Card & Insert';
+            } elseif (preg_match('/cushion|honeycomb|kertas/i', $searchKeywords)) {
+                $category = 'Packaging Material';
+            } else {
+                $category = 'Karton Box';
+            }
+        }
+    }
     $unit = trim($input['unit'] ?? 'Pcs');
     $rackLocation = trim($input['rack_location'] ?? 'Gudang Utama');
     $minStock = max(0, parseNumberDecimal($input['min_stock'] ?? 20));

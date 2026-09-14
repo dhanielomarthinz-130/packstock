@@ -2147,13 +2147,20 @@ async function commitExcelImport() {
 
 function populateCategoryFilters() {
   const catSelect = document.getElementById('inventoryCategoryFilter');
-  if (!catSelect) return;
-  const cats = [...new Set(allMaterials.map(m => m.category).filter(Boolean))];
-  const currentVal = catSelect.value;
-  catSelect.innerHTML = '<option value="all">Semua Kategori</option>' +
-    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-  catSelect.value = currentVal;
-  App.syncSearchableSelect(catSelect);
+  const catDatalist = document.getElementById('materialCategorySuggestions');
+  const cats = [...new Set((allMaterials || []).map(m => m.category).filter(Boolean))];
+
+  if (catSelect) {
+    const currentVal = catSelect.value;
+    catSelect.innerHTML = '<option value="all">Semua Kategori</option>' +
+      cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    catSelect.value = currentVal;
+    App.syncSearchableSelect(catSelect);
+  }
+
+  if (catDatalist) {
+    catDatalist.innerHTML = cats.map(c => `<option value="${escapeHtml(c)}"></option>`).join('');
+  }
 }
 
 async function populateMaterialSelects(forceRefresh = false) {
@@ -3353,15 +3360,94 @@ async function commitExcelImport() {
 }
 
 // 10. ADD & EDIT MATERIAL MODAL
+let materialCategoryUserModified = false;
+
+function detectCategoryFromName(name = '', code = '') {
+  const text = `${name} ${code}`.toLowerCase();
+  
+  // 1. Karton Box
+  if (/box|dus|karton|corrugated|carton|kardus/i.test(text)) {
+    return { category: 'Karton Box', unit: 'Pcs' };
+  }
+  // 2. Lakban & Seal
+  if (/lakban|tape|seal|isolasi|opp tape|duct tape/i.test(text)) {
+    return { category: 'Lakban & Seal', unit: 'Roll' };
+  }
+  // 3. Plastik/Wrap
+  if (/bubble|wrap|stretch|cling wrap|shrink/i.test(text)) {
+    return { category: 'Plastik/Wrap', unit: /roll/i.test(text) ? 'Roll' : 'Pcs' };
+  }
+  // 4. Plastik Kemasan
+  if (/plastik|polybag|pouch|ziplock|standing pouch|klip|clip|opp/i.test(text)) {
+    return { category: 'Plastik Kemasan', unit: 'Pcs' };
+  }
+  // 5. Label & Stiker
+  if (/label|stiker|sticker|thermal|barcode|waybill/i.test(text)) {
+    return { category: 'Label & Stiker', unit: /roll/i.test(text) ? 'Roll' : 'Pcs' };
+  }
+  // 6. Card & Insert
+  if (/card|kartu|insert|ucapan|thank you|hang tag/i.test(text)) {
+    return { category: 'Card & Insert', unit: 'Pcs' };
+  }
+  // 7. Packaging Material / Bantalan
+  if (/cushion|honeycomb|bantalan|filler|dunnage|kertas/i.test(text)) {
+    return { category: 'Packaging Material', unit: 'Pcs' };
+  }
+  return null;
+}
+
+function onMaterialNameInput(e) {
+  const isAddMode = !document.getElementById('materialIdInput')?.value;
+  if (!isAddMode) return;
+  if (materialCategoryUserModified) return;
+
+  const nameVal = document.getElementById('materialNameInput')?.value || '';
+  const codeVal = document.getElementById('materialCodeInput')?.value || '';
+  const detected = detectCategoryFromName(nameVal, codeVal);
+
+  const catInput = document.getElementById('materialCategoryInput');
+  const unitInput = document.getElementById('materialUnitInput');
+
+  if (detected && catInput) {
+    catInput.value = detected.category;
+    updateCategoryAutoBadge(true, detected.category);
+    if (detected.unit && unitInput && (!unitInput.value || unitInput.value === 'Pcs')) {
+      unitInput.value = detected.unit;
+    }
+  } else {
+    updateCategoryAutoBadge(false);
+  }
+}
+
+function onMaterialCategoryManualChange() {
+  materialCategoryUserModified = true;
+  updateCategoryAutoBadge(false);
+}
+
+function updateCategoryAutoBadge(isAuto, catName = '') {
+  const badge = document.getElementById('materialCategoryAutoBadge');
+  if (!badge) return;
+  if (isAuto && catName) {
+    badge.classList.remove('hidden');
+    badge.title = `Otomatis terdeteksi sebagai ${catName}`;
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
 function openAddMaterialModal() {
+  materialCategoryUserModified = false;
   document.getElementById('modalMaterialTitle').innerText = 'Tambah Kemas Baru';
   document.getElementById('materialIdInput').value = '';
   document.getElementById('formMaterial').reset();
   document.getElementById('materialInitialStockGroup').classList.remove('hidden');
+  updateCategoryAutoBadge(false);
+  populateCategoryFilters();
   App.openModal('modalMaterialForm');
 }
 
 async function openEditMaterialModal(id) {
+  materialCategoryUserModified = true;
   const res = await App.fetchJson(`../api/materials.php?action=get&id=${id}`);
   if (res.success && res.data) {
     const m = res.data;
@@ -3376,6 +3462,8 @@ async function openEditMaterialModal(id) {
     document.getElementById('materialDescInput').value = m.description || '';
 
     document.getElementById('materialInitialStockGroup').classList.add('hidden');
+    updateCategoryAutoBadge(false);
+    populateCategoryFilters();
     App.openModal('modalMaterialForm');
   }
 }

@@ -4765,18 +4765,22 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Item No / Kode Material <span class="text-rose-500">*</span></label>
-        <input type="text" id="materialCodeInput" required placeholder="Contoh: PKG-BOX-005" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono uppercase font-bold outline-none focus:border-emerald-600 focus:bg-white">
+        <input type="text" id="materialCodeInput" oninput="onMaterialNameInput(event)" required placeholder="Contoh: PKG-BOX-005" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono uppercase font-bold outline-none focus:border-emerald-600 focus:bg-white">
       </div>
 
       <div>
         <label class="block font-semibold text-slate-700 mb-1">Item Description / Nama Material <span class="text-rose-500">*</span></label>
-        <input type="text" id="materialNameInput" required placeholder="Contoh: Corrugated Master Box 450x350x300" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
+        <input type="text" id="materialNameInput" oninput="onMaterialNameInput(event)" required placeholder="Contoh: Corrugated Master Box 450x350x300" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
       </div>
 
       <div class="grid grid-cols-3 gap-2.5">
         <div>
-          <label class="block font-semibold text-slate-700 mb-1">Kategori</label>
-          <input type="text" id="materialCategoryInput" placeholder="Karton Box..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
+          <div class="flex items-center justify-between mb-1">
+            <label class="block font-semibold text-slate-700">Kategori</label>
+            <span id="materialCategoryAutoBadge" class="hidden text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">Otomatis</span>
+          </div>
+          <input type="text" id="materialCategoryInput" list="materialCategorySuggestions" oninput="onMaterialCategoryManualChange()" placeholder="Pilih / ketik kategori..." class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white">
+          <datalist id="materialCategorySuggestions"></datalist>
         </div>
         <div>
           <label class="block font-semibold text-slate-700 mb-1">Satuan (UOM) <span class="text-rose-500">*</span></label>
