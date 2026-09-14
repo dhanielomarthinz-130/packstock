@@ -2205,6 +2205,9 @@ async function loadTasks() {
   const filterDate = (document.getElementById('taskDateFilter')?.value || '').trim();
   const search = (document.getElementById('taskSearchInput')?.value || '').trim();
 
+  App.renderTableLoading('tasksTableBody', 9, 'Memuat daftar penugasan operator...');
+  App.renderTableLoading('dashboardTasksTable', 5, 'Memuat antrian tugas...');
+
   const query = new URLSearchParams({
     action: 'list',
     status: filterStatus,
@@ -2219,6 +2222,11 @@ async function loadTasks() {
     allTasks = res.data;
     renderTasksTable(allTasks);
     renderDashboardTasksTable(allTasks.filter(t => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').slice(0, 6));
+  } else {
+    const tbody = document.getElementById('tasksTableBody');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-rose-500 text-xs font-bold">Gagal memuat tugas: ${escapeHtml(res?.message || 'Terjadi kesalahan')}</td></tr>`;
+    }
   }
 }
 
@@ -4708,6 +4716,8 @@ async function loadInboundHistory(isManual = false) {
   const tbody = document.getElementById('inboundHistoryTable');
   if (!tbody) return;
 
+  App.renderTableLoading(tbody, 8, 'Memuat riwayat barang masuk (inbound)...');
+
   const btnRefresh = document.getElementById('btnRefreshInbound');
   const icon = btnRefresh?.querySelector('.material-symbols-outlined');
   if (icon) icon.classList.add('animate-spin');
@@ -5585,6 +5595,8 @@ async function loadOutboundHistory(isManual = false) {
   const tbody = document.getElementById('outboundHistoryTable');
   if (!tbody) return;
 
+  App.renderTableLoading(tbody, 7, 'Memuat riwayat barang keluar (outbound)...');
+
   const btnRefresh = document.getElementById('btnRefreshOutbound');
   const icon = btnRefresh?.querySelector('.material-symbols-outlined');
   if (icon) icon.classList.add('animate-spin');
@@ -6396,6 +6408,7 @@ async function applyMyPermissions() {
 }
 
 async function loadPermissionsModule() {
+  App.renderContainerLoading('permissionsGrid', 'Memuat matriks hak akses...');
   const res = await App.fetchJson('../api/permissions.php?action=get_all');
   if (res.success) {
     permCatalog = res.catalog || [];
@@ -6976,6 +6989,8 @@ async function loadDynamicMatrix() {
 
   const item_type = document.getElementById('dynamicItemTypeFilter')?.value || 'ALL';
 
+  App.renderTableLoading('dynamicItemsTableBody', 10, 'Memuat matriks Dynamic Count...');
+
   const query = new URLSearchParams({
     action: 'matrix',
     type: 'DYNAMIC_COUNT',
@@ -7415,6 +7430,8 @@ async function loadOpnameMatrix() {
   const search = document.getElementById('opnameSearchInput')?.value || '';
 
   const item_type = document.getElementById('opnameItemTypeFilter')?.value || 'ALL';
+
+  App.renderTableLoading('opnameItemsTableBody', 10, 'Memuat matriks Stock Opname...');
 
   const query = new URLSearchParams({
     action: 'matrix',
@@ -9521,14 +9538,10 @@ async function loadCountingProgressDashboard() {
   const dateFilter = document.getElementById('cpFilterDate')?.value || '';
 
   const sessionsContainer = document.getElementById('cpSessionsContainer');
-  if (sessionsContainer && !sessionsContainer.children.length) {
-    sessionsContainer.innerHTML = `
-      <div class="p-8 bg-white rounded-xl border border-slate-200 text-center text-slate-400">
-        <span class="material-symbols-outlined text-[32px] animate-spin text-emerald-600">progress_activity</span>
-        <p class="text-xs font-semibold mt-2">Memuat live data progress counting...</p>
-      </div>
-    `;
+  if (sessionsContainer) {
+    App.renderContainerLoading(sessionsContainer, 'Memuat live data progress counting...');
   }
+  App.renderTableLoading('cpLeaderboardTableBody', 6, 'Memuat leaderboard operator counting...');
 
   try {
     const params = new URLSearchParams({
@@ -11186,16 +11199,7 @@ async function loadReorderAlerts() {
   const search = document.getElementById('reorderSearchInput')?.value || '';
   const category = document.getElementById('reorderCategoryFilter')?.value || 'all';
 
-  if (!allReorderAlerts || allReorderAlerts.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="10" class="p-8 text-center text-slate-400 text-xs">
-          <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
-          <p>Menganalisis data stok, konsumsi harian, dan kalkulasi Reorder Point...</p>
-        </td>
-      </tr>
-    `;
-  }
+  App.renderTableLoading(tbody, 10, 'Menganalisis data stok, konsumsi harian, dan kalkulasi Reorder Point...');
 
   const res = await App.fetchJson(`../api/reorder_alerts.php?action=list&filter_type=${currentReorderFilterType}&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`);
 
@@ -11631,6 +11635,8 @@ async function loadVasStock() {
   const category = document.getElementById('vasCategoryFilter')?.value || 'all';
   const showAll = document.getElementById('vasShowAllCheckbox')?.checked ? 1 : 0;
 
+  App.renderTableLoading('vasTableBody', 8, 'Memuat katalog stok Zone VAS...');
+
   const params = new URLSearchParams({
     action: 'list',
     search: search,
@@ -11750,6 +11756,8 @@ async function loadVasHistory() {
   const search = document.getElementById('vasSearchInput')?.value || '';
   const type = document.getElementById('vasHistoryTypeFilter')?.value || 'ALL';
   const date = document.getElementById('vasHistoryDateFilter')?.value || '';
+
+  App.renderTableLoading('vasHistoryTableBody', 8, 'Memuat riwayat transaksi Zone VAS...');
 
   const params = new URLSearchParams({
     action: 'history',
@@ -12745,6 +12753,8 @@ async function loadLocationTransferHistory() {
   const status = document.getElementById('mvtStatusFilter')?.value || 'ALL';
   const date = document.getElementById('mvtDateFilter')?.value?.trim() || '';
 
+  App.renderTableLoading('mvtHistoryTableBody', 9, 'Memuat riwayat pergerakan rak...');
+
   const params = new URLSearchParams({
     action: 'list',
     task_type: 'RACK_MOVEMENT',
@@ -13571,6 +13581,8 @@ async function loadStockTransferHistory() {
   const type = document.getElementById('stTypeFilter')?.value || 'ALL';
   const startDate = document.getElementById('stFromDateFilter')?.value || '';
   const endDate = document.getElementById('stToDateFilter')?.value || '';
+
+  App.renderTableLoading('stHistoryTableBody', 8, 'Memuat riwayat transfer stok gudang...');
 
   const params = new URLSearchParams({
     action: 'history',

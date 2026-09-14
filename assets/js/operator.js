@@ -340,6 +340,10 @@ function switchOpTaskSubTab(tab) {
 }
 
 async function loadOperatorTasks(silent = false) {
+  if (!silent) {
+    App.renderContainerLoading('opTasksContainer', 'Memuat daftar tugas aktif...');
+    App.renderContainerLoading('opTasksHistoryContainer', 'Memuat riwayat tugas...');
+  }
   try {
     const res = await App.fetchJson('../api/tasks.php?action=list&my_tasks=1');
     if (res && res.success) {
@@ -1455,6 +1459,7 @@ async function handleFinalTaskSubmit(e) {
 
 // 5. STOCK CHECKER
 async function loadOperatorStock() {
+  App.renderContainerLoading('opStockListContainer', 'Mencari dan memuat stok material...');
   const search = document.getElementById('opStockSearch')?.value || '';
   const res = await App.fetchJson(`../api/materials.php?action=list&search=${encodeURIComponent(search)}`);
   if (res.success) {
@@ -2548,6 +2553,9 @@ function escapeHtml(str) {
 let myDynamicTasks = [];
 
 async function loadOperatorDynamicTasks(silent = false) {
+  if (!silent) {
+    App.renderContainerLoading('opDynamicTasksContainer', 'Memuat tugas Dynamic Count...');
+  }
   const res = await App.fetchJson('../api/opnames.php?action=operator_dynamic_tasks');
   if (res.success) {
     myDynamicTasks = res.tasks || [];
@@ -2846,6 +2854,9 @@ async function handleBlankCountSubmit(e) {
 }
 
 async function loadOperatorBlankCounts(silent = false) {
+  if (!silent) {
+    App.renderContainerLoading('opBlankCountHistoryContainer', 'Memuat riwayat hitungan...');
+  }
   const res = await App.fetchJson('../api/opnames.php?action=my_blank_counts');
   if (res.success) {
     myBlankCounts = res.data || [];
@@ -2944,6 +2955,9 @@ function switchOpnameSubTab(subTab) {
 }
 
 async function loadOperatorRecountTasks(silent = false) {
+  if (!silent) {
+    App.renderContainerLoading('opRecountTasksContainer', 'Memuat tugas hitung ulang (recount)...');
+  }
   const res = await App.fetchJson('../api/opnames.php?action=operator_recount_tasks');
   if (res.success) {
     myRecountTasks = res.tasks || [];
@@ -4328,13 +4342,8 @@ async function loadOperatorConsumableRequests(isSilent = false) {
   const container = document.getElementById('opReqHistoryContainer');
   if (!container) return;
 
-  if (!isSilent && (!allOperatorConsumableRequests || allOperatorConsumableRequests.length === 0)) {
-    container.innerHTML = `
-      <div class="p-8 text-center text-slate-400 text-xs">
-        <span class="material-symbols-outlined text-[28px] animate-spin text-amber-600 mb-1">progress_activity</span>
-        <p>Memuat riwayat pengajuan consumable...</p>
-      </div>
-    `;
+  if (!isSilent) {
+    App.renderContainerLoading(container, 'Memuat riwayat pengajuan consumable...');
   }
 
   const res = await App.fetchJson('../api/consumable_requests.php?action=list');

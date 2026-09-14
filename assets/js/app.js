@@ -210,8 +210,96 @@ const App = {
     });
   },
 
+  // Global Loading State Tracker & Indicators
+  _activeRequests: 0,
+  _loadingTimer: null,
+
+  showGlobalLoading(message = 'Memuat data...') {
+    this._activeRequests++;
+
+    // 1. Top nanobar progress
+    let topbar = document.getElementById('app-global-topbar');
+    if (!topbar) {
+      topbar = document.createElement('div');
+      topbar.id = 'app-global-topbar';
+      document.body.prepend(topbar);
+    }
+    topbar.classList.add('is-active');
+
+    // 2. Floating Pill Indicator
+    let loader = document.getElementById('app-global-loader');
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.id = 'app-global-loader';
+      loader.className = 'fixed top-3 right-4 z-[99998] pointer-events-none transition-all duration-300 opacity-0 -translate-y-2 flex items-center gap-2 px-3 py-1.5 bg-slate-900/90 text-white rounded-full shadow-lg text-xs font-semibold border border-slate-700/60';
+      loader.innerHTML = `
+        <span class="material-symbols-outlined text-[16px] text-blue-400 animate-spin">progress_activity</span>
+        <span id="app-global-loader-text" class="text-[11px] text-slate-100 tracking-wide">${message}</span>
+      `;
+      document.body.appendChild(loader);
+    }
+    const textEl = document.getElementById('app-global-loader-text');
+    if (textEl && message) textEl.textContent = message;
+
+    clearTimeout(this._loadingTimer);
+    loader.classList.remove('hidden', 'opacity-0', '-translate-y-2');
+    loader.classList.add('opacity-100', 'translate-y-0');
+  },
+
+  hideGlobalLoading() {
+    this._activeRequests = Math.max(0, this._activeRequests - 1);
+    if (this._activeRequests === 0) {
+      const topbar = document.getElementById('app-global-topbar');
+      if (topbar) topbar.classList.remove('is-active');
+
+      const loader = document.getElementById('app-global-loader');
+      if (loader) {
+        loader.classList.remove('opacity-100', 'translate-y-0');
+        loader.classList.add('opacity-0', '-translate-y-2');
+        clearTimeout(this._loadingTimer);
+        this._loadingTimer = setTimeout(() => {
+          if (this._activeRequests === 0) {
+            loader.classList.add('hidden');
+          }
+        }, 300);
+      }
+    }
+  },
+
+  // Reusable Spinner Row for <tbody> elements
+  renderTableLoading(tbodyOrId, colspan = 10, message = 'Memuat data...') {
+    const tbody = typeof tbodyOrId === 'string' ? document.getElementById(tbodyOrId) : tbodyOrId;
+    if (!tbody) return;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="${colspan}" class="p-8 text-center text-slate-400">
+          <div class="inline-flex flex-col items-center justify-center gap-2.5 py-4">
+            <span class="material-symbols-outlined text-[32px] text-blue-600 animate-spin">progress_activity</span>
+            <p class="text-xs font-semibold text-slate-600 tracking-wide">${message}</p>
+          </div>
+        </td>
+      </tr>
+    `;
+  },
+
+  // Reusable Spinner Container for div / card lists
+  renderContainerLoading(containerOrId, message = 'Memuat data...') {
+    const container = typeof containerOrId === 'string' ? document.getElementById(containerOrId) : containerOrId;
+    if (!container) return;
+    container.innerHTML = `
+      <div class="p-8 text-center text-slate-400 flex flex-col items-center justify-center gap-2.5 py-6">
+        <span class="material-symbols-outlined text-[32px] text-blue-600 animate-spin">progress_activity</span>
+        <p class="text-xs font-semibold text-slate-600 tracking-wide">${message}</p>
+      </div>
+    `;
+  },
+
   // Generic JSON Fetch Helper
   async fetchJson(url, options = {}) {
+    const isSilent = Boolean(options.silent || options.silentLoading);
+    if (!isSilent) {
+      this.showGlobalLoading(options.loadingMessage || 'Memuat data...');
+    }
     try {
       const defaultHeaders = {
         'Accept': 'application/json',
@@ -259,6 +347,10 @@ const App = {
     } catch (err) {
       console.error('Fetch error:', err);
       return { success: false, message: 'Gagal terhubung ke server database.' };
+    } finally {
+      if (!isSilent) {
+        this.hideGlobalLoading();
+      }
     }
   },
 
