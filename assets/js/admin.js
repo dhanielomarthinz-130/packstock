@@ -266,7 +266,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -1905,7 +1905,14 @@ async function openMaterialHistoryView(materialId, updateUrl = true, sourceTab =
         <tr class="hover:bg-slate-50 transition-colors text-xs border-b border-slate-100">
           <td class="p-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">${App.formatDate(h.created_at)}</td>
           <td class="p-3">${typeLabel}</td>
-          <td class="p-3 font-mono font-bold ${isGimmick ? 'text-indigo-900' : 'text-emerald-800'}">${escapeHtml(h.reference_no)}</td>
+          <td class="p-3">
+            ${h.reference_no ? `
+              <button type="button" onclick="openMutationReferenceDetail('${escapeHtml(h.reference_no)}', ${h.id})" class="font-mono font-bold ${isGimmick ? 'text-indigo-900' : 'text-emerald-800'} hover:text-blue-700 hover:underline inline-flex items-center gap-1 cursor-pointer" title="Klik untuk melihat rincian detail transaksi">
+                <span>${escapeHtml(h.reference_no)}</span>
+                <span class="material-symbols-outlined text-[13px] opacity-70">open_in_new</span>
+              </button>
+            ` : '<span class="font-mono text-slate-400">-</span>'}
+          </td>
           <td class="p-3 text-center font-bold text-emerald-700 font-mono">
             ${isPositive ? `+${App.formatNumber(h.qty_change)}` : '0'}
           </td>
@@ -6456,7 +6463,14 @@ function renderMutationsTable() {
         <td class="p-3 text-slate-600 whitespace-nowrap">${App.formatDate(m.created_at)}</td>
         <td class="p-3 text-center whitespace-nowrap">${catBadge}</td>
         <td class="p-3 whitespace-nowrap">${typeBadge}</td>
-        <td class="p-3 font-mono font-bold text-slate-800">${escapeHtml(m.reference_no || '-')}</td>
+        <td class="p-3">
+          ${m.reference_no ? `
+            <button type="button" onclick="openMutationReferenceDetail('${escapeHtml(m.reference_no)}', ${m.id})" class="font-mono font-bold text-slate-800 hover:text-blue-700 hover:underline inline-flex items-center gap-1 cursor-pointer" title="Klik untuk melihat rincian detail transaksi">
+              <span>${escapeHtml(m.reference_no)}</span>
+              <span class="material-symbols-outlined text-[13px] opacity-70">open_in_new</span>
+            </button>
+          ` : '<span class="font-mono text-slate-400">-</span>'}
+        </td>
         <td class="p-3">
           <p class="font-bold text-slate-900">${escapeHtml(m.material_name || '-')}</p>
           <p class="text-[10px] text-slate-400 font-mono">${escapeHtml(m.material_code || '-')}</p>

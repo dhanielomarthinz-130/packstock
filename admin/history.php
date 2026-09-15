@@ -334,7 +334,16 @@ require_once __DIR__ . '/../includes/header.php';
                     <?= date('d M Y, H.i', strtotime($mut['created_at'])) ?>
                   </td>
                   <td class="p-3"><?= $typeBadge ?></td>
-                  <td class="p-3 font-mono font-bold text-emerald-800"><?= htmlspecialchars($mut['reference_no']) ?></td>
+                  <td class="p-3">
+                    <?php if (!empty($mut['reference_no'])): ?>
+                      <button type="button" onclick="openMutationReferenceDetail('<?= htmlspecialchars($mut['reference_no'], ENT_QUOTES) ?>', <?= (int)$mut['id'] ?>)" class="font-mono font-bold text-emerald-800 hover:text-blue-700 hover:underline inline-flex items-center gap-1 cursor-pointer" title="Klik untuk melihat rincian detail transaksi">
+                        <span><?= htmlspecialchars($mut['reference_no']) ?></span>
+                        <span class="material-symbols-outlined text-[13px] opacity-70">open_in_new</span>
+                      </button>
+                    <?php else: ?>
+                      <span class="font-mono text-slate-400">-</span>
+                    <?php endif; ?>
+                  </td>
                   <td class="p-3 text-center font-bold text-emerald-700 font-mono">
                     <?= $isPositive ? '+' . number_format($mut['qty_change']) : '0' ?>
                   </td>
@@ -390,6 +399,8 @@ require_once __DIR__ . '/../includes/header.php';
 
   </main>
 </div>
+
+<?php require_once __DIR__ . '/../includes/mutation_detail_modal.php'; ?>
 
 <!-- Comprehensive Professional Print Stylesheet -->
 <style>
