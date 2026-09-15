@@ -785,32 +785,61 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
     }
 
     if ($target === 'inbound') {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $concatExpr = ($driver === 'sqlite') 
+            ? "('INIT-' || COALESCE(m.code, sm.id))" 
+            : "CONCAT('INIT-', COALESCE(m.code, sm.id))";
+
         $query = "
-            SELECT 
-                i.inbound_no,
-                i.po_number,
-                i.supplier,
-                i.qty,
-                COALESCE(i.started_at, i.created_at) as started_at,
-                COALESCE(i.completed_at, i.created_at) as completed_at,
-                COALESCE(i.duration_seconds, 0) as duration_seconds,
-                i.created_at,
-                i.notes,
-                m.code as material_code,
-                m.name as material_name,
-                m.unit as material_unit,
-                m.rack_location,
-                COALESCE(u.name, i.received_by, 'Admin') as receiver_name
-            FROM inbound_transactions i
-            LEFT JOIN materials m ON i.material_id = m.id
-            LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username)
+            SELECT * FROM (
+                SELECT 
+                    i.inbound_no,
+                    i.po_number,
+                    i.supplier,
+                    i.qty,
+                    COALESCE(i.started_at, i.created_at) as started_at,
+                    COALESCE(i.completed_at, i.created_at) as completed_at,
+                    COALESCE(i.duration_seconds, 0) as duration_seconds,
+                    i.created_at,
+                    i.notes,
+                    m.code as material_code,
+                    m.name as material_name,
+                    m.unit as material_unit,
+                    m.rack_location,
+                    COALESCE(u.name, i.received_by, 'Admin') as receiver_name
+                FROM inbound_transactions i
+                LEFT JOIN materials m ON i.material_id = m.id
+                LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username)
+
+                UNION ALL
+
+                SELECT 
+                    {$concatExpr} as inbound_no,
+                    'STOK AWAL' as po_number,
+                    'Upload / Setup Awal' as supplier,
+                    sm.qty_change as qty,
+                    sm.created_at as started_at,
+                    sm.created_at as completed_at,
+                    0 as duration_seconds,
+                    sm.created_at,
+                    COALESCE(sm.notes, 'Stok Awal Pendaftaran Material') as notes,
+                    m.code as material_code,
+                    m.name as material_name,
+                    m.unit as material_unit,
+                    m.rack_location,
+                    COALESCE(u.name, u.username, 'System') as receiver_name
+                FROM stock_mutations sm
+                LEFT JOIN materials m ON sm.material_id = m.id
+                LEFT JOIN users u ON sm.user_id = u.id
+                WHERE sm.type = 'INITIAL_IMPORT'
+            ) combined_inbound
         ";
         $params = [];
         if ($mode === 'update' && !empty($lastSyncTime)) {
-            $query .= " WHERE i.created_at > ? OR i.completed_at > ?";
+            $query .= " WHERE created_at > ? OR completed_at > ?";
             $params = [$lastSyncTime, $lastSyncTime];
         }
-        $query .= " ORDER BY i.created_at DESC";
+        $query .= " ORDER BY created_at DESC";
 
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);

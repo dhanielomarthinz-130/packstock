@@ -13,29 +13,79 @@ if ($action === 'list') {
     $search = trim($_GET['search'] ?? '');
     $limit  = min(200, max(10, (int)($_GET['limit'] ?? 100)));
 
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $concatExpr = ($driver === 'sqlite') 
+        ? "('INIT-' || COALESCE(m.code, sm.id))" 
+        : "CONCAT('INIT-', COALESCE(m.code, sm.id))";
+
     $query = "
-        SELECT i.*, 
-               COALESCE(i.started_at, i.created_at) as started_at,
-               COALESCE(i.completed_at, i.created_at) as completed_at,
-               COALESCE(i.duration_seconds, 0) as duration_seconds,
-               m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
-               COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code,
-               COALESCE(u.name, i.received_by, 'Admin') as receiver_name,
-               COALESCE(u.username, i.received_by, 'admin') as receiver_username,
-               COALESCE(u.role, 'admin') as receiver_role,
-               COALESCE(u.shift, 'Head Office') as receiver_shift
-        FROM inbound_transactions i
-        JOIN materials m ON i.material_id = m.id
-        LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username OR i.received_by = u.name)
+        SELECT * FROM (
+            SELECT i.id,
+                   0 as is_initial,
+                   'INBOUND' as entry_type,
+                   i.inbound_no,
+                   i.material_id,
+                   i.po_number,
+                   i.supplier,
+                   i.qty,
+                   i.notes,
+                   i.photo_path,
+                   i.batch_no,
+                   i.exp_date,
+                   i.location,
+                   i.created_at,
+                   COALESCE(i.started_at, i.created_at) as started_at,
+                   COALESCE(i.completed_at, i.created_at) as completed_at,
+                   COALESCE(i.duration_seconds, 0) as duration_seconds,
+                   m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+                   COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code,
+                   COALESCE(u.name, i.received_by, 'Admin') as receiver_name,
+                   COALESCE(u.username, i.received_by, 'admin') as receiver_username,
+                   COALESCE(u.role, 'admin') as receiver_role,
+                   COALESCE(u.shift, 'Head Office') as receiver_shift
+            FROM inbound_transactions i
+            JOIN materials m ON i.material_id = m.id
+            LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username OR i.received_by = u.name)
+
+            UNION ALL
+
+            SELECT sm.id,
+                   1 as is_initial,
+                   'INITIAL_IMPORT' as entry_type,
+                   {$concatExpr} as inbound_no,
+                   sm.material_id,
+                   'STOK AWAL' as po_number,
+                   'Upload / Setup Awal' as supplier,
+                   sm.qty_change as qty,
+                   COALESCE(sm.notes, 'Stok Awal Pendaftaran Material') as notes,
+                   NULL as photo_path,
+                   NULL as batch_no,
+                   NULL as exp_date,
+                   m.rack_location as location,
+                   sm.created_at,
+                   sm.created_at as started_at,
+                   sm.created_at as completed_at,
+                   0 as duration_seconds,
+                   m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+                   COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code,
+                   COALESCE(u.name, u.username, 'System') as receiver_name,
+                   COALESCE(u.username, 'system') as receiver_username,
+                   COALESCE(u.role, 'admin') as receiver_role,
+                   'Head Office' as receiver_shift
+            FROM stock_mutations sm
+            JOIN materials m ON sm.material_id = m.id
+            LEFT JOIN users u ON sm.user_id = u.id
+            WHERE sm.type = 'INITIAL_IMPORT'
+        ) combined_inbound
         WHERE 1=1
     ";
     $params = [];
 
     $itemTypeFilter = trim($_GET['item_type'] ?? '');
     if ($itemTypeFilter === 'GIMMICK') {
-        $query .= " AND m.item_type = 'GIMMICK'";
+        $query .= " AND material_item_type = 'GIMMICK'";
     } elseif ($itemTypeFilter === 'PACKAGING') {
-        $query .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        $query .= " AND (material_item_type = 'PACKAGING' OR material_item_type IS NULL OR material_item_type = '')";
     }
 
     $date      = trim($_GET['date'] ?? '');
@@ -44,32 +94,32 @@ if ($action === 'list') {
     $time      = trim($_GET['time'] ?? '');
 
     if (!empty($search)) {
-        $query .= " AND (i.inbound_no LIKE ? OR i.po_number LIKE ? OR i.supplier LIKE ? OR m.name LIKE ? OR m.code LIKE ? OR m.sap_code LIKE ? OR m.barcode LIKE ? OR u.name LIKE ?)";
+        $query .= " AND (inbound_no LIKE ? OR po_number LIKE ? OR supplier LIKE ? OR material_name LIKE ? OR material_code LIKE ? OR material_sap_code LIKE ? OR material_barcode LIKE ? OR receiver_name LIKE ?)";
         $term = "%{$search}%";
         $params = [$term, $term, $term, $term, $term, $term, $term, $term];
     }
 
     if (!empty($startDate)) {
-        $query .= " AND DATE(i.created_at) >= ?";
+        $query .= " AND DATE(created_at) >= ?";
         $params[] = $startDate;
     }
 
     if (!empty($endDate)) {
-        $query .= " AND DATE(i.created_at) <= ?";
+        $query .= " AND DATE(created_at) <= ?";
         $params[] = $endDate;
     }
 
     if (!empty($date) && empty($startDate) && empty($endDate)) {
-        $query .= " AND i.created_at LIKE ?";
+        $query .= " AND created_at LIKE ?";
         $params[] = "{$date}%";
     }
 
     if (!empty($time)) {
-        $query .= " AND i.created_at LIKE ?";
+        $query .= " AND created_at LIKE ?";
         $params[] = "% {$time}%";
     }
 
-    $query .= " ORDER BY i.created_at DESC LIMIT " . $limit;
+    $query .= " ORDER BY created_at DESC LIMIT " . $limit;
 
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
@@ -85,14 +135,14 @@ if ($action === 'list') {
         $qty = max(0.001, (float)$r['qty']);
         $dur = max(0, (int)$r['duration_seconds']);
         // If duration was 0 (instant legacy entry), assign baseline estimate 60s for meaningful takt time display
-        if ($dur <= 0) {
+        if ($dur <= 0 && empty($r['is_initial'])) {
             $dur = 60;
             $r['duration_seconds'] = 60;
         }
-        $r['takt_time_seconds'] = round($dur / $qty, 2);
+        $r['takt_time_seconds'] = $qty > 0 && $dur > 0 ? round($dur / $qty, 2) : 0;
         $totalQty += (float)$r['qty'];
         $totalDuration += $dur;
-        $validDurationCount++;
+        if ($dur > 0) $validDurationCount++;
     }
     unset($r);
 
@@ -117,6 +167,57 @@ if ($action === 'detail') {
     $inboundNo  = trim($_GET['inbound_no'] ?? '');
     $poNumber   = trim($_GET['po_number'] ?? '');
     $materialId = (int)($_GET['material_id'] ?? 0);
+
+    // Cek jika ID atau nomor inbound merujuk ke Stok Awal
+    if (str_starts_with($inboundNo, 'INIT-') || $poNumber === 'STOK AWAL') {
+        $matCode = str_starts_with($inboundNo, 'INIT-') ? substr($inboundNo, 5) : '';
+        $query = "
+            SELECT sm.id,
+                   1 as is_initial,
+                   'INITIAL_IMPORT' as entry_type,
+                   sm.reference_no as inbound_no,
+                   sm.material_id,
+                   'STOK AWAL' as po_number,
+                   'Upload / Setup Awal' as supplier,
+                   sm.qty_change as qty,
+                   COALESCE(sm.notes, 'Stok Awal Pendaftaran Material') as notes,
+                   NULL as photo_path,
+                   NULL as batch_no,
+                   NULL as exp_date,
+                   m.rack_location as location,
+                   sm.created_at,
+                   sm.created_at as started_at,
+                   sm.created_at as completed_at,
+                   0 as duration_seconds,
+                   m.code as material_code, m.name as material_name, m.unit as material_unit, m.category as material_category, m.rack_location,
+                   COALESCE(m.item_type, 'PACKAGING') as material_item_type, m.barcode as material_barcode, m.sap_code as material_sap_code,
+                   COALESCE(u.name, u.username, 'System') as receiver_name,
+                   COALESCE(u.username, 'system') as receiver_username,
+                   COALESCE(u.role, 'admin') as receiver_role,
+                   'Head Office' as receiver_shift
+            FROM stock_mutations sm
+            JOIN materials m ON sm.material_id = m.id
+            LEFT JOIN users u ON sm.user_id = u.id
+            WHERE sm.type = 'INITIAL_IMPORT'
+        ";
+        $params = [];
+        if (!empty($matCode)) {
+            $query .= " AND (m.code = ? OR sm.id = ?)";
+            $params = [$matCode, (int)$matCode];
+        } elseif ($materialId > 0) {
+            $query .= " AND sm.material_id = ?";
+            $params = [$materialId];
+        }
+        $query .= " ORDER BY sm.id DESC LIMIT 1";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $detail = $stmt->fetch();
+        if ($detail) {
+            $detail['qty'] = (float)$detail['qty'];
+            echo json_encode(['success' => true, 'data' => $detail]);
+            exit;
+        }
+    }
 
     $query = "
         SELECT i.*, 

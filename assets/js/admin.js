@@ -4951,12 +4951,16 @@ function renderInboundRows(data, tbody) {
             <button onclick="openInboundDetailModal(${idx})" title="Lihat Rincian Detail" class="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 border border-slate-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">visibility</span>
             </button>
+            ${!i.is_initial ? `
             <button onclick="openEditInboundModal(${idx})" title="Edit Transaksi Inbound" class="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-700 border border-amber-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">edit</span>
             </button>
             <button onclick="confirmDeleteInbound(${i.id}, '${escapeHtml(i.inbound_no)}')" title="Hapus Transaksi Inbound" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-700 border border-rose-200 transition-colors inline-flex items-center justify-center shadow-2xs cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">delete</span>
             </button>
+            ` : `
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200" title="Stok Awal Pendaftaran Material">STOK AWAL</span>
+            `}
           </div>
         </td>
       </tr>
