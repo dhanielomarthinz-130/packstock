@@ -1878,7 +1878,7 @@ async function openMaterialHistoryView(materialId, updateUrl = true, sourceTab =
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">TASK PICKING</span>';
       } else if (h.type === 'ADJUSTMENT') {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">PENYESUAIAN STOK</span>';
-      } else if (h.type === 'TRANSFER_OUT' || h.type === 'TRANSFER_IN' || h.type === 'STOCK_TRANSFER' || h.type === 'TRANSFER_LOCATION') {
+      } else if (h.type === 'TRANSFER_OUT' || h.type === 'TRANSFER_IN' || h.type === 'STOCK_TRANSFER' || h.type === 'TRANSFER_LOCATION' || h.type === 'RACK_MOVEMENT' || h.type === 'MOVEMENT' || h.type === 'TRANSFER') {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">STOCK TRANSFER</span>';
       } else if (h.type === 'VAS_OUTBOUND') {
         typeLabel = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-800 border border-rose-200">VAS DISPOSAL</span>';
@@ -13929,7 +13929,7 @@ function doPost(e) {
 
 let googleSheetsCurrentConfig = null;
 
-async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = true, btnElement = null) {
+async function openGoogleSheetsSyncModal(target = 'inventory', autoRun = false, btnElement = null) {
   const modal = document.getElementById('googleSheetsSyncModal');
   if (!modal) {
     App.toast('Modal Google Sheets tidak ditemukan.', 'error');
@@ -14091,7 +14091,8 @@ async function triggerGoogleSheetsSync(mode = 'update', btnElement = null) {
     'reorder': 'Reorder Kemas',
     'inbound': 'Barang Masuk',
     'outbound': 'Barang Keluar',
-    'all': 'Semua Menu (6 Tab)'
+    'mutations': 'History Mutasi Stok',
+    'all': 'Semua Menu (7 Tab Lengkap)'
   };
   const targetLabel = targetLabelMap[selectedTarget] || selectedTarget.toUpperCase();
 

@@ -136,6 +136,8 @@ if ($type === 'material_history') {
         elseif ($m['type'] === 'TASK_PICKING') $typeLabel = 'TASK PICKING';
         elseif ($m['type'] === 'ADJUSTMENT') $typeLabel = 'PENYESUAIAN STOK';
         elseif ($m['type'] === 'INITIAL_IMPORT') $typeLabel = 'STOK AWAL';
+        elseif (in_array($m['type'], ['TRANSFER_OUT', 'TRANSFER_IN', 'STOCK_TRANSFER', 'TRANSFER_LOCATION', 'RACK_MOVEMENT', 'MOVEMENT', 'TRANSFER'])) $typeLabel = 'STOCK TRANSFER';
+        elseif ($m['type'] === 'VAS_OUTBOUND') $typeLabel = 'VAS DISPOSAL';
 
         $pic = $m['user_username'] ?: ($m['user_name'] ?: 'System');
 
@@ -427,9 +429,10 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
                 COALESCE(t.duration_seconds, 0) as duration_seconds,
                 t.created_at
             FROM tasks t
-            JOIN materials m ON t.material_id = m.id
-            JOIN users u_to ON t.assigned_to = u_to.id
+            LEFT JOIN materials m ON t.material_id = m.id
+            LEFT JOIN users u_to ON t.assigned_to = u_to.id
             LEFT JOIN users u_by ON t.assigned_by = u_by.id
+            WHERE (t.task_type = 'PICKING' OR t.task_type IS NULL OR t.task_type = '')
 
             UNION ALL
 
@@ -454,7 +457,7 @@ if ($type === 'outbound' || $type === 'outbound_csv' || $type === 'outbound_exce
                 COALESCE(o.duration_seconds, 0) as duration_seconds,
                 o.created_at
             FROM outbound_transactions o
-            JOIN materials m ON o.material_id = m.id
+            LEFT JOIN materials m ON o.material_id = m.id
         ) combined_outbound
         ORDER BY created_at DESC
     ";
@@ -543,10 +546,10 @@ if ($type === 'inbound' || $type === 'inbound_csv' || $type === 'inbound_excel')
             m.name as material_name,
             m.unit as material_unit,
             m.rack_location,
-            u.name as receiver_name
+            COALESCE(u.name, i.received_by, 'Admin') as receiver_name
         FROM inbound_transactions i
-        JOIN materials m ON i.material_id = m.id
-        LEFT JOIN users u ON i.received_by = u.id
+        LEFT JOIN materials m ON i.material_id = m.id
+        LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username)
         WHERE 1=1
     ";
     $params = [];
@@ -893,7 +896,7 @@ if ($type === 'adjust_history') {
 // 10. EXPORT BUKU MUTASI STOK KESELURUHAN (.xlsx)
 // =========================================================================
 if ($type === 'mutations') {
-    Auth::requireSuperAdmin();
+    Auth::requireAdmin();
     $search = trim($_GET['search'] ?? '');
     $mutationType = trim($_GET['mutation_type'] ?? '');
     $date   = trim($_GET['date'] ?? '');
@@ -924,7 +927,7 @@ if ($type === 'mutations') {
                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
                u.name as user_name, u.username as user_username
         FROM stock_mutations sm
-        JOIN materials m ON sm.material_id = m.id
+        LEFT JOIN materials m ON sm.material_id = m.id
         LEFT JOIN users u ON sm.user_id = u.id
         WHERE 1=1
     ";
@@ -951,7 +954,7 @@ if ($type === 'mutations') {
         $params = array_merge($params, [$term, $term, $term, $term, $term, $term]);
     }
 
-    $sql .= " ORDER BY sm.created_at DESC, sm.id DESC LIMIT 500";
+    $sql .= " ORDER BY sm.created_at DESC, sm.id DESC LIMIT 50000";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -962,13 +965,22 @@ if ($type === 'mutations') {
         $qtyFormatted = ($qtyChange > 0 ? "+{$qtyChange}" : "{$qtyChange}");
         $pic = $r['user_name'] ?: ($r['user_username'] ?: 'System');
 
+        $typeLabel = $r['type'];
+        if ($r['type'] === 'INBOUND') $typeLabel = 'BARANG MASUK';
+        elseif ($r['type'] === 'OUTBOUND') $typeLabel = 'BARANG KELUAR';
+        elseif ($r['type'] === 'TASK_PICKING') $typeLabel = 'TASK PICKING';
+        elseif ($r['type'] === 'ADJUSTMENT') $typeLabel = 'PENYESUAIAN STOK';
+        elseif ($r['type'] === 'INITIAL_IMPORT') $typeLabel = 'STOK AWAL';
+        elseif (in_array($r['type'], ['TRANSFER_OUT', 'TRANSFER_IN', 'STOCK_TRANSFER', 'TRANSFER_LOCATION', 'RACK_MOVEMENT', 'MOVEMENT', 'TRANSFER'])) $typeLabel = 'STOCK TRANSFER';
+        elseif ($r['type'] === 'VAS_OUTBOUND') $typeLabel = 'VAS DISPOSAL';
+
         $rows[] = [
             $no++,
             formatExportDate($r['created_at']),
-            $r['type'],
+            $typeLabel,
             $r['reference_no'],
-            $r['material_code'],
-            $r['material_name'],
+            $r['material_code'] ?: '-',
+            $r['material_name'] ?: '-',
             $r['rack_location'] ?: '-',
             (float)$r['stock_before'],
             $qtyFormatted,

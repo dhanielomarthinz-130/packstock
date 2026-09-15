@@ -27,7 +27,8 @@ function getGoogleSheetsConfig(string $path): array {
             'vas'       => null,
             'reorder'   => null,
             'inbound'   => null,
-            'outbound'  => null
+            'outbound'  => null,
+            'mutations' => null
         ]
     ];
     if (file_exists($path)) {
@@ -143,7 +144,7 @@ if ($action === 'ping') {
 }
 
 // =========================================================================
-// 4. SYNC DATA (STOCK INVENTORY, STOCK VAS, BARANG MASUK, BARANG KELUAR)
+// 4. SYNC DATA (STOCK INVENTORY, STOCK VAS, BARANG MASUK, BARANG KELUAR, MUTASI)
 // =========================================================================
 if ($action === 'sync') {
     $webAppUrl = $config['web_app_url'];
@@ -155,10 +156,11 @@ if ($action === 'sync') {
     $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
     $mode   = trim($_GET['mode'] ?? ($_POST['mode'] ?? 'full')); // 'update' (incremental) or 'full'
 
+    $allValidTargets = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound', 'mutations'];
     $targetsToProcess = [];
     if ($target === 'all') {
-        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
-    } elseif (in_array($target, ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'])) {
+        $targetsToProcess = $allValidTargets;
+    } elseif (in_array($target, $allValidTargets)) {
         $targetsToProcess = [$target];
     } else {
         echo json_encode(['success' => false, 'message' => "Target sync '{$target}' tidak valid."]);
@@ -262,13 +264,14 @@ if ($action === 'get_payload') {
     $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
     $mode   = trim($_GET['mode'] ?? ($_POST['mode'] ?? 'full'));
 
+    $allValidTargets = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound', 'mutations'];
     $targetsToProcess = [];
     if ($target === 'all') {
-        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
-    } elseif (in_array($target, ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'])) {
+        $targetsToProcess = $allValidTargets;
+    } elseif (in_array($target, $allValidTargets)) {
         $targetsToProcess = [$target];
     } else {
-        $targetsToProcess = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'];
+        $targetsToProcess = $allValidTargets;
     }
 
     $sheetsPayload = [];
@@ -305,11 +308,12 @@ if ($action === 'get_payload') {
 // =========================================================================
 if ($action === 'mark_synced') {
     $target = trim($_GET['target'] ?? ($_POST['target'] ?? 'all'));
-    $targetsToProcess = ($target === 'all') ? ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound'] : [$target];
+    $allValidTargets = ['inventory', 'gimmick', 'vas', 'reorder', 'inbound', 'outbound', 'mutations'];
+    $targetsToProcess = ($target === 'all') ? $allValidTargets : [$target];
     $nowStr = date('Y-m-d H:i:s');
 
     foreach ($targetsToProcess as $t) {
-        if (isset($config['last_synced'][$t])) {
+        if (isset($config['last_synced'][$t]) || array_key_exists($t, $config['last_synced'] ?? [])) {
             $config['last_synced'][$t] = $nowStr;
         }
     }
@@ -796,10 +800,10 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 m.name as material_name,
                 m.unit as material_unit,
                 m.rack_location,
-                u.name as receiver_name
+                COALESCE(u.name, i.received_by, 'Admin') as receiver_name
             FROM inbound_transactions i
-            JOIN materials m ON i.material_id = m.id
-            LEFT JOIN users u ON i.received_by = u.id
+            LEFT JOIN materials m ON i.material_id = m.id
+            LEFT JOIN users u ON (i.received_by = u.id OR i.received_by = u.username)
         ";
         $params = [];
         if ($mode === 'update' && !empty($lastSyncTime)) {
@@ -831,8 +835,8 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 $durMin,         // Durasi (Menit)
                 $r['po_number'] ?: '-',
                 $r['supplier'] ?: '-',
-                $r['material_code'],
-                $r['material_name'],
+                $r['material_code'] ?: '-',
+                $r['material_name'] ?: '-',
                 (float)$r['qty'],
                 $r['material_unit'] ?: 'Pcs',
                 $r['rack_location'] ?: '-',
@@ -891,9 +895,10 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                     COALESCE(t.duration_seconds, 0) as duration_seconds,
                     t.created_at
                 FROM tasks t
-                JOIN materials m ON t.material_id = m.id
-                JOIN users u_to ON t.assigned_to = u_to.id
+                LEFT JOIN materials m ON t.material_id = m.id
+                LEFT JOIN users u_to ON t.assigned_to = u_to.id
                 LEFT JOIN users u_by ON t.assigned_by = u_by.id
+                WHERE (t.task_type = 'PICKING' OR t.task_type IS NULL OR t.task_type = '')
 
                 UNION ALL
 
@@ -918,7 +923,7 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                     COALESCE(o.duration_seconds, 0) as duration_seconds,
                     o.created_at
                 FROM outbound_transactions o
-                JOIN materials m ON o.material_id = m.id
+                LEFT JOIN materials m ON o.material_id = m.id
             ) combined_outbound
         ";
         $params = [];
@@ -954,8 +959,8 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 $durMin,          // Durasi (Menit)
                 $typeLabel,
                 $r['status'],
-                $r['material_code'],
-                $r['material_name'],
+                $r['material_code'] ?: '-',
+                $r['material_name'] ?: '-',
                 (float)$r['qty'],
                 $r['material_unit'] ?: 'Pcs',
                 $r['rack_location'] ?: '-',
@@ -989,6 +994,90 @@ function buildSheetData(PDO $pdo, string $target, string $mode, ?string $lastSyn
                 'Petugas PIC',
                 'Alasan / Keperluan',
                 'Catatan'
+            ],
+            'rows' => $rows
+        ];
+    }
+
+    if ($target === 'mutations') {
+        $query = "
+            SELECT sm.*, 
+                   m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
+                   u.name as user_name, u.username as user_username
+            FROM stock_mutations sm
+            LEFT JOIN materials m ON sm.material_id = m.id
+            LEFT JOIN users u ON sm.user_id = u.id
+        ";
+        $params = [];
+        if ($mode === 'update' && !empty($lastSyncTime)) {
+            $query .= " WHERE sm.created_at > ?";
+            $params = [$lastSyncTime];
+        }
+        $query .= " ORDER BY sm.created_at DESC, sm.id DESC";
+
+        $stmt = $pdo->prepare($query);
+        $stmt->execute($params);
+        $rows = [];
+
+        while ($r = $stmt->fetch()) {
+            $createdAt = (string)($r['created_at'] ?? '');
+            $createdTime = !empty($createdAt) ? strtotime($createdAt) : false;
+            $createdFmt = $createdTime ? date('d/m/Y H:i:s', $createdTime) : ($createdAt ?: '-');
+
+            $qtyChange = (float)$r['qty_change'];
+            $inQty  = $qtyChange > 0 ? $qtyChange : 0;
+            $outQty = $qtyChange < 0 ? abs($qtyChange) : 0;
+
+            $typeLabel = $r['type'];
+            if ($r['type'] === 'INBOUND') $typeLabel = 'BARANG MASUK';
+            elseif ($r['type'] === 'OUTBOUND') $typeLabel = 'BARANG KELUAR';
+            elseif ($r['type'] === 'TASK_PICKING') $typeLabel = 'TASK PICKING';
+            elseif ($r['type'] === 'ADJUSTMENT') $typeLabel = 'PENYESUAIAN STOK';
+            elseif ($r['type'] === 'INITIAL_IMPORT') $typeLabel = 'STOK AWAL';
+            elseif (in_array($r['type'], ['TRANSFER_OUT', 'TRANSFER_IN', 'STOCK_TRANSFER', 'TRANSFER_LOCATION', 'RACK_MOVEMENT', 'MOVEMENT', 'TRANSFER'])) $typeLabel = 'STOCK TRANSFER';
+            elseif ($r['type'] === 'VAS_OUTBOUND') $typeLabel = 'VAS DISPOSAL';
+
+            $pic = $r['user_name'] ?: ($r['user_username'] ?: 'System');
+            $refKey = $r['reference_no'] ? ($r['reference_no'] . '-' . $r['id']) : ('MUT-' . $r['id']);
+
+            $rows[] = [
+                $refKey, // Column 0: Unique Key
+                $createdFmt,
+                $typeLabel,
+                $r['reference_no'] ?: '-',
+                $r['material_code'] ?: '-',
+                $r['material_name'] ?: '-',
+                $inQty,
+                $outQty,
+                (float)$r['stock_after'],
+                $r['material_unit'] ?: 'Pcs',
+                $r['rack_location'] ?: '-',
+                $r['notes'] ?: '-',
+                $pic
+            ];
+        }
+
+        if (empty($rows) && $mode === 'update') {
+            return buildSheetData($pdo, 'mutations', 'full', null);
+        }
+
+        return [
+            'name' => 'History Mutasi Stok',
+            'key_index' => 0, // Column 0: Key
+            'headers' => [
+                'ID Key',
+                'Waktu Transaksi',
+                'Tipe Mutasi',
+                'No. Referensi (PO / Task)',
+                'Item No (SKU)',
+                'Deskripsi Kemas / Gimmick',
+                'Masuk (+)',
+                'Keluar (-)',
+                'Sisa Stok',
+                'Satuan',
+                'Lokasi Rak',
+                'Keterangan / Catatan',
+                'Petugas PIC'
             ],
             'rows' => $rows
         ];

@@ -1181,7 +1181,7 @@ require_once __DIR__ . '/../includes/header.php';
             </a>
 
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Inventory ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('inventory', false, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Inventory ke Google Sheet">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -1279,8 +1279,8 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Action Buttons -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('gimmick', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Gimmick ke Google Sheet">
-              <span class="material-symbols-outlined text-[18px]">sync</span>
+            <button type="button" onclick="openGoogleSheetsSyncModal('gimmick', false, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock Gimmick ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
             <?php endif; ?>
@@ -2206,7 +2206,7 @@ require_once __DIR__ . '/../includes/header.php';
               </a>
 
               <?php if (Auth::isAdmin()): ?>
-              <button type="button" onclick="openGoogleSheetsSyncModal('inbound', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed rounded-xl" title="Sync Riwayat Barang Masuk ke Google Sheet">
+              <button type="button" onclick="openGoogleSheetsSyncModal('inbound', false, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed rounded-xl" title="Sync Riwayat Barang Masuk ke Google Sheet">
                 <span class="material-symbols-outlined text-[18px]">table_chart</span>
                 <span>Sync Google Sheet</span>
               </button>
@@ -2467,7 +2467,7 @@ require_once __DIR__ . '/../includes/header.php';
                 </a>
 
                 <?php if (Auth::isAdmin()): ?>
-                <button type="button" onclick="openGoogleSheetsSyncModal('outbound', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Keluar ke Google Sheet">
+                <button type="button" onclick="openGoogleSheetsSyncModal('outbound', false, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-2xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Riwayat Barang Keluar ke Google Sheet">
                   <span class="material-symbols-outlined text-[18px]">table_chart</span>
                   <span>Sync Google Sheet</span>
                 </button>
@@ -2829,8 +2829,8 @@ require_once __DIR__ . '/../includes/header.php';
 
           <div class="flex items-center gap-2 flex-wrap">
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('reorder', true, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Reorder Kemas ke Google Sheet">
-              <span class="material-symbols-outlined text-[18px]">sync</span>
+            <button type="button" onclick="openGoogleSheetsSyncModal('reorder', false, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white rounded-xl shadow-xs transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Reorder Kemas ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
             <?php endif; ?>
@@ -2960,7 +2960,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <div class="flex items-center gap-2">
             <?php if (Auth::isAdmin()): ?>
-            <button type="button" onclick="openGoogleSheetsSyncModal('vas', true, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock VAS ke Google Sheet">
+            <button type="button" onclick="openGoogleSheetsSyncModal('vas', false, this)" class="h-[38px] px-3.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" title="Sync Data Stock VAS ke Google Sheet">
               <span class="material-symbols-outlined text-[18px] text-purple-200">table_chart</span>
               <span>Sync Google Sheet</span>
             </button>
@@ -4067,6 +4067,12 @@ require_once __DIR__ . '/../includes/header.php';
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
               <span>Export Mutasi</span>
             </button>
+            <?php if (Auth::isAdmin()): ?>
+            <button type="button" onclick="openGoogleSheetsSyncModal('mutations', false, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Seluruh Mutasi Stok ke Google Sheet">
+              <span class="material-symbols-outlined text-[18px]">table_chart</span>
+              <span>Sync Google Sheet</span>
+            </button>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -6557,13 +6563,21 @@ require_once __DIR__ . '/../includes/header.php';
               <div class="text-[10px] text-slate-500">Riwayat pengeluaran barang</div>
             </div>
           </label>
+
+          <label class="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-purple-600 transition-all group select-none sm:col-span-2">
+            <input type="radio" name="gsTargetRadio" value="mutations" class="w-4 h-4 text-purple-700 accent-purple-700">
+            <div>
+              <div class="font-bold text-xs text-purple-950 group-hover:text-purple-700">History Mutasi Stok (Semua Gerakan Barang)</div>
+              <div class="text-[10px] text-slate-500">Seluruh riwayat transaksi mutasi (Stok Awal, Inbound, Outbound, Task Picking, Opname, Transfer Rak)</div>
+            </div>
+          </label>
         </div>
 
         <label class="flex items-center gap-3 p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl cursor-pointer hover:bg-indigo-50 transition-all group select-none mt-2">
           <input type="radio" name="gsTargetRadio" value="all" class="w-4 h-4 text-[#584CE7] accent-[#584CE7]">
           <div>
-            <div class="font-black text-xs text-indigo-950">🔥 Sync Semua Menu Sekaligus (6 Tab)</div>
-            <div class="text-[10px] text-indigo-700">Otomatis mengirim data Stock Kemas, Gimmick, VAS, Reorder, Barang Masuk & Keluar ke 6 tab terpisah</div>
+            <div class="font-black text-xs text-indigo-950">🔥 Sync Semua Menu Sekaligus (7 Tab Lengkap)</div>
+            <div class="text-[10px] text-indigo-700">Otomatis mengirim data Stock Kemas, Gimmick, VAS, Reorder, Barang Masuk, Keluar & Riwayat Mutasi ke 7 tab terpisah</div>
           </div>
         </label>
       </div>
