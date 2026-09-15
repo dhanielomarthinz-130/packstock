@@ -11,11 +11,13 @@ if ($action === 'list') {
     $materialId = (int)($_GET['material_id'] ?? 0);
     $type       = trim($_GET['type'] ?? '');
     $search     = trim($_GET['search'] ?? '');
-    $limit      = min(200, max(10, (int)($_GET['limit'] ?? 100)));
+    $itemType   = strtoupper(trim($_GET['item_type'] ?? ''));
+    $limit      = min(500, max(10, (int)($_GET['limit'] ?? 150)));
 
     $query = "
         SELECT sm.*, 
                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
+               COALESCE(m.item_type, 'PACKAGING') as material_item_type,
                u.name as user_name, u.role as user_role
         FROM stock_mutations sm
         JOIN materials m ON sm.material_id = m.id
@@ -30,6 +32,14 @@ if ($action === 'list') {
     if ($materialId > 0) {
         $query .= " AND sm.material_id = ?";
         $params[] = $materialId;
+    }
+
+    if (!empty($itemType) && $itemType !== 'ALL') {
+        if ($itemType === 'GIMMICK') {
+            $query .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING' || $itemType === 'KEMAS') {
+            $query .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
     }
 
     if (!empty($type) && $type !== 'ALL') {

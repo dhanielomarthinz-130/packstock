@@ -938,18 +938,34 @@ if ($type === 'mutations') {
     Auth::requireAdmin();
     $search = trim($_GET['search'] ?? '');
     $mutationType = trim($_GET['mutation_type'] ?? '');
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL'));
     $date   = trim($_GET['date'] ?? '');
     $time   = trim($_GET['time'] ?? '');
-    $filename = "Laporan_Buku_Mutasi_Stok_" . date('Ymd_His') . ".xlsx";
-    $title = "LAPORAN BUKU MUTASI & AUDIT TRAIL STOK";
+
+    $typeSuffix = '';
+    $titleSuffix = '';
+    $itemLabel = 'Deskripsi Barang';
+    if ($itemType === 'GIMMICK') {
+        $typeSuffix = '_Gimmick';
+        $titleSuffix = ' GIMMICK';
+        $itemLabel = 'Deskripsi Gimmick';
+    } elseif ($itemType === 'PACKAGING') {
+        $typeSuffix = '_Kemas';
+        $titleSuffix = ' KEMAS';
+        $itemLabel = 'Deskripsi Kemas';
+    }
+
+    $filename = "Laporan_Buku_Mutasi_Stok{$typeSuffix}_" . date('Ymd_His') . ".xlsx";
+    $title = "LAPORAN BUKU MUTASI & AUDIT TRAIL STOK{$titleSuffix}";
 
     $headers = [
         'No',
         'Waktu Mutasi',
+        'Kategori',
         'Tipe Mutasi',
         'No. Referensi',
         'Item No',
-        'Deskripsi Kemas',
+        $itemLabel,
         'Lokasi Rak',
         'Stok Sebelum',
         'Perubahan (+/-)',
@@ -958,11 +974,12 @@ if ($type === 'mutations') {
         'Petugas PIC'
     ];
 
-    $colWidths = [6, 20, 16, 20, 15, 36, 14, 14, 16, 16, 32, 18];
+    $colWidths = [6, 20, 14, 16, 20, 15, 36, 14, 14, 16, 16, 32, 18];
     $rows = [];
 
     $sql = "
         SELECT sm.*, 
+               COALESCE(m.item_type, 'PACKAGING') as material_item_type,
                m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location,
                u.name as user_name, u.username as user_username
         FROM stock_mutations sm
@@ -971,6 +988,12 @@ if ($type === 'mutations') {
         WHERE 1=1
     ";
     $params = [];
+
+    if ($itemType === 'GIMMICK') {
+        $sql .= " AND m.item_type = 'GIMMICK'";
+    } elseif ($itemType === 'PACKAGING') {
+        $sql .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+    }
 
     if (!empty($mutationType) && $mutationType !== 'ALL') {
         $sql .= " AND sm.type = ?";
@@ -1013,9 +1036,12 @@ if ($type === 'mutations') {
         elseif (in_array($r['type'], ['TRANSFER_OUT', 'TRANSFER_IN', 'STOCK_TRANSFER', 'TRANSFER_LOCATION', 'RACK_MOVEMENT', 'MOVEMENT', 'TRANSFER'])) $typeLabel = 'STOCK TRANSFER';
         elseif ($r['type'] === 'VAS_OUTBOUND') $typeLabel = 'VAS DISPOSAL';
 
+        $catLabel = ($r['material_item_type'] === 'GIMMICK') ? 'GIMMICK' : 'KEMAS';
+
         $rows[] = [
             $no++,
             formatExportDate($r['created_at']),
+            $catLabel,
             $typeLabel,
             $r['reference_no'],
             $r['material_code'] ?: '-',

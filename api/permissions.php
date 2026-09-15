@@ -117,10 +117,22 @@ $MENUS_CATALOG = [
         'description' => 'Monitoring serah terima tugas antar shift (foto, catatan, progress status).'
     ],
     [
+        'key' => 'mutations_kemas',
+        'label' => 'History Mutasi Kemas',
+        'icon' => 'inventory_2',
+        'description' => 'Buku audit trail kronologis pergerakan mutasi stok Kemas / Packaging.'
+    ],
+    [
+        'key' => 'mutations_gimmick',
+        'label' => 'History Mutasi Gimmick',
+        'icon' => 'redeem',
+        'description' => 'Buku audit trail kronologis pergerakan mutasi stok Gimmick / Merchandise.'
+    ],
+    [
         'key' => 'mutations',
-        'label' => 'Audit Mutasi Stok',
+        'label' => 'Audit Mutasi Stok (Semua)',
         'icon' => 'history',
-        'description' => 'Buku audit trail kronologis pergerakan stok keluar dan masuk.'
+        'description' => 'Buku audit trail kronologis pergerakan stok keluar dan masuk keseluruhan.'
     ],
     [
         'key' => 'users',

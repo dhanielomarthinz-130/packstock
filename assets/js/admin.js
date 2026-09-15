@@ -298,7 +298,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
 
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
 
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -310,7 +310,12 @@ function switchAdminTab(tabName, updateUrl = true) {
     }
   });
 
-  const activeTab = document.getElementById('tab-' + tabName);
+  let actualTabId = tabName;
+  if (tabName === 'mutations_kemas' || tabName === 'mutations_gimmick') {
+    actualTabId = 'mutations';
+  }
+
+  const activeTab = document.getElementById('tab-' + actualTabId);
   const activeNavId = tabName === 'history' ? (historySourceTab || 'inventory') : tabName;
   const activeNav = document.getElementById('nav-' + activeNavId);
   if (activeTab) activeTab.classList.remove('hidden');
@@ -352,6 +357,8 @@ function switchAdminTab(tabName, updateUrl = true) {
     consumable_requests: 'Persetujuan & Permintaan Consumable (Fulfillment)',
     tasks: 'Manajemen Penugasan Operator (Task Dispatch)',
     handover: 'Monitoring Serah Terima Tugas & Handover Shift',
+    mutations_kemas: 'Buku Mutasi & Audit Trail Stok Kemas (Packaging)',
+    mutations_gimmick: 'Buku Mutasi & Audit Trail Stok Gimmick (Merchandise / Hadiah)',
     mutations: 'Buku Mutasi & Audit Trail Stok',
     users: 'Manajemen User & Role',
     permissions: 'Otorisasi & Pengaturan Hak Akses Menu',
@@ -430,7 +437,15 @@ function switchAdminTab(tabName, updateUrl = true) {
     loadTasks();
     initBulkTaskTable();
   }
-  if (tabName === 'mutations') { loadMutations(true); }
+  if (tabName === 'mutations_kemas') {
+    setMutationCategoryFilter('PACKAGING', false);
+    loadMutations(true);
+  } else if (tabName === 'mutations_gimmick') {
+    setMutationCategoryFilter('GIMMICK', false);
+    loadMutations(true);
+  } else if (tabName === 'mutations') {
+    loadMutations(true);
+  }
   if (tabName === 'users') { loadUsers(); }
   if (tabName === 'permissions') { loadPermissionsModule(); }
   if (tabName === 'maintenance') { loadDatabaseStats(); }
@@ -6305,34 +6320,63 @@ async function handleOutboundTableSubmit(e) {
 
 // 10. STOCK MUTATIONS AUDIT TRAIL
 let allMutationsData = [];
+let currentMutationCategory = 'PACKAGING'; // 'PACKAGING', 'GIMMICK', or 'ALL'
+
+function setMutationCategoryFilter(cat, reload = true) {
+  currentMutationCategory = cat;
+
+  // Update button active state styling
+  ['PACKAGING', 'GIMMICK', 'ALL'].forEach(c => {
+    const btn = document.getElementById('mutationBtn-' + c);
+    if (btn) {
+      if (c === cat) {
+        btn.className = 'mutation-cat-btn px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 bg-white text-blue-700 shadow-xs border border-slate-200 cursor-pointer';
+      } else {
+        btn.className = 'mutation-cat-btn px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer';
+      }
+    }
+  });
+
+  const activeLabel = document.getElementById('mutationActiveLabel');
+  const exportLabel = document.getElementById('mutationExportBtnLabel');
+  if (cat === 'PACKAGING') {
+    if (activeLabel) activeLabel.innerText = 'Menampilkan: Mutasi Stok Kemas';
+    if (exportLabel) exportLabel.innerText = 'Export Mutasi Kemas (.xlsx)';
+  } else if (cat === 'GIMMICK') {
+    if (activeLabel) activeLabel.innerText = 'Menampilkan: Mutasi Stok Gimmick';
+    if (exportLabel) exportLabel.innerText = 'Export Mutasi Gimmick (.xlsx)';
+  } else {
+    if (activeLabel) activeLabel.innerText = 'Menampilkan: Semua Mutasi Stok';
+    if (exportLabel) exportLabel.innerText = 'Export Semua Mutasi (.xlsx)';
+  }
+
+  if (reload) {
+    loadMutations(true);
+  }
+}
 
 async function loadMutations(force = false) {
   const tbody = document.getElementById('mutationsTableBody');
   if (!tbody) return;
 
-  // If already loaded in memory and not force refreshed, render instantly in 0ms!
-  if (allMutationsData.length > 0 && !force) {
-    renderMutationsTable();
-    return;
-  }
-
   tbody.innerHTML = `
     <tr>
-      <td colspan="7" class="p-8 text-center text-slate-400 text-xs font-semibold">
+      <td colspan="9" class="p-8 text-center text-slate-400 text-xs font-semibold">
         <span class="material-symbols-outlined text-[28px] animate-spin text-emerald-600">progress_activity</span>
-        <p class="mt-2 text-slate-600">Memuat data buku mutasi stok...</p>
+        <p class="mt-2 text-slate-600">Memuat data buku mutasi stok (${currentMutationCategory === 'GIMMICK' ? 'Gimmick' : (currentMutationCategory === 'PACKAGING' ? 'Kemas' : 'Semua')})...</p>
       </td>
     </tr>
   `;
 
-  const res = await App.fetchJson('../api/mutations.php?action=list&limit=200');
+  const itemTypeParam = encodeURIComponent(currentMutationCategory);
+  const res = await App.fetchJson(`../api/mutations.php?action=list&item_type=${itemTypeParam}&limit=500`);
   if (res.success && res.data) {
     allMutationsData = res.data;
     renderMutationsTable();
   } else {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="p-8 text-center text-rose-500 text-xs font-medium">
+        <td colspan="9" class="p-8 text-center text-rose-500 text-xs font-medium">
           <p>Gagal memuat catatan mutasi.</p>
         </td>
       </tr>
@@ -6372,9 +6416,9 @@ function renderMutationsTable() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="p-8 text-center text-slate-400 text-xs font-medium">
+        <td colspan="9" class="p-8 text-center text-slate-400 text-xs font-medium">
           <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">history</span>
-          <p>Tidak ada rekaman audit mutasi stok yang sesuai kriteria.</p>
+          <p>Tidak ada rekaman audit mutasi stok yang sesuai kriteria (${currentMutationCategory === 'GIMMICK' ? 'Gimmick' : (currentMutationCategory === 'PACKAGING' ? 'Kemas' : 'Semua')}).</p>
         </td>
       </tr>
     `;
@@ -6392,9 +6436,17 @@ function renderMutationsTable() {
       typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">TASK PICKING</span>';
     } else if (m.type === 'ADJUSTMENT') {
       typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">ADJUSTMENT</span>';
+    } else if (m.type === 'INITIAL_IMPORT') {
+      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-200">STOK AWAL</span>';
+    } else if (m.type === 'TRANSFER_OUT' || m.type === 'TRANSFER_IN' || m.type === 'STOCK_TRANSFER') {
+      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">STOCK TRANSFER</span>';
     } else {
-      typeBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">INITIAL</span>';
+      typeBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">${escapeHtml(m.type)}</span>`;
     }
+
+    const catBadge = (m.material_item_type === 'GIMMICK') 
+      ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-200">GIMMICK</span>'
+      : '<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-800 border border-blue-200">KEMAS</span>';
 
     const changeClass = isPositive ? 'text-emerald-600 font-bold' : (m.qty_change < 0 ? 'text-rose-600 font-bold' : 'text-slate-600');
     const changePrefix = isPositive ? '+' : '';
@@ -6402,12 +6454,14 @@ function renderMutationsTable() {
     return `
       <tr class="hover:bg-slate-50 border-b border-slate-100">
         <td class="p-3 text-slate-600 whitespace-nowrap">${App.formatDate(m.created_at)}</td>
+        <td class="p-3 text-center whitespace-nowrap">${catBadge}</td>
         <td class="p-3 whitespace-nowrap">${typeBadge}</td>
         <td class="p-3 font-mono font-bold text-slate-800">${escapeHtml(m.reference_no || '-')}</td>
         <td class="p-3">
           <p class="font-bold text-slate-900">${escapeHtml(m.material_name || '-')}</p>
-          <p class="text-[10px] text-slate-400 font-mono">${escapeHtml(m.material_code || '-')} • ${escapeHtml(m.rack_location || '-')}</p>
+          <p class="text-[10px] text-slate-400 font-mono">${escapeHtml(m.material_code || '-')}</p>
         </td>
+        <td class="p-3 text-slate-600 font-mono text-xs">${escapeHtml(m.rack_location || '-')}</td>
         <td class="p-3 text-center ${changeClass}">${changePrefix}${App.formatNumber(m.qty_change)} ${escapeHtml(m.material_unit || 'Pcs')}</td>
         <td class="p-3 text-center font-bold text-slate-900">${App.formatNumber(m.stock_after)} ${escapeHtml(m.material_unit || 'Pcs')}</td>
         <td class="p-3 text-slate-500 max-w-xs truncate" title="${escapeHtml(m.notes || '')}">
@@ -6423,7 +6477,7 @@ function exportMutationsExcel() {
   const search = (document.getElementById('mutationSearchInput')?.value || '').trim();
   const type = document.getElementById('mutationTypeFilter')?.value || 'ALL';
   const date = (document.getElementById('mutationDateFilter')?.value || '').trim();
-  let url = `export.php?type=mutations&mutation_type=${encodeURIComponent(type)}`;
+  let url = `export.php?type=mutations&item_type=${encodeURIComponent(currentMutationCategory)}&mutation_type=${encodeURIComponent(type)}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (date) url += `&date=${encodeURIComponent(date)}`;
   window.location.href = url;
@@ -6460,6 +6514,8 @@ async function applyMyPermissions() {
       outbound: 'nav-outbound',
       consumable_requests: 'nav-consumable_requests',
       handover: 'nav-handover',
+      mutations_kemas: 'nav-mutations_kemas',
+      mutations_gimmick: 'nav-mutations_gimmick',
       mutations: 'nav-mutations',
       users: 'nav-users',
       permissions: 'nav-permissions',

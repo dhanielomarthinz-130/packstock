@@ -154,12 +154,19 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="sidebar-text truncate">Handover Shift</span>
           </button>
 
-          <?php if (Auth::isSuperAdmin()): ?>
-          <!-- 9. Audit Mutasi Stok -->
-          <button onclick="switchAdminTab('mutations')" id="nav-mutations" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Audit Mutasi Stok">
-            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">history_edu</span>
-            <span class="sidebar-text truncate">Audit Mutasi Stok</span>
+          <?php if (Auth::isAdmin()): ?>
+          <!-- 9. History Mutasi Stok Kemas -->
+          <button onclick="switchAdminTab('mutations_kemas')" id="nav-mutations_kemas" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Kemas (Packaging)">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">inventory_2</span>
+            <span class="sidebar-text truncate">Mutasi Stok Kemas</span>
+          </button>
+
+          <!-- 10. History Mutasi Stok Gimmick -->
+          <button onclick="switchAdminTab('mutations_gimmick')" id="nav-mutations_gimmick" 
+            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Gimmick (Merchandise / Hadiah)">
+            <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">redeem</span>
+            <span class="sidebar-text truncate">Mutasi Stok Gimmick</span>
           </button>
           <?php endif; ?>
         </div>
@@ -4036,6 +4043,31 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- ================= 6. TAB: LOG MUTASI STOK ================= -->
       <div id="tab-mutations" class="hidden space-y-4">
+        <!-- Header Pill Filter: Kemas vs Gimmick vs Semua -->
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200">
+            <button type="button" id="mutationBtn-PACKAGING" onclick="setMutationCategoryFilter('PACKAGING')" class="mutation-cat-btn px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 bg-white text-blue-700 shadow-xs border border-slate-200 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+              <span>Mutasi Stok Kemas</span>
+            </button>
+            <button type="button" id="mutationBtn-GIMMICK" onclick="setMutationCategoryFilter('GIMMICK')" class="mutation-cat-btn px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">redeem</span>
+              <span>Mutasi Stok Gimmick</span>
+            </button>
+            <button type="button" id="mutationBtn-ALL" onclick="setMutationCategoryFilter('ALL')" class="mutation-cat-btn px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-white/60 cursor-pointer">
+              <span class="material-symbols-outlined text-[18px]">history_edu</span>
+              <span>Semua Mutasi</span>
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs font-medium text-slate-500">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-semibold" id="mutationActiveBadge">
+              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              <span id="mutationActiveLabel">Menampilkan: Mutasi Stok Kemas</span>
+            </span>
+          </div>
+        </div>
+
         <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2 flex-1">
             <div class="relative flex-1 min-w-[180px] max-w-md">
@@ -4065,7 +4097,7 @@ require_once __DIR__ . '/../includes/header.php';
           <div class="flex flex-wrap items-center gap-2 shrink-0">
             <button type="button" onclick="exportMutationsExcel()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Export Buku Mutasi ke File Excel (.xlsx)">
               <span class="material-symbols-outlined text-[18px]">table_chart</span>
-              <span>Export Mutasi</span>
+              <span id="mutationExportBtnLabel">Export Mutasi Excel</span>
             </button>
             <?php if (Auth::isAdmin()): ?>
             <button type="button" onclick="openGoogleSheetsSyncModal('mutations', false, this)" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Sync Seluruh Mutasi Stok ke Google Sheet">
@@ -4082,12 +4114,14 @@ require_once __DIR__ . '/../includes/header.php';
               <thead class="thead-emerald text-[11px] font-extrabold uppercase tracking-wider text-white border-b border-emerald-700">
                 <tr>
                   <th class="p-3 border-r border-white/20">Waktu</th>
+                  <th class="p-3 border-r border-white/20 text-center">Kategori</th>
                   <th class="p-3 border-r border-white/20">Tipe Mutasi</th>
                   <th class="p-3 border-r border-white/20">No. Referensi</th>
-                  <th class="p-3 border-r border-white/20">Material</th>
+                  <th class="p-3 border-r border-white/20">Deskripsi Item / SKU</th>
+                  <th class="p-3 border-r border-white/20">Lokasi Rak</th>
                   <th class="p-3 text-center border-r border-white/20 font-mono">Perubahan (+/-)</th>
                   <th class="p-3 text-center border-r border-white/20 font-mono font-black">Sisa Stok</th>
-                  <th class="p-3">Keterangan</th>
+                  <th class="p-3">Keterangan / PIC</th>
                 </tr>
               </thead>
               <tbody id="mutationsTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
