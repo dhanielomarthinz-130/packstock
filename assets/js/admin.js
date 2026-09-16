@@ -304,7 +304,7 @@ function switchAdminTab(tabName, updateUrl = true) {
     window.location.hash = tabName;
   }
 
-  const tabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
+  const tabs = ['dashboard', 'counting_progress', 'rack_map', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
 
   tabs.forEach(t => {
     const el = document.getElementById('tab-' + t);
@@ -346,6 +346,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   const titles = {
     dashboard: 'Dashboard Monitoring Stok & Lapangan',
     counting_progress: 'Dashboard Live Progress Counting (Dynamic Count & Stock Opname)',
+    rack_map: 'Map Rack Storage (Visualisasi Peta Denah & Status Rak Gudang)',
     inventory: 'Master Stok Kemas & Stok Akhir',
     gimmick: 'Katalog & Kontrol Stok Gimmick (Barang Promosi & Hadiah)',
     reorder_alerts: 'Reorder Kemas & Rekomendasi PO (Lead Time 1 Minggu)',
@@ -376,6 +377,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   // Refresh tab specific data immediately on click
   if (tabName === 'dashboard') { loadDashboardStockSummary(); loadStats(true); }
   if (tabName === 'counting_progress') { loadCountingProgressDashboard(); }
+  if (tabName === 'rack_map') { loadAdminRackMap(); }
   if (tabName === 'inventory') { loadMaterials(); }
   if (tabName === 'gimmick') { loadGimmickStock(); loadGimmickStats(); }
   if (tabName === 'reorder_alerts') { loadReorderAlerts(); }
@@ -6608,6 +6610,7 @@ async function applyMyPermissions() {
     const menuNavMap = {
       dashboard: 'nav-dashboard',
       counting_progress: 'nav-counting_progress',
+      rack_map: 'nav-rack_map',
       inventory: 'nav-inventory',
       gimmick: 'nav-gimmick',
       reorder_alerts: 'nav-reorder_alerts',
@@ -15817,9 +15820,388 @@ async function handleOutboundBarcodeScan(e) {
   }
 }
 
+// =========================================================================
+// MAP RACK STORAGE DASHBOARD MODULE (KEMAS & GIMMICK)
+// =========================================================================
+let currentRackMapCategory = 'PACKAGING'; // 'PACKAGING' (Kemas) or 'GIMMICK'
+let currentRackStatusFilter = 'ALL';      // 'ALL', 'FILLED', 'EMPTY'
+let allRackMapData = null;
 
+async function loadAdminRackMap() {
+  const grid = document.getElementById('rackMapGrid');
+  const refreshIcon = document.getElementById('iconRefreshRackMap');
+  if (refreshIcon) refreshIcon.classList.add('animate-spin');
 
+  if (grid) {
+    grid.innerHTML = `
+      <div class="col-span-full py-16 text-center text-slate-400 space-y-2">
+        <span class="material-symbols-outlined text-[32px] animate-spin text-indigo-600">progress_activity</span>
+        <p class="text-xs font-semibold">Memuat data lokasi rak ${currentRackMapCategory === 'PACKAGING' ? 'Kemas' : 'Gimmick'}...</p>
+      </div>
+    `;
+  }
 
+  try {
+    const res = await App.fetchJson(`../api/stats.php?action=rack_map&item_type=${currentRackMapCategory}`);
+    if (refreshIcon) refreshIcon.classList.remove('animate-spin');
 
+    if (res.success) {
+      allRackMapData = res;
+      updateRackMapSummary(res);
+      filterRackMapCards();
+    } else {
+      if (grid) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-rose-500 space-y-2">
+            <span class="material-symbols-outlined text-[36px]">error</span>
+            <p class="text-xs font-bold">${res.message || 'Gagal memuat data peta rak.'}</p>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+    if (grid) {
+      grid.innerHTML = `
+        <div class="col-span-full py-12 text-center text-rose-500 space-y-2">
+          <span class="material-symbols-outlined text-[36px]">wifi_off</span>
+          <p class="text-xs font-bold">Koneksi terputus saat memuat peta rak.</p>
+        </div>
+      `;
+    }
+  }
+}
 
+function updateRackMapSummary(data) {
+  const racks = data.racks || [];
+  const totalSlots = racks.length;
+  let filledSlots = 0;
+  let emptySlots = 0;
+  let totalUnits = 0;
 
+  racks.forEach(r => {
+    if (r.has_stock) {
+      filledSlots++;
+    } else {
+      emptySlots++;
+    }
+    totalUnits += (r.total_qty || 0);
+  });
+
+  const filledPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+  const emptyPct  = totalSlots > 0 ? Math.round((emptySlots / totalSlots) * 100) : 0;
+
+  // KPI Elements
+  const elTotalSlots  = document.getElementById('kpiRackTotalSlots');
+  const elFilledSlots = document.getElementById('kpiRackFilledSlots');
+  const elFilledPct   = document.getElementById('kpiRackFilledPct');
+  const elEmptySlots  = document.getElementById('kpiRackEmptySlots');
+  const elEmptyPct    = document.getElementById('kpiRackEmptyPct');
+  const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
+
+  if (elTotalSlots)  elTotalSlots.innerText  = totalSlots.toLocaleString();
+  if (elFilledSlots) elFilledSlots.innerText = filledSlots.toLocaleString();
+  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}% Terisi`;
+  if (elEmptySlots)  elEmptySlots.innerText  = emptySlots.toLocaleString();
+  if (elEmptyPct)    elEmptyPct.innerText    = `${emptyPct}% Slot Siap Diisi`;
+  if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
+
+  // Tab Badge counts
+  if (currentRackMapCategory === 'PACKAGING') {
+    const badgeKemas = document.getElementById('badgeRackTabKemasCount');
+    if (badgeKemas) badgeKemas.innerText = totalSlots;
+  } else {
+    const badgeGimmick = document.getElementById('badgeRackTabGimmickCount');
+    if (badgeGimmick) badgeGimmick.innerText = totalSlots;
+  }
+
+  // Filter count labels
+  const elCountAll    = document.getElementById('countFilterAll');
+  const elCountFilled = document.getElementById('countFilterFilled');
+  const elCountEmpty  = document.getElementById('countFilterEmpty');
+
+  if (elCountAll)    elCountAll.innerText    = totalSlots;
+  if (elCountFilled) elCountFilled.innerText = filledSlots;
+  if (elCountEmpty)  elCountEmpty.innerText  = emptySlots;
+
+  // Generic / non-rack items
+  const noLocSection = document.getElementById('sectionNoLocationRacks');
+  const noLocBadge   = document.getElementById('badgeNoLocationCount');
+  const noLocList    = document.getElementById('noLocationItemsList');
+  const noLocItems   = data.no_location_items || [];
+
+  if (noLocItems.length > 0) {
+    if (noLocSection) noLocSection.classList.remove('hidden');
+    if (noLocBadge) noLocBadge.innerText = `${noLocItems.length} SKU`;
+    if (noLocList) {
+      noLocList.innerHTML = noLocItems.map(item => `
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-bold text-slate-500">${escapeHtml(item.code || '-')}</span>
+            <span class="text-xs font-mono font-black ${item.current_stock > 0 ? 'text-emerald-700' : 'text-rose-600'}">
+              ${parseFloat(item.current_stock || 0).toLocaleString()} ${escapeHtml(item.unit || 'Pcs')}
+            </span>
+          </div>
+          <p class="text-xs font-bold text-slate-800 line-clamp-1">${escapeHtml(item.name || '-')}</p>
+          <p class="text-[10px] text-slate-400 font-medium">Kat: ${escapeHtml(item.category || '-')}</p>
+        </div>
+      `).join('');
+    }
+  } else {
+    if (noLocSection) noLocSection.classList.add('hidden');
+  }
+}
+
+function switchRackMapCategory(category) {
+  if (currentRackMapCategory === category) return;
+  currentRackMapCategory = category;
+
+  const btnKemas   = document.getElementById('btnRackTabKemas');
+  const btnGimmick = document.getElementById('btnRackTabGimmick');
+
+  if (category === 'PACKAGING') {
+    if (btnKemas) {
+      btnKemas.className = 'px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer bg-[#262363] text-white shadow-xs';
+    }
+    if (btnGimmick) {
+      btnGimmick.className = 'px-4 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+    }
+  } else {
+    if (btnGimmick) {
+      btnGimmick.className = 'px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs';
+    }
+    if (btnKemas) {
+      btnKemas.className = 'px-4 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+    }
+  }
+
+  loadAdminRackMap();
+}
+
+function setRackStatusFilter(status) {
+  currentRackStatusFilter = status;
+
+  const btnAll    = document.getElementById('btnRackFilterAll');
+  const btnFilled = document.getElementById('btnRackFilterFilled');
+  const btnEmpty  = document.getElementById('btnRackFilterEmpty');
+
+  const activeCls   = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-800 text-white shadow-2xs cursor-pointer';
+  const inactiveCls = 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 cursor-pointer';
+
+  if (btnAll)    btnAll.className    = status === 'ALL'    ? activeCls : inactiveCls;
+  if (btnFilled) btnFilled.className = status === 'FILLED' ? 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-600 text-white shadow-2xs cursor-pointer' : 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 cursor-pointer';
+  if (btnEmpty)  btnEmpty.className  = status === 'EMPTY'  ? 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-rose-600 text-white shadow-2xs cursor-pointer' : 'px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 cursor-pointer';
+
+  filterRackMapCards();
+}
+
+function filterRackMapCards() {
+  if (!allRackMapData || !allRackMapData.racks) return;
+
+  const searchInput = document.getElementById('rackMapSearchInput');
+  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+  const grid = document.getElementById('rackMapGrid');
+  if (!grid) return;
+
+  const filtered = allRackMapData.racks.filter(r => {
+    // Status filter
+    if (currentRackStatusFilter === 'FILLED' && !r.has_stock) return false;
+    if (currentRackStatusFilter === 'EMPTY' && r.has_stock) return false;
+
+    // Search query
+    if (query) {
+      const matchRack = (r.rack || '').toLowerCase().includes(query);
+      const matchItems = (r.items || []).some(item => 
+        (item.name || '').toLowerCase().includes(query) || 
+        (item.code || '').toLowerCase().includes(query) ||
+        (item.category || '').toLowerCase().includes(query)
+      );
+      if (!matchRack && !matchItems) return false;
+    }
+
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full py-16 text-center text-slate-400 space-y-2 bg-white rounded-2xl border border-slate-200 p-8">
+        <span class="material-symbols-outlined text-[42px] text-slate-300">shelves</span>
+        <p class="text-sm font-bold text-slate-700">Tidak ada lokasi rak yang sesuai filter</p>
+        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau status filter rak di atas.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(r => {
+    const isFilled = r.has_stock;
+    const totalQty = parseFloat(r.total_qty || 0);
+    const skuCount = r.item_count || 0;
+    const firstItem = (r.items && r.items[0]) ? r.items[0].name : '';
+    const unit = (r.items && r.items[0] && r.items[0].unit) ? r.items[0].unit : 'Pcs';
+    const rackEsc = escapeHtml(r.rack || '-');
+
+    if (isFilled) {
+      // FILLED RACK CARD (CLEAN WHITE & EMERALD BORDER)
+      return `
+        <div onclick="showRackMapDetail('${encodeURIComponent(r.rack)}')" 
+          class="bg-white border-2 border-emerald-300 hover:border-emerald-600 rounded-2xl p-3 shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer relative flex flex-col justify-between group overflow-hidden select-none">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+
+          <div class="space-y-1.5 pt-0.5">
+            <!-- Header: Location Code & Badge -->
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-mono font-black text-xs text-slate-900 tracking-tight truncate group-hover:text-emerald-700 transition-colors" title="${rackEsc}">
+                ${rackEsc}
+              </span>
+              <span class="px-1.5 py-0.2 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 shrink-0">
+                TERISI
+              </span>
+            </div>
+
+            <!-- Qty Display -->
+            <div class="pt-1">
+              <p class="font-mono font-black text-base lg:text-lg text-emerald-700 leading-tight">
+                ${Math.round(totalQty).toLocaleString()}
+                <span class="text-[10px] font-normal text-slate-500">${escapeHtml(unit)}</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Bottom: SKU info -->
+          <div class="pt-2 border-t border-slate-100 mt-2 flex items-center justify-between text-[10px] text-slate-400 font-medium">
+            <span class="truncate font-semibold text-slate-600">${skuCount} SKU</span>
+            <span class="material-symbols-outlined text-[14px] text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all">chevron_right</span>
+          </div>
+        </div>
+      `;
+    } else {
+      // EMPTY RACK CARD (PROMINENT RED / ROSE COLOR)
+      return `
+        <div onclick="showRackMapDetail('${encodeURIComponent(r.rack)}')" 
+          class="bg-gradient-to-b from-rose-50 to-rose-100/70 border-2 border-rose-400 hover:border-rose-600 rounded-2xl p-3 shadow-xs hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer relative flex flex-col justify-between group overflow-hidden select-none">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-red-600"></div>
+
+          <div class="space-y-1.5 pt-0.5">
+            <!-- Header: Location Code & RED BADGE -->
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-mono font-black text-xs text-rose-950 tracking-tight truncate" title="${rackEsc}">
+                ${rackEsc}
+              </span>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-2xs shrink-0 animate-pulse">
+                KOSONG
+              </span>
+            </div>
+
+            <!-- Qty Display (0 in red) -->
+            <div class="pt-1">
+              <p class="font-mono font-black text-base lg:text-lg text-rose-700 leading-tight">
+                0
+                <span class="text-[10px] font-bold text-rose-500">Pcs</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Bottom: Slot Status -->
+          <div class="pt-2 border-t border-rose-200 mt-2 flex items-center justify-between text-[10px] text-rose-700 font-bold">
+            <span class="flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+              <span>Siap Diisi</span>
+            </span>
+            <span class="material-symbols-outlined text-[14px] text-rose-400 group-hover:text-rose-700 group-hover:translate-x-0.5 transition-all">chevron_right</span>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function showRackMapDetail(encodedRack) {
+  const rackName = decodeURIComponent(encodedRack);
+  if (!allRackMapData || !allRackMapData.racks) return;
+
+  const rack = allRackMapData.racks.find(r => r.rack === rackName);
+  if (!rack) return;
+
+  const modal = document.getElementById('modalRackDetail');
+  const title = document.getElementById('modalRackTitle');
+  const subtitle = document.getElementById('modalRackSubtitle');
+  const statusBadge = document.getElementById('modalRackStatusBadge');
+  const badgeIcon = document.getElementById('modalRackBadgeIcon');
+  const totalQtyEl = document.getElementById('modalRackTotalQty');
+  const skuCountEl = document.getElementById('modalRackSkuCount');
+  const tbody = document.getElementById('modalRackItemsTableBody');
+
+  if (title) title.innerText = rack.rack;
+  if (subtitle) {
+    subtitle.innerText = rack.has_stock 
+      ? `Slot rak aktif terisi ${rack.item_count} SKU (${currentRackMapCategory === 'PACKAGING' ? 'Kemas' : 'Gimmick'})`
+      : 'Slot rak dalam kondisi kosong (Qty = 0), siap ditempati';
+  }
+
+  if (statusBadge) {
+    if (rack.has_stock) {
+      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200';
+      statusBadge.innerText = 'TERISI (ADA STOK)';
+    } else {
+      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs';
+      statusBadge.innerText = 'KOSONG (0 PCS)';
+    }
+  }
+
+  if (badgeIcon) {
+    badgeIcon.className = rack.has_stock 
+      ? 'w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs'
+      : 'w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs';
+  }
+
+  if (totalQtyEl) totalQtyEl.innerText = Math.round(rack.total_qty || 0).toLocaleString();
+  if (skuCountEl) skuCountEl.innerText = `${rack.item_count || 0} SKU`;
+
+  if (tbody) {
+    const items = rack.items || [];
+    if (items.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-6 text-center text-rose-500 font-bold text-xs">
+            Tidak ada item di slot rak ini (Kosong).
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = items.map(item => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-800">${escapeHtml(item.code || '-')}</td>
+          <td class="py-2.5 px-3 font-bold text-slate-900">${escapeHtml(item.name || '-')}</td>
+          <td class="py-2.5 px-3 text-slate-500">${escapeHtml(item.category || '-')}</td>
+          <td class="py-2.5 px-3 text-right font-mono font-black ${item.current_stock > 0 ? 'text-emerald-700' : 'text-rose-600'}">
+            ${parseFloat(item.current_stock || 0).toLocaleString()}
+          </td>
+          <td class="py-2.5 px-3 text-slate-600 font-semibold">${escapeHtml(item.unit || 'Pcs')}</td>
+        </tr>
+      `).join('');
+    }
+  }
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeRackDetailModal() {
+  const modal = document.getElementById('modalRackDetail');
+  if (modal) modal.classList.add('hidden');
+}
+
+function toggleNoLocationAccordion() {
+  const body = document.getElementById('bodyNoLocationAccordion');
+  const icon = document.getElementById('iconNoLocationChevron');
+  if (!body) return;
+
+  const isHidden = body.classList.contains('hidden');
+  if (isHidden) {
+    body.classList.remove('hidden');
+    if (icon) icon.style.transform = 'rotate(180deg)';
+  } else {
+    body.classList.add('hidden');
+    if (icon) icon.style.transform = 'rotate(0deg)';
+  }
+}

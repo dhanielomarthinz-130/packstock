@@ -8,6 +8,91 @@ $pdo = Database::getConnection();
 $action = $_GET['action'] ?? 'stats';
 
 try {
+    if ($action === 'rack_map') {
+        // Return all materials grouped by rack_location for Map Rack view
+        $itemType = strtoupper(trim($_GET['item_type'] ?? 'ALL')); // PACKAGING, GIMMICK, ALL
+
+        $sql = "
+            SELECT
+                m.id,
+                m.code,
+                m.name,
+                m.unit,
+                m.rack_location,
+                m.current_stock,
+                m.min_stock,
+                m.category,
+                m.item_type
+            FROM materials m
+            WHERE m.is_active = 1
+        ";
+        $params = [];
+
+        if ($itemType === 'GIMMICK') {
+            $sql .= " AND m.item_type = 'GIMMICK'";
+        } elseif ($itemType === 'PACKAGING') {
+            $sql .= " AND (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+        }
+
+        $sql .= " ORDER BY m.rack_location ASC, m.name ASC";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Group by rack_location
+        $racks = [];
+        $noLocationItems = [];
+
+        foreach ($rows as $row) {
+            $rack = trim($row['rack_location'] ?? '');
+            $item = [
+                'id'            => (int)$row['id'],
+                'code'          => $row['code'],
+                'name'          => $row['name'],
+                'unit'          => $row['unit'],
+                'current_stock' => (float)$row['current_stock'],
+                'min_stock'     => (float)$row['min_stock'],
+                'category'      => $row['category'],
+                'item_type'     => $row['item_type'] ?: 'PACKAGING',
+            ];
+
+            if (empty($rack) || $rack === '-') {
+                $noLocationItems[] = $item;
+            } else {
+                if (!isset($racks[$rack])) {
+                    $racks[$rack] = [
+                        'rack'       => $rack,
+                        'items'      => [],
+                        'total_qty'  => 0,
+                        'item_count' => 0,
+                        'has_stock'  => false,
+                    ];
+                }
+                $racks[$rack]['items'][]    = $item;
+                $racks[$rack]['total_qty'] += (float)$row['current_stock'];
+                $racks[$rack]['item_count']++;
+                if ((float)$row['current_stock'] > 0) {
+                    $racks[$rack]['has_stock'] = true;
+                }
+            }
+        }
+
+        // Sort racks naturally by location name (e.g. B1-A-01-001, B1-A-01-002, ...)
+        usort($racks, function($a, $b) {
+            return strnatcasecmp($a['rack'], $b['rack']);
+        });
+
+        echo json_encode([
+            'success'          => true,
+            'racks'            => array_values($racks),
+            'no_location_items'=> $noLocationItems,
+            'total_racks'      => count($racks),
+            'total_items'      => count($rows),
+        ]);
+        exit;
+    }
+
     if ($action === 'stock_summary') {
         $filterType = $_GET['filter_type'] ?? 'date'; // 'date', 'week', 'range', 'month', 'all'
         $search     = trim($_GET['search'] ?? '');

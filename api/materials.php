@@ -95,6 +95,126 @@ if ($action === 'gimmick_stats') {
     exit;
 }
 
+// 0.25 RACK STORAGE MAP (Map Denah Rak Gudang Kemas & Gimmick)
+if ($action === 'rack_map') {
+    $itemType = strtoupper(trim($_GET['item_type'] ?? 'PACKAGING'));
+    if (!in_array($itemType, ['PACKAGING', 'GIMMICK', 'ALL'])) {
+        $itemType = 'PACKAGING';
+    }
+
+    $whereClause = "";
+    $params = [];
+    if ($itemType === 'GIMMICK') {
+        $whereClause = "WHERE m.item_type = 'GIMMICK'";
+    } elseif ($itemType === 'PACKAGING') {
+        $whereClause = "WHERE (m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = '')";
+    } else {
+        $whereClause = "WHERE 1=1";
+    }
+
+    $whereClause .= " AND m.rack_location IS NOT NULL AND TRIM(m.rack_location) != '' AND m.rack_location != '-'";
+
+    $query = "
+        SELECT 
+            m.id,
+            m.code,
+            m.name,
+            m.category,
+            m.unit,
+            m.rack_location,
+            m.current_stock,
+            m.min_stock,
+            m.item_type,
+            m.barcode,
+            m.sap_code
+        FROM materials m
+        {$whereClause}
+        ORDER BY m.rack_location ASC, m.name ASC
+    ";
+
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Group materials by rack_location
+    $racksMap = [];
+    foreach ($materials as $m) {
+        $rack = trim($m['rack_location']);
+        if (!isset($racksMap[$rack])) {
+            $racksMap[$rack] = [
+                'rack_name'   => $rack,
+                'total_qty'   => 0.0,
+                'total_sku'   => 0,
+                'unit'        => $m['unit'] ?: 'Pcs',
+                'is_frozen'   => false,
+                'status'      => 'EMPTY',
+                'items'       => []
+            ];
+        }
+
+        $stock = (float)$m['current_stock'];
+        $racksMap[$rack]['total_qty'] += $stock;
+        $racksMap[$rack]['total_sku'] += 1;
+        if (!empty($m['is_frozen'])) {
+            $racksMap[$rack]['is_frozen'] = true;
+        }
+
+        $racksMap[$rack]['items'][] = [
+            'id'            => (int)$m['id'],
+            'code'          => $m['code'] ?: '-',
+            'name'          => $m['name'],
+            'category'      => $m['category'] ?: '-',
+            'unit'          => $m['unit'] ?: 'Pcs',
+            'current_stock' => $stock,
+            'item_type'     => $m['item_type'] ?: 'PACKAGING',
+            'barcode'       => $m['barcode'] ?: '',
+            'sap_code'      => $m['sap_code'] ?: '',
+            'is_frozen'     => !empty($m['is_frozen'])
+        ];
+    }
+
+    // Determine status per rack
+    $racksList = [];
+    $totalOccupied = 0;
+    $totalEmpty = 0;
+    $totalStock = 0.0;
+
+    foreach ($racksMap as $rackName => &$rData) {
+        $rData['total_qty'] = round($rData['total_qty'], 2);
+        if ($rData['total_qty'] <= 0) {
+            $rData['status'] = 'EMPTY';
+            $totalEmpty++;
+        } else {
+            $rData['status'] = 'OCCUPIED';
+            $totalOccupied++;
+        }
+        $totalStock += $rData['total_qty'];
+        $racksList[] = $rData;
+    }
+
+    // Natural sort by rack name (so B1-A-01-002 comes before B1-A-01-010)
+    usort($racksList, function($a, $b) {
+        return strnatcasecmp($a['rack_name'], $b['rack_name']);
+    });
+
+    $totalRacks = count($racksList);
+    $occupancyRate = $totalRacks > 0 ? round(($totalOccupied / $totalRacks) * 100, 1) : 0;
+
+    echo json_encode([
+        'success' => true,
+        'item_type' => $itemType,
+        'summary' => [
+            'total_racks'     => $totalRacks,
+            'occupied_racks'  => $totalOccupied,
+            'empty_racks'     => $totalEmpty,
+            'occupancy_rate'  => $occupancyRate,
+            'total_stock'     => round($totalStock, 2)
+        ],
+        'data' => $racksList
+    ]);
+    exit;
+}
+
 // 0.3 GET MATERIAL BATCHES (Breakdown Exp Date, Batch No, Lokasi & Qty)
 if ($action === 'get_batches' || $action === 'suggest_batches') {
     $materialId = (int)($_GET['material_id'] ?? 0);

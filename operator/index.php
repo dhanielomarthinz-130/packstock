@@ -410,8 +410,15 @@ require_once __DIR__ . '/../includes/header.php';
             <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-blue-700 transition-colors">Transfer Lokasi</h5>
           </div>
 
-          <!-- PLACEHOLDER TILE (agar grid simetris 3 kolom) -->
-          <div class="flex flex-col items-center text-center py-4 px-2 rounded-2xl relative bg-transparent">
+          <!-- 9. MAP RACK -->
+          <div onclick="switchOpTab('rack_map')" 
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-cyan-200">
+            <div class="relative mb-2.5">
+              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-700 text-white flex items-center justify-center shadow-md shadow-cyan-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
+                <span class="material-symbols-outlined text-[26px]">grid_view</span>
+              </div>
+            </div>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-cyan-700 transition-colors">Map Rack</h5>
           </div>
 
         </div>
@@ -434,6 +441,102 @@ require_once __DIR__ . '/../includes/header.php';
         <?php endif; ?>
       </div>
 
+
+      <!-- ========================================================================= -->
+      <!-- 0.1 SCREEN: MAP RACK STORAGE (VISUALISASI RAK GUDANG - MOBILE) -->
+      <!-- ========================================================================= -->
+      <div id="op-tab-rack_map" class="hidden space-y-3.5 animate-fade-in">
+        <!-- Screen Back Bar -->
+        <div class="flex items-center justify-between bg-white p-2.5 rounded-2xl border border-slate-200 shadow-xs">
+          <button type="button" onclick="switchOpTab('home')" class="flex items-center gap-1 text-slate-700 hover:text-blue-800 bg-slate-100 hover:bg-blue-50 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Menu Utama</span>
+          </button>
+
+          <div class="text-right">
+            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Map Rack Storage</h3>
+            <span class="text-[10px] text-indigo-700 font-semibold">Layout Denah Rak Fisik</span>
+          </div>
+        </div>
+
+        <!-- 2 Main Tabs: Kemas & Gimmick (Segmented Switcher) -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/80 rounded-2xl border border-slate-200 text-xs font-bold shadow-2xs">
+          <button type="button" id="btnOpRackTabKemas" onclick="switchOpRackCategory('PACKAGING')" 
+            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-[#262363] text-white shadow-xs transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[17px]">inventory_2</span>
+            <span>📦 Kemas</span>
+            <span id="badgeOpRackKemasCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white leading-none">0</span>
+          </button>
+
+          <button type="button" id="btnOpRackTabGimmick" onclick="switchOpRackCategory('GIMMICK')" 
+            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-[17px]">card_giftcard</span>
+            <span>🎁 Gimmick</span>
+            <span id="badgeOpRackGimmickCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-300 text-slate-700 leading-none">0</span>
+          </button>
+        </div>
+
+        <!-- KPI Quick Metric Strip (Mobile) -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 text-center shadow-2xs">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block">Total Rak</span>
+            <span id="opKpiTotalSlots" class="text-base font-black text-slate-900 font-mono block mt-0.5">0</span>
+          </div>
+          <div class="bg-white p-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/20 text-center shadow-2xs">
+            <span class="text-[9px] uppercase font-bold text-emerald-700 block">Terisi</span>
+            <span id="opKpiFilledSlots" class="text-base font-black text-emerald-700 font-mono block mt-0.5">0</span>
+          </div>
+          <div class="bg-rose-50 p-2.5 rounded-2xl border-2 border-rose-300 text-center shadow-2xs">
+            <span class="text-[9px] uppercase font-bold text-rose-800 block">Kosong (0)</span>
+            <span id="opKpiEmptySlots" class="text-base font-black text-rose-700 font-mono block mt-0.5">0</span>
+          </div>
+        </div>
+
+        <!-- Filter Pills & Search Box -->
+        <div class="space-y-2 bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+            <input type="text" id="opRackSearchInput" oninput="filterOpRackCards()" placeholder="Cari Kode Rak / Nama SKU..." 
+              class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:bg-white focus:border-indigo-600">
+          </div>
+
+          <div class="grid grid-cols-3 gap-1.5 text-[11px] font-bold">
+            <button type="button" id="btnOpFilterAll" onclick="setOpRackStatusFilter('ALL')" 
+              class="py-1.5 rounded-xl bg-slate-800 text-white text-center cursor-pointer">
+              Semua (<span id="opCountFilterAll">0</span>)
+            </button>
+            <button type="button" id="btnOpFilterFilled" onclick="setOpRackStatusFilter('FILLED')" 
+              class="py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-center cursor-pointer">
+              Terisi (<span id="opCountFilterFilled">0</span>)
+            </button>
+            <button type="button" id="btnOpFilterEmpty" onclick="setOpRackStatusFilter('EMPTY')" 
+              class="py-1.5 rounded-xl bg-rose-50 text-rose-800 border border-rose-200 text-center cursor-pointer">
+              Kosong (<span id="opCountFilterEmpty">0</span>)
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="flex items-center justify-between px-1 text-[10px] text-slate-500 font-medium">
+          <span class="flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span>Terisi</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+            <span class="text-rose-700 font-bold">Kosong (Warna Merah)</span>
+          </span>
+          <span class="italic text-slate-400">Ketuk rak untuk detail SKU</span>
+        </div>
+
+        <!-- Rack Map Mobile Grid -->
+        <div id="opRackMapGrid" class="grid grid-cols-2 gap-2.5 pb-6">
+          <div class="col-span-full py-12 text-center text-slate-400 space-y-1">
+            <span class="material-symbols-outlined text-[28px] animate-spin text-indigo-600">progress_activity</span>
+            <p class="text-xs">Memuat peta rak...</p>
+          </div>
+        </div>
+      </div>
 
       <!-- ========================================================================= -->
       <!-- 1. SCREEN: TUGAS PENGAMBILAN PACKAGING (PICKING TASK & OUTBOUND HISTORY) -->
@@ -2265,6 +2368,48 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- ================= MODAL DETAIL RAK (MOBILE OPERATOR) ================= -->
+<div id="modalOpRackDetail" class="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-xs hidden items-center justify-center p-4">
+  <div class="bg-white rounded-3xl max-w-sm w-full p-4 shadow-2xl border border-slate-200 space-y-3 animate-scale-up max-h-[85vh] flex flex-col">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <div id="opModalBadgeIcon" class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold">
+          <span class="material-symbols-outlined text-[18px]">shelves</span>
+        </div>
+        <div>
+          <h3 id="opModalRackTitle" class="font-black text-slate-900 text-sm font-mono leading-tight">-</h3>
+          <span id="opModalStatusBadge" class="text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800">TERISI</span>
+        </div>
+      </div>
+      <button type="button" onclick="closeOpRackModal()" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-2 text-center text-xs">
+      <div class="p-2 bg-slate-50 rounded-xl border border-slate-200">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block">Total Qty</span>
+        <span id="opModalTotalQty" class="text-base font-black text-slate-900 font-mono">0</span>
+      </div>
+      <div class="p-2 bg-slate-50 rounded-xl border border-slate-200">
+        <span class="text-[9px] uppercase font-bold text-slate-400 block">Jumlah SKU</span>
+        <span id="opModalSkuCount" class="text-base font-black text-slate-900 font-mono">0</span>
+      </div>
+    </div>
+
+    <!-- Items List -->
+    <div class="overflow-y-auto flex-1 space-y-2 pr-0.5 max-h-[45vh]" id="opModalItemsList">
+      <!-- Dynamic via JS -->
+    </div>
+
+    <button type="button" onclick="closeOpRackModal()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 active:scale-95 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer">
+      Tutup
+    </button>
   </div>
 </div>
 

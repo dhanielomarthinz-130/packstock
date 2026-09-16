@@ -131,7 +131,7 @@ function switchOpTab(tabName) {
 
   _lastOpTab = currentOpTab;
   currentOpTab = tabName;
-  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover', 'location_transfer'];
+  const allTabs = ['home', 'tasks', 'dynamic_count', 'opname', 'inbound', 'stock', 'request_consumable', 'history', 'handover', 'location_transfer', 'rack_map'];
 
   allTabs.forEach(t => {
     const el = document.getElementById('op-tab-' + t);
@@ -169,6 +169,7 @@ function switchOpTab(tabName) {
   if (tabName === 'request_consumable') initConsumableRequestView();
   if (tabName === 'history') renderCompletedHistory();
   if (tabName === 'handover') loadHandovers();
+  if (tabName === 'rack_map') loadOperatorRackMap();
 }
 
 
@@ -5961,6 +5962,260 @@ async function loadOperatorInventoryStats() {
 }
 
 
+// =========================================================================
+// MAP RACK STORAGE - OPERATOR MOBILE MODULE (KEMAS & GIMMICK)
+// =========================================================================
+let opCurrentRackCategory = 'PACKAGING'; // 'PACKAGING' (Kemas) or 'GIMMICK'
+let opCurrentRackFilter   = 'ALL';       // 'ALL', 'FILLED', 'EMPTY'
+let opAllRackData         = null;
 
+async function loadOperatorRackMap() {
+  const grid = document.getElementById('opRackMapGrid');
+  if (grid) {
+    grid.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400 space-y-1">
+        <span class="material-symbols-outlined text-[28px] animate-spin text-indigo-600">progress_activity</span>
+        <p class="text-xs font-semibold">Memuat data rak ${opCurrentRackCategory === 'PACKAGING' ? 'Kemas' : 'Gimmick'}...</p>
+      </div>
+    `;
+  }
 
+  try {
+    const baseUrl = typeof App !== 'undefined' && App.BASE_URL ? App.BASE_URL : '';
+    const res = await fetch(`${baseUrl}/api/stats.php?action=rack_map&item_type=${opCurrentRackCategory}`).then(r => r.json());
+
+    if (res.success) {
+      opAllRackData = res;
+      _updateOpRackKPI(res);
+      filterOpRackCards();
+    } else {
+      if (grid) {
+        grid.innerHTML = `
+          <div class="col-span-full py-10 text-center text-rose-500 space-y-1">
+            <span class="material-symbols-outlined text-[32px]">error</span>
+            <p class="text-xs font-bold">${res.message || 'Gagal memuat peta rak.'}</p>
+          </div>
+        `;
+      }
+    }
+  } catch (err) {
+    if (grid) {
+      grid.innerHTML = `
+        <div class="col-span-full py-10 text-center text-rose-500 space-y-1">
+          <span class="material-symbols-outlined text-[32px]">wifi_off</span>
+          <p class="text-xs font-bold">Koneksi gagal.</p>
+        </div>
+      `;
+    }
+  }
+}
+
+function _updateOpRackKPI(data) {
+  const racks = data.racks || [];
+  let total = racks.length, filled = 0, empty = 0;
+  racks.forEach(r => {
+    if (r.has_stock) filled++; else empty++;
+  });
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+  set('opKpiTotalSlots',  total);
+  set('opKpiFilledSlots', filled);
+  set('opKpiEmptySlots',  empty);
+
+  set('opCountFilterAll',    total);
+  set('opCountFilterFilled', filled);
+  set('opCountFilterEmpty',  empty);
+
+  // Tab badges
+  if (opCurrentRackCategory === 'PACKAGING') {
+    set('badgeOpRackKemasCount',   total);
+  } else {
+    set('badgeOpRackGimmickCount', total);
+  }
+}
+
+function switchOpRackCategory(category) {
+  if (opCurrentRackCategory === category) return;
+  opCurrentRackCategory = category;
+
+  const btnK = document.getElementById('btnOpRackTabKemas');
+  const btnG = document.getElementById('btnOpRackTabGimmick');
+
+  const activeCls   = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer';
+  const inactiveCls = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+
+  if (category === 'PACKAGING') {
+    if (btnK) btnK.className = `${activeCls} bg-[#262363] text-white`;
+    if (btnG) btnG.className = inactiveCls;
+  } else {
+    if (btnG) btnG.className = `${activeCls} bg-gradient-to-r from-pink-600 to-rose-600 text-white`;
+    if (btnK) btnK.className = inactiveCls;
+  }
+
+  loadOperatorRackMap();
+}
+
+function setOpRackStatusFilter(status) {
+  opCurrentRackFilter = status;
+
+  const btnAll    = document.getElementById('btnOpFilterAll');
+  const btnFilled = document.getElementById('btnOpFilterFilled');
+  const btnEmpty  = document.getElementById('btnOpFilterEmpty');
+
+  if (btnAll)    btnAll.className    = `py-1.5 rounded-xl text-[11px] font-bold text-center cursor-pointer ${status === 'ALL'    ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 border border-slate-200'}`;
+  if (btnFilled) btnFilled.className = `py-1.5 rounded-xl text-[11px] font-bold text-center cursor-pointer ${status === 'FILLED' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`;
+  if (btnEmpty)  btnEmpty.className  = `py-1.5 rounded-xl text-[11px] font-bold text-center cursor-pointer ${status === 'EMPTY'  ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-800 border border-rose-200'}`;
+
+  filterOpRackCards();
+}
+
+function filterOpRackCards() {
+  if (!opAllRackData || !opAllRackData.racks) return;
+
+  const searchEl = document.getElementById('opRackSearchInput');
+  const query    = (searchEl ? searchEl.value : '').trim().toLowerCase();
+  const grid     = document.getElementById('opRackMapGrid');
+  if (!grid) return;
+
+  const filtered = opAllRackData.racks.filter(r => {
+    if (opCurrentRackFilter === 'FILLED' && !r.has_stock) return false;
+    if (opCurrentRackFilter === 'EMPTY'  &&  r.has_stock) return false;
+    if (query) {
+      const matchRack  = (r.rack || '').toLowerCase().includes(query);
+      const matchItems = (r.items || []).some(i =>
+        (i.name || '').toLowerCase().includes(query) ||
+        (i.code || '').toLowerCase().includes(query)
+      );
+      if (!matchRack && !matchItems) return false;
+    }
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="col-span-full py-12 text-center text-slate-400 space-y-2">
+        <span class="material-symbols-outlined text-[32px] text-slate-300">shelves</span>
+        <p class="text-xs font-bold text-slate-600">Tidak ada rak yang sesuai filter.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(r => {
+    const qty      = parseFloat(r.total_qty || 0);
+    const skuCount = r.item_count || 0;
+    const unit     = (r.items && r.items[0] && r.items[0].unit) ? r.items[0].unit : 'Pcs';
+    const rackCode = (r.rack || '-').replace(/</g, '&lt;');
+
+    if (r.has_stock) {
+      // FILLED - green card
+      return `
+        <div onclick="showOpRackDetail('${encodeURIComponent(r.rack)}')"
+          class="bg-white border-2 border-emerald-300 rounded-2xl p-3 shadow-xs active:scale-95 transition-all cursor-pointer overflow-hidden relative select-none">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-400"></div>
+          <div class="flex items-center justify-between mb-1.5 pt-0.5">
+            <span class="font-mono font-black text-[11px] text-slate-900 truncate" title="${rackCode}">${rackCode}</span>
+            <span class="text-[8px] font-black px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 uppercase shrink-0">TERISI</span>
+          </div>
+          <p class="font-mono font-black text-lg text-emerald-700 leading-none">${Math.round(qty).toLocaleString()} <span class="text-[10px] font-normal text-slate-400">${unit}</span></p>
+          <p class="text-[10px] text-slate-500 mt-1.5 font-semibold">${skuCount} SKU &rsaquo;</p>
+        </div>
+      `;
+    } else {
+      // EMPTY - prominent red card
+      return `
+        <div onclick="showOpRackDetail('${encodeURIComponent(r.rack)}')"
+          class="bg-gradient-to-b from-rose-50 to-rose-100/70 border-2 border-rose-400 rounded-2xl p-3 shadow-xs active:scale-95 transition-all cursor-pointer overflow-hidden relative select-none">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-rose-500 to-red-500"></div>
+          <div class="flex items-center justify-between mb-1.5 pt-0.5">
+            <span class="font-mono font-black text-[11px] text-rose-950 truncate" title="${rackCode}">${rackCode}</span>
+            <span class="text-[8px] font-black px-1.5 py-0.5 rounded bg-rose-600 text-white uppercase animate-pulse shrink-0">KOSONG</span>
+          </div>
+          <p class="font-mono font-black text-lg text-rose-700 leading-none">0 <span class="text-[10px] font-normal text-rose-400">Pcs</span></p>
+          <p class="text-[10px] text-rose-700 mt-1.5 font-bold flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+            Siap Diisi
+          </p>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
+function showOpRackDetail(encodedRack) {
+  const rackName = decodeURIComponent(encodedRack);
+  if (!opAllRackData || !opAllRackData.racks) return;
+  const rack = opAllRackData.racks.find(r => r.rack === rackName);
+  if (!rack) return;
+
+  const modal    = document.getElementById('modalOpRackDetail');
+  const titleEl  = document.getElementById('opModalRackTitle');
+  const badgeEl  = document.getElementById('opModalStatusBadge');
+  const iconEl   = document.getElementById('opModalBadgeIcon');
+  const qtyEl    = document.getElementById('opModalTotalQty');
+  const skuEl    = document.getElementById('opModalSkuCount');
+  const listEl   = document.getElementById('opModalItemsList');
+
+  if (titleEl) titleEl.innerText = rack.rack;
+
+  if (badgeEl) {
+    if (rack.has_stock) {
+      badgeEl.className = 'text-[9px] font-black uppercase px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800';
+      badgeEl.innerText = 'TERISI';
+    } else {
+      badgeEl.className = 'text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-rose-600 text-white';
+      badgeEl.innerText = 'KOSONG (0 PCS)';
+    }
+  }
+
+  if (iconEl) {
+    iconEl.className = rack.has_stock
+      ? 'w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold'
+      : 'w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold';
+  }
+
+  if (qtyEl) qtyEl.innerText = Math.round(rack.total_qty || 0).toLocaleString();
+  if (skuEl) skuEl.innerText = `${rack.item_count || 0} SKU`;
+
+  if (listEl) {
+    const items = rack.items || [];
+    if (items.length === 0) {
+      listEl.innerHTML = `
+        <div class="py-6 text-center text-rose-500 space-y-1">
+          <span class="material-symbols-outlined text-[24px]">inventory</span>
+          <p class="text-xs font-bold">Rak ini kosong, belum ada item.</p>
+        </div>
+      `;
+    } else {
+      listEl.innerHTML = items.map(item => `
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-[10px] font-mono font-bold text-slate-500">${(item.code || '-').replace(/</g, '&lt;')}</p>
+            <p class="text-xs font-bold text-slate-900 truncate">${(item.name || '-').replace(/</g, '&lt;')}</p>
+            <p class="text-[10px] text-slate-400 font-medium">${(item.category || '-').replace(/</g, '&lt;')}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-sm font-black font-mono ${item.current_stock > 0 ? 'text-emerald-700' : 'text-rose-600'}">
+              ${parseFloat(item.current_stock || 0).toLocaleString()}
+            </p>
+            <p class="text-[10px] text-slate-400 font-medium">${(item.unit || 'Pcs').replace(/</g, '&lt;')}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+}
+
+function closeOpRackModal() {
+  const modal = document.getElementById('modalOpRackDetail');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+}
 

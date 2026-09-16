@@ -27,6 +27,12 @@ $MENUS_CATALOG = [
         'description' => 'Dashboard monitoring live progress hitung fisik Dynamic Count dan Stock Opname secara visual.'
     ],
     [
+        'key' => 'rack_map',
+        'label' => 'Map Rack Storage',
+        'icon' => 'grid_view',
+        'description' => 'Visualisasi denah layout rak gudang, status terisi (Qty) dan rak kosong dengan warna merah (Kemas & Gimmick).'
+    ],
+    [
         'key' => 'inventory',
         'label' => 'Stock Inventory',
         'icon' => 'shelves',
