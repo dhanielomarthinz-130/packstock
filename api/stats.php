@@ -24,7 +24,7 @@ try {
                 m.category,
                 m.item_type
             FROM materials m
-            WHERE m.is_active = 1
+            WHERE 1=1
         ";
         $params = [];
 
@@ -35,6 +35,7 @@ try {
         }
 
         $sql .= " ORDER BY m.rack_location ASC, m.name ASC";
+
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);

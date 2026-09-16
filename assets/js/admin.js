@@ -272,7 +272,7 @@ function handleUrlHashNavigation(updateUrl = false) {
   }
 
   const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
+  const validTabs = ['dashboard', 'counting_progress', 'rack_map', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
