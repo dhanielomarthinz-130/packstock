@@ -6172,6 +6172,70 @@ async function cancelOutboundTask(taskId) {
   }
 }
 
+async function confirmCancelTask(taskId, taskNo) {
+  if (!confirm(`Apakah Anda yakin ingin MEMBATALKAN tugas picking #${taskNo}?\n\nTugas yang dibatalkan tidak akan diproses oleh operator.`)) {
+    return;
+  }
+
+  try {
+    const res = await App.fetchJson('../api/tasks.php?action=cancel', {
+      method: 'POST',
+      body: JSON.stringify({ task_id: taskId })
+    });
+
+    if (res.success) {
+      App.toast(res.message || 'Tugas berhasil dibatalkan', 'success', 'Task Dibatalkan');
+      loadOutboundHistory();
+      if (typeof loadTasks === 'function') loadTasks();
+      if (typeof loadStats === 'function') loadStats();
+    } else {
+      App.toast(res.message || 'Gagal membatalkan tugas', 'error');
+    }
+  } catch (err) {
+    App.toast('Terjadi kesalahan: ' + err.message, 'error');
+  }
+}
+
+async function confirmDeleteOutbound(outboundNo, outboundType) {
+  const isTask = outboundType === 'TASK_PICKING';
+  const confirmMsg = isTask
+    ? `Apakah Anda yakin ingin MENGHAPUS riwayat pengeluaran task #${outboundNo}?\n\nPerhatian: Stok master material akan dikembalikan sesuai kuantitas yang dikeluarkan.`
+    : `Apakah Anda yakin ingin MENGHAPUS transaksi pengeluaran #${outboundNo}?\n\nPerhatian: Stok master material akan dikembalikan (+Qty) ke gudang.`;
+
+  if (!confirm(confirmMsg)) {
+    return;
+  }
+
+  try {
+    let res;
+    if (isTask) {
+      res = await App.fetchJson('../api/tasks.php?action=delete', {
+        method: 'POST',
+        body: JSON.stringify({ task_no: outboundNo })
+      });
+    } else {
+      res = await App.fetchJson('../api/outbound.php?action=delete', {
+        method: 'POST',
+        body: JSON.stringify({ outbound_no: outboundNo })
+      });
+    }
+
+    if (res.success) {
+      App.toast(res.message || `Pengeluaran #${outboundNo} berhasil dihapus & stok dikembalikan`, 'success', 'Berhasil Dihapus');
+      loadOutboundHistory();
+      if (typeof loadMaterials === 'function') loadMaterials();
+      if (typeof loadDashboardStockSummary === 'function') loadDashboardStockSummary();
+      if (typeof loadTasks === 'function') loadTasks();
+      if (typeof loadStats === 'function') loadStats();
+      if (typeof loadMutations === 'function') loadMutations(true);
+    } else {
+      App.toast(res.message || 'Gagal menghapus data pengeluaran', 'error');
+    }
+  } catch (err) {
+    App.toast('Terjadi kesalahan: ' + err.message, 'error');
+  }
+}
+
 async function reactivateOutboundTask(taskId) {
   const res = await App.fetchJson('../api/tasks.php?action=set_status', {
     method: 'POST',

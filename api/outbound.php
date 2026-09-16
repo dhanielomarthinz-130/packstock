@@ -529,13 +529,9 @@ if ($action === 'batch_create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-// 5. DELETE OUTBOUND TRANSACTION (Super Admin only)
+// 5. DELETE OUTBOUND TRANSACTION (Admin)
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!Auth::isSuperAdmin()) {
-        http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak menghapus data pengeluaran!']);
-        exit;
-    }
+    Auth::requireAdmin();
 
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $outboundNo = trim($input['outbound_no'] ?? '');
@@ -571,6 +567,19 @@ if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             ");
             $mutNotes = "Hapus Transaksi Outbound #{$outboundNo} (Stok dikembalikan +{$qty})";
             $stmtMut->execute([$matId, $qty, $currentStock, $newStock, $outboundNo, $mutNotes, Auth::id(), date('Y-m-d H:i:s')]);
+
+            // Revert batch stock if recorded
+            if (!empty($out['batch_no'])) {
+                recordBatchInbound($pdo, $matId, $out['batch_no'], $out['exp_date'] ?? null, $out['location'] ?? 'Gudang Besar', $qty, "Revert Outbound #{$outboundNo}");
+            }
+
+            // Revert VAS stock if it was a transfer to VAS
+            $destination = $out['destination'] ?? '';
+            $reason = $out['reason'] ?? '';
+            if (str_contains(strtolower($destination), 'vas') || str_contains(strtolower($reason), 'vas')) {
+                $stmtDownVas = $pdo->prepare("UPDATE materials SET vas_stock = GREATEST(0, COALESCE(vas_stock, 0) - ?) WHERE id = ?");
+                $stmtDownVas->execute([$qty, $matId]);
+            }
 
             $stmtDel = $pdo->prepare("DELETE FROM outbound_transactions WHERE outbound_no = ?");
             $stmtDel->execute([$outboundNo]);
