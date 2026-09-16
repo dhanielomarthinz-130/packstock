@@ -3845,10 +3845,16 @@ let opConsumablePhotos = [];
 let currentOpReqSubTab = 'form';
 
 async function initConsumableRequestView() {
-  if (typeof IS_INVENTORY_ROLE !== 'undefined' && IS_INVENTORY_ROLE && (typeof CURRENT_USER_ROLE === 'undefined' || (CURRENT_USER_ROLE !== 'admin' && CURRENT_USER_ROLE !== 'superadmin' && CURRENT_USER_ROLE !== 'teknisi'))) {
+  const isInventoryOnly = typeof IS_INVENTORY_ROLE !== 'undefined' && IS_INVENTORY_ROLE && (typeof CURRENT_USER_ROLE === 'undefined' || (CURRENT_USER_ROLE !== 'admin' && CURRENT_USER_ROLE !== 'superadmin' && CURRENT_USER_ROLE !== 'teknisi'));
+  const isFulfillmentOnly = typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY;
+
+  if (isInventoryOnly) {
     setOpReqType('GIMMICK');
-  } else {
+  } else if (isFulfillmentOnly) {
     setOpReqType('PACKAGING');
+  } else {
+    // Alur berurutan: reset form awal sehingga tombol tipe siap dipilih
+    resetOpReqFormSequence();
   }
   if (currentOpReqSubTab === 'history') {
     loadOperatorConsumableRequests();
@@ -3940,7 +3946,6 @@ function switchOpReqSubTab(subTab) {
     btnForm?.classList.remove('text-slate-600');
     btnHist?.classList.remove('bg-white', 'text-amber-900', 'shadow-xs');
     btnHist?.classList.add('text-slate-600');
-    populateOpReqMaterialSelect();
   } else {
     formView?.classList.add('hidden');
     histView?.classList.remove('hidden');
@@ -3952,8 +3957,58 @@ function switchOpReqSubTab(subTab) {
   }
 }
 
-let opReqActiveType = 'PACKAGING';
+let opReqActiveType = null;
 
+// Reset seluruh rangkaian alur form ke kondisi awal (Pilih Tipe)
+function resetOpReqFormSequence() {
+  const isSingleRole = (typeof IS_INVENTORY_ROLE !== 'undefined' && IS_INVENTORY_ROLE && (typeof CURRENT_USER_ROLE === 'undefined' || (CURRENT_USER_ROLE !== 'admin' && CURRENT_USER_ROLE !== 'superadmin' && CURRENT_USER_ROLE !== 'teknisi'))) || (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY);
+
+  const btnKemas = document.getElementById('btnOpReqTypePackaging');
+  const btnGimmick = document.getElementById('btnOpReqTypeGimmick');
+  const checkKemas = document.getElementById('opReqCheckPackaging');
+  const checkGimmick = document.getElementById('opReqCheckGimmick');
+  const brandContainer = document.getElementById('opReqBrandContainer');
+  const brandSelect = document.getElementById('opReqDestinationSelect');
+  const materialContainer = document.getElementById('opReqMaterialContainer');
+  const sel = document.getElementById('opReqMaterialSelect');
+  const badge = document.getElementById('opReqStockInfoBadge');
+  const qtyContainer = document.getElementById('opReqQtyContainer');
+  const qtyInp = document.getElementById('opReqQty');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
+  const warningBox = document.getElementById('opReqStockWarning');
+
+  if (isSingleRole) {
+    if (brandContainer) brandContainer.classList.remove('hidden');
+  } else {
+    opReqActiveType = null;
+    if (btnKemas) {
+      btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+    }
+    if (btnGimmick) {
+      btnGimmick.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+    }
+    if (checkKemas) checkKemas.classList.add('hidden');
+    if (checkGimmick) checkGimmick.classList.add('hidden');
+    if (brandContainer) brandContainer.classList.add('hidden');
+  }
+
+  if (brandSelect) brandSelect.value = '';
+  if (materialContainer) materialContainer.classList.add('hidden');
+  if (sel) {
+    sel.value = '';
+    if (typeof App.syncSearchableSelect === 'function') App.syncSearchableSelect(sel);
+  }
+  if (badge) badge.classList.add('hidden');
+  if (qtyContainer) qtyContainer.classList.add('hidden');
+  if (qtyInp) {
+    qtyInp.value = '';
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  }
+  if (warningBox) warningBox.classList.add('hidden');
+  if (addDraftContainer) addDraftContainer.classList.add('hidden');
+}
+
+// 1. Saat Klik Tipe -> Menampilkan Kolom Brand
 function setOpReqType(type) {
   opReqActiveType = (type === 'GIMMICK') ? 'GIMMICK' : 'PACKAGING';
 
@@ -3964,8 +4019,15 @@ function setOpReqType(type) {
   const label = document.getElementById('opReqMaterialTypeLabel');
   const titleEl = document.getElementById('opReqScreenTitle');
   const subtitleEl = document.getElementById('opReqScreenSubtitle');
+  const brandContainer = document.getElementById('opReqBrandContainer');
+  const brandSelect = document.getElementById('opReqDestinationSelect');
+  const materialContainer = document.getElementById('opReqMaterialContainer');
   const sel = document.getElementById('opReqMaterialSelect');
   const badge = document.getElementById('opReqStockInfoBadge');
+  const qtyContainer = document.getElementById('opReqQtyContainer');
+  const qtyInp = document.getElementById('opReqQty');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
+  const warningBox = document.getElementById('opReqStockWarning');
 
   if (opReqActiveType === 'GIMMICK') {
     if (btnGimmick) {
@@ -3977,9 +4039,9 @@ function setOpReqType(type) {
     if (checkGimmick) checkGimmick.classList.remove('hidden');
     if (checkKemas) checkKemas.classList.add('hidden');
 
-    if (label) label.innerText = 'Item Gimmick';
-    if (titleEl && (typeof IS_FULFILLMENT_ONLY === 'undefined' || !IS_FULFILLMENT_ONLY)) titleEl.innerText = 'Request Item Gimmick';
-    if (subtitleEl) subtitleEl.innerText = 'Form Permintaan Item Gimmick';
+    if (label) label.innerText = 'Gimmick';
+    if (titleEl && (typeof IS_FULFILLMENT_ONLY === 'undefined' || !IS_FULFILLMENT_ONLY)) titleEl.innerText = 'Request Gimmick';
+    if (subtitleEl) subtitleEl.innerText = 'Form Permintaan Gimmick';
   } else {
     if (btnKemas) {
       btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white';
@@ -3995,12 +4057,63 @@ function setOpReqType(type) {
     if (subtitleEl) subtitleEl.innerText = 'Form Permintaan Kemas';
   }
 
+  // Tampilkan Kolom Brand
+  if (brandContainer) {
+    brandContainer.classList.remove('hidden');
+  }
+
+  // Reset downstream fields ketika tipe diklik
+  if (brandSelect) {
+    brandSelect.value = '';
+  }
+  if (materialContainer) {
+    materialContainer.classList.add('hidden');
+  }
   if (sel) {
     sel.value = '';
+    if (typeof App.syncSearchableSelect === 'function') App.syncSearchableSelect(sel);
   }
   if (badge) badge.classList.add('hidden');
+  if (qtyContainer) qtyContainer.classList.add('hidden');
+  if (qtyInp) {
+    qtyInp.value = '';
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  }
+  if (warningBox) warningBox.classList.add('hidden');
+  if (addDraftContainer) addDraftContainer.classList.add('hidden');
+}
 
-  populateOpReqMaterialSelect();
+// 2. Saat Select Brand -> Menampilkan Kolom Item
+function handleOpReqBrandChange(selectEl) {
+  const brandVal = selectEl ? selectEl.value.trim() : '';
+  const materialContainer = document.getElementById('opReqMaterialContainer');
+  const qtyContainer = document.getElementById('opReqQtyContainer');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
+  const matSelect = document.getElementById('opReqMaterialSelect');
+  const qtyInp = document.getElementById('opReqQty');
+  const badge = document.getElementById('opReqStockInfoBadge');
+  const warningBox = document.getElementById('opReqStockWarning');
+
+  if (brandVal) {
+    if (materialContainer) materialContainer.classList.remove('hidden');
+    populateOpReqMaterialSelect();
+  } else {
+    if (materialContainer) materialContainer.classList.add('hidden');
+  }
+
+  // Reset downstream fields
+  if (matSelect) {
+    matSelect.value = '';
+    if (typeof App.syncSearchableSelect === 'function') App.syncSearchableSelect(matSelect);
+  }
+  if (badge) badge.classList.add('hidden');
+  if (qtyContainer) qtyContainer.classList.add('hidden');
+  if (qtyInp) {
+    qtyInp.value = '';
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  }
+  if (warningBox) warningBox.classList.add('hidden');
+  if (addDraftContainer) addDraftContainer.classList.add('hidden');
 }
 
 async function populateOpReqMaterialSelect() {
@@ -4025,7 +4138,7 @@ async function populateOpReqMaterialSelect() {
   }
 
   const currentVal = sel.value;
-  const placeholder = (opReqActiveType === 'GIMMICK') ? '-- Pilih Item Gimmick --' : '-- Pilih Kemas --';
+  const placeholder = (opReqActiveType === 'GIMMICK') ? '-- Pilih Gimmick --' : '-- Pilih Kemas --';
 
   sel.innerHTML = `<option value="">${placeholder}</option>` + filtered.map(m => {
     const code = App.escapeHtml(m.code || '');
@@ -4049,20 +4162,42 @@ async function populateOpReqMaterialSelect() {
   }
 }
 
+// 3. Saat Item di select -> Menampilkan Kolom Qty
 function handleOpReqMaterialSelectChange(sel) {
   const badge = document.getElementById('opReqStockInfoBadge');
   const stockVal = document.getElementById('opReqStockVal');
+  const qtyContainer = document.getElementById('opReqQtyContainer');
+  const qtyInp = document.getElementById('opReqQty');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
+  const warningBox = document.getElementById('opReqStockWarning');
+
   if (!sel || !sel.value) {
     if (badge) badge.classList.add('hidden');
-    validateOpReqQtyLive();
+    if (qtyContainer) qtyContainer.classList.add('hidden');
+    if (qtyInp) qtyInp.value = '';
+    if (addDraftContainer) addDraftContainer.classList.add('hidden');
+    if (warningBox) warningBox.classList.add('hidden');
     return;
   }
 
+  // Tampilkan Kolom Qty
+  if (qtyContainer) {
+    qtyContainer.classList.remove('hidden');
+  }
+  if (qtyInp) {
+    qtyInp.value = '';
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+    setTimeout(() => qtyInp.focus(), 60);
+  }
+  if (addDraftContainer) {
+    addDraftContainer.classList.add('hidden');
+  }
+
   const opt = sel.options[sel.selectedIndex];
-  const isFrozen = opt.getAttribute('data-frozen') === '1';
-  const stock = parseFloat(opt.getAttribute('data-stock') || 0);
-  const unit = opt.getAttribute('data-unit') || 'Pcs';
-  const rack = opt.getAttribute('data-rack') || '-';
+  const isFrozen = opt ? opt.getAttribute('data-frozen') === '1' : false;
+  const stock = parseFloat(opt?.getAttribute('data-stock') || 0);
+  const unit = opt?.getAttribute('data-unit') || 'Pcs';
+  const rack = opt?.getAttribute('data-rack') || '-';
 
   if (badge && stockVal) {
     if (isFrozen) {
@@ -4076,24 +4211,25 @@ function handleOpReqMaterialSelectChange(sel) {
   validateOpReqQtyLive();
 }
 
+// 4. Saat kolom Qty Terisi (> 0) maka akan menampilkan Tombol Masukan draft
 function validateOpReqQtyLive() {
   const sel = document.getElementById('opReqMaterialSelect');
   const qtyInp = document.getElementById('opReqQty');
   const warningBox = document.getElementById('opReqStockWarning');
   const warningText = document.getElementById('opReqStockWarningText');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
   const addBtn = document.getElementById('btnOpReqAddDraft');
 
   if (!sel || !qtyInp) return true;
 
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt || !sel.value) {
+  const enteredQty = parseFloat(qtyInp.value || 0);
+  const opt = (sel.selectedIndex >= 0) ? sel.options[sel.selectedIndex] : null;
+
+  if (!opt || !sel.value || isNaN(enteredQty) || enteredQty <= 0) {
     if (warningBox) warningBox.classList.add('hidden');
     qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
-    if (addBtn) {
-      addBtn.disabled = false;
-      addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-    }
-    return true;
+    if (addDraftContainer) addDraftContainer.classList.add('hidden');
+    return false;
   }
 
   const isFrozen = opt.getAttribute('data-frozen') === '1';
@@ -4101,7 +4237,6 @@ function validateOpReqQtyLive() {
   const stock = parseFloat(opt.getAttribute('data-stock') || 0);
   const unit = opt.getAttribute('data-unit') || 'Pcs';
   const name = opt.getAttribute('data-name') || 'Material';
-  const enteredQty = parseFloat(qtyInp.value || 0);
 
   if (isFrozen) {
     if (warningBox && warningText) {
@@ -4109,10 +4244,7 @@ function validateOpReqQtyLive() {
       warningBox.classList.remove('hidden');
     }
     qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
-    if (addBtn) {
-      addBtn.disabled = true;
-      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
+    if (addDraftContainer) addDraftContainer.classList.add('hidden');
     return false;
   }
 
@@ -4127,10 +4259,7 @@ function validateOpReqQtyLive() {
       warningBox.classList.remove('hidden');
     }
     qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
-    if (addBtn) {
-      addBtn.disabled = true;
-      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
+    if (addDraftContainer) addDraftContainer.classList.add('hidden');
     return false;
   }
 
@@ -4142,16 +4271,16 @@ function validateOpReqQtyLive() {
       warningBox.classList.remove('hidden');
     }
     qtyInp.classList.add('border-rose-500', 'bg-rose-50/50');
-    if (addBtn) {
-      addBtn.disabled = true;
-      addBtn.classList.add('opacity-50', 'cursor-not-allowed');
-    }
+    if (addDraftContainer) addDraftContainer.classList.add('hidden');
     return false;
   }
 
-  // Valid
+  // Valid! Tampilkan tombol Masukkan Draft
   if (warningBox) warningBox.classList.add('hidden');
   qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  if (addDraftContainer) {
+    addDraftContainer.classList.remove('hidden');
+  }
   if (addBtn) {
     addBtn.disabled = false;
     addBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -4159,19 +4288,28 @@ function validateOpReqQtyLive() {
   return true;
 }
 
+// 5. Masukkan Draft -> Selesai draft maka ulang lagi untuk pilih tipe
 function addConsumableDraftItem() {
+  const brandSel = document.getElementById('opReqDestinationSelect');
   const sel = document.getElementById('opReqMaterialSelect');
   const qtyInp = document.getElementById('opReqQty');
   const notesInp = document.getElementById('opReqItemNotes');
 
   if (!sel || !qtyInp) return;
 
+  const brandVal = brandSel ? brandSel.value.trim() : '';
   const materialId = parseInt(sel.value);
   const qty = App.parseNumber(qtyInp.value);
   const notes = notesInp ? notesInp.value.trim() : '';
 
+  if (!brandVal) {
+    App.toast('Silakan pilih Brand terlebih dahulu.', 'warning');
+    brandSel?.focus();
+    return;
+  }
+
   if (!materialId || materialId <= 0) {
-    const typeTxt = (opReqActiveType === 'GIMMICK') ? 'item gimmick' : 'kemas';
+    const typeTxt = (opReqActiveType === 'GIMMICK') ? 'gimmick' : 'kemas';
     App.toast(`Silakan pilih ${typeTxt} terlebih dahulu.`, 'warning');
     sel.focus();
     return;
@@ -4210,6 +4348,7 @@ function addConsumableDraftItem() {
   if (existingIdx >= 0) {
     opConsumableDraft[existingIdx].qty = +(opConsumableDraft[existingIdx].qty + qty).toFixed(3);
     if (notes) opConsumableDraft[existingIdx].notes = notes;
+    if (!opConsumableDraft[existingIdx].destination) opConsumableDraft[existingIdx].destination = brandVal;
   } else {
     opConsumableDraft.push({
       material_id: materialId,
@@ -4219,24 +4358,14 @@ function addConsumableDraftItem() {
       unit: itemUnit,
       qty: qty,
       item_type: itemType,
+      destination: brandVal,
+      brand: brandVal,
       notes: notes
     });
   }
 
-  // Reset input fields and clear material selection
-  qtyInp.value = '';
-  if (notesInp) notesInp.value = '';
-  sel.value = '';
-  sel.selectedIndex = 0;
-
-  const stockBadge = document.getElementById('opReqStockInfoBadge');
-  if (stockBadge) stockBadge.classList.add('hidden');
-
-  handleOpReqMaterialSelectChange(sel);
-  sel.dispatchEvent(new Event('change'));
-  if (typeof App.syncSearchableSelect === 'function') {
-    App.syncSearchableSelect(sel);
-  }
+  // Mengulang lagi dari awal untuk memilih tipe berikutnya
+  resetOpReqFormSequence();
 
   renderConsumableDraftList();
   App.toast(`${itemName} (+${App.formatNumber(qty)} ${itemUnit}) ditambahkan ke draft!`, 'success');
@@ -4267,6 +4396,7 @@ function renderConsumableDraftList() {
         <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200/80 flex items-center justify-between gap-2 shadow-2xs">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 flex-wrap">
+              ${item.destination ? `<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">${App.escapeHtml(item.destination)}</span>` : ''}
               ${item.item_type === 'GIMMICK' ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-300">GIMMICK</span>' : '<span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300">KEMAS</span>'}
               <span class="font-bold text-slate-900 text-xs truncate">${App.escapeHtml(item.name)}</span>
               <span class="text-[10px] text-amber-800 font-mono font-bold bg-amber-100/80 px-1.5 py-0.2 rounded border border-amber-300">${App.escapeHtml(item.code)}</span>
@@ -4299,7 +4429,15 @@ function removeConsumableDraftItem(idx) {
 
 async function handleConsumableRequestSubmit() {
   const destSelect = document.getElementById('opReqDestinationSelect');
-  const destination = destSelect ? destSelect.value.trim() : '';
+  let destination = destSelect ? destSelect.value.trim() : '';
+
+  // Jika form di-reset untuk input item selanjutnya, ambil brand dari draft item
+  if (!destination && opConsumableDraft.length > 0) {
+    const brands = Array.from(new Set(opConsumableDraft.map(i => i.destination || i.brand).filter(Boolean)));
+    if (brands.length > 0) {
+      destination = brands.join(', ');
+    }
+  }
 
   if (!destination) {
     App.toast('Silakan pilih Tujuan Brand / Line Produksi (HANASUI, FYNE, NCO, EOMMA, AFFILIATE)!', 'warning');

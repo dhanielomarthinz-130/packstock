@@ -931,35 +931,35 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Unified Card: Form Permintaan -->
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
             
-            <!-- 0. TAB PILIH TIPE REQUEST (Kemas vs Item Gimmick) -->
+            <!-- 0. TAB PILIH TIPE REQUEST (Kemas vs Gimmick) -->
             <?php if ($showKemasTab && $showGimmickTab): ?>
             <div>
               <label class="block font-bold text-slate-800 mb-1.5 text-xs flex items-center justify-between">
                 <span>Tipe Permintaan Material <span class="text-rose-500">*</span></span>
-                <span class="text-[10px] text-slate-500 font-semibold">Pilih Tab</span>
+                <span class="text-[10px] text-slate-500 font-semibold">Pilih Tipe</span>
               </label>
               <div class="grid grid-cols-2 gap-2">
                 <button type="button" id="btnOpReqTypePackaging" onclick="setOpReqType('PACKAGING')"
-                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white">
+                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300">
                   <span class="text-base">📦</span>
-                  <span>Request Kemas</span>
-                  <span id="opReqCheckPackaging" class="material-symbols-outlined text-[16px] ml-auto">check_circle</span>
+                  <span>Kemas</span>
+                  <span id="opReqCheckPackaging" class="material-symbols-outlined text-[16px] ml-auto hidden">check_circle</span>
                 </button>
                 <button type="button" id="btnOpReqTypeGimmick" onclick="setOpReqType('GIMMICK')"
                   class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300">
                   <span class="text-base">🎁</span>
-                  <span>Request Item Gimmick</span>
+                  <span>Gimmick</span>
                   <span id="opReqCheckGimmick" class="material-symbols-outlined text-[16px] ml-auto hidden">check_circle</span>
                 </button>
               </div>
             </div>
             <?php elseif ($showGimmickTab): ?>
-            <!-- Role Inventory: Tab Khusus Request Item Gimmick -->
+            <!-- Role Inventory: Tab Khusus Request Gimmick -->
             <div class="p-3 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-950 flex items-center justify-between shadow-2xs">
               <div class="flex items-center gap-2.5">
                 <div class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg shadow-xs">🎁</div>
                 <div>
-                  <span class="font-black text-xs block leading-tight text-purple-950">Tab Request Item Gimmick</span>
+                  <span class="font-black text-xs block leading-tight text-purple-950">Tab Request Gimmick</span>
                   <span class="text-[10px] text-purple-700 font-medium">Permintaan stok merchandise & gimmick untuk tim Inventory</span>
                 </div>
               </div>
@@ -983,12 +983,12 @@ require_once __DIR__ . '/../includes/header.php';
             <button type="button" id="btnOpReqTypeGimmick" class="hidden"></button>
             <?php endif; ?>
 
-            <!-- 1. Pilih Brand -->
-            <div>
+            <!-- 1. Pilih Brand (Muncul setelah Klik Tipe) -->
+            <div id="opReqBrandContainer" class="hidden transition-all duration-200">
               <label class="block font-bold text-slate-800 mb-1 text-xs flex items-center justify-between">
                 <span>Pilih Brand <span class="text-rose-500">*</span></span>
               </label>
-              <select id="opReqDestinationSelect" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors" data-no-search>
+              <select id="opReqDestinationSelect" onchange="handleOpReqBrandChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors" data-no-search>
                 <option value="">-- Pilih Brand --</option>
                 <option value="HANASUI">HANASUI</option>
                 <option value="FYNE">FYNE</option>
@@ -998,44 +998,41 @@ require_once __DIR__ . '/../includes/header.php';
               </select>
             </div>
 
-            <!-- Divider -->
-            <div class="border-t border-slate-100 pt-3 space-y-3">
+            <!-- 2. Pilih Kemas / Gimmick (Muncul setelah Pilih Brand) -->
+            <div id="opReqMaterialContainer" class="hidden transition-all duration-200 border-t border-slate-100 pt-3">
+              <label class="block font-bold text-slate-800 mb-1 text-xs">
+                Pilih <span id="opReqMaterialTypeLabel"><?= $isInventoryUser && !$isAdminUser ? 'Gimmick' : 'Kemas' ?></span> <span class="text-rose-500">*</span>
+              </label>
+              <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-[#262363]">
+                <option value="">-- Pilih <?= $isInventoryUser && !$isAdminUser ? 'Gimmick' : 'Kemas' ?> --</option>
+              </select>
+              <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
+                <span class="text-slate-600 font-medium">Sisa Stok di Gudang:</span>
+                <span id="opReqStockVal" class="font-mono font-black text-blue-950">0 Pcs</span>
+              </div>
+            </div>
 
-              <!-- 2. Pilih Kemas / Item Gimmick -->
+            <!-- 3. Qty & Tombol Tambah (Muncul berurutan: Qty saat Item dipilih, Tombol saat Qty terisi) -->
+            <div id="opReqQtyContainer" class="hidden transition-all duration-200 border-t border-slate-100 pt-3 space-y-3">
               <div>
                 <label class="block font-bold text-slate-800 mb-1 text-xs">
-                  Pilih <span id="opReqMaterialTypeLabel"><?= $isInventoryUser && !$isAdminUser ? 'Item Gimmick' : 'Kemas' ?></span> <span class="text-rose-500">*</span>
+                  Qty <span class="text-rose-500">*</span>
                 </label>
-                <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-[#262363]">
-                  <option value="">-- Pilih <?= $isInventoryUser && !$isAdminUser ? 'Item Gimmick' : 'Kemas' ?> --</option>
-                </select>
-                <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
-                  <span class="text-slate-600 font-medium">Sisa Stok di Gudang:</span>
-                  <span id="opReqStockVal" class="font-mono font-black text-blue-950">0 Pcs</span>
-                </div>
+                <input type="number" id="opReqQty" min="0.001" step="any" oninput="validateOpReqQtyLive()" placeholder="Masukkan jumlah qty..." class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-[#262363] transition-colors">
               </div>
 
-              <!-- 3. Qty & Tombol Tambah -->
-              <div class="space-y-1.5">
-                <div class="flex items-end gap-2">
-                  <div class="w-1/3">
-                    <label class="block font-bold text-slate-800 mb-1 text-xs">
-                      Qty <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="number" id="opReqQty" min="0.001" step="any" oninput="validateOpReqQtyLive()" placeholder="0" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono font-black text-center text-slate-900 outline-none focus:bg-white focus:border-[#262363] transition-colors">
-                  </div>
-                  <div class="w-2/3">
-                    <button type="button" id="btnOpReqAddDraft" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
-                      <span class="material-symbols-outlined text-[18px]">add_circle</span>
-                      <span>+ Masukkan Draft</span>
-                    </button>
-                  </div>
-                </div>
-                <!-- Real-time Validation Error Banner -->
-                <div id="opReqStockWarning" class="hidden p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold text-[11px] flex items-center gap-1.5 animate-scale-up">
-                  <span class="material-symbols-outlined text-[15px] text-rose-600 shrink-0">error</span>
-                  <span id="opReqStockWarningText"></span>
-                </div>
+              <!-- Tombol Masukkan Draft (Muncul saat Qty Terisi) -->
+              <div id="btnOpReqAddDraftContainer" class="hidden transition-all duration-200">
+                <button type="button" id="btnOpReqAddDraft" onclick="addConsumableDraftItem()" class="w-full py-2.5 bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 h-[38px] cursor-pointer">
+                  <span class="material-symbols-outlined text-[18px]">add_circle</span>
+                  <span>+ Masukkan Draft</span>
+                </button>
+              </div>
+
+              <!-- Real-time Validation Error Banner -->
+              <div id="opReqStockWarning" class="hidden p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-semibold text-[11px] flex items-center gap-1.5 animate-scale-up">
+                <span class="material-symbols-outlined text-[15px] text-rose-600 shrink-0">error</span>
+                <span id="opReqStockWarningText"></span>
               </div>
             </div>
 
