@@ -47,9 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentAdminTab === 'dashboard') loadStats(true);
     else if (currentAdminTab === 'counting_progress') loadCountingProgressDashboard();
     else if (currentAdminTab === 'reorder_alerts') loadReorderAlerts();
-    else if (currentAdminTab === 'tasks') loadTasks();
-    else if (currentAdminTab === 'inbound') loadInboundHistory();
-    else if (currentAdminTab === 'outbound') loadOutboundHistory();
+    else if (currentAdminTab === 'tasks') loadTasks(false, true);
+    else if (currentAdminTab === 'inbound') loadInboundHistory(false, true);
+    else if (currentAdminTab === 'outbound') {
+      const formContainer = document.getElementById('outboundFormContainer');
+      // Jangan jalankan refresh riwayat jika pengguna sedang mengisi form pengeluaran
+      if (!formContainer || formContainer.classList.contains('hidden')) {
+        loadOutboundHistory(false, true);
+      }
+    }
     else if (currentAdminTab === 'handover') loadAdminHandovers(true);
   }, 45000);
 });
@@ -2227,15 +2233,19 @@ function populateTaskOperators() {
 }
 
 // 4. TASKS LOADER & MONITOR
-async function loadTasks() {
+async function loadTasks(isManual = false, isSilent = false) {
   const filterStatus = document.getElementById('taskStatusFilter')?.value || 'ALL';
   const filterItemType = document.getElementById('taskItemTypeFilter')?.value || 'ALL';
   const filterPriority = document.getElementById('taskPriorityFilter')?.value || 'ALL';
   const filterDate = (document.getElementById('taskDateFilter')?.value || '').trim();
   const search = (document.getElementById('taskSearchInput')?.value || '').trim();
 
-  App.renderTableLoading('tasksTableBody', 9, 'Memuat daftar penugasan operator...');
-  App.renderTableLoading('dashboardTasksTable', 5, 'Memuat antrian tugas...');
+  const tbody = document.getElementById('tasksTableBody');
+  const hasExistingData = tbody && tbody.children.length > 0 && !tbody.querySelector('.animate-spin');
+  if (!isSilent && !hasExistingData) {
+    App.renderTableLoading('tasksTableBody', 9, 'Memuat daftar penugasan operator...');
+    App.renderTableLoading('dashboardTasksTable', 5, 'Memuat antrian tugas...');
+  }
 
   const query = new URLSearchParams({
     action: 'list',
@@ -2246,7 +2256,7 @@ async function loadTasks() {
     search
   });
 
-  const res = await App.fetchJson(`../api/tasks.php?${query.toString()}`);
+  const res = await App.fetchJson(`../api/tasks.php?${query.toString()}`, { isSilent: true });
   if (res.success) {
     allTasks = res.data;
     renderTasksTable(allTasks);
@@ -4822,15 +4832,26 @@ function recalcInboundTotalQty() {
   if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
-async function loadInboundHistory(isManual = false) {
+let inboundSearchTimeout = null;
+function debounceInboundSearch() {
+  clearTimeout(inboundSearchTimeout);
+  inboundSearchTimeout = setTimeout(() => {
+    loadInboundHistory(false, true);
+  }, 300);
+}
+
+async function loadInboundHistory(isManual = false, isSilent = false) {
   const tbody = document.getElementById('inboundHistoryTable');
   if (!tbody) return;
 
-  App.renderTableLoading(tbody, 8, 'Memuat riwayat barang masuk (inbound)...');
+  const hasExistingData = tbody.children.length > 0 && !tbody.querySelector('.animate-spin');
+  if (!isSilent && !hasExistingData) {
+    App.renderTableLoading(tbody, 8, 'Memuat riwayat barang masuk (inbound)...');
+  }
 
   const btnRefresh = document.getElementById('btnRefreshInbound');
   const icon = btnRefresh?.querySelector('.material-symbols-outlined');
-  if (icon) icon.classList.add('animate-spin');
+  if (icon && isManual) icon.classList.add('animate-spin');
 
   const search = document.getElementById('inboundSearchInput')?.value || '';
   const startDate = document.getElementById('inboundFromDateFilter')?.value || document.getElementById('inboundDateFilter')?.value || '';
@@ -4838,7 +4859,7 @@ async function loadInboundHistory(isManual = false) {
   const query = new URLSearchParams({ action: 'list', search, start_date: startDate, end_date: endDate, date: startDate, limit: 150 });
 
   try {
-    const res = await App.fetchJson(`../api/inbound.php?${query.toString()}`);
+    const res = await App.fetchJson(`../api/inbound.php?${query.toString()}`, { isSilent: true });
     if (res.success && res.data) {
       window._currentInboundList = res.data;
 
@@ -4870,7 +4891,7 @@ async function loadInboundHistory(isManual = false) {
   } catch (err) {
     if (isManual) App.toast('Gagal memuat data inbound: ' + err.message, 'error');
   } finally {
-    if (icon) {
+    if (icon && isManual) {
       setTimeout(() => icon.classList.remove('animate-spin'), 300);
     }
   }
@@ -5705,15 +5726,26 @@ function recalcOutboundTotalQty() {
   if (summaryEl) summaryEl.innerText = App.formatNumber(total);
 }
 
-async function loadOutboundHistory(isManual = false) {
+let outboundSearchTimeout = null;
+function debounceOutboundSearch() {
+  clearTimeout(outboundSearchTimeout);
+  outboundSearchTimeout = setTimeout(() => {
+    loadOutboundHistory(false, true);
+  }, 300);
+}
+
+async function loadOutboundHistory(isManual = false, isSilent = false) {
   const tbody = document.getElementById('outboundHistoryTable');
   if (!tbody) return;
 
-  App.renderTableLoading(tbody, 7, 'Memuat riwayat barang keluar (outbound)...');
+  const hasExistingData = tbody.children.length > 0 && !tbody.querySelector('.animate-spin');
+  if (!isSilent && !hasExistingData) {
+    App.renderTableLoading(tbody, 7, 'Memuat riwayat barang keluar (outbound)...');
+  }
 
   const btnRefresh = document.getElementById('btnRefreshOutbound');
   const icon = btnRefresh?.querySelector('.material-symbols-outlined');
-  if (icon) icon.classList.add('animate-spin');
+  if (icon && isManual) icon.classList.add('animate-spin');
 
   const search = document.getElementById('outboundSearchInput')?.value || '';
   const typeFilter = document.getElementById('outboundTypeFilter')?.value || 'ALL';
@@ -5723,7 +5755,7 @@ async function loadOutboundHistory(isManual = false) {
   const query = new URLSearchParams({ action: 'list', search, type: typeFilter, status: statusFilter, start_date: startDate, end_date: endDate, date: startDate, limit: 150 });
 
   try {
-    const res = await App.fetchJson(`../api/outbound.php?${query.toString()}`);
+    const res = await App.fetchJson(`../api/outbound.php?${query.toString()}`, { isSilent: true });
     if (res.success && res.data) {
       // Update KPI Metric Cards
       const totalEl = document.getElementById('outboundTotalQtyMetric');
@@ -5756,7 +5788,7 @@ async function loadOutboundHistory(isManual = false) {
   } catch (err) {
     if (isManual) App.toast('Gagal memuat data outbound: ' + err.message, 'error');
   } finally {
-    if (icon) {
+    if (icon && isManual) {
       setTimeout(() => icon.classList.remove('animate-spin'), 300);
     }
   }
