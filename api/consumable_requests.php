@@ -432,7 +432,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($items) || !is_array($items)) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Daftar item permintaan consumable masih kosong. Silakan pilih minimal 1 kemas.']);
+        echo json_encode(['success' => false, 'message' => 'Daftar item permintaan masih kosong. Silakan pilih minimal 1 item kemas atau gimmick.']);
         exit;
     }
 

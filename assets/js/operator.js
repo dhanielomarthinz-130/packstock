@@ -3845,7 +3845,11 @@ let opConsumablePhotos = [];
 let currentOpReqSubTab = 'form';
 
 async function initConsumableRequestView() {
-  await populateOpReqMaterialSelect();
+  if (typeof IS_INVENTORY_ROLE !== 'undefined' && IS_INVENTORY_ROLE && (typeof CURRENT_USER_ROLE === 'undefined' || (CURRENT_USER_ROLE !== 'admin' && CURRENT_USER_ROLE !== 'superadmin' && CURRENT_USER_ROLE !== 'teknisi'))) {
+    setOpReqType('GIMMICK');
+  } else {
+    setOpReqType('PACKAGING');
+  }
   if (currentOpReqSubTab === 'history') {
     loadOperatorConsumableRequests();
   }
@@ -3951,19 +3955,49 @@ function switchOpReqSubTab(subTab) {
 let opReqActiveType = 'PACKAGING';
 
 function setOpReqType(type) {
-  // Request Fulfillment hanya untuk Kemas (Packaging), tanpa Gimmick
-  opReqActiveType = 'PACKAGING';
+  opReqActiveType = (type === 'GIMMICK') ? 'GIMMICK' : 'PACKAGING';
 
+  const btnKemas = document.getElementById('btnOpReqTypePackaging');
+  const btnGimmick = document.getElementById('btnOpReqTypeGimmick');
+  const checkKemas = document.getElementById('opReqCheckPackaging');
+  const checkGimmick = document.getElementById('opReqCheckGimmick');
   const label = document.getElementById('opReqMaterialTypeLabel');
-  if (label) {
-    label.innerText = 'Kemas';
+  const titleEl = document.getElementById('opReqScreenTitle');
+  const subtitleEl = document.getElementById('opReqScreenSubtitle');
+  const sel = document.getElementById('opReqMaterialSelect');
+  const badge = document.getElementById('opReqStockInfoBadge');
+
+  if (opReqActiveType === 'GIMMICK') {
+    if (btnGimmick) {
+      btnGimmick.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-purple-700 border-purple-700 text-white';
+    }
+    if (btnKemas) {
+      btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+    }
+    if (checkGimmick) checkGimmick.classList.remove('hidden');
+    if (checkKemas) checkKemas.classList.add('hidden');
+
+    if (label) label.innerText = 'Item Gimmick';
+    if (titleEl && (typeof IS_FULFILLMENT_ONLY === 'undefined' || !IS_FULFILLMENT_ONLY)) titleEl.innerText = 'Request Item Gimmick';
+    if (subtitleEl) subtitleEl.innerText = 'Form Permintaan Item Gimmick';
+  } else {
+    if (btnKemas) {
+      btnKemas.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white';
+    }
+    if (btnGimmick) {
+      btnGimmick.className = 'p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300';
+    }
+    if (checkKemas) checkKemas.classList.remove('hidden');
+    if (checkGimmick) checkGimmick.classList.add('hidden');
+
+    if (label) label.innerText = 'Kemas';
+    if (titleEl) titleEl.innerText = (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) ? 'Request Fulfillments' : 'Request Kemas';
+    if (subtitleEl) subtitleEl.innerText = 'Form Permintaan Kemas';
   }
 
-  const sel = document.getElementById('opReqMaterialSelect');
   if (sel) {
     sel.value = '';
   }
-  const badge = document.getElementById('opReqStockInfoBadge');
   if (badge) badge.classList.add('hidden');
 
   populateOpReqMaterialSelect();
@@ -3982,11 +4016,16 @@ async function populateOpReqMaterialSelect() {
     }
   }
 
-  // Hanya tampilkan Kemas (Packaging), exclude Gimmick
-  let filtered = (materials || []).filter(m => m.item_type !== 'GIMMICK');
+  // Filter berdasarkan tipe aktif: GIMMICK vs PACKAGING (Kemas)
+  let filtered = [];
+  if (opReqActiveType === 'GIMMICK') {
+    filtered = (materials || []).filter(m => m.item_type === 'GIMMICK');
+  } else {
+    filtered = (materials || []).filter(m => m.item_type !== 'GIMMICK');
+  }
 
   const currentVal = sel.value;
-  const placeholder = '-- Pilih Kemas --';
+  const placeholder = (opReqActiveType === 'GIMMICK') ? '-- Pilih Item Gimmick --' : '-- Pilih Kemas --';
 
   sel.innerHTML = `<option value="">${placeholder}</option>` + filtered.map(m => {
     const code = App.escapeHtml(m.code || '');
@@ -4132,7 +4171,8 @@ function addConsumableDraftItem() {
   const notes = notesInp ? notesInp.value.trim() : '';
 
   if (!materialId || materialId <= 0) {
-    App.toast('Silakan pilih kemas terlebih dahulu.', 'warning');
+    const typeTxt = (opReqActiveType === 'GIMMICK') ? 'item gimmick' : 'kemas';
+    App.toast(`Silakan pilih ${typeTxt} terlebih dahulu.`, 'warning');
     sel.focus();
     return;
   }
@@ -4637,7 +4677,10 @@ async function loadOperatorConsumableRequests(isSilent = false) {
               ${(req.items || []).map(it => `
                 <div class="py-1.5 flex items-center justify-between gap-2 first:pt-0 last:pb-0">
                   <div class="min-w-0 flex-1">
-                    <p class="font-bold text-slate-800 text-[11px] truncate">${App.escapeHtml(it.material_name)}</p>
+                    <p class="font-bold text-slate-800 text-[11px] truncate">
+                      ${it.material_item_type === 'GIMMICK' ? '<span class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-300 mr-1">GIMMICK</span>' : '<span class="px-1.5 py-0.2 rounded text-[8px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300 mr-1">KEMAS</span>'}
+                      ${App.escapeHtml(it.material_name)}
+                    </p>
                     <p class="font-mono text-[9px] text-slate-400">${App.escapeHtml(it.material_code)} ${it.rack_location ? `&bull; Rak: ${App.escapeHtml(it.rack_location)}` : ''}</p>
                   </div>
                   <div class="text-right shrink-0">

@@ -141,6 +141,11 @@ require_once __DIR__ . '/../includes/header.php';
       <!-- ========================================================================= -->
       <?php
       $isFulfillmentOnly = Auth::isOperatorFulfillment();
+      $isInventoryUser   = Auth::isOperatorInventory();
+      $isAdminUser       = Auth::isAdmin();
+
+      $showKemasTab      = $isAdminUser || $isFulfillmentOnly;
+      $showGimmickTab    = $isAdminUser || $isInventoryUser;
       // $isInventoryOnly diset false agar seluruh modul operator gudang
       // (Putaway/Inbound, Picking, Counting, Opname, Handover, Transfer, dll)
       // dapat diakses secara normal dan tidak ter-redirect ke location_transfer.
@@ -378,7 +383,7 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
               <span id="homeBadgeConsumableReq" class="hidden absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">0</span>
             </div>
-            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-amber-700 transition-colors">Req. Material</h5>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-amber-700 transition-colors"><?= $isInventoryUser && !$isAdminUser ? 'Req. Gimmick' : 'Req. Material' ?></h5>
           </div>
 
           <!-- 7. STOCK OPNAME -->
@@ -901,8 +906,8 @@ require_once __DIR__ . '/../includes/header.php';
             </button>
 
             <div class="text-right">
-              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Request Fulfillments</h3>
-              <span class="text-[10px] text-amber-700 font-bold">Form Permintaan Barang</span>
+              <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider" id="opReqScreenTitle"><?= $isInventoryUser && !$isAdminUser ? 'Request Item Gimmick' : 'Request Fulfillments' ?></h3>
+              <span class="text-[10px] text-amber-700 font-bold" id="opReqScreenSubtitle"><?= $isInventoryUser && !$isAdminUser ? 'Form Permintaan Item Gimmick' : 'Form Permintaan Barang' ?></span>
             </div>
           </div>
 
@@ -926,14 +931,65 @@ require_once __DIR__ . '/../includes/header.php';
           <!-- Unified Card: Form Permintaan -->
           <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3.5">
             
-            <!-- 1. Tujuan Brand / Line -->
+            <!-- 0. TAB PILIH TIPE REQUEST (Kemas vs Item Gimmick) -->
+            <?php if ($showKemasTab && $showGimmickTab): ?>
+            <div>
+              <label class="block font-bold text-slate-800 mb-1.5 text-xs flex items-center justify-between">
+                <span>Tipe Permintaan Material <span class="text-rose-500">*</span></span>
+                <span class="text-[10px] text-slate-500 font-semibold">Pilih Tab</span>
+              </label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btnOpReqTypePackaging" onclick="setOpReqType('PACKAGING')"
+                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-[#262363] border-[#262363] text-white">
+                  <span class="text-base">📦</span>
+                  <span>Request Kemas</span>
+                  <span id="opReqCheckPackaging" class="material-symbols-outlined text-[16px] ml-auto">check_circle</span>
+                </button>
+                <button type="button" id="btnOpReqTypeGimmick" onclick="setOpReqType('GIMMICK')"
+                  class="p-2.5 rounded-xl border-2 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs bg-white border-slate-200 text-slate-700 hover:border-slate-300">
+                  <span class="text-base">🎁</span>
+                  <span>Request Item Gimmick</span>
+                  <span id="opReqCheckGimmick" class="material-symbols-outlined text-[16px] ml-auto hidden">check_circle</span>
+                </button>
+              </div>
+            </div>
+            <?php elseif ($showGimmickTab): ?>
+            <!-- Role Inventory: Tab Khusus Request Item Gimmick -->
+            <div class="p-3 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-950 flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg shadow-xs">🎁</div>
+                <div>
+                  <span class="font-black text-xs block leading-tight text-purple-950">Tab Request Item Gimmick</span>
+                  <span class="text-[10px] text-purple-700 font-medium">Permintaan stok merchandise & gimmick untuk tim Inventory</span>
+                </div>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-purple-200 text-purple-900 border border-purple-300 shrink-0">Inventory</span>
+            </div>
+            <button type="button" id="btnOpReqTypePackaging" class="hidden"></button>
+            <button type="button" id="btnOpReqTypeGimmick" class="hidden"></button>
+            <?php else: ?>
+            <!-- Role Fulfillment: Tab Khusus Request Kemas -->
+            <div class="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 text-amber-950 flex items-center justify-between shadow-2xs">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-600 text-white flex items-center justify-center text-lg shadow-xs">📦</div>
+                <div>
+                  <span class="font-black text-xs block leading-tight text-amber-950">Tab Request Kemas</span>
+                  <span class="text-[10px] text-amber-700 font-medium">Permintaan material packaging untuk tim Fulfillment</span>
+                </div>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-200 text-amber-900 border border-amber-300 shrink-0">Fulfillment</span>
+            </div>
+            <button type="button" id="btnOpReqTypePackaging" class="hidden"></button>
+            <button type="button" id="btnOpReqTypeGimmick" class="hidden"></button>
+            <?php endif; ?>
+
+            <!-- 1. Pilih Brand -->
             <div>
               <label class="block font-bold text-slate-800 mb-1 text-xs flex items-center justify-between">
-                <span>Tujuan Brand / Line <span class="text-rose-500">*</span></span>
-                <span class="text-[10px] text-amber-700 font-bold">5 Brand Utama</span>
+                <span>Pilih Brand <span class="text-rose-500">*</span></span>
               </label>
               <select id="opReqDestinationSelect" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 outline-none focus:bg-white focus:border-amber-600 transition-colors" data-no-search>
-                <option value="">-- Pilih Brand (HANASUI / FYNE / NCO / EOMMA / AFFILIATE) --</option>
+                <option value="">-- Pilih Brand --</option>
                 <option value="HANASUI">HANASUI</option>
                 <option value="FYNE">FYNE</option>
                 <option value="NCO">NCO</option>
@@ -945,13 +1001,13 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Divider -->
             <div class="border-t border-slate-100 pt-3 space-y-3">
 
-              <!-- 2. Pilih Kemas (Packaging Only - Tanpa Gimmick) -->
+              <!-- 2. Pilih Kemas / Item Gimmick -->
               <div>
                 <label class="block font-bold text-slate-800 mb-1 text-xs">
-                  Pilih <span id="opReqMaterialTypeLabel">Kemas</span> <span class="text-rose-500">*</span>
+                  Pilih <span id="opReqMaterialTypeLabel"><?= $isInventoryUser && !$isAdminUser ? 'Item Gimmick' : 'Kemas' ?></span> <span class="text-rose-500">*</span>
                 </label>
                 <select id="opReqMaterialSelect" onchange="handleOpReqMaterialSelectChange(this)" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:bg-white focus:border-[#262363]">
-                  <option value="">-- Pilih Kemas --</option>
+                  <option value="">-- Pilih <?= $isInventoryUser && !$isAdminUser ? 'Item Gimmick' : 'Kemas' ?> --</option>
                 </select>
                 <div id="opReqStockInfoBadge" class="hidden mt-1.5 p-2 bg-blue-50/80 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
                   <span class="text-slate-600 font-medium">Sisa Stok di Gudang:</span>
@@ -2331,6 +2387,9 @@ require_once __DIR__ . '/../includes/header.php';
   let CURRENT_USER_ROLE = <?= json_encode($user['role'] ?? 'operator') ?>;
   let IS_FULFILLMENT_ONLY = <?= $isFulfillmentOnly ? 'true' : 'false' ?>;
   let IS_INVENTORY_ONLY = <?= $isInventoryOnly ? 'true' : 'false' ?>;
+  let IS_INVENTORY_ROLE = <?= $isInventoryUser ? 'true' : 'false' ?>;
+  let SHOW_REQ_KEMAS_TAB = <?= $showKemasTab ? 'true' : 'false' ?>;
+  let SHOW_REQ_GIMMICK_TAB = <?= $showGimmickTab ? 'true' : 'false' ?>;
 </script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/operator.js?v=<?= time() ?>"></script>
