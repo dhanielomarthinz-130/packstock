@@ -4008,6 +4008,47 @@ function resetOpReqFormSequence() {
   if (addDraftContainer) addDraftContainer.classList.add('hidden');
 }
 
+// Setelah item masuk draft: Tipe dan Brand tetap terpilih, langsung siap pilih Item berikutnya
+function resetOpReqAfterDraftAdd() {
+  const materialContainer = document.getElementById('opReqMaterialContainer');
+  const sel = document.getElementById('opReqMaterialSelect');
+  const badge = document.getElementById('opReqStockInfoBadge');
+  const qtyContainer = document.getElementById('opReqQtyContainer');
+  const qtyInp = document.getElementById('opReqQty');
+  const addDraftContainer = document.getElementById('btnOpReqAddDraftContainer');
+  const warningBox = document.getElementById('opReqStockWarning');
+
+  // Kolom Item tetap ditampilkan karena Tipe dan Brand sudah terpilih
+  if (materialContainer) materialContainer.classList.remove('hidden');
+
+  // Reset pilihan material item
+  if (sel) {
+    sel.value = '';
+    sel.selectedIndex = 0;
+    if (typeof App.syncSearchableSelect === 'function') {
+      App.syncSearchableSelect(sel);
+    }
+    // Fokuskan langsung ke dropdown item
+    setTimeout(() => {
+      sel.focus();
+    }, 80);
+  }
+
+  // Sembunyikan badge info stok
+  if (badge) badge.classList.add('hidden');
+
+  // Sembunyikan dan kosongkan input Qty
+  if (qtyContainer) qtyContainer.classList.add('hidden');
+  if (qtyInp) {
+    qtyInp.value = '';
+    qtyInp.classList.remove('border-rose-500', 'bg-rose-50/50');
+  }
+
+  // Sembunyikan pesan peringatan dan tombol masukkan draft
+  if (warningBox) warningBox.classList.add('hidden');
+  if (addDraftContainer) addDraftContainer.classList.add('hidden');
+}
+
 // 1. Saat Klik Tipe -> Menampilkan Kolom Brand
 function setOpReqType(type) {
   opReqActiveType = (type === 'GIMMICK') ? 'GIMMICK' : 'PACKAGING';
@@ -4364,8 +4405,8 @@ function addConsumableDraftItem() {
     });
   }
 
-  // Mengulang lagi dari awal untuk memilih tipe berikutnya
-  resetOpReqFormSequence();
+  // Pertahankan Tipe dan Brand yang sudah dipilih, langsung reset ke pilihan Item berikutnya
+  resetOpReqAfterDraftAdd();
 
   renderConsumableDraftList();
   App.toast(`${itemName} (+${App.formatNumber(qty)} ${itemUnit}) ditambahkan ke draft!`, 'success');
@@ -4484,6 +4525,8 @@ async function handleConsumableRequestSubmit() {
     const globalNotesInp = document.getElementById('opReqGlobalNotes');
     if (globalNotesInp) globalNotesInp.value = '';
 
+    resetOpReqFormSequence();
+
     if (typeof IS_FULFILLMENT_ONLY !== 'undefined' && IS_FULFILLMENT_ONLY) {
       loadFulfillmentStats();
     }
@@ -4493,7 +4536,9 @@ async function handleConsumableRequestSubmit() {
   } else {
     App.toast(res.message || 'Gagal mengirim pengajuan', 'error');
   }
-} let allOperatorConsumableRequests = [];
+}
+
+let allOperatorConsumableRequests = [];
 let openedOpReqCardIds = new Set();
 
 function toggleOpReqCard(reqId) {
