@@ -1288,7 +1288,11 @@ a.bg-emerald-700:active {
 /* Kotak Kecil Rak Lokasi (Rack Slot Box) */
 .rack-box-slot {
   width: 100% !important;
-  min-height: 66px !important;
+  height: 68px !important;
+  min-height: 68px !important;
+  max-height: 68px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
   border-radius: 8px !important;
   padding: 6px 8px !important;
   display: flex !important;
@@ -1298,6 +1302,23 @@ a.bg-emerald-700:active {
   user-select: none !important;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
   position: relative !important;
+}
+
+.rack-box-slot * {
+  box-sizing: border-box !important;
+}
+
+/* Pastikan nama item dan kode slot selalu terpotong elipsis jika panjang */
+.rack-box-slot .truncate,
+.rack-box-slot div.truncate,
+.rack-box-slot span.truncate {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+span.truncate {
+  display: inline-block !important;
 }
 
 .rack-box-slot:hover {
