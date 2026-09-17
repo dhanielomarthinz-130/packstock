@@ -486,17 +486,17 @@ require_once __DIR__ . '/../includes/header.php';
         <!-- 2 Main Tabs: Kemas & Gimmick (Segmented Switcher) -->
         <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-200/80 rounded-2xl border border-slate-200 text-xs font-bold shadow-2xs">
           <button type="button" id="btnOpRackTabKemas" onclick="switchOpRackCategory('PACKAGING')" 
-            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-[#262363] text-white shadow-xs transition-all cursor-pointer">
+            class="rack-category-tab is-active-kemas justify-center py-2.5">
             <span class="material-symbols-outlined text-[17px]">inventory_2</span>
-            <span>📦 Kemas</span>
-            <span id="badgeOpRackKemasCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white leading-none">0</span>
+            <span>Kemas</span>
+            <span id="badgeOpRackKemasCount" class="rack-tab-badge">0</span>
           </button>
 
           <button type="button" id="btnOpRackTabGimmick" onclick="switchOpRackCategory('GIMMICK')" 
-            class="py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+            class="rack-category-tab is-inactive justify-center py-2.5">
             <span class="material-symbols-outlined text-[17px]">card_giftcard</span>
-            <span>🎁 Gimmick</span>
-            <span id="badgeOpRackGimmickCount" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black bg-slate-300 text-slate-700 leading-none">0</span>
+            <span>Gimmick</span>
+            <span id="badgeOpRackGimmickCount" class="rack-tab-badge">0</span>
           </button>
         </div>
 

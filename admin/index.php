@@ -1177,17 +1177,17 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Two Main Tabs: KEMAS & GIMMICK -->
             <div class="inline-flex p-1 bg-slate-100 rounded-2xl border border-slate-200 text-xs font-bold shrink-0">
               <button type="button" id="btnRackTabKemas" onclick="switchRackMapCategory('PACKAGING')" 
-                class="px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer bg-[#262363] text-white shadow-xs">
+                class="rack-category-tab is-active-kemas">
                 <span class="material-symbols-outlined text-[16px]">inventory_2</span>
-                <span>📦 Kemas</span>
-                <span id="badgeRackTabKemasCount" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">0</span>
+                <span>Kemas</span>
+                <span id="badgeRackTabKemasCount" class="rack-tab-badge">0</span>
               </button>
 
               <button type="button" id="btnRackTabGimmick" onclick="switchRackMapCategory('GIMMICK')" 
-                class="px-4 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-all cursor-pointer">
+                class="rack-category-tab is-inactive">
                 <span class="material-symbols-outlined text-[16px]">card_giftcard</span>
-                <span>🎁 Gimmick</span>
-                <span id="badgeRackTabGimmickCount" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-slate-200 text-slate-700">0</span>
+                <span>Gimmick</span>
+                <span id="badgeRackTabGimmickCount" class="rack-tab-badge">0</span>
               </button>
             </div>
           </div>

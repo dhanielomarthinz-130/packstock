@@ -15962,19 +15962,11 @@ function switchRackMapCategory(category) {
   const btnGimmick = document.getElementById('btnRackTabGimmick');
 
   if (category === 'PACKAGING') {
-    if (btnKemas) {
-      btnKemas.className = 'px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer bg-[#262363] text-white shadow-xs';
-    }
-    if (btnGimmick) {
-      btnGimmick.className = 'px-4 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
-    }
+    if (btnKemas)   btnKemas.className   = 'rack-category-tab is-active-kemas';
+    if (btnGimmick) btnGimmick.className = 'rack-category-tab is-inactive';
   } else {
-    if (btnGimmick) {
-      btnGimmick.className = 'px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-xs';
-    }
-    if (btnKemas) {
-      btnKemas.className = 'px-4 py-2 rounded-xl flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
-    }
+    if (btnGimmick) btnGimmick.className = 'rack-category-tab is-active-gimmick';
+    if (btnKemas)   btnKemas.className   = 'rack-category-tab is-inactive';
   }
 
   loadAdminRackMap();

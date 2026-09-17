@@ -6041,15 +6041,12 @@ function switchOpRackCategory(category) {
   const btnK = document.getElementById('btnOpRackTabKemas');
   const btnG = document.getElementById('btnOpRackTabGimmick');
 
-  const activeCls   = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer';
-  const inactiveCls = 'py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 bg-transparent text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
-
   if (category === 'PACKAGING') {
-    if (btnK) btnK.className = `${activeCls} bg-[#262363] text-white`;
-    if (btnG) btnG.className = inactiveCls;
+    if (btnK) btnK.className = 'rack-category-tab is-active-kemas justify-center py-2.5';
+    if (btnG) btnG.className = 'rack-category-tab is-inactive justify-center py-2.5';
   } else {
-    if (btnG) btnG.className = `${activeCls} bg-gradient-to-r from-pink-600 to-rose-600 text-white`;
-    if (btnK) btnK.className = inactiveCls;
+    if (btnG) btnG.className = 'rack-category-tab is-active-gimmick justify-center py-2.5';
+    if (btnK) btnK.className = 'rack-category-tab is-inactive justify-center py-2.5';
   }
 
   loadOperatorRackMap();
