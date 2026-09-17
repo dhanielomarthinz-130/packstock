@@ -1192,97 +1192,115 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
-          <!-- Top Quick KPI Metrics Strip -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-0.5">
-            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+          <!-- Top Quick KPI Metrics Strip (5 Columns Balanced) -->
+          <div class="rack-kpi-grid pt-1">
+            <div class="rack-kpi-card bg-slate-50/90 border-slate-200">
               <div>
-                <p class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Total Slot</p>
-                <p id="kpiRackTotalSlots" class="text-base font-black text-slate-900 font-mono">0</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-0.5">Total Slot</p>
+                <p id="kpiRackTotalSlots" class="text-lg font-black text-slate-900 font-mono tracking-tight leading-none">0</p>
               </div>
-              <span class="material-symbols-outlined text-slate-400 text-[20px]">shelves</span>
+              <div class="w-8 h-8 rounded-xl bg-slate-200/70 text-slate-600 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">shelves</span>
+              </div>
             </div>
-            <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
+
+            <div class="rack-kpi-card bg-emerald-50/80 border-emerald-200">
               <div>
-                <p class="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700">Terisi (Stok Ada)</p>
-                <p id="kpiRackFilledSlots" class="text-base font-black text-emerald-800 font-mono">0</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700 mb-0.5">Terisi (Stok Ada)</p>
+                <p id="kpiRackFilledSlots" class="text-lg font-black text-emerald-800 font-mono tracking-tight leading-none">0</p>
               </div>
-              <span class="material-symbols-outlined text-emerald-600 text-[20px]">check_circle</span>
+              <div class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              </div>
             </div>
-            <div class="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-between">
+
+            <div class="rack-kpi-card bg-amber-50/80 border-amber-200">
               <div>
-                <p class="text-[9px] font-extrabold uppercase tracking-wider text-amber-700">Hampir Habis</p>
-                <p id="kpiRackLowSlots" class="text-base font-black text-amber-800 font-mono">0</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-amber-700 mb-0.5">Hampir Habis</p>
+                <p id="kpiRackLowSlots" class="text-lg font-black text-amber-800 font-mono tracking-tight leading-none">0</p>
               </div>
-              <span class="material-symbols-outlined text-amber-600 text-[20px]">warning</span>
+              <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">warning</span>
+              </div>
             </div>
-            <div class="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center justify-between">
+
+            <div class="rack-kpi-card bg-rose-50/80 border-rose-200">
               <div>
-                <p class="text-[9px] font-extrabold uppercase tracking-wider text-rose-700">Kosong (Siap Diisi)</p>
-                <p id="kpiRackEmptySlots" class="text-base font-black text-rose-800 font-mono">0</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 mb-0.5">Kosong (Siap Diisi)</p>
+                <p id="kpiRackEmptySlots" class="text-lg font-black text-rose-800 font-mono tracking-tight leading-none">0</p>
               </div>
-              <span class="material-symbols-outlined text-rose-600 text-[20px]">block</span>
+              <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">block</span>
+              </div>
             </div>
-            <div class="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200 flex items-center justify-between col-span-2 sm:col-span-1">
+
+            <div class="rack-kpi-card bg-indigo-50/80 border-indigo-200">
               <div>
-                <p class="text-[9px] font-extrabold uppercase tracking-wider text-indigo-700">Total Unit Fisik</p>
-                <p id="kpiRackTotalUnits" class="text-base font-black text-[#262363] font-mono">0</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 mb-0.5">Total Unit Fisik</p>
+                <p id="kpiRackTotalUnits" class="text-lg font-black text-[#262363] font-mono tracking-tight leading-none">0</p>
               </div>
-              <span class="material-symbols-outlined text-indigo-600 text-[20px]">inventory</span>
+              <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">inventory</span>
+              </div>
             </div>
           </div>
 
           <!-- Filter Bar: Gudang, Area, Rak, Tampilan + Toggle 3D/2D + Search -->
-          <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
-            <div class="flex items-center gap-1.5">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Gudang</label>
-              <select id="rackFilterGudang" onchange="applyRackVisualFilter()"
-                class="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 outline-none focus:border-indigo-500 cursor-pointer min-w-[130px]">
-                <option value="">Semua Gudang</option>
-              </select>
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <div class="flex items-center gap-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Gudang</label>
+                <select id="rackFilterGudang" onchange="applyRackVisualFilter()"
+                  class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-700 outline-none focus:bg-white focus:border-indigo-500 cursor-pointer min-w-[130px]">
+                  <option value="">Semua Gudang</option>
+                </select>
+              </div>
+              <div class="w-px h-5 bg-slate-200"></div>
+              <div class="flex items-center gap-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Area</label>
+                <select id="rackFilterArea" onchange="applyRackVisualFilter()"
+                  class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-700 outline-none focus:bg-white focus:border-indigo-500 cursor-pointer min-w-[100px]">
+                  <option value="">Semua Area</option>
+                </select>
+              </div>
+              <div class="w-px h-5 bg-slate-200"></div>
+              <div class="flex items-center gap-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Rak</label>
+                <select id="rackFilterRak" onchange="applyRackVisualFilter()"
+                  class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-700 outline-none focus:bg-white focus:border-indigo-500 cursor-pointer min-w-[100px]">
+                  <option value="">Semua Rak</option>
+                </select>
+              </div>
+              <div class="w-px h-5 bg-slate-200"></div>
+              <div class="flex items-center gap-1.5">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tampilan</label>
+                <select id="rackFilterStatus" onchange="applyRackVisualFilter()"
+                  class="text-xs font-semibold border border-slate-200 rounded-xl px-2.5 py-1.5 bg-slate-50 text-slate-700 outline-none focus:bg-white focus:border-indigo-500 cursor-pointer min-w-[110px]">
+                  <option value="ALL">Semua</option>
+                  <option value="FILLED">Terisi</option>
+                  <option value="EMPTY">Kosong</option>
+                  <option value="LOW">Hampir Habis</option>
+                </select>
+              </div>
             </div>
-            <div class="w-px h-5 bg-slate-200"></div>
-            <div class="flex items-center gap-1.5">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Area</label>
-              <select id="rackFilterArea" onchange="applyRackVisualFilter()"
-                class="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 outline-none focus:border-indigo-500 cursor-pointer min-w-[100px]">
-                <option value="">Semua Area</option>
-              </select>
+
+            <div class="flex items-center gap-2">
+              <div class="relative w-56">
+                <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
+                <input type="text" id="rackMapSearchInput" oninput="applyRackVisualFilter()" placeholder="Cari Kode Rak / SKU..."
+                  class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-indigo-600 transition-colors">
+              </div>
+              <div class="inline-flex rounded-xl border border-slate-200 overflow-hidden shrink-0 shadow-2xs">
+                <button type="button" id="btnRack3D" onclick="setRackViewMode('3D')"
+                  class="px-3.5 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer">3D</button>
+                <button type="button" id="btnRack2D" onclick="setRackViewMode('2D')"
+                  class="px-3.5 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">2D</button>
+              </div>
+              <button type="button" onclick="loadAdminRackMap()" title="Muat Ulang"
+                class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center transition-all cursor-pointer border border-slate-200 shadow-2xs">
+                <span id="iconRefreshRackMap" class="material-symbols-outlined text-[18px]">refresh</span>
+              </button>
             </div>
-            <div class="w-px h-5 bg-slate-200"></div>
-            <div class="flex items-center gap-1.5">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Rak</label>
-              <select id="rackFilterRak" onchange="applyRackVisualFilter()"
-                class="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 outline-none focus:border-indigo-500 cursor-pointer min-w-[100px]">
-                <option value="">Semua Rak</option>
-              </select>
-            </div>
-            <div class="w-px h-5 bg-slate-200"></div>
-            <div class="flex items-center gap-1.5">
-              <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Tampilan</label>
-              <select id="rackFilterStatus" onchange="applyRackVisualFilter()"
-                class="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 outline-none focus:border-indigo-500 cursor-pointer min-w-[100px]">
-                <option value="ALL">Semua</option>
-                <option value="FILLED">Terisi</option>
-                <option value="EMPTY">Kosong</option>
-                <option value="LOW">Hampir Habis</option>
-              </select>
-            </div>
-            <div class="flex-1"></div>
-            <div class="relative w-52">
-              <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">search</span>
-              <input type="text" id="rackMapSearchInput" oninput="applyRackVisualFilter()" placeholder="Cari Kode Rak / SKU..."
-                class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium outline-none focus:bg-white focus:border-indigo-600">
-            </div>
-            <div class="inline-flex rounded-lg border border-slate-200 overflow-hidden shrink-0">
-              <button type="button" id="btnRack3D" onclick="setRackViewMode('3D')"
-                class="px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer">3D</button>
-              <button type="button" id="btnRack2D" onclick="setRackViewMode('2D')"
-                class="px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">2D</button>
-            </div>
-            <button type="button" onclick="loadAdminRackMap()" title="Muat Ulang"
-              class="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 flex items-center justify-center transition-all cursor-pointer">
-              <span id="iconRefreshRackMap" class="material-symbols-outlined text-[18px]">refresh</span>
-            </button>
           </div>
         </div>
 

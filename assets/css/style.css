@@ -1363,5 +1363,41 @@ a.bg-emerald-700:active {
   padding-bottom: 2px !important;
 }
 
+/* 5-Column Balanced Top KPI Strip */
+.rack-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+@media (max-width: 1200px) {
+  .rack-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .rack-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.rack-kpi-card {
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border: 1px solid !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.rack-kpi-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
+}
+
 
 
