@@ -1205,4 +1205,163 @@ a.bg-emerald-700:active {
   -webkit-backdrop-filter: blur(8px);
 }
 
+/* ==========================================================================
+   WMS Map Rack Storage & Physical Shelving Layout
+   ========================================================================== */
+.rack-map-main-row,
+.rack-map-bottom-row {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 16px !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+}
+
+@media (max-width: 1023px) {
+  .rack-map-main-row,
+  .rack-map-bottom-row {
+    flex-direction: column !important;
+  }
+  .rack-map-sidebar-col {
+    width: 100% !important;
+  }
+}
+
+.rack-map-main-col {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.rack-map-sidebar-col {
+  width: 320px !important;
+  flex-shrink: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.rack-viewport-canvas {
+  background: radial-gradient(ellipse at 50% 0%, #1e293b 0%, #0f172a 100%) !important;
+  min-height: 480px !important;
+  border-radius: 0 0 16px 16px !important;
+  position: relative !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+/* 3D Rack Bay */
+.rack-bay-column {
+  width: 148px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  user-select: none !important;
+  flex-shrink: 0 !important;
+}
+
+.rack-bay-badge {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-weight: 900 !important;
+  font-size: 11px !important;
+  padding: 3px 12px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+  margin-bottom: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  letter-spacing: 0.05em !important;
+}
+
+.rack-bay-frame {
+  width: 100% !important;
+  border-left: 7px solid #2563eb !important;
+  border-right: 7px solid #2563eb !important;
+  background: rgba(15, 23, 42, 0.7) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+  padding: 8px 6px 4px 6px !important;
+  position: relative !important;
+}
+
+/* Kotak Kecil Rak Lokasi (Rack Slot Box) */
+.rack-box-slot {
+  width: 100% !important;
+  min-height: 66px !important;
+  border-radius: 8px !important;
+  padding: 6px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+  position: relative !important;
+}
+
+.rack-box-slot:hover {
+  transform: translateY(-2px) scale(1.03) !important;
+  z-index: 10 !important;
+}
+
+.rack-box-slot.is-active {
+  box-shadow: 0 0 0 3px #6366f1, 0 8px 20px rgba(99, 102, 241, 0.45) !important;
+  transform: scale(1.05) !important;
+  z-index: 20 !important;
+}
+
+/* Status variants for Rack Box */
+.rack-box-slot.state-filled {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: 2px solid #047857 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3) !important;
+}
+
+.rack-box-slot.state-low {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  border: 2px solid #b45309 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.35) !important;
+}
+
+.rack-box-slot.state-empty {
+  background: rgba(254, 242, 242, 0.95) !important;
+  border: 2px solid #ef4444 !important;
+  color: #dc2626 !important;
+  box-shadow: inset 0 0 8px rgba(239, 68, 68, 0.12) !important;
+}
+
+.rack-steel-beam {
+  width: 100% !important;
+  height: 6px !important;
+  border-radius: 2px !important;
+  background: linear-gradient(180deg, #94a3b8 0%, #475569 100%) !important;
+  margin-top: 3px !important;
+  margin-bottom: 8px !important;
+}
+
+.rack-base-plate {
+  width: 100% !important;
+  height: 8px !important;
+  border-bottom-left-radius: 6px !important;
+  border-bottom-right-radius: 6px !important;
+  background: linear-gradient(180deg, #475569 0%, #0f172a 100%) !important;
+}
+
+.rack-floor-stripe {
+  width: 100% !important;
+  margin-top: 8px !important;
+  text-align: center !important;
+  font-weight: 900 !important;
+  color: #fbbf24 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 11px !important;
+  letter-spacing: 0.15em !important;
+  border-bottom: 2px dashed rgba(251, 191, 36, 0.7) !important;
+  padding-bottom: 2px !important;
+}
+
+
 

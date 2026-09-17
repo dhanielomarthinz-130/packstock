@@ -1192,8 +1192,47 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
 
+          <!-- Top Quick KPI Metrics Strip -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-0.5">
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+              <div>
+                <p class="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">Total Slot</p>
+                <p id="kpiRackTotalSlots" class="text-base font-black text-slate-900 font-mono">0</p>
+              </div>
+              <span class="material-symbols-outlined text-slate-400 text-[20px]">shelves</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between">
+              <div>
+                <p class="text-[9px] font-extrabold uppercase tracking-wider text-emerald-700">Terisi (Stok Ada)</p>
+                <p id="kpiRackFilledSlots" class="text-base font-black text-emerald-800 font-mono">0</p>
+              </div>
+              <span class="material-symbols-outlined text-emerald-600 text-[20px]">check_circle</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 flex items-center justify-between">
+              <div>
+                <p class="text-[9px] font-extrabold uppercase tracking-wider text-amber-700">Hampir Habis</p>
+                <p id="kpiRackLowSlots" class="text-base font-black text-amber-800 font-mono">0</p>
+              </div>
+              <span class="material-symbols-outlined text-amber-600 text-[20px]">warning</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 flex items-center justify-between">
+              <div>
+                <p class="text-[9px] font-extrabold uppercase tracking-wider text-rose-700">Kosong (Siap Diisi)</p>
+                <p id="kpiRackEmptySlots" class="text-base font-black text-rose-800 font-mono">0</p>
+              </div>
+              <span class="material-symbols-outlined text-rose-600 text-[20px]">block</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-indigo-50/80 border border-indigo-200 flex items-center justify-between col-span-2 sm:col-span-1">
+              <div>
+                <p class="text-[9px] font-extrabold uppercase tracking-wider text-indigo-700">Total Unit Fisik</p>
+                <p id="kpiRackTotalUnits" class="text-base font-black text-[#262363] font-mono">0</p>
+              </div>
+              <span class="material-symbols-outlined text-indigo-600 text-[20px]">inventory</span>
+            </div>
+          </div>
+
           <!-- Filter Bar: Gudang, Area, Rak, Tampilan + Toggle 3D/2D + Search -->
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
             <div class="flex items-center gap-1.5">
               <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Gudang</label>
               <select id="rackFilterGudang" onchange="applyRackVisualFilter()"
@@ -1247,14 +1286,27 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- TOP ROW: Visual Rack Scene + Detail Lokasi Panel -->
-        <div class="flex flex-col lg:flex-row gap-4 items-start">
+        <!-- MAIN ROW: Visual Rack Scene (Left) + Detail Lokasi Panel (Right) -->
+        <div class="rack-map-main-row">
 
           <!-- LEFT: Visualization Area -->
-          <div class="flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div id="rackVisualizationContainer" class="relative" style="min-height:480px;background:#0f172a;">
+          <div class="rack-map-main-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <!-- Header Toolbar of Visual Area -->
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 text-[18px]">shelves</span>
+                <h3 class="text-xs font-black text-slate-800 uppercase tracking-wider">Denah Rak Gudang (Kotak Lokasi)</h3>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="visualRackModeBadge" class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Mode 3D Rangka</span>
+                <span id="visualRackCountBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">0 Slot</span>
+              </div>
+            </div>
+
+            <!-- Viewport with Background -->
+            <div id="rackVisualizationContainer" class="rack-viewport-canvas relative">
               <div class="absolute inset-0 pointer-events-none"
-                style="background-image:url('../assets/img/warehouse_rack_bg.jpg');background-size:cover;background-position:center;opacity:0.25;"></div>
+                style="background-image:url('../assets/img/warehouse_rack_bg.jpg');background-size:cover;background-position:center;opacity:0.18;"></div>
               <div id="rackMapGrid" class="relative z-10 p-5 overflow-x-auto min-h-[480px]">
                 <div class="py-20 text-center text-slate-400 space-y-2">
                   <span class="material-symbols-outlined text-[36px] animate-spin text-indigo-400">progress_activity</span>
@@ -1265,133 +1317,76 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <!-- RIGHT: Detail Lokasi Panel -->
-          <div id="rackDetailPanel" class="w-full lg:w-80 shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" style="display:block;">
-            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+          <div id="rackDetailPanel" class="rack-map-sidebar-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-[#262363] text-white">
               <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-indigo-600 text-[18px]">inventory_2</span>
-                <h3 class="text-sm font-black text-slate-800">Detail Lokasi</h3>
+                <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                <h3 class="text-xs font-black uppercase tracking-wider">Detail Lokasi Rak</h3>
               </div>
-              <button type="button" onclick="closeRackDetailPanel()" title="Tutup" class="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
+              <button type="button" onclick="closeRackDetailPanel()" title="Tutup / Reset" class="w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[14px]">close</span>
               </button>
             </div>
-            <div class="px-4 pt-3 pb-2 border-b border-slate-100">
+            <div class="px-4 pt-3 pb-2 border-b border-slate-100 bg-slate-50/50">
               <div class="flex items-center justify-between gap-2">
                 <span id="detailRackCode" class="text-lg font-black text-slate-900 font-mono tracking-tight">-</span>
                 <span id="detailRackStatusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">Pilih Slot</span>
               </div>
             </div>
             <div class="px-4 py-3 border-b border-slate-100 space-y-2">
-              <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Informasi Lokasi</p>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Informasi Lokasi</p>
               <div class="space-y-1.5 text-xs">
-                <div class="flex justify-between"><span class="text-slate-500">Gudang</span><span id="detailInfoGudang" class="font-semibold text-slate-800">-</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Area</span><span id="detailInfoArea" class="font-semibold text-slate-800">-</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Rak</span><span id="detailInfoRak" class="font-semibold text-slate-800">-</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Level</span><span id="detailInfoLevel" class="font-semibold text-slate-800">-</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Slot</span><span id="detailInfoSlot" class="font-semibold text-slate-800">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Gudang</span><span id="detailInfoGudang" class="font-bold text-slate-800">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Area</span><span id="detailInfoArea" class="font-bold text-slate-800">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Rak</span><span id="detailInfoRak" class="font-black text-indigo-700 font-mono">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Level</span><span id="detailInfoLevel" class="font-black text-slate-800 font-mono">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Slot</span><span id="detailInfoSlot" class="font-black text-slate-800 font-mono">-</span></div>
               </div>
             </div>
             <div class="px-4 py-3 border-b border-slate-100 space-y-2">
-              <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Informasi Barang</p>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Informasi Barang</p>
               <div class="space-y-1.5 text-xs">
-                <div class="flex justify-between gap-2"><span class="text-slate-500 flex-shrink-0">SKU</span><span id="detailInfoSKU" class="font-mono font-bold text-slate-800 text-right">-</span></div>
-                <div class="flex justify-between gap-2"><span class="text-slate-500 flex-shrink-0">Nama Barang</span><span id="detailInfoNama" class="font-semibold text-slate-800 text-right line-clamp-2">-</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Qty</span><span id="detailInfoQty" class="font-black text-slate-900">0</span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Satuan</span><span id="detailInfoSatuan" class="font-semibold text-slate-800">-</span></div>
+                <div class="flex justify-between gap-2"><span class="text-slate-500 font-medium shrink-0">SKU</span><span id="detailInfoSKU" class="font-mono font-bold text-slate-800 text-right">-</span></div>
+                <div class="flex justify-between gap-2"><span class="text-slate-500 font-medium shrink-0">Nama</span><span id="detailInfoNama" class="font-semibold text-slate-800 text-right line-clamp-2">-</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Qty</span><span id="detailInfoQty" class="font-black text-slate-900 font-mono text-sm">0</span></div>
+                <div class="flex justify-between"><span class="text-slate-500 font-medium">Satuan</span><span id="detailInfoSatuan" class="font-semibold text-slate-800">-</span></div>
               </div>
             </div>
             <div class="px-4 py-3">
-              <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Status</p>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Status Slot</p>
               <div id="detailStatusBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5">
-                <span id="detailStatusIcon" class="material-symbols-outlined text-[22px] text-slate-400 flex-shrink-0 mt-0.5">touch_app</span>
+                <span id="detailStatusIcon" class="material-symbols-outlined text-[20px] text-slate-400 shrink-0 mt-0.5">touch_app</span>
                 <div>
                   <p id="detailStatusTitle" class="text-xs font-black text-slate-700">Pilih Slot Rak</p>
-                  <p id="detailStatusDesc" class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Klik salah satu kotak rak pada visualisasi atau baris tabel di bawah untuk melihat rincian.</p>
+                  <p id="detailStatusDesc" class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Klik salah satu kotak rak untuk melihat rincian isi slot.</p>
                 </div>
               </div>
               <div id="detailMultiSkuSection" class="hidden mt-3">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Semua SKU di Lokasi Ini</p>
-                <div id="detailMultiSkuList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Semua SKU di Lokasi Ini</p>
+                <div id="detailMultiSkuList" class="space-y-1.5 max-h-44 overflow-y-auto pr-1"></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- BOTTOM ROW: Status & Ringkasan (Left) + Table (Right) -->
-        <div class="flex flex-col lg:flex-row gap-4 items-start mt-1">
+        <!-- BOTTOM ROW: Table (Left) + Status Legend & Ringkasan (Right) -->
+        <div class="rack-map-bottom-row mt-4">
 
-          <!-- LEFT: Keterangan Status & Ringkasan -->
-          <div class="w-full lg:w-80 shrink-0 space-y-3">
-            <!-- Keterangan Status -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Keterangan Status</p>
-              <div class="space-y-2">
-                <div class="flex items-center gap-2.5">
-                  <span class="w-4 h-4 rounded bg-emerald-500 border border-emerald-600 flex-shrink-0 shadow-2xs"></span>
-                  <span class="text-xs font-semibold text-slate-700">Terisi (Stok Ada)</span>
-                </div>
-                <div class="flex items-center gap-2.5">
-                  <span class="w-4 h-4 rounded bg-amber-400 border border-amber-500 flex-shrink-0 shadow-2xs"></span>
-                  <span class="text-xs font-semibold text-slate-700">Hampir Habis</span>
-                </div>
-                <div class="flex items-center gap-2.5">
-                  <span class="w-4 h-4 rounded bg-rose-500 border border-rose-600 flex-shrink-0 shadow-2xs"></span>
-                  <span class="text-xs font-semibold text-slate-700">Stok Habis</span>
-                </div>
-                <div class="flex items-center gap-2.5">
-                  <span class="w-4 h-4 rounded bg-slate-50 border-2 border-dashed border-rose-400 flex-shrink-0"></span>
-                  <span class="text-xs font-semibold text-slate-700">Kosong</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Ringkasan -->
-            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Ringkasan</p>
-              <div class="space-y-2 text-xs">
-                <div class="flex justify-between">
-                  <span class="text-slate-500 font-medium">Total Slot</span>
-                  <span id="kpiRackTotalSlots" class="font-black text-slate-900 font-mono">0</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500 font-medium">Terisi</span>
-                  <span id="kpiRackFilledSlots" class="font-black text-emerald-700 font-mono">0</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-slate-500 font-medium">Kosong</span>
-                  <span id="kpiRackEmptySlots" class="font-black text-rose-600 font-mono">0</span>
-                </div>
-                <div class="pt-2 border-t border-slate-100">
-                  <div class="flex justify-between mb-1.5">
-                    <span class="text-slate-500 font-medium">Persentase Terisi</span>
-                    <span id="kpiRackFilledPct" class="font-black text-indigo-700 font-mono">0%</span>
-                  </div>
-                  <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="kpiRackFillBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-700" style="width:0%"></div>
-                  </div>
-                </div>
-                <div class="flex justify-between pt-1">
-                  <span class="text-slate-500 font-medium">Total Unit di Rak</span>
-                  <span id="kpiRackTotalUnits" class="font-black text-[#262363] font-mono">0</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT: Daftar Lokasi Rack Table -->
-          <div class="flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <!-- LEFT: Daftar Lokasi Rack Table -->
+          <div class="rack-map-main-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
               <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-slate-600 text-[18px]">table_rows</span>
-                <h3 class="text-sm font-black text-slate-800">Daftar Lokasi Rack</h3>
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-800">Daftar Lokasi Rack</h3>
               </div>
               <span id="rackLocationTableCount" class="text-[11px] font-black text-slate-600 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">0 lokasi</span>
             </div>
-            <div class="overflow-x-auto max-h-[480px] overflow-y-auto">
+            <div id="rackTableScrollContainer" class="overflow-x-auto max-h-[480px] overflow-y-auto">
               <table class="w-full text-left text-xs border-collapse">
                 <thead class="bg-slate-50 text-slate-600 font-black text-[10px] uppercase border-b border-slate-200 sticky top-0 z-10">
                   <tr>
                     <th class="py-2.5 px-3 w-10 text-center">No</th>
+                    <th class="py-2.5 px-3">Kode Rak</th>
                     <th class="py-2.5 px-3">Gudang</th>
                     <th class="py-2.5 px-3">Area</th>
                     <th class="py-2.5 px-3">Rak</th>
@@ -1405,11 +1400,56 @@ require_once __DIR__ . '/../includes/header.php';
                   </tr>
                 </thead>
                 <tbody id="rackLocationTableBody" class="divide-y divide-slate-100 font-medium">
-                  <tr><td colspan="11" class="py-12 text-center text-slate-400 text-xs">Memuat data lokasi rak...</td></tr>
+                  <tr><td colspan="12" class="py-12 text-center text-slate-400 text-xs">Memuat data lokasi rak...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
+
+          <!-- RIGHT: Keterangan Status & Ringkasan -->
+          <div class="rack-map-sidebar-col space-y-3">
+            <!-- Keterangan Status -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Keterangan Warna Kotak</p>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-emerald-500 border border-emerald-600 shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Terisi (Stok Ada)</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-amber-400 border border-amber-500 shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Hampir Habis</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-rose-500 border border-rose-600 shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Stok Habis (Qty=0)</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-rose-50 border-2 border-solid border-rose-500 shrink-0"></span>
+                  <span class="text-xs font-semibold text-slate-700">Kosong (Siap Diisi)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ringkasan Fill Rate Progress -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Tingkat Keterisian Rak</p>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between mb-1">
+                  <span class="text-slate-500 font-medium">Persentase Terisi</span>
+                  <span id="kpiRackFilledPct" class="font-black text-indigo-700 font-mono">0%</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div id="kpiRackFillBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-700" style="width:0%"></div>
+                </div>
+                <div class="pt-2 border-t border-slate-100 flex justify-between">
+                  <span class="text-slate-500">Kapasitas Rak:</span>
+                  <span id="kpiRackFilledSummaryText" class="font-bold text-slate-800">0 / 0 Slot</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- NON-RACK SECTION (Collapsible) -->

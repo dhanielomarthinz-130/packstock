@@ -15877,12 +15877,16 @@ function updateRackMapSummary(data) {
   const racks = data.racks || [];
   const totalSlots = racks.length;
   let filledSlots = 0;
+  let lowSlots = 0;
   let emptySlots = 0;
   let totalUnits = 0;
 
   racks.forEach(r => {
     if (r.has_stock) {
       filledSlots++;
+      const fi = r.items && r.items[0];
+      const isLow = fi && fi.min_stock > 0 && (r.total_qty || 0) > 0 && (r.total_qty || 0) <= fi.min_stock;
+      if (isLow) lowSlots++;
     } else {
       emptySlots++;
     }
@@ -15891,20 +15895,24 @@ function updateRackMapSummary(data) {
 
   const filledPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
 
-  // KPI Elements (new compact format)
+  // KPI Elements (Top Quick Strip)
   const elTotalSlots  = document.getElementById('kpiRackTotalSlots');
   const elFilledSlots = document.getElementById('kpiRackFilledSlots');
-  const elFilledPct   = document.getElementById('kpiRackFilledPct');
-  const elFillBar     = document.getElementById('kpiRackFillBar');
+  const elLowSlots    = document.getElementById('kpiRackLowSlots');
   const elEmptySlots  = document.getElementById('kpiRackEmptySlots');
   const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
+  const elFilledPct   = document.getElementById('kpiRackFilledPct');
+  const elFillBar     = document.getElementById('kpiRackFillBar');
+  const elSummaryText = document.getElementById('kpiRackFilledSummaryText');
 
   if (elTotalSlots)  elTotalSlots.innerText  = totalSlots.toLocaleString();
   if (elFilledSlots) elFilledSlots.innerText = filledSlots.toLocaleString();
-  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}%`;
-  if (elFillBar)     elFillBar.style.width   = `${filledPct}%`;
+  if (elLowSlots)    elLowSlots.innerText    = lowSlots.toLocaleString();
   if (elEmptySlots)  elEmptySlots.innerText  = emptySlots.toLocaleString();
   if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
+  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}%`;
+  if (elFillBar)     elFillBar.style.width   = `${filledPct}%`;
+  if (elSummaryText) elSummaryText.innerText = `${filledSlots.toLocaleString()} / ${totalSlots.toLocaleString()}`;
 
   // Tab Badge counts
   if (currentRackMapCategory === 'PACKAGING') {
@@ -15945,10 +15953,6 @@ function updateRackMapSummary(data) {
     if (noLocSection) noLocSection.classList.add('hidden');
   }
 }
-
-
-
-
 
 function switchRackMapCategory(category) {
   if (currentRackMapCategory === category) return;
@@ -16150,28 +16154,43 @@ function applyRackVisualFilter() {
   // Update Summary KPI from filtered data
   const totalSlots  = filtered.length;
   let filledSlots   = 0;
+  let lowSlots      = 0;
   let emptySlots    = 0;
   let totalUnits    = 0;
   filtered.forEach(r => {
-    if (r.has_stock) filledSlots++;
-    else emptySlots++;
+    if (r.has_stock) {
+      filledSlots++;
+      const fi = r.items && r.items[0];
+      const isLow = fi && fi.min_stock > 0 && (r.total_qty || 0) > 0 && (r.total_qty || 0) <= fi.min_stock;
+      if (isLow) lowSlots++;
+    } else {
+      emptySlots++;
+    }
     totalUnits += (r.total_qty || 0);
   });
   const filledPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
 
   const elTotalSlots  = document.getElementById('kpiRackTotalSlots');
   const elFilledSlots = document.getElementById('kpiRackFilledSlots');
+  const elLowSlots    = document.getElementById('kpiRackLowSlots');
   const elEmptySlots  = document.getElementById('kpiRackEmptySlots');
+  const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
   const elFilledPct   = document.getElementById('kpiRackFilledPct');
   const elFillBar     = document.getElementById('kpiRackFillBar');
-  const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
+  const elSummaryText = document.getElementById('kpiRackFilledSummaryText');
+  const elModeBadge   = document.getElementById('visualRackModeBadge');
+  const elCountBadge  = document.getElementById('visualRackCountBadge');
 
   if (elTotalSlots)  elTotalSlots.innerText  = totalSlots.toLocaleString();
   if (elFilledSlots) elFilledSlots.innerText = filledSlots.toLocaleString();
+  if (elLowSlots)    elLowSlots.innerText    = lowSlots.toLocaleString();
   if (elEmptySlots)  elEmptySlots.innerText  = emptySlots.toLocaleString();
+  if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
   if (elFilledPct)   elFilledPct.innerText   = `${filledPct}%`;
   if (elFillBar)     elFillBar.style.width   = `${filledPct}%`;
-  if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
+  if (elSummaryText) elSummaryText.innerText = `${filledSlots.toLocaleString()} / ${totalSlots.toLocaleString()}`;
+  if (elModeBadge)   elModeBadge.innerText   = currentRackViewMode === '3D' ? '3D Industrial Shelf' : '2D Matrix Grid';
+  if (elCountBadge)  elCountBadge.innerText  = `${totalSlots} Slot Rak`;
 
   if (filtered.length > 0) {
     const isVisible = selectedRackLocation && filtered.some(r => r.rack === selectedRackLocation);
@@ -16202,8 +16221,8 @@ function renderRackMapVisualization(filtered) {
 
   if (filtered.length === 0) {
     grid.innerHTML = `
-      <div class="py-20 text-center text-slate-400 space-y-2">
-        <span class="material-symbols-outlined text-[44px] text-slate-400">shelves</span>
+      <div class="py-24 text-center text-slate-400 space-y-2 select-none">
+        <span class="material-symbols-outlined text-[48px] text-slate-400">shelves</span>
         <p class="text-sm font-bold text-slate-300">Tidak ada lokasi rak yang sesuai filter</p>
         <p class="text-xs text-slate-400">Silakan sesuaikan pilihan dropdown Gudang, Area, Rak, atau kata kunci pencarian.</p>
       </div>
@@ -16213,7 +16232,7 @@ function renderRackMapVisualization(filtered) {
 
   // 2D View Mode: Matrix grid of small rack location boxes
   if (currentRackViewMode === '2D') {
-    let html = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">';
+    let html = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 p-2">';
     filtered.forEach(slot => {
       const isFilled   = slot.has_stock;
       const qty        = Math.round(slot.total_qty || 0);
@@ -16222,39 +16241,38 @@ function renderRackMapVisualization(filtered) {
       const isLow      = isFilled && slot.items && slot.items[0] && slot.items[0].min_stock > 0 && qty <= slot.items[0].min_stock;
       const isSelected = selectedRackLocation === slot.rack;
 
-      let borderCls, bgCls, badgeCls, statusText;
+      let stateCls, statusText;
       if (!isFilled) {
-        borderCls = 'border-2 border-dashed border-rose-400';
-        bgCls     = 'bg-white/95';
-        badgeCls  = 'bg-rose-100 text-rose-700 border border-rose-200';
+        stateCls   = 'state-empty';
         statusText = 'Kosong';
       } else if (isLow) {
-        borderCls = 'border-2 border-amber-400';
-        bgCls     = 'bg-amber-50/95';
-        badgeCls  = 'bg-amber-100 text-amber-800 border border-amber-300';
-        statusText = 'Hampir Habis';
+        stateCls   = 'state-low';
+        statusText = 'Menipis';
       } else {
-        borderCls = 'border-2 border-emerald-500';
-        bgCls     = 'bg-emerald-50/95';
-        badgeCls  = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+        stateCls   = 'state-filled';
         statusText = 'Terisi';
       }
 
-      const ringCls = isSelected ? 'ring-4 ring-indigo-500 shadow-lg scale-105 z-20' : 'hover:scale-[1.03] hover:shadow-md';
+      const activeCls = isSelected ? 'is-active' : '';
       const rackSafe = slot.rack.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
       html += `
-        <div onclick="showRackDetailPanel('${rackSafe}')"
-          class="relative p-2.5 rounded-xl cursor-pointer transition-all select-none backdrop-blur-xs ${bgCls} ${borderCls} ${ringCls}">
-          <div class="flex items-center justify-between gap-1 mb-1">
-            <span class="font-mono font-black text-xs text-slate-800 truncate" title="${escapeHtml(slot.rack)}">${escapeHtml(slot.rack)}</span>
-            <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black shrink-0 ${badgeCls}">${statusText}</span>
+        <div onclick="showRackDetailPanel('${rackSafe}', true)"
+          class="rack-box-slot ${stateCls} ${activeCls}"
+          title="${escapeHtml(slot.rack)} (${isFilled ? qty.toLocaleString() + ' ' + unit : 'Kosong'})">
+          <div class="flex items-center justify-between gap-1">
+            <span class="px-1.5 py-0.2 rounded bg-white text-slate-900 font-mono font-black text-[9px] tracking-tight shadow-2xs border border-slate-200/80 truncate max-w-[90px]">
+              ${escapeHtml(slot.rack)}
+            </span>
+            <span class="text-[9px] font-black uppercase tracking-tight opacity-90">${statusText}</span>
           </div>
-          <div class="flex items-baseline gap-1 my-1">
-            <span class="font-mono font-black text-base ${isFilled ? 'text-slate-900' : 'text-slate-400'}">${qty.toLocaleString()}</span>
-            <span class="text-[10px] font-semibold text-slate-500">${escapeHtml(unit)}</span>
+          <div class="flex items-baseline justify-between my-1">
+            <span class="font-mono font-black text-sm tracking-tight leading-none">${isFilled ? qty.toLocaleString() : '0'}</span>
+            <span class="text-[9px] font-bold opacity-80 leading-none">${isFilled ? escapeHtml(unit) : 'Pcs'}</span>
           </div>
-          <p class="text-[10px] font-medium text-slate-600 truncate" title="${escapeHtml(itemName || 'Lokasi Kosong')}">${escapeHtml(itemName || 'Siap diisi')}</p>
+          <div class="text-[8px] font-bold truncate opacity-90" title="${escapeHtml(itemName || 'Kosong')}">
+            ${isFilled ? escapeHtml(itemName) : 'Siap diisi'}
+          </div>
         </div>
       `;
     });
@@ -16274,7 +16292,7 @@ function renderRackMapVisualization(filtered) {
 
   const sortedRakKeys = Object.keys(rackGroups).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-  let html = '<div class="inline-flex gap-5 items-end min-w-max pb-3 pt-2">';
+  let html = '<div class="inline-flex gap-4 items-end min-w-max pb-2 pt-1 px-2">';
 
   sortedRakKeys.forEach(rakKey => {
     const slotsInRak = rackGroups[rakKey];
@@ -16286,14 +16304,14 @@ function renderRackMapVisualization(filtered) {
     });
 
     html += `
-      <div class="flex flex-col items-center select-none" style="width:148px;">
-        <!-- Top Rack Badge -->
-        <div class="mb-3 px-3 py-1 rounded-xl bg-white text-slate-900 font-black text-xs shadow-md border border-slate-200 tracking-wider">
+      <div class="rack-bay-column">
+        <!-- Top Rack Column Identification Badge -->
+        <div class="rack-bay-badge">
           ${escapeHtml(rakKey)}
         </div>
 
-        <!-- Industrial Steel Rack Shelving Frame -->
-        <div class="relative w-full rounded-t-lg" style="border-left:7px solid #1d4ed8; border-right:7px solid #1d4ed8; background:rgba(15,23,42,0.65); box-shadow:0 8px 20px rgba(0,0,0,0.35); padding:6px 6px 0 6px;">
+        <!-- Steel Bay Shelving Frame -->
+        <div class="rack-bay-frame">
     `;
 
     sortedSlots.forEach(slot => {
@@ -16305,66 +16323,50 @@ function renderRackMapVisualization(filtered) {
       const isSelected = selectedRackLocation === slot.rack;
       const rackSafe   = slot.rack.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 
-      // Small Rack Box Styling
-      let boxBg, boxBorder, boxShadow, textClr, iconEl;
+      let stateCls, statusIcon;
       if (!isFilled) {
-        // Red outlined empty compartment matching R1-01-04 in reference
-        boxBg     = 'background:rgba(255,241,242,0.92);';
-        boxBorder = 'border:2.5px solid #ef4444;';
-        boxShadow = 'box-shadow:inset 0 0 8px rgba(239,68,68,0.15);';
-        textClr   = 'color:#dc2626;';
-        iconEl    = '<span class="material-symbols-outlined text-[14px] text-rose-500 font-bold">block</span>';
+        stateCls   = 'state-empty';
+        statusIcon = '<span class="material-symbols-outlined text-[14px] text-rose-500 font-bold">block</span>';
       } else if (isLow) {
-        // Vibrant Amber Bin
-        boxBg     = 'background:linear-gradient(145deg, #f59e0b 0%, #d97706 100%);';
-        boxBorder = 'border:2px solid #b45309;';
-        boxShadow = 'box-shadow:0 4px 10px rgba(245,158,11,0.3);';
-        textClr   = 'color:#ffffff;';
-        iconEl    = '<span class="material-symbols-outlined text-[13px] text-amber-200">warning</span>';
+        stateCls   = 'state-low';
+        statusIcon = '<span class="material-symbols-outlined text-[13px] text-amber-100">warning</span>';
       } else {
-        // Vibrant Green Bin matching reference
-        boxBg     = 'background:linear-gradient(145deg, #10b981 0%, #059669 100%);';
-        boxBorder = 'border:2px solid #047857;';
-        boxShadow = 'box-shadow:0 4px 10px rgba(16,185,129,0.3);';
-        textClr   = 'color:#ffffff;';
-        iconEl    = '<span class="material-symbols-outlined text-[13px] text-emerald-200">inventory_2</span>';
+        stateCls   = 'state-filled';
+        statusIcon = '<span class="material-symbols-outlined text-[13px] text-emerald-100">inventory_2</span>';
       }
 
-      const ringStyle = isSelected ? 'box-shadow:0 0 0 3px #6366f1, 0 6px 15px rgba(0,0,0,0.4); transform:scale(1.04); z-index:20;' : '';
+      const activeCls = isSelected ? 'is-active' : '';
 
       html += `
-        <!-- Horizontal Shelf Slot Container -->
-        <div class="mb-2 relative">
+        <!-- Horizontal Shelf Slot Item -->
+        <div class="w-full">
           <!-- Small Rack Location Box -->
-          <div onclick="showRackDetailPanel('${rackSafe}')"
+          <div onclick="showRackDetailPanel('${rackSafe}', true)"
             title="${escapeHtml(slot.rack)} (${isFilled ? qty.toLocaleString() + ' ' + unit : 'Kosong'})"
-            class="relative w-full rounded-md cursor-pointer select-none transition-all p-1.5 flex flex-col justify-between"
-            style="min-height:64px; ${boxBg} ${boxBorder} ${boxShadow} ${ringStyle}"
-            onmouseover="if (!${isSelected}) { this.style.transform='scale(1.04)'; this.style.zIndex='10'; }"
-            onmouseout="if (!${isSelected}) { this.style.transform='scale(1)'; this.style.zIndex='1'; }">
+            class="rack-box-slot ${stateCls} ${activeCls}">
             
-            <!-- Location Pill Label at top of the box -->
+            <!-- Location Pill Label -->
             <div class="flex items-center justify-between gap-1 w-full">
-              <span class="px-1.5 py-0.2 rounded bg-white text-slate-900 font-mono font-black text-[9px] tracking-tight shadow-2xs border border-slate-200/80 truncate max-w-[95px]">
+              <span class="px-1.5 py-0.2 rounded bg-white text-slate-900 font-mono font-black text-[9px] tracking-tight shadow-2xs border border-slate-200/80 truncate max-w-[85px]">
                 ${escapeHtml(slot.rack)}
               </span>
-              ${iconEl}
+              ${statusIcon}
             </div>
 
-            <!-- Content inside box -->
-            <div class="flex items-baseline justify-between mt-1 px-0.5" style="${textClr}">
+            <!-- Content Inside Box -->
+            <div class="flex items-baseline justify-between mt-1 px-0.5">
               <span class="font-mono font-black text-sm tracking-tight leading-none">${isFilled ? qty.toLocaleString() : '0'}</span>
               <span class="text-[9px] font-bold opacity-85 leading-none">${isFilled ? escapeHtml(unit) : 'Pcs'}</span>
             </div>
 
-            <!-- Item name / status -->
-            <div class="text-[8px] font-bold truncate opacity-90 px-0.5" style="${textClr}" title="${escapeHtml(itemName || 'Kosong')}">
+            <!-- Item Name -->
+            <div class="text-[8px] font-bold truncate opacity-90 px-0.5" title="${escapeHtml(itemName || 'Kosong')}">
               ${isFilled ? escapeHtml(itemName) : 'Kosong'}
             </div>
           </div>
 
-          <!-- Sturdy Steel Shelf Beam underneath -->
-          <div class="w-full h-1.5 rounded-xs mt-0.5" style="background:linear-gradient(180deg, #94a3b8 0%, #475569 100%);"></div>
+          <!-- Sturdy Steel Beam Underneath Each Level -->
+          <div class="rack-steel-beam"></div>
         </div>
       `;
     });
@@ -16372,11 +16374,11 @@ function renderRackMapVisualization(filtered) {
     html += `
         </div><!-- /rack upright frame -->
 
-        <!-- Sturdy Rack Base Plate -->
-        <div class="w-full h-2 rounded-b-md" style="background:linear-gradient(180deg, #334155 0%, #0f172a 100%);"></div>
+        <!-- Rack Base Plate -->
+        <div class="rack-base-plate"></div>
 
-        <!-- Yellow Floor Safety Striping with Rack Name -->
-        <div class="w-full mt-2 text-center font-black text-amber-400 font-mono text-xs tracking-widest border-b-2 border-dashed border-amber-400/80 pb-0.5">
+        <!-- Yellow Floor Safety Stripe -->
+        <div class="rack-floor-stripe">
           ${escapeHtml(rakKey)}
         </div>
       </div>
@@ -16497,15 +16499,23 @@ function showRackDetailPanel(rackCode, reRenderVisual = true) {
     }
   }
 
-  // Highlight table row
+  // Highlight table row without jumping whole window
   const allRows = document.querySelectorAll('#rackLocationTableBody tr');
   allRows.forEach(r => r.classList.remove('bg-indigo-50', 'border-l-4', 'border-indigo-600'));
 
   const cleanId = 'rack-row-' + rackCode.replace(/[^a-zA-Z0-9_-]/g, '_');
   const targetRow = document.getElementById(cleanId);
+  const tableContainer = document.getElementById('rackTableScrollContainer');
   if (targetRow) {
     targetRow.classList.add('bg-indigo-50', 'border-l-4', 'border-indigo-600');
-    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Only scroll internal table container IF user explicitly clicked (never on initial auto-select)
+    if (reRenderVisual && tableContainer) {
+      const rowOffset = targetRow.offsetTop;
+      tableContainer.scrollTo({
+        top: Math.max(0, rowOffset - 40),
+        behavior: 'smooth'
+      });
+    }
   }
 
   // Re-render visual to apply active ring style if requested
@@ -16609,7 +16619,7 @@ function buildLocationTable(racks) {
   if (racks.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="11" class="py-12 text-center text-slate-400 text-xs">
+        <td colspan="12" class="py-12 text-center text-slate-400 text-xs">
           Tidak ada data lokasi rak yang cocok dengan filter saat ini.
         </td>
       </tr>
@@ -16640,9 +16650,10 @@ function buildLocationTable(racks) {
     const selectedCls = isSelected ? 'bg-indigo-50 border-l-4 border-indigo-600' : '';
 
     return `
-      <tr id="${cleanId}" onclick="showRackDetailPanel('${rackSafe}')"
+      <tr id="${cleanId}" onclick="showRackDetailPanel('${rackSafe}', true)"
         class="hover:bg-slate-50/80 transition-colors cursor-pointer ${selectedCls}">
         <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
+        <td class="py-2.5 px-3 font-mono font-black text-indigo-700 whitespace-nowrap">${escapeHtml(r.rack)}</td>
         <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">${escapeHtml(p.gudang)}</td>
         <td class="py-2.5 px-3 text-slate-600 font-medium whitespace-nowrap">${escapeHtml(p.area)}</td>
         <td class="py-2.5 px-3 font-black text-slate-800 whitespace-nowrap">${escapeHtml(p.rak)}</td>
