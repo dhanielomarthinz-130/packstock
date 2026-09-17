@@ -418,7 +418,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <span class="material-symbols-outlined text-[26px]">grid_view</span>
               </div>
             </div>
-            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-cyan-700 transition-colors">Map Rack</h5>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-cyan-700 transition-colors">Occupancy</h5>
           </div>
 
         </div>
@@ -443,7 +443,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 
       <!-- ========================================================================= -->
-      <!-- 0.1 SCREEN: MAP RACK STORAGE (VISUALISASI RAK GUDANG - MOBILE) -->
+      <!-- 0.1 SCREEN: RACK OCCUPANCY (VISUALISASI RAK GUDANG - MOBILE) -->
       <!-- ========================================================================= -->
       <div id="op-tab-rack_map" class="hidden space-y-3.5 animate-fade-in">
         <!-- Screen Back Bar -->
@@ -454,8 +454,8 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <div class="text-right">
-            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Map Rack Storage</h3>
-            <span class="text-[10px] text-indigo-700 font-semibold">Layout Denah Rak Fisik</span>
+            <h3 class="font-black text-xs text-slate-900 uppercase tracking-wider">Rack Occupancy</h3>
+            <span class="text-[10px] text-indigo-700 font-semibold">Okupansi & Denah Rak Fisik</span>
           </div>
         </div>
 

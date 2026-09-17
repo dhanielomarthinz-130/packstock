@@ -346,7 +346,7 @@ function switchAdminTab(tabName, updateUrl = true) {
   const titles = {
     dashboard: 'Dashboard Monitoring Stok & Lapangan',
     counting_progress: 'Dashboard Live Progress Counting (Dynamic Count & Stock Opname)',
-    rack_map: 'Map Rack Storage (Visualisasi Peta Denah & Status Rak Gudang)',
+    rack_map: 'Rack Occupancy (Analisis Okupansi & Denah Rak Gudang)',
     inventory: 'Master Stok Kemas & Stok Akhir',
     gimmick: 'Katalog & Kontrol Stok Gimmick (Barang Promosi & Hadiah)',
     reorder_alerts: 'Reorder Kemas & Rekomendasi PO (Lead Time 1 Minggu)',

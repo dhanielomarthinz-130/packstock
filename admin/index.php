@@ -63,12 +63,12 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <button onclick="switchAdminTab('rack_map')" id="nav-rack_map" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Visualisasi Peta & Denah Rack Storage">
+            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Analisis Okupansi & Denah Rack Storage">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">grid_view</span>
-              <span class="sidebar-text truncate">Map Rack</span>
+              <span class="sidebar-text truncate">Occupancy</span>
             </div>
-            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">Map</span>
+            <span class="sidebar-badge px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">Occupancy</span>
           </button>
         </div>
       </div>
@@ -1166,10 +1166,10 @@ require_once __DIR__ . '/../includes/header.php';
                 </span>
                 <div>
                   <h2 class="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                    <span>Map Rack Storage</span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">Layout Rak</span>
+                    <span>Rack Occupancy</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">Okupansi Rak</span>
                   </h2>
-                  <p class="text-xs text-slate-500 font-medium">Visualisasi denah semua lokasi rak gudang, status persediaan (Qty), dan slot rak kosong (Merah).</p>
+                  <p class="text-xs text-slate-500 font-medium">Visualisasi denah okupansi lokasi rak gudang, status persediaan (Qty), dan slot rak kosong.</p>
                 </div>
               </div>
             </div>
@@ -1449,6 +1449,7 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
             </div>
           </div>
+
 
         </div>
 

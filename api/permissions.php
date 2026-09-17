@@ -28,9 +28,9 @@ $MENUS_CATALOG = [
     ],
     [
         'key' => 'rack_map',
-        'label' => 'Map Rack Storage',
+        'label' => 'Rack Occupancy',
         'icon' => 'grid_view',
-        'description' => 'Visualisasi denah layout rak gudang, status terisi (Qty) dan rak kosong dengan warna merah (Kemas & Gimmick).'
+        'description' => 'Visualisasi denah layout rak gudang, status tingkat okupansi/terisi (Qty) dan slot rak kosong.'
     ],
     [
         'key' => 'inventory',
