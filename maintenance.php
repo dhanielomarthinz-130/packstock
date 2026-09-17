@@ -185,48 +185,14 @@ $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favi
       font-weight: 700;
     }
 
-    /* Notice Box */
-    .notice-box {
-      background: rgba(2, 6, 23, 0.7);
-      border: 1px solid rgba(51, 65, 85, 0.5);
-      border-radius: 16px;
-      padding: 14px 16px;
-      text-align: left;
-      margin-bottom: 24px;
-    }
-    .notice-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #fbbf24;
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-    .notice-header svg {
-      width: 15px;
-      height: 15px;
-      fill: currentColor;
-    }
-    .notice-body {
-      font-size: 12px;
-      color: #94a3b8;
-      line-height: 1.5;
-    }
-    .notice-body b {
-      color: #e2e8f0;
-    }
-
-    /* Action Button */
+    /* Action Button (Khusus Super Admin) */
     .btn-action {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
-      padding: 14px 20px;
+      padding: 13px 20px;
       border-radius: 14px;
       font-size: 13px;
       font-weight: 700;
@@ -245,18 +211,6 @@ $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favi
     .btn-primary:hover {
       background: linear-gradient(135deg, #059669 0%, #047857 100%);
       box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: rgba(30, 41, 59, 0.9);
-      color: #f8fafc;
-      border: 1px solid rgba(71, 85, 105, 0.6);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    .btn-secondary:hover {
-      background: rgba(51, 65, 85, 0.9);
-      border-color: rgba(100, 116, 139, 0.8);
       transform: translateY(-1px);
     }
     .btn-action svg {
@@ -306,40 +260,20 @@ $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favi
 
     <!-- Description -->
     <p class="desc-text">
-      Sistem manajemen persediaan <b>PackStock</b> saat ini sedang dalam pemeliharaan berkala untuk pembaruan fitur dan optimasi database. Situs saat ini dikunci untuk perlindungan integritas data.
+      Sistem manajemen persediaan <b>PackStock</b> saat ini sedang dalam pemeliharaan berkala untuk pembaruan fitur dan optimasi database. Situs saat ini dikunci sementara untuk perlindungan integritas data.
     </p>
 
-    <!-- Super Admin Action Info -->
-    <div class="notice-box">
-      <div class="notice-header">
-        <svg viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-        </svg>
-        <span>Akses Khusus</span>
-      </div>
-      <p class="notice-body">
-        Hanya pengguna dengan peran <b>Teknisi / Super Admin</b> yang dapat melewati halaman pemeliharaan ini untuk mengoperasikan sistem.
-      </p>
-    </div>
-
-    <!-- Footer Actions -->
-    <div>
-      <?php if (Auth::isSuperAdmin()): ?>
+    <!-- Super Admin Action Info (Hanya tampil jika sudah login sebagai Super Admin) -->
+    <?php if (Auth::isSuperAdmin()): ?>
+      <div style="margin-top: 10px;">
         <a href="<?= $baseUrl ?>/admin/" class="btn-action btn-primary">
           <svg viewBox="0 0 24 24">
             <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
           </svg>
           <span>Masuk ke Dashboard Admin</span>
         </a>
-      <?php else: ?>
-        <a href="<?= $baseUrl ?>/login" class="btn-action btn-secondary">
-          <svg viewBox="0 0 24 24">
-            <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
-          </svg>
-          <span>Login Sebagai Teknisi</span>
-        </a>
-      <?php endif; ?>
-    </div>
+      </div>
+    <?php endif; ?>
 
     <!-- Small footer info -->
     <p class="footer-text">PackStock WMS Enterprise &copy; <?= date('Y') ?></p>
