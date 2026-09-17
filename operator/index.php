@@ -117,6 +117,10 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Right: Quick Actions -->
       <div class="flex items-center gap-1.5 shrink-0 ml-2">
+        <button onclick="switchOpTab('rack_map')" title="Rack Occupancy (Denah Rak)" class="w-8 h-8 rounded-xl active:scale-90 flex items-center justify-center text-violet-100 transition-all shadow-xs cursor-pointer hover:bg-violet-600/50" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
+          <span class="material-symbols-outlined text-[18px]">shelves</span>
+        </button>
+
         <button onclick="refreshOperatorData()" title="Sinkronisasi Data" class="w-8 h-8 rounded-xl active:scale-90 flex items-center justify-center text-violet-100 transition-all shadow-xs cursor-pointer" style="background: rgba(139,92,246,0.25); border: 1px solid rgba(167,139,250,0.3);">
           <span id="btnSyncIcon" class="material-symbols-outlined text-[18px]">sync</span>
         </button>
@@ -240,6 +244,25 @@ require_once __DIR__ . '/../includes/header.php';
               </div>
               <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:translate-x-1 transition-transform shrink-0">
                 <span class="material-symbols-outlined text-[22px]">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. OCCUPANCY (Fulfillment Mode) -->
+          <div onclick="switchOpTab('rack_map')" 
+            class="p-4 bg-white rounded-3xl text-slate-800 shadow-md border border-slate-200/80 active:scale-98 transition-all cursor-pointer relative overflow-hidden group hover:border-indigo-300">
+            <div class="flex items-center justify-between relative z-10">
+              <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-[#262363] flex items-center justify-center text-white shadow-md shadow-indigo-500/25 shrink-0 group-hover:scale-105 transition-transform">
+                  <span class="material-symbols-outlined text-[26px]">shelves</span>
+                </div>
+                <div>
+                  <h5 class="font-black text-sm tracking-tight text-slate-900 leading-tight">Rack Occupancy</h5>
+                  <p class="text-[11px] text-slate-500 mt-0.5">Denah & Keterisian Slot Rak Gudang</p>
+                </div>
+              </div>
+              <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 group-hover:translate-x-1 transition-transform shrink-0">
+                <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
               </div>
             </div>
           </div>
@@ -410,15 +433,16 @@ require_once __DIR__ . '/../includes/header.php';
             <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-blue-700 transition-colors">Transfer Lokasi</h5>
           </div>
 
-          <!-- 9. MAP RACK -->
+          <!-- 9. OCCUPANCY -->
           <div onclick="switchOpTab('rack_map')" 
-            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-cyan-200">
+            class="flex flex-col items-center text-center py-4 px-2 rounded-2xl active:scale-95 transition-all cursor-pointer relative group bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-200">
             <div class="relative mb-2.5">
-              <div class="w-13 h-13 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-700 text-white flex items-center justify-center shadow-md shadow-cyan-500/25 group-hover:scale-105 transition-transform" style="width:52px;height:52px;">
-                <span class="material-symbols-outlined text-[26px]">grid_view</span>
+              <div class="w-13 h-13 rounded-2xl flex items-center justify-center shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform text-white" style="width:52px;height:52px;background:linear-gradient(135deg, #4F46E5 0%, #312E81 100%);">
+                <span class="material-symbols-outlined text-[26px]">shelves</span>
               </div>
+              <span id="homeBadgeOccupancy" class="absolute -top-1.5 -right-1.5 px-1.5 h-[18px] rounded-full bg-emerald-600 text-white font-black text-[9px] shadow-xs leading-none flex items-center justify-center">Live</span>
             </div>
-            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-cyan-700 transition-colors">Occupancy</h5>
+            <h5 class="font-bold text-slate-700 text-[10px] tracking-tight leading-tight group-hover:text-indigo-700 transition-colors">Occupancy</h5>
           </div>
 
         </div>
@@ -1709,6 +1733,15 @@ require_once __DIR__ . '/../includes/header.php';
           <button onclick="closeOperatorDrawer(); switchOpTab('home');" class="w-full p-2.5 rounded-xl flex items-center gap-3 text-xs font-bold text-violet-100 hover:text-white transition-colors" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
             <span class="material-symbols-outlined text-[20px]" style="color: #A78BFA;">home</span>
             <span>Home</span>
+          </button>
+
+          <!-- OCCUPANCY MENU ITEM -->
+          <button onclick="closeOperatorDrawer(); switchOpTab('rack_map');" class="w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-bold text-violet-100 hover:text-white transition-colors group" onmouseover="this.style.background='rgba(109,40,217,0.25)'" onmouseout="this.style.background='transparent'">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-emerald-400 text-[20px]">shelves</span>
+              <span>Rack Occupancy</span>
+            </div>
+            <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Denah</span>
           </button>
 
           <!-- SETTING MENU ITEM (OPENS PROFILE VIEW) -->
