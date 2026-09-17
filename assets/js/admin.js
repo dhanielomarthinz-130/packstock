@@ -1,4 +1,4 @@
-// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
+﻿// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
 
 let allMaterials = [];
 let allOperators = [];
@@ -16250,164 +16250,143 @@ function filterRackMapCards() {
     }
     return true;
   });
-
   if (filtered.length === 0) {
-    grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3';
-    grid.innerHTML = `
-      <div class="col-span-full py-16 text-center text-slate-400 space-y-2 bg-white rounded-2xl border border-slate-200 p-8">
-        <span class="material-symbols-outlined text-[42px] text-slate-300">shelves</span>
-        <p class="text-sm font-bold text-slate-700">Tidak ada lokasi rak yang sesuai filter</p>
-        <p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau status filter rak di atas.</p>
-      </div>
-    `;
+    grid.className = '';
+    grid.innerHTML = `<div class="py-16 text-center text-slate-400 space-y-2"><span class="material-symbols-outlined text-[42px] text-slate-300">shelves</span><p class="text-sm font-bold text-slate-700">Tidak ada lokasi rak yang sesuai filter</p><p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau status filter rak di atas.</p></div>`;
+    buildLocationTable([]);
     return;
   }
 
-  // Parse rack code: BLOK-BARIS-KOLOM-LEVEL  e.g.  B1-A-01-001
   const parseRackCode = code => {
     if (!code) return { block:'?', row:'?', col:'?', level: code||'?', raw: code };
     const p = code.split('-');
     if (p.length >= 4) return { block:p[0], row:p[1], col:p[2], level:p.slice(3).join('-'), raw:code };
     if (p.length === 3) return { block:p[0], row:p[1], col:p[2], level:'-', raw:code };
+    if (p.length === 2) return { block:p[0], row:p[1], col:'', level:'', raw:code };
     return { block:code, row:'', col:'', level:'', raw:code };
   };
 
-  // Group: blocks -> bays (row+col) -> slots
   const blocks = {};
   filtered.forEach(r => {
     const p = parseRackCode(r.rack);
     if (!blocks[p.block]) blocks[p.block] = { bays:{} };
-    const bayKey = p.row + '-' + p.col;
+    const bayKey = (p.row||'') + (p.col ? '-'+p.col : '');
     if (!blocks[p.block].bays[bayKey]) blocks[p.block].bays[bayKey] = [];
     blocks[p.block].bays[bayKey].push(Object.assign({}, r, { _p: p }));
   });
 
   const sortedBlocks = Object.keys(blocks).sort((a,b) => a.localeCompare(b, undefined, {numeric:true,sensitivity:'base'}));
-
-  let html = '<div class="space-y-6">';
+  let html = '<div class="space-y-5">';
 
   sortedBlocks.forEach(blockKey => {
     const block = blocks[blockKey];
     const sortedBays = Object.keys(block.bays).sort((a,b) => a.localeCompare(b, undefined, {numeric:true,sensitivity:'base'}));
     const totalSlots  = sortedBays.reduce((s,k) => s + block.bays[k].length, 0);
     const emptySlots  = sortedBays.reduce((s,k) => s + block.bays[k].filter(r => !r.has_stock).length, 0);
+    const lowSlots    = sortedBays.reduce((s,k) => s + block.bays[k].filter(r => { const fi=r.items&&r.items[0]; return fi&&fi.min_stock>0&&(r.total_qty||0)>0&&(r.total_qty||0)<=fi.min_stock; }).length, 0);
     const filledSlots = totalSlots - emptySlots;
     const fillPct     = totalSlots > 0 ? Math.round((filledSlots/totalSlots)*100) : 0;
 
-    html += '<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">';
-
-    // Block header
-    html += '<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100" style="background:linear-gradient(135deg,#1e1b4b 0%,#262363 60%,#312e81 100%);">';
-    html += '<div class="flex items-center gap-3">';
-    html += '<div class="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center"><span class="material-symbols-outlined text-white text-[20px]">warehouse</span></div>';
-    html += '<div><p class="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">Blok Rak Gudang</p>';
-    html += '<h3 class="text-base font-black text-white tracking-tight">Blok ' + escapeHtml(blockKey) + '</h3></div></div>';
+    html += '<div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">';
+    html += '<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3" style="background:linear-gradient(135deg,#1e1b4b 0%,#262363 60%,#312e81 100%);">';
+    html += '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center"><span class="material-symbols-outlined text-white text-[22px]">warehouse</span></div>';
+    html += '<div><p class="text-[9px] font-bold text-indigo-300 uppercase tracking-widest">Blok Rak Gudang</p><h3 class="text-[15px] font-black text-white tracking-tight">Blok ' + escapeHtml(blockKey) + '</h3></div></div>';
     html += '<div class="flex items-center gap-2 flex-wrap">';
-    html += '<span class="px-2 py-1 rounded-lg text-[10px] font-black bg-white/10 text-white border border-white/20">' + sortedBays.length + ' Bay</span>';
-    html += '<span class="px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">' + filledSlots + ' Terisi</span>';
-    html += '<span class="px-2 py-1 rounded-lg text-[10px] font-black bg-rose-500/30 text-rose-200 border border-rose-400/30' + (emptySlots > 0 ? ' animate-pulse' : '') + '">' + emptySlots + ' Kosong</span>';
-    html += '<div class="hidden md:flex items-center gap-1.5 ml-1"><span class="text-[10px] text-indigo-200 font-bold">' + fillPct + '% Terisi</span>';
-    html += '<div class="w-20 h-1.5 bg-white/20 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 rounded-full" style="width:' + fillPct + '%"></div></div></div>';
+    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-white/10 text-white border border-white/20">' + sortedBays.length + ' Bay</span>';
+    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">\u2713 ' + filledSlots + ' Terisi</span>';
+    if (lowSlots > 0) html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-400/30 text-amber-200 border border-amber-400/30">\u26a1 ' + lowSlots + ' Hampir Habis</span>';
+    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-500/30 text-rose-200 border border-rose-400/30' + (emptySlots>0?' animate-pulse':'') + '">\u2717 ' + emptySlots + ' Kosong</span>';
+    html += '<div class="hidden sm:flex items-center gap-1.5"><span class="text-[10px] text-indigo-200 font-bold">' + fillPct + '%</span><div class="w-24 h-2 bg-white/20 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 rounded-full" style="width:' + fillPct + '%"></div></div></div>';
     html += '</div></div>';
 
-    // Rack floor
-    html += '<div class="p-4 overflow-x-auto" style="background:repeating-linear-gradient(90deg,#f8fafc 0px,#f8fafc 1px,transparent 1px,transparent 24px),#f1f5f9;">';
-    html += '<div class="inline-flex gap-3 items-end min-w-max pb-2">';
+    html += '<div class="p-4 overflow-x-auto" style="background:#f1f5f9;">';
+    html += '<div class="inline-flex gap-2 items-end min-w-max pb-1">';
 
-    // Level ruler
     const maxLev = sortedBays.reduce((m,k) => Math.max(m, block.bays[k].length), 0);
-    html += '<div class="flex flex-col-reverse justify-end self-stretch pb-7 pr-1 gap-0.5 shrink-0" style="width:28px;">';
-    for (let lv = 1; lv <= maxLev; lv++) {
-      html += '<div class="flex items-center justify-end" style="height:59px;"><span class="text-[8px] font-black text-slate-400 tabular-nums">L' + lv + '</span></div>';
+    if (maxLev > 1) {
+      html += '<div class="flex flex-col-reverse gap-1 shrink-0 pr-2" style="padding-bottom:36px;">';
+      for (let lv = 1; lv <= maxLev; lv++) {
+        html += '<div class="flex items-center justify-end" style="height:74px;"><span style="font-size:9px;font-weight:900;color:#94a3b8;background:#e2e8f0;padding:1px 5px;border-radius:3px;">L' + lv + '</span></div>';
+      }
+      html += '</div>';
     }
-    html += '</div>';
 
     sortedBays.forEach(bayKey => {
-      const slots = block.bays[bayKey].slice().sort((a,b) =>
-        a._p.level.localeCompare(b._p.level, undefined, {numeric:true,sensitivity:'base'})
-      );
+      const slots = block.bays[bayKey].slice().sort((a,b) => a._p.level.localeCompare(b._p.level, undefined, {numeric:true,sensitivity:'base'}));
       const emptyInBay = slots.filter(s => !s.has_stock).length;
-      const bayLabel   = bayKey.replace('-', ' Â· ');
+      const bayLabel   = bayKey || '\u2013';
 
-      html += '<div class="flex flex-col items-center" style="min-width:88px;max-width:100px;">';
-      html += '<div class="w-full text-center mb-1.5">';
-      html += '<span class="text-[9px] font-black text-slate-600 uppercase tracking-wide">' + escapeHtml(bayLabel) + '</span>';
-      if (emptyInBay > 0) html += '<span class="ml-1 text-[8px] font-black text-rose-500">' + emptyInBay + '\u26a0</span>';
+      html += '<div class="flex flex-col items-center" style="min-width:96px;">';
+      html += '<div class="w-full text-center mb-1 flex items-center justify-center gap-1">';
+      html += '<span style="font-size:9px;font-weight:900;color:#475569;text-transform:uppercase;letter-spacing:.05em;">' + escapeHtml(bayLabel) + '</span>';
+      html += emptyInBay > 0 ? '<span style="font-size:9px;font-weight:900;color:#ef4444;">\u26a0' + emptyInBay + '</span>' : '<span style="font-size:9px;font-weight:900;color:#10b981;">\u2713</span>';
       html += '</div>';
 
-      // Poles wrapper â€” slots rendered BOTTOM to TOP using flex-col-reverse
-      html += '<div class="relative flex flex-col-reverse gap-0 w-full" style="border-left:4px solid #334155;border-right:4px solid #334155;padding:3px 4px 0 4px;border-radius:4px 4px 0 0;">';
+      html += '<div class="relative flex flex-col-reverse gap-1 w-full" style="border-left:5px solid #334155;border-right:5px solid #334155;padding:4px 5px 0 5px;border-radius:4px 4px 0 0;">';
 
       slots.forEach((slot, idx) => {
         const isFilled  = slot.has_stock;
         const qty       = Math.round(slot.total_qty || 0);
-        const unit      = (slot.items && slot.items[0] && slot.items[0].unit) ? slot.items[0].unit : 'Pcs';
-        const levelLbl  = slot._p.level || String(idx + 1);
-        const rackEsc   = escapeHtml(slot.rack || '-');
-        const itemName  = slot.items && slot.items[0] ? slot.items[0].name : '';
-        const nameShort = itemName.length > 14 ? itemName.substring(0, 13) + '\u2026' : itemName;
+        const unit      = (slot.items&&slot.items[0]&&slot.items[0].unit) ? slot.items[0].unit : 'Pcs';
+        const levelLbl  = slot._p.level || String(idx+1);
+        const rackRaw   = slot.rack || '-';
+        const rackEsc   = escapeHtml(rackRaw);
+        const rackSafe  = rackRaw.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        const itemName  = slot.items&&slot.items[0] ? (slot.items[0].name||'') : '';
+        const nameShort = itemName.length > 13 ? itemName.substring(0,12)+'\u2026' : itemName;
+        const isLow     = isFilled&&slot.items&&slot.items[0]&&slot.items[0].min_stock>0&&qty<=slot.items[0].min_stock;
 
-        if (isFilled) {
-          const isLow = slot.items && slot.items[0] && slot.items[0].min_stock > 0 && (slot.total_qty||0) <= slot.items[0].min_stock;
-          let slotBg, slotBorder;
-          if (isLow) {
-            slotBg = 'linear-gradient(160deg,#fef3c7 0%,#fcd34d 100%)';
-            slotBorder = '1.5px solid #f59e0b';
-          } else {
-            slotBg = 'linear-gradient(160deg,#d1fae5 0%,#6ee7b7 100%)';
-            slotBorder = '1.5px solid #10b981';
-          }
-          html += '<div onclick="showRackDetailPanel(\'' + rackEsc.replace(/'/g,"\\'") + '\')" title="' + rackEsc + '" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:' + slotBg + ';border:' + slotBorder + ';border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.1);transition:all .15s;">';
-          html += '<div style="position:absolute;bottom:0;left:-4px;right:-4px;height:4px;background:#334155;z-index:1;"></div>';
-          html += '<div class="flex flex-col items-center justify-center pb-1" style="height:100%;padding-top:4px;padding-left:3px;padding-right:3px;">';
-          html += '<span class="font-mono font-black text-emerald-900 leading-none" style="font-size:12px;">' + qty.toLocaleString() + '</span>';
-          html += '<span class="font-semibold text-emerald-700" style="font-size:8px;">' + escapeHtml(unit) + '</span>';
-          html += '<span class="font-bold text-emerald-800 truncate w-full text-center opacity-70" style="font-size:7px;margin-top:1px;">' + escapeHtml(nameShort || levelLbl) + '</span>';
-          html += '</div>';
-          html += '<div class="absolute inset-0 bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition-opacity" style="border-radius:3px;"></div>';
-          html += '<div class="absolute top-0.5 right-0.5 px-0.5 py-px rounded text-[6px] font-black text-emerald-900 bg-white/50" style="line-height:1;">' + escapeHtml(levelLbl) + '</div>';
-          html += '</div>';
+        let bg, border, textClr, shadow;
+        if (!isFilled) {
+          bg='#fff1f2'; border='2px dashed #f87171'; textClr='#dc2626'; shadow='none';
+        } else if (isLow) {
+          bg='linear-gradient(145deg,#fef9c3,#fde68a)'; border='2px solid #f59e0b'; textClr='#78350f'; shadow='0 3px 8px rgba(245,158,11,.3)';
         } else {
-          html += '<div onclick="showRackDetailPanel(\'' + rackEsc.replace(/'/g,"\\'") + '\')" title="' + rackEsc + ' - KOSONG" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:linear-gradient(160deg,#fff1f2 0%,#fecdd3 100%);border:2px dashed #f43f5e;border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);transition:all .15s;">';
-          html += '<div style="position:absolute;bottom:0;left:-4px;right:-4px;height:4px;background:#334155;z-index:1;"></div>';
-          html += '<div class="flex flex-col items-center justify-center pb-1" style="height:100%;padding-top:4px;">';
-          html += '<span class="material-symbols-outlined text-rose-400" style="font-size:16px;line-height:1;">do_not_disturb_on</span>';
-          html += '<span class="font-black text-rose-600 animate-pulse" style="font-size:8px;margin-top:1px;">KOSONG</span>';
-          html += '</div>';
-          html += '<div class="absolute inset-0 bg-rose-600/10 opacity-0 group-hover:opacity-100 transition-opacity" style="border-radius:3px;"></div>';
-          html += '<div class="absolute top-0.5 right-0.5 px-0.5 py-px rounded text-[6px] font-black text-rose-600 bg-white/60" style="line-height:1;">' + escapeHtml(levelLbl) + '</div>';
-          html += '</div>';
+          bg='linear-gradient(145deg,#d1fae5,#6ee7b7)'; border='2px solid #10b981'; textClr='#064e3b'; shadow='0 3px 8px rgba(16,185,129,.25)';
         }
+
+        html += '<div onclick="showRackDetailPanel(\'' + rackSafe + '\')" title="' + rackEsc + (isFilled?' \u2014 '+qty.toLocaleString()+' '+escapeHtml(unit):' \u2014 KOSONG') + '" class="relative w-full cursor-pointer select-none group" style="height:72px;background:' + bg + ';border:' + border + ';border-radius:6px;box-shadow:' + shadow + ';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'scale(1.04)\';this.style.zIndex=\'10\';" onmouseout="this.style.transform=\'scale(1)\';this.style.zIndex=\'1\';">';
+        html += '<div style="position:absolute;bottom:0;left:-5px;right:-5px;height:5px;background:linear-gradient(180deg,#475569,#1e293b);z-index:2;border-radius:0 0 3px 3px;"></div>';
+        html += '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px 4px 10px;gap:1px;">';
+
+        if (!isFilled) {
+          html += '<span class="material-symbols-outlined" style="font-size:22px;color:#f87171;line-height:1;">block</span>';
+          html += '<span style="font-size:8px;font-weight:900;color:#dc2626;letter-spacing:.05em;margin-top:2px;">KOSONG</span>';
+        } else {
+          html += '<span style="font-family:monospace;font-size:15px;font-weight:900;color:' + textClr + ';line-height:1;">' + qty.toLocaleString() + '</span>';
+          html += '<span style="font-size:8px;font-weight:700;color:' + textClr + ';opacity:.75;">' + escapeHtml(unit) + '</span>';
+          if (nameShort) html += '<span style="font-size:7px;font-weight:700;color:' + textClr + ';opacity:.6;margin-top:1px;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(nameShort) + '</span>';
+        }
+
+        html += '</div>';
+        html += '<div style="position:absolute;top:2px;left:3px;font-size:7px;font-weight:900;color:' + textClr + ';opacity:.5;line-height:1;">' + escapeHtml(levelLbl) + '</div>';
+        html += '</div>';
       });
 
-      html += '</div>';// /poles
-      html += '<div style="width:100%;height:6px;background:linear-gradient(180deg,#475569,#334155);border-radius:0 0 4px 4px;margin-top:0;"></div>';
-      html += '<div class="w-full flex items-center justify-center gap-1 mt-1.5">';
-      html += '<span class="text-[8px] font-black text-slate-500">' + slots.length + ' lvl</span>';
-      html += emptyInBay > 0
-        ? '<span class="text-[8px] font-black text-rose-500">' + emptyInBay + '\u26a0</span>'
-        : '<span class="text-[8px] font-black text-emerald-600">\u2713</span>';
-      html += '</div></div>';// /bay
+      html += '</div>';
+      html += '<div style="width:100%;height:8px;background:linear-gradient(180deg,#64748b,#1e293b);border-radius:0 0 5px 5px;"></div>';
+      html += '<div style="width:100%;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:5px;">';
+      html += '<span style="font-size:8px;font-weight:700;color:#64748b;">' + slots.length + 'Lvl</span>';
+      html += emptyInBay>0 ? '<span style="font-size:8px;font-weight:900;color:#ef4444;">' + emptyInBay + '\u26a0</span>' : '<span style="font-size:8px;font-weight:900;color:#10b981;">\u2713</span>';
+      html += '</div>';
+      html += '</div>';
     });
 
-    html += '</div></div>';// /inline-flex /overflow-x
+    html += '</div></div>';
 
-    // Block footer
-    html += '<div class="px-4 py-2 border-t border-slate-100 bg-slate-50/60 flex flex-wrap items-center gap-4 text-[10px] text-slate-500">';
-    html += '<div class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm border border-emerald-500 bg-emerald-200 inline-block"></span>Terisi (ada stok)</div>';
-    html += '<div class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm border-2 border-dashed border-rose-400 bg-rose-100 inline-block"></span>Kosong (stok = 0)</div>';
-    html += '<span class="ml-auto italic">Klik slot untuk detail SKU</span>';
+    html += '<div class="px-4 py-2 border-t border-slate-100 bg-white flex flex-wrap items-center gap-4 text-[10px] text-slate-500">';
+    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block" style="background:linear-gradient(145deg,#d1fae5,#6ee7b7);border:2px solid #10b981;"></span>Terisi (stok \u003e 0)</div>';
+    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block" style="background:linear-gradient(145deg,#fef9c3,#fde68a);border:2px solid #f59e0b;"></span>Hampir Habis</div>';
+    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block border-2 border-dashed" style="background:#fff1f2;border-color:#f87171;"></span>Kosong</div>';
+    html += '<span class="ml-auto italic text-slate-400">Klik kotak slot untuk detail SKU \u2192</span>';
     html += '</div>';
 
-    html += '</div>';// /block card
+    html += '</div>';
   });
 
-  html += '</div>';// /space-y-6
-
+  html += '</div>';
   grid.className = '';
   grid.innerHTML = html;
-
-  // Build the location table below visualization
   buildLocationTable(filtered);
 }
 
