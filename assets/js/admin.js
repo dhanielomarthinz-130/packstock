@@ -1,4 +1,4 @@
-﻿// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
+// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
 
 let allMaterials = [];
 let allOperators = [];
@@ -15946,227 +15946,8 @@ function updateRackMapSummary(data) {
   }
 }
 
-// Parse rack code into components: block, area, rack, level, slot
-function parseRackCodeFull(code) {
-  if (!code) return { gudang: 'Gudang Utama', area: '-', rak: '-', level: '-', slot: '-', block: '?', raw: code };
-  const p = code.split('-');
-  // Format: BLOCK-ROW-COL-LEVEL or B1-A-01-001
-  // We interpret: p[0]=block(gudang ref), p[1]=area, p[2]=rak/col, p[3]=level, p[4+]=slot
-  const block = p[0] || '?';
-  const area  = p[1] || '-';
-  const rak   = p[2] || '-';
-  const level = p[3] || '-';
-  const slot  = p.slice(4).join('-') || (p[3] || '-');
 
-  return {
-    gudang: 'Gudang Utama',
-    area:   area,
-    rak:    block + '-' + area,
-    level:  level,
-    slot:   slot,
-    block:  block,
-    raw:    code
-  };
-}
 
-function buildRackFilterDropdowns(racks) {
-  const selGudang = document.getElementById('rackFilterGudang');
-  const selArea   = document.getElementById('rackFilterArea');
-  const selRak    = document.getElementById('rackFilterRak');
-  if (!selGudang || !selArea || !selRak) return;
-
-  const gudangSet = new Set();
-  const areaSet   = new Set();
-  const rakSet    = new Set();
-
-  racks.forEach(r => {
-    const p = parseRackCodeFull(r.rack);
-    gudangSet.add(p.gudang);
-    if (p.area && p.area !== '-') areaSet.add(p.area);
-    if (p.block && p.block !== '?') rakSet.add(p.block);
-  });
-
-  const curGudang = selGudang.value;
-  const curArea   = selArea.value;
-  const curRak    = selRak.value;
-
-  selGudang.innerHTML = '<option value="">Semua Gudang</option>' +
-    Array.from(gudangSet).sort().map(g => `<option value="${escapeHtml(g)}" ${curGudang===g?'selected':''}>${escapeHtml(g)}</option>`).join('');
-
-  selArea.innerHTML = '<option value="">Semua Area</option>' +
-    Array.from(areaSet).sort().map(a => `<option value="${escapeHtml(a)}" ${curArea===a?'selected':''}>${escapeHtml(a)}</option>`).join('');
-
-  selRak.innerHTML = '<option value="">Semua Rak</option>' +
-    Array.from(rakSet).sort((a,b) => a.localeCompare(b, undefined, {numeric:true})).map(r => `<option value="${escapeHtml(r)}" ${curRak===r?'selected':''}>${escapeHtml(r)}</option>`).join('');
-}
-
-function applyRackVisualFilter() {
-  currentRackStatusFilter = document.getElementById('rackFilterStatus')?.value || 'ALL';
-  filterRackMapCards();
-}
-
-function setRackViewMode(mode) {
-  currentRackViewMode = mode;
-  const btn3D = document.getElementById('btnRack3D');
-  const btn2D = document.getElementById('btnRack2D');
-  const viz   = document.getElementById('rackVisualizationContainer');
-
-  if (btn3D) btn3D.className = mode === '3D'
-    ? 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer'
-    : 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
-  if (btn2D) btn2D.className = mode === '2D'
-    ? 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer'
-    : 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
-
-  // Toggle background opacity for 2D mode (cleaner)
-  if (viz) {
-    const bgEl = viz.querySelector('div.absolute');
-    if (bgEl) bgEl.style.opacity = mode === '3D' ? '0.13' : '0.05';
-  }
-  filterRackMapCards();
-}
-
-function closeRackDetailPanel() {
-  const panel = document.getElementById('rackDetailPanel');
-  if (panel) panel.style.display = 'none';
-}
-
-function showRackDetailPanel(rackName) {
-  if (!allRackMapData || !allRackMapData.racks) return;
-  const rack = allRackMapData.racks.find(r => r.rack === rackName);
-  if (!rack) return;
-
-  const panel = document.getElementById('rackDetailPanel');
-  if (!panel) { showRackMapDetail(encodeURIComponent(rackName)); return; }
-
-  // Parse rack code
-  const p = parseRackCodeFull(rack.rack);
-
-  // Fill panel
-  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
-
-  setTxt('detailRackCode', rack.rack);
-  setTxt('detailInfoGudang', p.gudang);
-  setTxt('detailInfoArea', p.area);
-  setTxt('detailInfoRak', p.block);
-  setTxt('detailInfoLevel', p.level);
-  setTxt('detailInfoSlot', p.slot);
-
-  // First item info
-  const firstItem = rack.items && rack.items[0];
-  setTxt('detailInfoSKU', firstItem ? (firstItem.code || '-') : '-');
-  setTxt('detailInfoNama', firstItem ? (firstItem.name || '-') : '-');
-  setTxt('detailInfoQty', Math.round(rack.total_qty || 0).toLocaleString());
-  setTxt('detailInfoSatuan', firstItem ? (firstItem.unit || 'Pcs') : '-');
-
-  // Status badge
-  const badgeEl = document.getElementById('detailRackStatusBadge');
-  const statusBox = document.getElementById('detailStatusBox');
-  const statusIcon = document.getElementById('detailStatusIcon');
-  const statusTitle = document.getElementById('detailStatusTitle');
-  const statusDesc  = document.getElementById('detailStatusDesc');
-
-  const isLow = rack.has_stock && firstItem && firstItem.min_stock > 0 && (rack.total_qty || 0) <= firstItem.min_stock;
-
-  if (!rack.has_stock) {
-    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700'; badgeEl.innerText = 'Kosong'; }
-    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2';
-    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-rose-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'location_off'; }
-    if (statusTitle) { statusTitle.className = 'text-xs font-black text-rose-700'; statusTitle.innerText = 'Lokasi Kosong'; }
-    if (statusDesc) statusDesc.innerText = 'Belum ada barang di lokasi ini.';
-  } else if (isLow) {
-    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700'; badgeEl.innerText = 'Hampir Habis'; }
-    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2';
-    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-amber-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'warning'; }
-    if (statusTitle) { statusTitle.className = 'text-xs font-black text-amber-700'; statusTitle.innerText = 'Hampir Habis'; }
-    if (statusDesc) statusDesc.innerText = `Stok (${Math.round(rack.total_qty||0)}) mendekati atau di bawah minimum.`;
-  } else {
-    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700'; badgeEl.innerText = 'Terisi'; }
-    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2';
-    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-emerald-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'check_circle'; }
-    if (statusTitle) { statusTitle.className = 'text-xs font-black text-emerald-700'; statusTitle.innerText = 'Terisi'; }
-    if (statusDesc) statusDesc.innerText = `Ada ${rack.item_count || 1} SKU di lokasi ini.`;
-  }
-
-  // Multi-SKU section
-  const multiSection = document.getElementById('detailMultiSkuSection');
-  const multiList    = document.getElementById('detailMultiSkuList');
-  const items = rack.items || [];
-  if (items.length > 1) {
-    if (multiSection) multiSection.classList.remove('hidden');
-    if (multiList) {
-      multiList.innerHTML = items.map(item => `
-        <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg">
-          <div class="flex justify-between items-center">
-            <span class="text-[10px] font-mono font-bold text-indigo-700">${escapeHtml(item.code||'-')}</span>
-            <span class="text-[10px] font-black ${item.current_stock>0?'text-emerald-700':'text-rose-600'}">${parseFloat(item.current_stock||0).toLocaleString()} ${escapeHtml(item.unit||'Pcs')}</span>
-          </div>
-          <p class="text-[10px] font-semibold text-slate-700 truncate mt-0.5">${escapeHtml(item.name||'-')}</p>
-        </div>
-      `).join('');
-    }
-  } else {
-    if (multiSection) multiSection.classList.add('hidden');
-  }
-
-  panel.style.display = 'flex';
-  panel.style.flexDirection = 'column';
-}
-
-function buildLocationTable(filtered) {
-  const tbody = document.getElementById('rackLocationTableBody');
-  const countEl = document.getElementById('rackLocationTableCount');
-  if (!tbody) return;
-
-  // Expand each rack to rows (one row per rack slot, showing first item)
-  const rows = [];
-  filtered.forEach(r => {
-    const p = parseRackCodeFull(r.rack);
-    const firstItem = r.items && r.items[0];
-    const isLow = firstItem && firstItem.min_stock > 0 && (r.total_qty||0) > 0 && (r.total_qty||0) <= firstItem.min_stock;
-    rows.push({
-      rack: r,
-      parsed: p,
-      firstItem,
-      isLow,
-    });
-  });
-
-  if (countEl) countEl.innerText = `${rows.length} lokasi`;
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400 text-xs">Tidak ada lokasi yang sesuai filter.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = rows.map((row, idx) => {
-    const { rack: r, parsed: p, firstItem, isLow } = row;
-    let statusHtml;
-    if (!r.has_stock) {
-      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700">Kosong</span>`;
-    } else if (isLow) {
-      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700">Hampir Habis</span>`;
-    } else {
-      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700">Terisi</span>`;
-    }
-    const rowBg = !r.has_stock ? 'bg-rose-50/40' : (isLow ? 'bg-amber-50/40' : '');
-    return `
-      <tr class="hover:bg-slate-50 transition-colors cursor-pointer ${rowBg}" onclick="showRackDetailPanel('${escapeHtml(r.rack)}')">  
-        <td class="py-2 px-3 text-slate-400 font-medium">${idx+1}</td>
-        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.gudang)}</td>
-        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.area)}</td>
-        <td class="py-2 px-3 font-mono font-bold text-indigo-700">${escapeHtml(p.block)}</td>
-        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.level)}</td>
-        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.slot)}</td>
-        <td class="py-2 px-3 font-mono font-bold text-slate-800">${escapeHtml(firstItem ? (firstItem.code||'-') : '-')}</td>
-        <td class="py-2 px-3 text-slate-700 max-w-[160px] truncate">${escapeHtml(firstItem ? (firstItem.name||'-') : '-')}</td>
-        <td class="py-2 px-3 text-right font-black ${r.has_stock ? 'text-emerald-700' : 'text-slate-400'}">${Math.round(r.total_qty||0).toLocaleString()}</td>
-        <td class="py-2 px-3 text-slate-600">${escapeHtml(firstItem ? (firstItem.unit||'-') : '-')}</td>
-        <td class="py-2 px-3">${statusHtml}</td>
-      </tr>
-    `;
-  }).join('');
-}
 
 
 function switchRackMapCategory(category) {
@@ -16212,252 +15993,674 @@ function setRackStatusFilter(status) {
   filterRackMapCards();
 }
 
-function filterRackMapCards() {
+currentRackViewMode = '3D';
+let selectedRackLocation = null;
+
+function setRackViewMode(mode) {
+  currentRackViewMode = mode;
+  const btn3D = document.getElementById('btnRack3D');
+  const btn2D = document.getElementById('btnRack2D');
+  if (mode === '3D') {
+    if (btn3D) btn3D.className = 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer';
+    if (btn2D) btn2D.className = 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
+  } else {
+    if (btn2D) btn2D.className = 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer';
+    if (btn3D) btn3D.className = 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
+  }
+  applyRackVisualFilter();
+}
+
+function parseRackCodeFull(code) {
+  if (!code) return { gudang: 'Gudang Utama', area: 'A1', rak: 'R1', level: '01', slot: '01', raw: '-' };
+  const raw = String(code).trim();
+
+  // Format B1-A-01-003
+  const p = raw.split('-');
+  if (p.length >= 4) {
+    const slotNum = parseInt(p[3], 10) || 1;
+    // 5 levels per rack column (L01 to L05)
+    const rackIdx = Math.floor((slotNum - 1) / 5) + 1;
+    const lvlIdx  = ((slotNum - 1) % 5) + 1;
+    return {
+      gudang: p[0] === 'B1' ? 'Gudang Utama' : ('Gudang ' + p[0]),
+      area: p[1] || 'A1',
+      rak: 'R' + rackIdx,
+      level: String(lvlIdx).padStart(2, '0'),
+      slot: String(p[3]).padStart(2, '0'),
+      raw: raw
+    };
+  }
+
+  // Format Rak G-01 to Rak G-05
+  if (raw.toLowerCase().includes('rak g-')) {
+    const num = raw.replace(/[^0-9]/g, '') || '1';
+    return {
+      gudang: 'Gudang Gimmick',
+      area: 'Area G',
+      rak: 'R' + parseInt(num, 10),
+      level: '01',
+      slot: String(num).padStart(2, '0'),
+      raw: raw
+    };
+  }
+
+  // Format with "Gudang"
+  if (raw.toLowerCase().includes('gudang')) {
+    return {
+      gudang: raw,
+      area: 'Area Umum',
+      rak: 'R1',
+      level: '01',
+      slot: '01',
+      raw: raw
+    };
+  }
+
+  // Format 3 parts e.g. R1-01-04
+  if (p.length === 3) {
+    return {
+      gudang: 'Gudang Utama',
+      area: p[0],
+      rak: p[1].startsWith('R') ? p[1] : ('R' + p[1]),
+      level: p[2],
+      slot: p[2],
+      raw: raw
+    };
+  }
+
+  return {
+    gudang: 'Gudang Utama',
+    area: 'A1',
+    rak: raw.startsWith('R') ? raw : ('R-' + raw),
+    level: '01',
+    slot: '01',
+    raw: raw
+  };
+}
+
+function buildRackFilterDropdowns(racks) {
+  const selGudang = document.getElementById('rackFilterGudang');
+  const selArea   = document.getElementById('rackFilterArea');
+  const selRak    = document.getElementById('rackFilterRak');
+
+  if (!selGudang || !selArea || !selRak) return;
+
+  const curGudang = selGudang.value;
+  const curArea   = selArea.value;
+  const curRak    = selRak.value;
+
+  const gudangs = new Set();
+  const areas   = new Set();
+  const raks    = new Set();
+
+  racks.forEach(r => {
+    const p = parseRackCodeFull(r.rack);
+    if (p.gudang) gudangs.add(p.gudang);
+    if (p.area)   areas.add(p.area);
+    if (p.rak)    raks.add(p.rak);
+  });
+
+  const sortedGudangs = Array.from(gudangs).sort();
+  const sortedAreas   = Array.from(areas).sort();
+  const sortedRaks    = Array.from(raks).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+
+  selGudang.innerHTML = '<option value="">Semua Gudang</option>' + sortedGudangs.map(g => `<option value="${escapeHtml(g)}" ${g === curGudang ? 'selected' : ''}>${escapeHtml(g)}</option>`).join('');
+  selArea.innerHTML   = '<option value="">Semua Area</option>'   + sortedAreas.map(a => `<option value="${escapeHtml(a)}" ${a === curArea ? 'selected' : ''}>${escapeHtml(a)}</option>`).join('');
+  selRak.innerHTML    = '<option value="">Semua Rak</option>'    + sortedRaks.map(rk => `<option value="${escapeHtml(rk)}" ${rk === curRak ? 'selected' : ''}>${escapeHtml(rk)}</option>`).join('');
+}
+
+function applyRackVisualFilter() {
   if (!allRackMapData || !allRackMapData.racks) return;
 
-  const searchInput = document.getElementById('rackMapSearchInput');
-  const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-  const grid = document.getElementById('rackMapGrid');
-  if (!grid) return;
+  const searchInput  = document.getElementById('rackMapSearchInput');
+  const query        = (searchInput ? searchInput.value : '').trim().toLowerCase();
+  const filterGudang = document.getElementById('rackFilterGudang')?.value || '';
+  const filterArea   = document.getElementById('rackFilterArea')?.value || '';
+  const filterRak    = document.getElementById('rackFilterRak')?.value || '';
+  const statusSel    = document.getElementById('rackFilterStatus')?.value || currentRackStatusFilter || 'ALL';
 
   const filtered = allRackMapData.racks.filter(r => {
-    // Dropdown filters
-    const filterGudang = document.getElementById('rackFilterGudang')?.value || '';
-    const filterArea   = document.getElementById('rackFilterArea')?.value || '';
-    const filterRak    = document.getElementById('rackFilterRak')?.value || '';
-    if (filterGudang || filterArea || filterRak) {
-      const p = parseRackCodeFull(r.rack);
-      if (filterGudang && p.gudang !== filterGudang) return false;
-      if (filterArea   && p.area  !== filterArea)   return false;
-      if (filterRak    && p.block !== filterRak)     return false;
-    }
+    const p = parseRackCodeFull(r.rack);
+    if (filterGudang && p.gudang !== filterGudang) return false;
+    if (filterArea   && p.area !== filterArea) return false;
+    if (filterRak    && p.rak !== filterRak) return false;
+
     // Status filter
-    if (currentRackStatusFilter === 'FILLED' && !r.has_stock) return false;
-    if (currentRackStatusFilter === 'EMPTY'  &&  r.has_stock) return false;
-    if (currentRackStatusFilter === 'LOW') {
+    if (statusSel === 'FILLED' && !r.has_stock) return false;
+    if (statusSel === 'EMPTY'  &&  r.has_stock) return false;
+    if (statusSel === 'LOW') {
       const fi = r.items && r.items[0];
-      const isLow = fi && fi.min_stock > 0 && (r.total_qty||0) > 0 && (r.total_qty||0) <= fi.min_stock;
+      const isLow = fi && fi.min_stock > 0 && (r.total_qty || 0) > 0 && (r.total_qty || 0) <= fi.min_stock;
       if (!isLow) return false;
     }
+
     if (query) {
       const matchRack  = (r.rack || '').toLowerCase().includes(query);
+      const matchP     = (p.rak || '').toLowerCase().includes(query) || (p.gudang || '').toLowerCase().includes(query);
       const matchItems = (r.items || []).some(item =>
         (item.name || '').toLowerCase().includes(query) ||
         (item.code || '').toLowerCase().includes(query) ||
         (item.category || '').toLowerCase().includes(query)
       );
-      if (!matchRack && !matchItems) return false;
+      if (!matchRack && !matchP && !matchItems) return false;
     }
     return true;
   });
+
+  // Update Summary KPI from filtered data
+  const totalSlots  = filtered.length;
+  let filledSlots   = 0;
+  let emptySlots    = 0;
+  let totalUnits    = 0;
+  filtered.forEach(r => {
+    if (r.has_stock) filledSlots++;
+    else emptySlots++;
+    totalUnits += (r.total_qty || 0);
+  });
+  const filledPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+
+  const elTotalSlots  = document.getElementById('kpiRackTotalSlots');
+  const elFilledSlots = document.getElementById('kpiRackFilledSlots');
+  const elEmptySlots  = document.getElementById('kpiRackEmptySlots');
+  const elFilledPct   = document.getElementById('kpiRackFilledPct');
+  const elFillBar     = document.getElementById('kpiRackFillBar');
+  const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
+
+  if (elTotalSlots)  elTotalSlots.innerText  = totalSlots.toLocaleString();
+  if (elFilledSlots) elFilledSlots.innerText = filledSlots.toLocaleString();
+  if (elEmptySlots)  elEmptySlots.innerText  = emptySlots.toLocaleString();
+  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}%`;
+  if (elFillBar)     elFillBar.style.width   = `${filledPct}%`;
+  if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
+
+  if (filtered.length > 0) {
+    const isVisible = selectedRackLocation && filtered.some(r => r.rack === selectedRackLocation);
+    if (!isVisible) {
+      selectedRackLocation = filtered[0].rack;
+    }
+  } else {
+    selectedRackLocation = null;
+  }
+
+  renderRackMapVisualization(filtered);
+  buildLocationTable(filtered);
+
+  if (selectedRackLocation) {
+    showRackDetailPanel(selectedRackLocation, false);
+  } else {
+    closeRackDetailPanel();
+  }
+}
+
+function filterRackMapCards() {
+  applyRackVisualFilter();
+}
+
+function renderRackMapVisualization(filtered) {
+  const grid = document.getElementById('rackMapGrid');
+  if (!grid) return;
+
   if (filtered.length === 0) {
-    grid.className = '';
-    grid.innerHTML = `<div class="py-16 text-center text-slate-400 space-y-2"><span class="material-symbols-outlined text-[42px] text-slate-300">shelves</span><p class="text-sm font-bold text-slate-700">Tidak ada lokasi rak yang sesuai filter</p><p class="text-xs text-slate-400">Coba ubah kata kunci pencarian atau status filter rak di atas.</p></div>`;
-    buildLocationTable([]);
+    grid.innerHTML = `
+      <div class="py-20 text-center text-slate-400 space-y-2">
+        <span class="material-symbols-outlined text-[44px] text-slate-400">shelves</span>
+        <p class="text-sm font-bold text-slate-300">Tidak ada lokasi rak yang sesuai filter</p>
+        <p class="text-xs text-slate-400">Silakan sesuaikan pilihan dropdown Gudang, Area, Rak, atau kata kunci pencarian.</p>
+      </div>
+    `;
     return;
   }
 
-  const parseRackCode = code => {
-    if (!code) return { block:'?', row:'?', col:'?', level: code||'?', raw: code };
-    const p = code.split('-');
-    if (p.length >= 4) return { block:p[0], row:p[1], col:p[2], level:p.slice(3).join('-'), raw:code };
-    if (p.length === 3) return { block:p[0], row:p[1], col:p[2], level:'-', raw:code };
-    if (p.length === 2) return { block:p[0], row:p[1], col:'', level:'', raw:code };
-    return { block:code, row:'', col:'', level:'', raw:code };
-  };
+  // 2D View Mode: Matrix grid of small rack location boxes
+  if (currentRackViewMode === '2D') {
+    let html = '<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3">';
+    filtered.forEach(slot => {
+      const isFilled   = slot.has_stock;
+      const qty        = Math.round(slot.total_qty || 0);
+      const unit       = (slot.items && slot.items[0] && slot.items[0].unit) ? slot.items[0].unit : 'Pcs';
+      const itemName   = (slot.items && slot.items[0] && slot.items[0].name) ? slot.items[0].name : '';
+      const isLow      = isFilled && slot.items && slot.items[0] && slot.items[0].min_stock > 0 && qty <= slot.items[0].min_stock;
+      const isSelected = selectedRackLocation === slot.rack;
 
-  const blocks = {};
-  filtered.forEach(r => {
-    const p = parseRackCode(r.rack);
-    if (!blocks[p.block]) blocks[p.block] = { bays:{} };
-    const bayKey = (p.row||'') + (p.col ? '-'+p.col : '');
-    if (!blocks[p.block].bays[bayKey]) blocks[p.block].bays[bayKey] = [];
-    blocks[p.block].bays[bayKey].push(Object.assign({}, r, { _p: p }));
+      let borderCls, bgCls, badgeCls, statusText;
+      if (!isFilled) {
+        borderCls = 'border-2 border-dashed border-rose-400';
+        bgCls     = 'bg-white/95';
+        badgeCls  = 'bg-rose-100 text-rose-700 border border-rose-200';
+        statusText = 'Kosong';
+      } else if (isLow) {
+        borderCls = 'border-2 border-amber-400';
+        bgCls     = 'bg-amber-50/95';
+        badgeCls  = 'bg-amber-100 text-amber-800 border border-amber-300';
+        statusText = 'Hampir Habis';
+      } else {
+        borderCls = 'border-2 border-emerald-500';
+        bgCls     = 'bg-emerald-50/95';
+        badgeCls  = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+        statusText = 'Terisi';
+      }
+
+      const ringCls = isSelected ? 'ring-4 ring-indigo-500 shadow-lg scale-105 z-20' : 'hover:scale-[1.03] hover:shadow-md';
+      const rackSafe = slot.rack.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      html += `
+        <div onclick="showRackDetailPanel('${rackSafe}')"
+          class="relative p-2.5 rounded-xl cursor-pointer transition-all select-none backdrop-blur-xs ${bgCls} ${borderCls} ${ringCls}">
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="font-mono font-black text-xs text-slate-800 truncate" title="${escapeHtml(slot.rack)}">${escapeHtml(slot.rack)}</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black shrink-0 ${badgeCls}">${statusText}</span>
+          </div>
+          <div class="flex items-baseline gap-1 my-1">
+            <span class="font-mono font-black text-base ${isFilled ? 'text-slate-900' : 'text-slate-400'}">${qty.toLocaleString()}</span>
+            <span class="text-[10px] font-semibold text-slate-500">${escapeHtml(unit)}</span>
+          </div>
+          <p class="text-[10px] font-medium text-slate-600 truncate" title="${escapeHtml(itemName || 'Lokasi Kosong')}">${escapeHtml(itemName || 'Siap diisi')}</p>
+        </div>
+      `;
+    });
+    html += '</div>';
+    grid.innerHTML = html;
+    return;
+  }
+
+  // 3D View Mode: Industrial warehouse rack columns with shelves and small rack boxes
+  const rackGroups = {};
+  filtered.forEach(slot => {
+    const p = parseRackCodeFull(slot.rack);
+    const rKey = p.rak || 'R1';
+    if (!rackGroups[rKey]) rackGroups[rKey] = [];
+    rackGroups[rKey].push(Object.assign({}, slot, { _p: p }));
   });
 
-  const sortedBlocks = Object.keys(blocks).sort((a,b) => a.localeCompare(b, undefined, {numeric:true,sensitivity:'base'}));
-  let html = '<div class="space-y-5">';
+  const sortedRakKeys = Object.keys(rackGroups).sort((a,b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
 
-  sortedBlocks.forEach(blockKey => {
-    const block = blocks[blockKey];
-    const sortedBays = Object.keys(block.bays).sort((a,b) => a.localeCompare(b, undefined, {numeric:true,sensitivity:'base'}));
-    const totalSlots  = sortedBays.reduce((s,k) => s + block.bays[k].length, 0);
-    const emptySlots  = sortedBays.reduce((s,k) => s + block.bays[k].filter(r => !r.has_stock).length, 0);
-    const lowSlots    = sortedBays.reduce((s,k) => s + block.bays[k].filter(r => { const fi=r.items&&r.items[0]; return fi&&fi.min_stock>0&&(r.total_qty||0)>0&&(r.total_qty||0)<=fi.min_stock; }).length, 0);
-    const filledSlots = totalSlots - emptySlots;
-    const fillPct     = totalSlots > 0 ? Math.round((filledSlots/totalSlots)*100) : 0;
+  let html = '<div class="inline-flex gap-5 items-end min-w-max pb-3 pt-2">';
 
-    html += '<div class="rounded-2xl overflow-hidden border border-slate-200 shadow-sm">';
-    html += '<div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3" style="background:linear-gradient(135deg,#1e1b4b 0%,#262363 60%,#312e81 100%);">';
-    html += '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center"><span class="material-symbols-outlined text-white text-[22px]">warehouse</span></div>';
-    html += '<div><p class="text-[9px] font-bold text-indigo-300 uppercase tracking-widest">Blok Rak Gudang</p><h3 class="text-[15px] font-black text-white tracking-tight">Blok ' + escapeHtml(blockKey) + '</h3></div></div>';
-    html += '<div class="flex items-center gap-2 flex-wrap">';
-    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-white/10 text-white border border-white/20">' + sortedBays.length + ' Bay</span>';
-    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">\u2713 ' + filledSlots + ' Terisi</span>';
-    if (lowSlots > 0) html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-400/30 text-amber-200 border border-amber-400/30">\u26a1 ' + lowSlots + ' Hampir Habis</span>';
-    html += '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-500/30 text-rose-200 border border-rose-400/30' + (emptySlots>0?' animate-pulse':'') + '">\u2717 ' + emptySlots + ' Kosong</span>';
-    html += '<div class="hidden sm:flex items-center gap-1.5"><span class="text-[10px] text-indigo-200 font-bold">' + fillPct + '%</span><div class="w-24 h-2 bg-white/20 rounded-full overflow-hidden"><div class="h-full bg-emerald-400 rounded-full" style="width:' + fillPct + '%"></div></div></div>';
-    html += '</div></div>';
-
-    html += '<div class="p-4 overflow-x-auto" style="background:#f1f5f9;">';
-    html += '<div class="inline-flex gap-2 items-end min-w-max pb-1">';
-
-    const maxLev = sortedBays.reduce((m,k) => Math.max(m, block.bays[k].length), 0);
-    if (maxLev > 1) {
-      html += '<div class="flex flex-col-reverse gap-1 shrink-0 pr-2" style="padding-bottom:36px;">';
-      for (let lv = 1; lv <= maxLev; lv++) {
-        html += '<div class="flex items-center justify-end" style="height:74px;"><span style="font-size:9px;font-weight:900;color:#94a3b8;background:#e2e8f0;padding:1px 5px;border-radius:3px;">L' + lv + '</span></div>';
-      }
-      html += '</div>';
-    }
-
-    sortedBays.forEach(bayKey => {
-      const slots = block.bays[bayKey].slice().sort((a,b) => a._p.level.localeCompare(b._p.level, undefined, {numeric:true,sensitivity:'base'}));
-      const emptyInBay = slots.filter(s => !s.has_stock).length;
-      const bayLabel   = bayKey || '\u2013';
-
-      html += '<div class="flex flex-col items-center" style="min-width:96px;">';
-      html += '<div class="w-full text-center mb-1 flex items-center justify-center gap-1">';
-      html += '<span style="font-size:9px;font-weight:900;color:#475569;text-transform:uppercase;letter-spacing:.05em;">' + escapeHtml(bayLabel) + '</span>';
-      html += emptyInBay > 0 ? '<span style="font-size:9px;font-weight:900;color:#ef4444;">\u26a0' + emptyInBay + '</span>' : '<span style="font-size:9px;font-weight:900;color:#10b981;">\u2713</span>';
-      html += '</div>';
-
-      html += '<div class="relative flex flex-col-reverse gap-1 w-full" style="border-left:5px solid #334155;border-right:5px solid #334155;padding:4px 5px 0 5px;border-radius:4px 4px 0 0;">';
-
-      slots.forEach((slot, idx) => {
-        const isFilled  = slot.has_stock;
-        const qty       = Math.round(slot.total_qty || 0);
-        const unit      = (slot.items&&slot.items[0]&&slot.items[0].unit) ? slot.items[0].unit : 'Pcs';
-        const levelLbl  = slot._p.level || String(idx+1);
-        const rackRaw   = slot.rack || '-';
-        const rackEsc   = escapeHtml(rackRaw);
-        const rackSafe  = rackRaw.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        const itemName  = slot.items&&slot.items[0] ? (slot.items[0].name||'') : '';
-        const nameShort = itemName.length > 13 ? itemName.substring(0,12)+'\u2026' : itemName;
-        const isLow     = isFilled&&slot.items&&slot.items[0]&&slot.items[0].min_stock>0&&qty<=slot.items[0].min_stock;
-
-        let bg, border, textClr, shadow;
-        if (!isFilled) {
-          bg='#fff1f2'; border='2px dashed #f87171'; textClr='#dc2626'; shadow='none';
-        } else if (isLow) {
-          bg='linear-gradient(145deg,#fef9c3,#fde68a)'; border='2px solid #f59e0b'; textClr='#78350f'; shadow='0 3px 8px rgba(245,158,11,.3)';
-        } else {
-          bg='linear-gradient(145deg,#d1fae5,#6ee7b7)'; border='2px solid #10b981'; textClr='#064e3b'; shadow='0 3px 8px rgba(16,185,129,.25)';
-        }
-
-        html += '<div onclick="showRackDetailPanel(\'' + rackSafe + '\')" title="' + rackEsc + (isFilled?' \u2014 '+qty.toLocaleString()+' '+escapeHtml(unit):' \u2014 KOSONG') + '" class="relative w-full cursor-pointer select-none group" style="height:72px;background:' + bg + ';border:' + border + ';border-radius:6px;box-shadow:' + shadow + ';transition:transform .12s,box-shadow .12s;" onmouseover="this.style.transform=\'scale(1.04)\';this.style.zIndex=\'10\';" onmouseout="this.style.transform=\'scale(1)\';this.style.zIndex=\'1\';">';
-        html += '<div style="position:absolute;bottom:0;left:-5px;right:-5px;height:5px;background:linear-gradient(180deg,#475569,#1e293b);z-index:2;border-radius:0 0 3px 3px;"></div>';
-        html += '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5px 4px 10px;gap:1px;">';
-
-        if (!isFilled) {
-          html += '<span class="material-symbols-outlined" style="font-size:22px;color:#f87171;line-height:1;">block</span>';
-          html += '<span style="font-size:8px;font-weight:900;color:#dc2626;letter-spacing:.05em;margin-top:2px;">KOSONG</span>';
-        } else {
-          html += '<span style="font-family:monospace;font-size:15px;font-weight:900;color:' + textClr + ';line-height:1;">' + qty.toLocaleString() + '</span>';
-          html += '<span style="font-size:8px;font-weight:700;color:' + textClr + ';opacity:.75;">' + escapeHtml(unit) + '</span>';
-          if (nameShort) html += '<span style="font-size:7px;font-weight:700;color:' + textClr + ';opacity:.6;margin-top:1px;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(nameShort) + '</span>';
-        }
-
-        html += '</div>';
-        html += '<div style="position:absolute;top:2px;left:3px;font-size:7px;font-weight:900;color:' + textClr + ';opacity:.5;line-height:1;">' + escapeHtml(levelLbl) + '</div>';
-        html += '</div>';
-      });
-
-      html += '</div>';
-      html += '<div style="width:100%;height:8px;background:linear-gradient(180deg,#64748b,#1e293b);border-radius:0 0 5px 5px;"></div>';
-      html += '<div style="width:100%;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:5px;">';
-      html += '<span style="font-size:8px;font-weight:700;color:#64748b;">' + slots.length + 'Lvl</span>';
-      html += emptyInBay>0 ? '<span style="font-size:8px;font-weight:900;color:#ef4444;">' + emptyInBay + '\u26a0</span>' : '<span style="font-size:8px;font-weight:900;color:#10b981;">\u2713</span>';
-      html += '</div>';
-      html += '</div>';
+  sortedRakKeys.forEach(rakKey => {
+    const slotsInRak = rackGroups[rakKey];
+    // Sort slots by level descending (top level down to level 1 for warehouse racking realism)
+    const sortedSlots = slotsInRak.slice().sort((a,b) => {
+      const lvA = parseInt(a._p.level, 10) || 1;
+      const lvB = parseInt(b._p.level, 10) || 1;
+      return lvB - lvA;
     });
 
-    html += '</div></div>';
+    html += `
+      <div class="flex flex-col items-center select-none" style="width:148px;">
+        <!-- Top Rack Badge -->
+        <div class="mb-3 px-3 py-1 rounded-xl bg-white text-slate-900 font-black text-xs shadow-md border border-slate-200 tracking-wider">
+          ${escapeHtml(rakKey)}
+        </div>
 
-    html += '<div class="px-4 py-2 border-t border-slate-100 bg-white flex flex-wrap items-center gap-4 text-[10px] text-slate-500">';
-    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block" style="background:linear-gradient(145deg,#d1fae5,#6ee7b7);border:2px solid #10b981;"></span>Terisi (stok \u003e 0)</div>';
-    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block" style="background:linear-gradient(145deg,#fef9c3,#fde68a);border:2px solid #f59e0b;"></span>Hampir Habis</div>';
-    html += '<div class="flex items-center gap-1.5"><span class="w-4 h-4 rounded inline-block border-2 border-dashed" style="background:#fff1f2;border-color:#f87171;"></span>Kosong</div>';
-    html += '<span class="ml-auto italic text-slate-400">Klik kotak slot untuk detail SKU \u2192</span>';
-    html += '</div>';
+        <!-- Industrial Steel Rack Shelving Frame -->
+        <div class="relative w-full rounded-t-lg" style="border-left:7px solid #1d4ed8; border-right:7px solid #1d4ed8; background:rgba(15,23,42,0.65); box-shadow:0 8px 20px rgba(0,0,0,0.35); padding:6px 6px 0 6px;">
+    `;
 
-    html += '</div>';
+    sortedSlots.forEach(slot => {
+      const isFilled   = slot.has_stock;
+      const qty        = Math.round(slot.total_qty || 0);
+      const unit       = (slot.items && slot.items[0] && slot.items[0].unit) ? slot.items[0].unit : 'Pcs';
+      const itemName   = (slot.items && slot.items[0] && slot.items[0].name) ? slot.items[0].name : '';
+      const isLow      = isFilled && slot.items && slot.items[0] && slot.items[0].min_stock > 0 && qty <= slot.items[0].min_stock;
+      const isSelected = selectedRackLocation === slot.rack;
+      const rackSafe   = slot.rack.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+      // Small Rack Box Styling
+      let boxBg, boxBorder, boxShadow, textClr, iconEl;
+      if (!isFilled) {
+        // Red outlined empty compartment matching R1-01-04 in reference
+        boxBg     = 'background:rgba(255,241,242,0.92);';
+        boxBorder = 'border:2.5px solid #ef4444;';
+        boxShadow = 'box-shadow:inset 0 0 8px rgba(239,68,68,0.15);';
+        textClr   = 'color:#dc2626;';
+        iconEl    = '<span class="material-symbols-outlined text-[14px] text-rose-500 font-bold">block</span>';
+      } else if (isLow) {
+        // Vibrant Amber Bin
+        boxBg     = 'background:linear-gradient(145deg, #f59e0b 0%, #d97706 100%);';
+        boxBorder = 'border:2px solid #b45309;';
+        boxShadow = 'box-shadow:0 4px 10px rgba(245,158,11,0.3);';
+        textClr   = 'color:#ffffff;';
+        iconEl    = '<span class="material-symbols-outlined text-[13px] text-amber-200">warning</span>';
+      } else {
+        // Vibrant Green Bin matching reference
+        boxBg     = 'background:linear-gradient(145deg, #10b981 0%, #059669 100%);';
+        boxBorder = 'border:2px solid #047857;';
+        boxShadow = 'box-shadow:0 4px 10px rgba(16,185,129,0.3);';
+        textClr   = 'color:#ffffff;';
+        iconEl    = '<span class="material-symbols-outlined text-[13px] text-emerald-200">inventory_2</span>';
+      }
+
+      const ringStyle = isSelected ? 'box-shadow:0 0 0 3px #6366f1, 0 6px 15px rgba(0,0,0,0.4); transform:scale(1.04); z-index:20;' : '';
+
+      html += `
+        <!-- Horizontal Shelf Slot Container -->
+        <div class="mb-2 relative">
+          <!-- Small Rack Location Box -->
+          <div onclick="showRackDetailPanel('${rackSafe}')"
+            title="${escapeHtml(slot.rack)} (${isFilled ? qty.toLocaleString() + ' ' + unit : 'Kosong'})"
+            class="relative w-full rounded-md cursor-pointer select-none transition-all p-1.5 flex flex-col justify-between"
+            style="min-height:64px; ${boxBg} ${boxBorder} ${boxShadow} ${ringStyle}"
+            onmouseover="if (!${isSelected}) { this.style.transform='scale(1.04)'; this.style.zIndex='10'; }"
+            onmouseout="if (!${isSelected}) { this.style.transform='scale(1)'; this.style.zIndex='1'; }">
+            
+            <!-- Location Pill Label at top of the box -->
+            <div class="flex items-center justify-between gap-1 w-full">
+              <span class="px-1.5 py-0.2 rounded bg-white text-slate-900 font-mono font-black text-[9px] tracking-tight shadow-2xs border border-slate-200/80 truncate max-w-[95px]">
+                ${escapeHtml(slot.rack)}
+              </span>
+              ${iconEl}
+            </div>
+
+            <!-- Content inside box -->
+            <div class="flex items-baseline justify-between mt-1 px-0.5" style="${textClr}">
+              <span class="font-mono font-black text-sm tracking-tight leading-none">${isFilled ? qty.toLocaleString() : '0'}</span>
+              <span class="text-[9px] font-bold opacity-85 leading-none">${isFilled ? escapeHtml(unit) : 'Pcs'}</span>
+            </div>
+
+            <!-- Item name / status -->
+            <div class="text-[8px] font-bold truncate opacity-90 px-0.5" style="${textClr}" title="${escapeHtml(itemName || 'Kosong')}">
+              ${isFilled ? escapeHtml(itemName) : 'Kosong'}
+            </div>
+          </div>
+
+          <!-- Sturdy Steel Shelf Beam underneath -->
+          <div class="w-full h-1.5 rounded-xs mt-0.5" style="background:linear-gradient(180deg, #94a3b8 0%, #475569 100%);"></div>
+        </div>
+      `;
+    });
+
+    html += `
+        </div><!-- /rack upright frame -->
+
+        <!-- Sturdy Rack Base Plate -->
+        <div class="w-full h-2 rounded-b-md" style="background:linear-gradient(180deg, #334155 0%, #0f172a 100%);"></div>
+
+        <!-- Yellow Floor Safety Striping with Rack Name -->
+        <div class="w-full mt-2 text-center font-black text-amber-400 font-mono text-xs tracking-widest border-b-2 border-dashed border-amber-400/80 pb-0.5">
+          ${escapeHtml(rakKey)}
+        </div>
+      </div>
+    `;
   });
 
   html += '</div>';
-  grid.className = '';
   grid.innerHTML = html;
-  buildLocationTable(filtered);
+}
+
+function showRackDetailPanel(rackCode, reRenderVisual = true) {
+  selectedRackLocation = rackCode;
+  if (!allRackMapData || !allRackMapData.racks) return;
+
+  const slot = allRackMapData.racks.find(r => r.rack === rackCode) || {
+    rack: rackCode,
+    items: [],
+    total_qty: 0,
+    has_stock: false
+  };
+
+  const p = parseRackCodeFull(rackCode);
+  const isFilled = slot.has_stock;
+  const qty = Math.round(slot.total_qty || 0);
+  const firstItem = slot.items && slot.items[0];
+  const unit = (firstItem && firstItem.unit) ? firstItem.unit : (isFilled ? 'Pcs' : '-');
+  const isLow = isFilled && firstItem && firstItem.min_stock > 0 && qty <= firstItem.min_stock;
+
+  // Update detail elements
+  const elCode       = document.getElementById('detailRackCode');
+  const elBadge      = document.getElementById('detailRackStatusBadge');
+  const elGudang     = document.getElementById('detailInfoGudang');
+  const elArea       = document.getElementById('detailInfoArea');
+  const elRak        = document.getElementById('detailInfoRak');
+  const elLevel      = document.getElementById('detailInfoLevel');
+  const elSlot       = document.getElementById('detailInfoSlot');
+  const elSKU        = document.getElementById('detailInfoSKU');
+  const elNama       = document.getElementById('detailInfoNama');
+  const elQty        = document.getElementById('detailInfoQty');
+  const elSatuan     = document.getElementById('detailInfoSatuan');
+  const statusBox    = document.getElementById('detailStatusBox');
+  const statusIcon   = document.getElementById('detailStatusIcon');
+  const statusTitle  = document.getElementById('detailStatusTitle');
+  const statusDesc   = document.getElementById('detailStatusDesc');
+  const multiSection = document.getElementById('detailMultiSkuSection');
+  const multiList    = document.getElementById('detailMultiSkuList');
+
+  if (elCode) elCode.innerText = rackCode;
+
+  if (elBadge) {
+    if (!isFilled) {
+      elBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700 border border-rose-200';
+      elBadge.innerText = 'Kosong';
+    } else if (isLow) {
+      elBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300';
+      elBadge.innerText = 'Hampir Habis';
+    } else {
+      elBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200';
+      elBadge.innerText = 'Terisi';
+    }
+  }
+
+  if (elGudang) elGudang.innerText = p.gudang;
+  if (elArea)   elArea.innerText   = p.area;
+  if (elRak)    elRak.innerText    = p.rak;
+  if (elLevel)  elLevel.innerText  = p.level;
+  if (elSlot)   elSlot.innerText   = p.slot;
+
+  if (elSKU)    elSKU.innerText    = firstItem ? (firstItem.code || '-') : '-';
+  if (elNama)   elNama.innerText   = firstItem ? (firstItem.name || '-') : '-';
+  if (elQty)    elQty.innerText    = qty.toLocaleString();
+  if (elSatuan) elSatuan.innerText = unit;
+
+  if (statusBox && statusIcon && statusTitle && statusDesc) {
+    if (!isFilled) {
+      statusBox.className   = 'p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5';
+      statusIcon.className  = 'material-symbols-outlined text-[22px] text-rose-500 flex-shrink-0 mt-0.5';
+      statusIcon.innerText  = 'inventory_2';
+      statusTitle.className = 'text-xs font-black text-rose-800';
+      statusTitle.innerText = 'Lokasi Kosong';
+      statusDesc.className  = 'text-[10px] text-rose-600 mt-0.5 leading-relaxed';
+      statusDesc.innerText  = 'Belum ada barang di lokasi ini, siap ditempati.';
+    } else if (isLow) {
+      statusBox.className   = 'p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5';
+      statusIcon.className  = 'material-symbols-outlined text-[22px] text-amber-500 flex-shrink-0 mt-0.5';
+      statusIcon.innerText  = 'warning';
+      statusTitle.className = 'text-xs font-black text-amber-800';
+      statusTitle.innerText = 'Stok Menipis';
+      statusDesc.className  = 'text-[10px] text-amber-600 mt-0.5 leading-relaxed';
+      statusDesc.innerText  = `Stok (${qty.toLocaleString()} ${unit}) di bawah batas minimum (${(firstItem.min_stock||0).toLocaleString()}).`;
+    } else {
+      statusBox.className   = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5';
+      statusIcon.className  = 'material-symbols-outlined text-[22px] text-emerald-600 flex-shrink-0 mt-0.5';
+      statusIcon.innerText  = 'check_circle';
+      statusTitle.className = 'text-xs font-black text-emerald-800';
+      statusTitle.innerText = 'Lokasi Terisi';
+      statusDesc.className  = 'text-[10px] text-emerald-600 mt-0.5 leading-relaxed';
+      statusDesc.innerText  = `Tersedia ${qty.toLocaleString()} ${unit} di slot ini, stok aman.`;
+    }
+  }
+
+  // Multi SKU list
+  if (multiSection && multiList) {
+    const items = slot.items || [];
+    if (items.length > 1) {
+      multiSection.classList.remove('hidden');
+      multiList.innerHTML = items.map(it => `
+        <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="font-mono font-bold text-slate-800 text-[10px]">${escapeHtml(it.code || '-')}</p>
+            <p class="font-semibold text-slate-700 truncate text-[11px]">${escapeHtml(it.name || '-')}</p>
+          </div>
+          <span class="font-mono font-black text-slate-900 shrink-0">${parseFloat(it.current_stock||0).toLocaleString()} ${escapeHtml(it.unit||'')}</span>
+        </div>
+      `).join('');
+    } else {
+      multiSection.classList.add('hidden');
+    }
+  }
+
+  // Highlight table row
+  const allRows = document.querySelectorAll('#rackLocationTableBody tr');
+  allRows.forEach(r => r.classList.remove('bg-indigo-50', 'border-l-4', 'border-indigo-600'));
+
+  const cleanId = 'rack-row-' + rackCode.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const targetRow = document.getElementById(cleanId);
+  if (targetRow) {
+    targetRow.classList.add('bg-indigo-50', 'border-l-4', 'border-indigo-600');
+    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Re-render visual to apply active ring style if requested
+  if (reRenderVisual) {
+    const searchInput  = document.getElementById('rackMapSearchInput');
+    const query        = (searchInput ? searchInput.value : '').trim().toLowerCase();
+    const filterGudang = document.getElementById('rackFilterGudang')?.value || '';
+    const filterArea   = document.getElementById('rackFilterArea')?.value || '';
+    const filterRak    = document.getElementById('rackFilterRak')?.value || '';
+    const statusSel    = document.getElementById('rackFilterStatus')?.value || currentRackStatusFilter || 'ALL';
+
+    const filtered = allRackMapData.racks.filter(r => {
+      const pk = parseRackCodeFull(r.rack);
+      if (filterGudang && pk.gudang !== filterGudang) return false;
+      if (filterArea   && pk.area !== filterArea) return false;
+      if (filterRak    && pk.rak !== filterRak) return false;
+      if (statusSel === 'FILLED' && !r.has_stock) return false;
+      if (statusSel === 'EMPTY'  &&  r.has_stock) return false;
+      if (statusSel === 'LOW') {
+        const fi = r.items && r.items[0];
+        const isLowStock = fi && fi.min_stock > 0 && (r.total_qty || 0) > 0 && (r.total_qty || 0) <= fi.min_stock;
+        if (!isLowStock) return false;
+      }
+      if (query) {
+        const matchRack  = (r.rack || '').toLowerCase().includes(query);
+        const matchP     = (pk.rak || '').toLowerCase().includes(query) || (pk.gudang || '').toLowerCase().includes(query);
+        const matchItems = (r.items || []).some(item =>
+          (item.name || '').toLowerCase().includes(query) ||
+          (item.code || '').toLowerCase().includes(query) ||
+          (item.category || '').toLowerCase().includes(query)
+        );
+        if (!matchRack && !matchP && !matchItems) return false;
+      }
+      return true;
+    });
+
+    renderRackMapVisualization(filtered);
+  }
+}
+
+function closeRackDetailPanel() {
+  selectedRackLocation = null;
+  const elCode       = document.getElementById('detailRackCode');
+  const elBadge      = document.getElementById('detailRackStatusBadge');
+  const elGudang     = document.getElementById('detailInfoGudang');
+  const elArea       = document.getElementById('detailInfoArea');
+  const elRak        = document.getElementById('detailInfoRak');
+  const elLevel      = document.getElementById('detailInfoLevel');
+  const elSlot       = document.getElementById('detailInfoSlot');
+  const elSKU        = document.getElementById('detailInfoSKU');
+  const elNama       = document.getElementById('detailInfoNama');
+  const elQty        = document.getElementById('detailInfoQty');
+  const elSatuan     = document.getElementById('detailInfoSatuan');
+  const statusBox    = document.getElementById('detailStatusBox');
+  const statusIcon   = document.getElementById('detailStatusIcon');
+  const statusTitle  = document.getElementById('detailStatusTitle');
+  const statusDesc   = document.getElementById('detailStatusDesc');
+  const multiSection = document.getElementById('detailMultiSkuSection');
+
+  if (elCode) elCode.innerText = '-';
+  if (elBadge) {
+    elBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600';
+    elBadge.innerText = 'Pilih Slot';
+  }
+  if (elGudang) elGudang.innerText = '-';
+  if (elArea)   elArea.innerText   = '-';
+  if (elRak)    elRak.innerText    = '-';
+  if (elLevel)  elLevel.innerText  = '-';
+  if (elSlot)   elSlot.innerText   = '-';
+  if (elSKU)    elSKU.innerText    = '-';
+  if (elNama)   elNama.innerText   = '-';
+  if (elQty)    elQty.innerText    = '0';
+  if (elSatuan) elSatuan.innerText = '-';
+
+  if (statusBox && statusIcon && statusTitle && statusDesc) {
+    statusBox.className   = 'p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5';
+    statusIcon.className  = 'material-symbols-outlined text-[22px] text-slate-400 flex-shrink-0 mt-0.5';
+    statusIcon.innerText  = 'touch_app';
+    statusTitle.className = 'text-xs font-black text-slate-700';
+    statusTitle.innerText = 'Pilih Slot Rak';
+    statusDesc.className  = 'text-[10px] text-slate-500 mt-0.5 leading-relaxed';
+    statusDesc.innerText  = 'Klik salah satu kotak rak pada visualisasi atau baris tabel di bawah untuk melihat rincian.';
+  }
+  if (multiSection) multiSection.classList.add('hidden');
+
+  const allRows = document.querySelectorAll('#rackLocationTableBody tr');
+  allRows.forEach(r => r.classList.remove('bg-indigo-50', 'border-l-4', 'border-indigo-600'));
+
+  if (allRackMapData && allRackMapData.racks) {
+    renderRackMapVisualization(allRackMapData.racks);
+  }
+}
+
+function buildLocationTable(racks) {
+  const tbody = document.getElementById('rackLocationTableBody');
+  const countEl = document.getElementById('rackLocationTableCount');
+  if (!tbody) return;
+
+  if (countEl) countEl.innerText = `${racks.length} lokasi`;
+
+  if (racks.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11" class="py-12 text-center text-slate-400 text-xs">
+          Tidak ada data lokasi rak yang cocok dengan filter saat ini.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = racks.map((r, idx) => {
+    const p = parseRackCodeFull(r.rack);
+    const isFilled = r.has_stock;
+    const qty = Math.round(r.total_qty || 0);
+    const firstItem = r.items && r.items[0];
+    const unit = (firstItem && firstItem.unit) ? firstItem.unit : (isFilled ? 'Pcs' : '-');
+    const isLow = isFilled && firstItem && firstItem.min_stock > 0 && qty <= firstItem.min_stock;
+    const isSelected = selectedRackLocation === r.rack;
+    const cleanId = 'rack-row-' + r.rack.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const rackSafe = r.rack.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+    let badgeHtml;
+    if (!isFilled) {
+      badgeHtml = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>Kosong</span>';
+    } else if (isLow) {
+      badgeHtml = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Hampir Habis</span>';
+    } else {
+      badgeHtml = '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Terisi</span>';
+    }
+
+    const selectedCls = isSelected ? 'bg-indigo-50 border-l-4 border-indigo-600' : '';
+
+    return `
+      <tr id="${cleanId}" onclick="showRackDetailPanel('${rackSafe}')"
+        class="hover:bg-slate-50/80 transition-colors cursor-pointer ${selectedCls}">
+        <td class="py-2.5 px-3 text-center text-slate-400 font-mono text-[11px]">${idx + 1}</td>
+        <td class="py-2.5 px-3 font-semibold text-slate-700 whitespace-nowrap">${escapeHtml(p.gudang)}</td>
+        <td class="py-2.5 px-3 text-slate-600 font-medium whitespace-nowrap">${escapeHtml(p.area)}</td>
+        <td class="py-2.5 px-3 font-black text-slate-800 whitespace-nowrap">${escapeHtml(p.rak)}</td>
+        <td class="py-2.5 px-3 font-mono text-slate-600 text-center">${escapeHtml(p.level)}</td>
+        <td class="py-2.5 px-3 font-mono text-slate-600 text-center">${escapeHtml(p.slot)}</td>
+        <td class="py-2.5 px-3 font-mono font-bold text-slate-800 whitespace-nowrap">${escapeHtml(firstItem ? (firstItem.code || '-') : '-')}</td>
+        <td class="py-2.5 px-3 font-medium text-slate-800 max-w-[180px] truncate" title="${escapeHtml(firstItem ? (firstItem.name || '-') : '-')}">${escapeHtml(firstItem ? (firstItem.name || '-') : '-')}</td>
+        <td class="py-2.5 px-3 text-right font-mono font-black ${isFilled ? 'text-slate-900' : 'text-slate-400'}">${qty.toLocaleString()}</td>
+        <td class="py-2.5 px-3 text-slate-500 text-[11px]">${escapeHtml(unit)}</td>
+        <td class="py-2.5 px-3 text-center whitespace-nowrap">${badgeHtml}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function showRackMapDetail(encodedRack) {
   const rackName = decodeURIComponent(encodedRack);
-  if (!allRackMapData || !allRackMapData.racks) return;
-
-  const rack = allRackMapData.racks.find(r => r.rack === rackName);
-  if (!rack) return;
-
-  const modal = document.getElementById('modalRackDetail');
-  const title = document.getElementById('modalRackTitle');
-  const subtitle = document.getElementById('modalRackSubtitle');
-  const statusBadge = document.getElementById('modalRackStatusBadge');
-  const badgeIcon = document.getElementById('modalRackBadgeIcon');
-  const totalQtyEl = document.getElementById('modalRackTotalQty');
-  const skuCountEl = document.getElementById('modalRackSkuCount');
-  const tbody = document.getElementById('modalRackItemsTableBody');
-
-  if (title) title.innerText = rack.rack;
-  if (subtitle) {
-    subtitle.innerText = rack.has_stock 
-      ? `Slot rak aktif terisi ${rack.item_count} SKU (${currentRackMapCategory === 'PACKAGING' ? 'Kemas' : 'Gimmick'})`
-      : 'Slot rak dalam kondisi kosong (Qty = 0), siap ditempati';
-  }
-
-  if (statusBadge) {
-    if (rack.has_stock) {
-      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200';
-      statusBadge.innerText = 'TERISI (ADA STOK)';
-    } else {
-      statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs';
-      statusBadge.innerText = 'KOSONG (0 PCS)';
-    }
-  }
-
-  if (badgeIcon) {
-    badgeIcon.className = rack.has_stock 
-      ? 'w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-xs'
-      : 'w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center font-bold shadow-xs';
-  }
-
-  if (totalQtyEl) totalQtyEl.innerText = Math.round(rack.total_qty || 0).toLocaleString();
-  if (skuCountEl) skuCountEl.innerText = `${rack.item_count || 0} SKU`;
-
-  if (tbody) {
-    const items = rack.items || [];
-    if (items.length === 0) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="5" class="py-6 text-center text-rose-500 font-bold text-xs">
-            Tidak ada item di slot rak ini (Kosong).
-          </td>
-        </tr>
-      `;
-    } else {
-      tbody.innerHTML = items.map(item => `
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="py-2.5 px-3 font-mono font-bold text-slate-800">${escapeHtml(item.code || '-')}</td>
-          <td class="py-2.5 px-3 font-bold text-slate-900">${escapeHtml(item.name || '-')}</td>
-          <td class="py-2.5 px-3 text-slate-500">${escapeHtml(item.category || '-')}</td>
-          <td class="py-2.5 px-3 text-right font-mono font-black ${item.current_stock > 0 ? 'text-emerald-700' : 'text-rose-600'}">
-            ${parseFloat(item.current_stock || 0).toLocaleString()}
-          </td>
-          <td class="py-2.5 px-3 text-slate-600 font-semibold">${escapeHtml(item.unit || 'Pcs')}</td>
-        </tr>
-      `).join('');
-    }
-  }
-
-  if (modal) modal.classList.remove('hidden');
+  showRackDetailPanel(rackName);
 }
 
 function closeRackDetailModal() {

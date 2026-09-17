@@ -1247,140 +1247,38 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- MAIN LAYOUT: Visualization + Detail Panel -->
-        <div class="flex gap-4 items-start">
+        <!-- TOP ROW: Visual Rack Scene + Detail Lokasi Panel -->
+        <div class="flex flex-col lg:flex-row gap-4 items-start">
 
           <!-- LEFT: Visualization Area -->
-          <div class="flex-1 min-w-0">
-            <!-- Visual Rack Container with background photo -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div id="rackVisualizationContainer" class="relative" style="min-height:420px;">
-                <div class="absolute inset-0 pointer-events-none"
-                  style="background-image:url('../assets/img/warehouse_rack_bg.jpg');background-size:cover;background-position:center;opacity:0.13;"></div>
-                <div id="rackMapGrid" class="relative z-10 p-5 overflow-x-auto">
-                  <div class="py-16 text-center text-slate-400 space-y-2">
-                    <span class="material-symbols-outlined text-[32px] animate-spin text-indigo-600">progress_activity</span>
-                    <p class="text-xs font-semibold">Memuat peta denah lokasi rak...</p>
-                  </div>
+          <div class="flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div id="rackVisualizationContainer" class="relative" style="min-height:480px;background:#0f172a;">
+              <div class="absolute inset-0 pointer-events-none"
+                style="background-image:url('../assets/img/warehouse_rack_bg.jpg');background-size:cover;background-position:center;opacity:0.25;"></div>
+              <div id="rackMapGrid" class="relative z-10 p-5 overflow-x-auto min-h-[480px]">
+                <div class="py-20 text-center text-slate-400 space-y-2">
+                  <span class="material-symbols-outlined text-[36px] animate-spin text-indigo-400">progress_activity</span>
+                  <p class="text-xs font-semibold text-slate-300">Memuat visualisasi denah lokasi rak...</p>
                 </div>
-              </div>
-            </div>
-
-            <!-- Legend + Summary side by side -->
-            <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <!-- Keterangan Status -->
-              <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Keterangan Status</p>
-                <div class="space-y-1.5">
-                  <div class="flex items-center gap-2">
-                    <span class="w-4 h-4 rounded bg-emerald-500 border border-emerald-600 flex-shrink-0"></span>
-                    <span class="text-xs font-semibold text-slate-600">Terisi (Stok Ada)</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="w-4 h-4 rounded bg-amber-400 border border-amber-500 flex-shrink-0"></span>
-                    <span class="text-xs font-semibold text-slate-600">Hampir Habis</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="w-4 h-4 rounded bg-orange-500 border border-orange-600 flex-shrink-0"></span>
-                    <span class="text-xs font-semibold text-slate-600">Stok Habis (ada SKU, Qty=0)</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="w-4 h-4 rounded bg-slate-100 border-2 border-dashed border-rose-400 flex-shrink-0"></span>
-                    <span class="text-xs font-semibold text-slate-600">Kosong</span>
-                  </div>
-                </div>
-              </div>
-              <!-- Ringkasan -->
-              <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Ringkasan</p>
-                <div class="space-y-1.5 text-xs">
-                  <div class="flex justify-between">
-                    <span class="text-slate-500 font-medium">Total Slot</span>
-                    <span id="kpiRackTotalSlots" class="font-black text-slate-900">0</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500 font-medium">Terisi</span>
-                    <span id="kpiRackFilledSlots" class="font-black text-emerald-700">0</span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span class="text-slate-500 font-medium">Kosong</span>
-                    <span id="kpiRackEmptySlots" class="font-black text-rose-600">0</span>
-                  </div>
-                  <div class="pt-1.5 border-t border-slate-100">
-                    <div class="flex justify-between mb-1">
-                      <span class="text-slate-500 font-medium">Persentase Terisi</span>
-                      <span id="kpiRackFilledPct" class="font-black text-indigo-700">0%</span>
-                    </div>
-                    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div id="kpiRackFillBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-700" style="width:0%"></div>
-                    </div>
-                  </div>
-                  <div class="flex justify-between pt-1">
-                    <span class="text-slate-500 font-medium">Total Unit di Rak</span>
-                    <span id="kpiRackTotalUnits" class="font-black text-[#262363]">0</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- NON-RACK SECTION (Collapsible) -->
-            <div id="sectionNoLocationRacks" class="hidden mt-3 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
-              <button type="button" onclick="toggleNoLocationAccordion()" class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100 flex items-center justify-between text-left transition-colors cursor-pointer">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined text-slate-500 text-[20px]">warehouse</span>
-                  <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Area Umum / Lokasi Tanpa Slot Rak Spesifik</span>
-                  <span id="badgeNoLocationCount" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-700">0 SKU</span>
-                </div>
-                <span id="iconNoLocationChevron" class="material-symbols-outlined text-slate-400 text-[20px] transition-transform">expand_more</span>
-              </button>
-              <div id="bodyNoLocationAccordion" class="hidden p-4 border-t border-slate-200">
-                <div id="noLocationItemsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5"></div>
-              </div>
-            </div>
-
-            <!-- Daftar Lokasi Rack Table -->
-            <div class="mt-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="text-sm font-black text-slate-800">Daftar Lokasi Rack</h3>
-                <span id="rackLocationTableCount" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">0 lokasi</span>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs border-collapse">
-                  <thead class="bg-slate-50 text-slate-500 font-extrabold text-[10px] uppercase border-b border-slate-200">
-                    <tr>
-                      <th class="py-2.5 px-3 w-8">No</th>
-                      <th class="py-2.5 px-3">Gudang</th>
-                      <th class="py-2.5 px-3">Area</th>
-                      <th class="py-2.5 px-3">Rak</th>
-                      <th class="py-2.5 px-3">Level</th>
-                      <th class="py-2.5 px-3">Slot</th>
-                      <th class="py-2.5 px-3">SKU</th>
-                      <th class="py-2.5 px-3">Nama Barang</th>
-                      <th class="py-2.5 px-3 text-right">Qty</th>
-                      <th class="py-2.5 px-3">Satuan</th>
-                      <th class="py-2.5 px-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="rackLocationTableBody" class="divide-y divide-slate-100 font-medium">
-                    <tr><td colspan="11" class="py-8 text-center text-slate-400 text-xs">Memuat data...</td></tr>
-                  </tbody>
-                </table>
               </div>
             </div>
           </div>
 
           <!-- RIGHT: Detail Lokasi Panel -->
-          <div id="rackDetailPanel" class="w-72 flex-shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" style="display:none;">
+          <div id="rackDetailPanel" class="w-full lg:w-80 shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" style="display:block;">
             <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
-              <h3 class="text-sm font-black text-slate-800">Detail Lokasi</h3>
-              <button type="button" onclick="closeRackDetailPanel()" class="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600 text-[18px]">inventory_2</span>
+                <h3 class="text-sm font-black text-slate-800">Detail Lokasi</h3>
+              </div>
+              <button type="button" onclick="closeRackDetailPanel()" title="Tutup" class="w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[14px]">close</span>
               </button>
             </div>
             <div class="px-4 pt-3 pb-2 border-b border-slate-100">
               <div class="flex items-center justify-between gap-2">
                 <span id="detailRackCode" class="text-lg font-black text-slate-900 font-mono tracking-tight">-</span>
-                <span id="detailRackStatusBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">-</span>
+                <span id="detailRackStatusBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-600">Pilih Slot</span>
               </div>
             </div>
             <div class="px-4 py-3 border-b border-slate-100 space-y-2">
@@ -1404,11 +1302,11 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
             <div class="px-4 py-3">
               <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Status</p>
-              <div id="detailStatusBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2">
-                <span id="detailStatusIcon" class="material-symbols-outlined text-[20px] text-slate-400 flex-shrink-0 mt-0.5">help</span>
+              <div id="detailStatusBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-2.5">
+                <span id="detailStatusIcon" class="material-symbols-outlined text-[22px] text-slate-400 flex-shrink-0 mt-0.5">touch_app</span>
                 <div>
-                  <p id="detailStatusTitle" class="text-xs font-black text-slate-700">-</p>
-                  <p id="detailStatusDesc" class="text-[10px] text-slate-500 mt-0.5">-</p>
+                  <p id="detailStatusTitle" class="text-xs font-black text-slate-700">Pilih Slot Rak</p>
+                  <p id="detailStatusDesc" class="text-[10px] text-slate-500 mt-0.5 leading-relaxed">Klik salah satu kotak rak pada visualisasi atau baris tabel di bawah untuk melihat rincian.</p>
                 </div>
               </div>
               <div id="detailMultiSkuSection" class="hidden mt-3">
@@ -1416,6 +1314,116 @@ require_once __DIR__ . '/../includes/header.php';
                 <div id="detailMultiSkuList" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM ROW: Status & Ringkasan (Left) + Table (Right) -->
+        <div class="flex flex-col lg:flex-row gap-4 items-start mt-1">
+
+          <!-- LEFT: Keterangan Status & Ringkasan -->
+          <div class="w-full lg:w-80 shrink-0 space-y-3">
+            <!-- Keterangan Status -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Keterangan Status</p>
+              <div class="space-y-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-emerald-500 border border-emerald-600 flex-shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Terisi (Stok Ada)</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-amber-400 border border-amber-500 flex-shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Hampir Habis</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-rose-500 border border-rose-600 flex-shrink-0 shadow-2xs"></span>
+                  <span class="text-xs font-semibold text-slate-700">Stok Habis</span>
+                </div>
+                <div class="flex items-center gap-2.5">
+                  <span class="w-4 h-4 rounded bg-slate-50 border-2 border-dashed border-rose-400 flex-shrink-0"></span>
+                  <span class="text-xs font-semibold text-slate-700">Kosong</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ringkasan -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+              <p class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-2.5">Ringkasan</p>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-slate-500 font-medium">Total Slot</span>
+                  <span id="kpiRackTotalSlots" class="font-black text-slate-900 font-mono">0</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500 font-medium">Terisi</span>
+                  <span id="kpiRackFilledSlots" class="font-black text-emerald-700 font-mono">0</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-500 font-medium">Kosong</span>
+                  <span id="kpiRackEmptySlots" class="font-black text-rose-600 font-mono">0</span>
+                </div>
+                <div class="pt-2 border-t border-slate-100">
+                  <div class="flex justify-between mb-1.5">
+                    <span class="text-slate-500 font-medium">Persentase Terisi</span>
+                    <span id="kpiRackFilledPct" class="font-black text-indigo-700 font-mono">0%</span>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="kpiRackFillBar" class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-700" style="width:0%"></div>
+                  </div>
+                </div>
+                <div class="flex justify-between pt-1">
+                  <span class="text-slate-500 font-medium">Total Unit di Rak</span>
+                  <span id="kpiRackTotalUnits" class="font-black text-[#262363] font-mono">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Daftar Lokasi Rack Table -->
+          <div class="flex-1 min-w-0 w-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-slate-600 text-[18px]">table_rows</span>
+                <h3 class="text-sm font-black text-slate-800">Daftar Lokasi Rack</h3>
+              </div>
+              <span id="rackLocationTableCount" class="text-[11px] font-black text-slate-600 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full shadow-2xs">0 lokasi</span>
+            </div>
+            <div class="overflow-x-auto max-h-[480px] overflow-y-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-600 font-black text-[10px] uppercase border-b border-slate-200 sticky top-0 z-10">
+                  <tr>
+                    <th class="py-2.5 px-3 w-10 text-center">No</th>
+                    <th class="py-2.5 px-3">Gudang</th>
+                    <th class="py-2.5 px-3">Area</th>
+                    <th class="py-2.5 px-3">Rak</th>
+                    <th class="py-2.5 px-3">Level</th>
+                    <th class="py-2.5 px-3">Slot</th>
+                    <th class="py-2.5 px-3">SKU</th>
+                    <th class="py-2.5 px-3">Nama Barang</th>
+                    <th class="py-2.5 px-3 text-right">Qty</th>
+                    <th class="py-2.5 px-3">Satuan</th>
+                    <th class="py-2.5 px-3 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rackLocationTableBody" class="divide-y divide-slate-100 font-medium">
+                  <tr><td colspan="11" class="py-12 text-center text-slate-400 text-xs">Memuat data lokasi rak...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- NON-RACK SECTION (Collapsible) -->
+        <div id="sectionNoLocationRacks" class="hidden mt-3 bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <button type="button" onclick="toggleNoLocationAccordion()" class="w-full px-4 py-3 bg-slate-50/80 hover:bg-slate-100 flex items-center justify-between text-left transition-colors cursor-pointer">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-500 text-[20px]">warehouse</span>
+              <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Area Umum / Lokasi Tanpa Slot Rak Spesifik</span>
+              <span id="badgeNoLocationCount" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-700">0 SKU</span>
+            </div>
+            <span id="iconNoLocationChevron" class="material-symbols-outlined text-slate-400 text-[20px] transition-transform">expand_more</span>
+          </button>
+          <div id="bodyNoLocationAccordion" class="hidden p-4 border-t border-slate-200">
+            <div id="noLocationItemsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5"></div>
           </div>
         </div>
 
