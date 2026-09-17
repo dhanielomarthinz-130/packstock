@@ -16,6 +16,28 @@ $pageTitle = "IMS";
 require_once __DIR__ . '/includes/header.php';
 ?>
 
+<style>
+  /* Posisikan Toast Notification Tepat di Tengah Atas Layar pada Halaman Login */
+  #toast-container {
+    top: 28px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    align-items: center !important;
+    width: auto !important;
+    min-width: 320px !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  #toast-container > div {
+    width: 100% !important;
+    max-width: 440px !important;
+    border-radius: 16px !important;
+    padding: 14px 18px !important;
+    box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+</style>
+
 <div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans select-none" style="background: radial-gradient(circle at 10% 20%, #f0f3ff 0%, #e8edff 45%, #f4f6fb 90%);">
   
   <!-- Atmospheric Glowing Ambient Orbs -->
@@ -263,16 +285,16 @@ require_once __DIR__ . '/includes/header.php';
     btn.innerHTML = '<span>Login</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span>';
 
     if (res.success) {
-      App.toast('Login berhasil. Mengalihkan...', 'success');
+      App.toast('Login berhasil. Mengalihkan ke dashboard...', 'success', 'Login Berhasil', 'center');
       setTimeout(() => {
         window.location.href = res.redirect;
-      }, 350);
+      }, 650);
     } else {
       alertText.innerText = res.message || 'Username atau kata sandi yang Anda masukkan salah!';
       alertBox.classList.remove('hidden');
       passInput.classList.add('border-rose-500', 'bg-rose-50/30');
       passInput.focus();
-      App.toast(res.message || 'Login gagal. Periksa kembali kredensial Anda.', 'error');
+      App.toast(res.message || 'Login gagal. Periksa kembali kredensial Anda.', 'error', 'Login Gagal', 'center');
     }
   }
 </script>

@@ -1455,5 +1455,25 @@ a.bg-emerald-700:active {
   color: #64748b !important;
 }
 
+/* Centered Toast Notification (for Login and Center Prompts) */
+#toast-container.toast-center {
+  top: 24px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  align-items: center !important;
+  width: auto !important;
+  min-width: 320px !important;
+  max-width: calc(100vw - 32px) !important;
+}
+
+#toast-container.toast-center > div {
+  width: 100% !important;
+  max-width: 440px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+
 
 

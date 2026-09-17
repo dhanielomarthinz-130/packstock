@@ -48,13 +48,19 @@
 
 const App = {
   // Toast Notification System
-  toast(message, type = 'success', title = '') {
+  toast(message, type = 'success', title = '', options = {}) {
+    const opts = typeof options === 'string' ? { position: options } : (options || {});
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
       toastContainer = document.createElement('div');
       toastContainer.id = 'toast-container';
       toastContainer.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none';
       document.body.appendChild(toastContainer);
+    }
+
+    const isCenter = opts.position === 'center' || opts.position === 'top-center' || toastContainer.classList.contains('toast-center');
+    if (isCenter && !toastContainer.classList.contains('toast-center')) {
+      toastContainer.classList.add('toast-center');
     }
 
     const toastEl = document.createElement('div');
