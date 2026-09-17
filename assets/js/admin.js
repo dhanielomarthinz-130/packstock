@@ -1,4 +1,4 @@
-﻿// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
+// assets/js/admin.js - Admin Dashboard & Stock Control Frontend Logic (Google Material Symbols)
 
 let allMaterials = [];
 let allOperators = [];
@@ -15824,7 +15824,8 @@ async function handleOutboundBarcodeScan(e) {
 // MAP RACK STORAGE DASHBOARD MODULE (KEMAS & GIMMICK)
 // =========================================================================
 let currentRackMapCategory = 'PACKAGING'; // 'PACKAGING' (Kemas) or 'GIMMICK'
-let currentRackStatusFilter = 'ALL';      // 'ALL', 'FILLED', 'EMPTY'
+let currentRackStatusFilter = 'ALL';      // 'ALL', 'FILLED', 'EMPTY', 'LOW'
+let currentRackViewMode = '3D';           // '3D' or '2D'
 let allRackMapData = null;
 
 async function loadAdminRackMap() {
@@ -15889,21 +15890,20 @@ function updateRackMapSummary(data) {
   });
 
   const filledPct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
-  const emptyPct  = totalSlots > 0 ? Math.round((emptySlots / totalSlots) * 100) : 0;
 
-  // KPI Elements
+  // KPI Elements (new compact format)
   const elTotalSlots  = document.getElementById('kpiRackTotalSlots');
   const elFilledSlots = document.getElementById('kpiRackFilledSlots');
   const elFilledPct   = document.getElementById('kpiRackFilledPct');
+  const elFillBar     = document.getElementById('kpiRackFillBar');
   const elEmptySlots  = document.getElementById('kpiRackEmptySlots');
-  const elEmptyPct    = document.getElementById('kpiRackEmptyPct');
   const elTotalUnits  = document.getElementById('kpiRackTotalUnits');
 
   if (elTotalSlots)  elTotalSlots.innerText  = totalSlots.toLocaleString();
   if (elFilledSlots) elFilledSlots.innerText = filledSlots.toLocaleString();
-  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}% Terisi`;
+  if (elFilledPct)   elFilledPct.innerText   = `${filledPct}%`;
+  if (elFillBar)     elFillBar.style.width   = `${filledPct}%`;
   if (elEmptySlots)  elEmptySlots.innerText  = emptySlots.toLocaleString();
-  if (elEmptyPct)    elEmptyPct.innerText    = `${emptyPct}% Slot Siap Diisi`;
   if (elTotalUnits)  elTotalUnits.innerText  = Math.round(totalUnits).toLocaleString();
 
   // Tab Badge counts
@@ -15915,14 +15915,8 @@ function updateRackMapSummary(data) {
     if (badgeGimmick) badgeGimmick.innerText = totalSlots;
   }
 
-  // Filter count labels
-  const elCountAll    = document.getElementById('countFilterAll');
-  const elCountFilled = document.getElementById('countFilterFilled');
-  const elCountEmpty  = document.getElementById('countFilterEmpty');
-
-  if (elCountAll)    elCountAll.innerText    = totalSlots;
-  if (elCountFilled) elCountFilled.innerText = filledSlots;
-  if (elCountEmpty)  elCountEmpty.innerText  = emptySlots;
+  // Populate filter dropdowns
+  buildRackFilterDropdowns(racks);
 
   // Generic / non-rack items
   const noLocSection = document.getElementById('sectionNoLocationRacks');
@@ -15951,6 +15945,229 @@ function updateRackMapSummary(data) {
     if (noLocSection) noLocSection.classList.add('hidden');
   }
 }
+
+// Parse rack code into components: block, area, rack, level, slot
+function parseRackCodeFull(code) {
+  if (!code) return { gudang: 'Gudang Utama', area: '-', rak: '-', level: '-', slot: '-', block: '?', raw: code };
+  const p = code.split('-');
+  // Format: BLOCK-ROW-COL-LEVEL or B1-A-01-001
+  // We interpret: p[0]=block(gudang ref), p[1]=area, p[2]=rak/col, p[3]=level, p[4+]=slot
+  const block = p[0] || '?';
+  const area  = p[1] || '-';
+  const rak   = p[2] || '-';
+  const level = p[3] || '-';
+  const slot  = p.slice(4).join('-') || (p[3] || '-');
+
+  return {
+    gudang: 'Gudang Utama',
+    area:   area,
+    rak:    block + '-' + area,
+    level:  level,
+    slot:   slot,
+    block:  block,
+    raw:    code
+  };
+}
+
+function buildRackFilterDropdowns(racks) {
+  const selGudang = document.getElementById('rackFilterGudang');
+  const selArea   = document.getElementById('rackFilterArea');
+  const selRak    = document.getElementById('rackFilterRak');
+  if (!selGudang || !selArea || !selRak) return;
+
+  const gudangSet = new Set();
+  const areaSet   = new Set();
+  const rakSet    = new Set();
+
+  racks.forEach(r => {
+    const p = parseRackCodeFull(r.rack);
+    gudangSet.add(p.gudang);
+    if (p.area && p.area !== '-') areaSet.add(p.area);
+    if (p.block && p.block !== '?') rakSet.add(p.block);
+  });
+
+  const curGudang = selGudang.value;
+  const curArea   = selArea.value;
+  const curRak    = selRak.value;
+
+  selGudang.innerHTML = '<option value="">Semua Gudang</option>' +
+    Array.from(gudangSet).sort().map(g => `<option value="${escapeHtml(g)}" ${curGudang===g?'selected':''}>${escapeHtml(g)}</option>`).join('');
+
+  selArea.innerHTML = '<option value="">Semua Area</option>' +
+    Array.from(areaSet).sort().map(a => `<option value="${escapeHtml(a)}" ${curArea===a?'selected':''}>${escapeHtml(a)}</option>`).join('');
+
+  selRak.innerHTML = '<option value="">Semua Rak</option>' +
+    Array.from(rakSet).sort((a,b) => a.localeCompare(b, undefined, {numeric:true})).map(r => `<option value="${escapeHtml(r)}" ${curRak===r?'selected':''}>${escapeHtml(r)}</option>`).join('');
+}
+
+function applyRackVisualFilter() {
+  currentRackStatusFilter = document.getElementById('rackFilterStatus')?.value || 'ALL';
+  filterRackMapCards();
+}
+
+function setRackViewMode(mode) {
+  currentRackViewMode = mode;
+  const btn3D = document.getElementById('btnRack3D');
+  const btn2D = document.getElementById('btnRack2D');
+  const viz   = document.getElementById('rackVisualizationContainer');
+
+  if (btn3D) btn3D.className = mode === '3D'
+    ? 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer'
+    : 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
+  if (btn2D) btn2D.className = mode === '2D'
+    ? 'px-3 py-1.5 text-xs font-black bg-indigo-600 text-white transition-all cursor-pointer'
+    : 'px-3 py-1.5 text-xs font-black bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
+
+  // Toggle background opacity for 2D mode (cleaner)
+  if (viz) {
+    const bgEl = viz.querySelector('div.absolute');
+    if (bgEl) bgEl.style.opacity = mode === '3D' ? '0.13' : '0.05';
+  }
+  filterRackMapCards();
+}
+
+function closeRackDetailPanel() {
+  const panel = document.getElementById('rackDetailPanel');
+  if (panel) panel.style.display = 'none';
+}
+
+function showRackDetailPanel(rackName) {
+  if (!allRackMapData || !allRackMapData.racks) return;
+  const rack = allRackMapData.racks.find(r => r.rack === rackName);
+  if (!rack) return;
+
+  const panel = document.getElementById('rackDetailPanel');
+  if (!panel) { showRackMapDetail(encodeURIComponent(rackName)); return; }
+
+  // Parse rack code
+  const p = parseRackCodeFull(rack.rack);
+
+  // Fill panel
+  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+
+  setTxt('detailRackCode', rack.rack);
+  setTxt('detailInfoGudang', p.gudang);
+  setTxt('detailInfoArea', p.area);
+  setTxt('detailInfoRak', p.block);
+  setTxt('detailInfoLevel', p.level);
+  setTxt('detailInfoSlot', p.slot);
+
+  // First item info
+  const firstItem = rack.items && rack.items[0];
+  setTxt('detailInfoSKU', firstItem ? (firstItem.code || '-') : '-');
+  setTxt('detailInfoNama', firstItem ? (firstItem.name || '-') : '-');
+  setTxt('detailInfoQty', Math.round(rack.total_qty || 0).toLocaleString());
+  setTxt('detailInfoSatuan', firstItem ? (firstItem.unit || 'Pcs') : '-');
+
+  // Status badge
+  const badgeEl = document.getElementById('detailRackStatusBadge');
+  const statusBox = document.getElementById('detailStatusBox');
+  const statusIcon = document.getElementById('detailStatusIcon');
+  const statusTitle = document.getElementById('detailStatusTitle');
+  const statusDesc  = document.getElementById('detailStatusDesc');
+
+  const isLow = rack.has_stock && firstItem && firstItem.min_stock > 0 && (rack.total_qty || 0) <= firstItem.min_stock;
+
+  if (!rack.has_stock) {
+    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700'; badgeEl.innerText = 'Kosong'; }
+    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2';
+    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-rose-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'location_off'; }
+    if (statusTitle) { statusTitle.className = 'text-xs font-black text-rose-700'; statusTitle.innerText = 'Lokasi Kosong'; }
+    if (statusDesc) statusDesc.innerText = 'Belum ada barang di lokasi ini.';
+  } else if (isLow) {
+    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700'; badgeEl.innerText = 'Hampir Habis'; }
+    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2';
+    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-amber-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'warning'; }
+    if (statusTitle) { statusTitle.className = 'text-xs font-black text-amber-700'; statusTitle.innerText = 'Hampir Habis'; }
+    if (statusDesc) statusDesc.innerText = `Stok (${Math.round(rack.total_qty||0)}) mendekati atau di bawah minimum.`;
+  } else {
+    if (badgeEl) { badgeEl.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700'; badgeEl.innerText = 'Terisi'; }
+    if (statusBox) statusBox.className = 'p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2';
+    if (statusIcon) { statusIcon.className = 'material-symbols-outlined text-[20px] text-emerald-500 flex-shrink-0 mt-0.5'; statusIcon.innerText = 'check_circle'; }
+    if (statusTitle) { statusTitle.className = 'text-xs font-black text-emerald-700'; statusTitle.innerText = 'Terisi'; }
+    if (statusDesc) statusDesc.innerText = `Ada ${rack.item_count || 1} SKU di lokasi ini.`;
+  }
+
+  // Multi-SKU section
+  const multiSection = document.getElementById('detailMultiSkuSection');
+  const multiList    = document.getElementById('detailMultiSkuList');
+  const items = rack.items || [];
+  if (items.length > 1) {
+    if (multiSection) multiSection.classList.remove('hidden');
+    if (multiList) {
+      multiList.innerHTML = items.map(item => `
+        <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg">
+          <div class="flex justify-between items-center">
+            <span class="text-[10px] font-mono font-bold text-indigo-700">${escapeHtml(item.code||'-')}</span>
+            <span class="text-[10px] font-black ${item.current_stock>0?'text-emerald-700':'text-rose-600'}">${parseFloat(item.current_stock||0).toLocaleString()} ${escapeHtml(item.unit||'Pcs')}</span>
+          </div>
+          <p class="text-[10px] font-semibold text-slate-700 truncate mt-0.5">${escapeHtml(item.name||'-')}</p>
+        </div>
+      `).join('');
+    }
+  } else {
+    if (multiSection) multiSection.classList.add('hidden');
+  }
+
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+}
+
+function buildLocationTable(filtered) {
+  const tbody = document.getElementById('rackLocationTableBody');
+  const countEl = document.getElementById('rackLocationTableCount');
+  if (!tbody) return;
+
+  // Expand each rack to rows (one row per rack slot, showing first item)
+  const rows = [];
+  filtered.forEach(r => {
+    const p = parseRackCodeFull(r.rack);
+    const firstItem = r.items && r.items[0];
+    const isLow = firstItem && firstItem.min_stock > 0 && (r.total_qty||0) > 0 && (r.total_qty||0) <= firstItem.min_stock;
+    rows.push({
+      rack: r,
+      parsed: p,
+      firstItem,
+      isLow,
+    });
+  });
+
+  if (countEl) countEl.innerText = `${rows.length} lokasi`;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="py-8 text-center text-slate-400 text-xs">Tidak ada lokasi yang sesuai filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((row, idx) => {
+    const { rack: r, parsed: p, firstItem, isLow } = row;
+    let statusHtml;
+    if (!r.has_stock) {
+      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-700">Kosong</span>`;
+    } else if (isLow) {
+      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-700">Hampir Habis</span>`;
+    } else {
+      statusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700">Terisi</span>`;
+    }
+    const rowBg = !r.has_stock ? 'bg-rose-50/40' : (isLow ? 'bg-amber-50/40' : '');
+    return `
+      <tr class="hover:bg-slate-50 transition-colors cursor-pointer ${rowBg}" onclick="showRackDetailPanel('${escapeHtml(r.rack)}')">  
+        <td class="py-2 px-3 text-slate-400 font-medium">${idx+1}</td>
+        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.gudang)}</td>
+        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.area)}</td>
+        <td class="py-2 px-3 font-mono font-bold text-indigo-700">${escapeHtml(p.block)}</td>
+        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.level)}</td>
+        <td class="py-2 px-3 font-semibold text-slate-700">${escapeHtml(p.slot)}</td>
+        <td class="py-2 px-3 font-mono font-bold text-slate-800">${escapeHtml(firstItem ? (firstItem.code||'-') : '-')}</td>
+        <td class="py-2 px-3 text-slate-700 max-w-[160px] truncate">${escapeHtml(firstItem ? (firstItem.name||'-') : '-')}</td>
+        <td class="py-2 px-3 text-right font-black ${r.has_stock ? 'text-emerald-700' : 'text-slate-400'}">${Math.round(r.total_qty||0).toLocaleString()}</td>
+        <td class="py-2 px-3 text-slate-600">${escapeHtml(firstItem ? (firstItem.unit||'-') : '-')}</td>
+        <td class="py-2 px-3">${statusHtml}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
 
 function switchRackMapCategory(category) {
   if (currentRackMapCategory === category) return;
@@ -16004,8 +16221,24 @@ function filterRackMapCards() {
   if (!grid) return;
 
   const filtered = allRackMapData.racks.filter(r => {
+    // Dropdown filters
+    const filterGudang = document.getElementById('rackFilterGudang')?.value || '';
+    const filterArea   = document.getElementById('rackFilterArea')?.value || '';
+    const filterRak    = document.getElementById('rackFilterRak')?.value || '';
+    if (filterGudang || filterArea || filterRak) {
+      const p = parseRackCodeFull(r.rack);
+      if (filterGudang && p.gudang !== filterGudang) return false;
+      if (filterArea   && p.area  !== filterArea)   return false;
+      if (filterRak    && p.block !== filterRak)     return false;
+    }
+    // Status filter
     if (currentRackStatusFilter === 'FILLED' && !r.has_stock) return false;
     if (currentRackStatusFilter === 'EMPTY'  &&  r.has_stock) return false;
+    if (currentRackStatusFilter === 'LOW') {
+      const fi = r.items && r.items[0];
+      const isLow = fi && fi.min_stock > 0 && (r.total_qty||0) > 0 && (r.total_qty||0) <= fi.min_stock;
+      if (!isLow) return false;
+    }
     if (query) {
       const matchRack  = (r.rack || '').toLowerCase().includes(query);
       const matchItems = (r.items || []).some(item =>
@@ -16115,7 +16348,16 @@ function filterRackMapCards() {
         const nameShort = itemName.length > 14 ? itemName.substring(0, 13) + '\u2026' : itemName;
 
         if (isFilled) {
-          html += '<div onclick="showRackMapDetail(\'' + encodeURIComponent(slot.rack) + '\')" title="' + rackEsc + '" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:linear-gradient(160deg,#d1fae5 0%,#6ee7b7 100%);border:1.5px solid #10b981;border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.1);transition:all .15s;">';
+          const isLow = slot.items && slot.items[0] && slot.items[0].min_stock > 0 && (slot.total_qty||0) <= slot.items[0].min_stock;
+          let slotBg, slotBorder;
+          if (isLow) {
+            slotBg = 'linear-gradient(160deg,#fef3c7 0%,#fcd34d 100%)';
+            slotBorder = '1.5px solid #f59e0b';
+          } else {
+            slotBg = 'linear-gradient(160deg,#d1fae5 0%,#6ee7b7 100%)';
+            slotBorder = '1.5px solid #10b981';
+          }
+          html += '<div onclick="showRackDetailPanel(\'' + rackEsc.replace(/'/g,"\\'") + '\')" title="' + rackEsc + '" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:' + slotBg + ';border:' + slotBorder + ';border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.1);transition:all .15s;">';
           html += '<div style="position:absolute;bottom:0;left:-4px;right:-4px;height:4px;background:#334155;z-index:1;"></div>';
           html += '<div class="flex flex-col items-center justify-center pb-1" style="height:100%;padding-top:4px;padding-left:3px;padding-right:3px;">';
           html += '<span class="font-mono font-black text-emerald-900 leading-none" style="font-size:12px;">' + qty.toLocaleString() + '</span>';
@@ -16126,7 +16368,7 @@ function filterRackMapCards() {
           html += '<div class="absolute top-0.5 right-0.5 px-0.5 py-px rounded text-[6px] font-black text-emerald-900 bg-white/50" style="line-height:1;">' + escapeHtml(levelLbl) + '</div>';
           html += '</div>';
         } else {
-          html += '<div onclick="showRackMapDetail(\'' + encodeURIComponent(slot.rack) + '\')" title="' + rackEsc + ' - KOSONG" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:linear-gradient(160deg,#fff1f2 0%,#fecdd3 100%);border:2px dashed #f43f5e;border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);transition:all .15s;">';
+          html += '<div onclick="showRackDetailPanel(\'' + rackEsc.replace(/'/g,"\\'") + '\')" title="' + rackEsc + ' - KOSONG" class="relative w-full cursor-pointer select-none group overflow-hidden" style="height:56px;background:linear-gradient(160deg,#fff1f2 0%,#fecdd3 100%);border:2px dashed #f43f5e;border-radius:3px;margin-bottom:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6);transition:all .15s;">';
           html += '<div style="position:absolute;bottom:0;left:-4px;right:-4px;height:4px;background:#334155;z-index:1;"></div>';
           html += '<div class="flex flex-col items-center justify-center pb-1" style="height:100%;padding-top:4px;">';
           html += '<span class="material-symbols-outlined text-rose-400" style="font-size:16px;line-height:1;">do_not_disturb_on</span>';
@@ -16164,6 +16406,9 @@ function filterRackMapCards() {
 
   grid.className = '';
   grid.innerHTML = html;
+
+  // Build the location table below visualization
+  buildLocationTable(filtered);
 }
 
 function showRackMapDetail(encodedRack) {
