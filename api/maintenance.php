@@ -111,42 +111,71 @@ function clearTable(PDO $pdo, string $tableName, bool $isSqlite) {
     }
 }
 
-// 1. GET DATABASE STATISTICS (ROW COUNTS & TABLE SIZES)
+// 1. GET DATABASE STATISTICS (ROW COUNTS & TABLE SIZES - GLOBAL & PER TYPE)
 if ($action === 'stats') {
     try {
         $stats = [];
         
-        $tables = [
-            'materials'            => 'Stock Kemas',
-            'gimmick'              => 'Stock Gimmick',
-            'inbound_transactions' => 'Riwayat Barang Masuk',
-            'outbound_transactions'=> 'Riwayat Barang Keluar',
-            'tasks'                => 'Penugasan Task Operator',
-            'stock_opnames'        => 'Sesi Stock Opname & Dynamic',
-            'stock_opname_items'   => 'Item Opname & Dynamic',
-            'stock_mutations'      => 'Buku Log Mutasi Stok',
-            'handovers'            => 'Serah Terima Shift (Handover)',
-            'consumable_requests'  => 'Permintaan Consumable Material',
-            'users'                => 'Manajemen Pengguna'
-        ];
-
-        foreach ($tables as $t => $label) {
+        // Helper count functions
+        $countSafe = function(string $sql) use ($pdo): int {
             try {
-                if ($t === 'materials') {
-                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''");
-                } elseif ($t === 'gimmick') {
-                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM materials WHERE item_type = 'GIMMICK'");
-                } else {
-                    $stmt = $pdo->query("SELECT COUNT(*) as cnt FROM `{$t}`");
-                }
-                $stats[$t] = [
-                    'label' => $label,
-                    'count' => (int)$stmt->fetchColumn()
-                ];
+                $stmt = $pdo->query($sql);
+                return (int)($stmt ? $stmt->fetchColumn() : 0);
             } catch (Throwable $e) {
-                $stats[$t] = ['label' => $label, 'count' => 0];
+                return 0;
             }
-        }
+        };
+
+        // 1. Materials Master
+        $matKemas = $countSafe("SELECT COUNT(*) FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''");
+        $matGimmick = $countSafe("SELECT COUNT(*) FROM materials WHERE item_type = 'GIMMICK'");
+        $stats['materials'] = ['label' => 'Master Stok Kemas', 'count' => $matKemas, 'count_kemas' => $matKemas, 'count_gimmick' => 0];
+        $stats['gimmick'] = ['label' => 'Master Stok Gimmick', 'count' => $matGimmick, 'count_kemas' => 0, 'count_gimmick' => $matGimmick];
+
+        // 2. Inbound
+        $inTotal = $countSafe("SELECT COUNT(*) FROM inbound_transactions");
+        $inKemas = $countSafe("SELECT COUNT(*) FROM inbound_transactions i JOIN materials m ON i.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $inGimmick = $countSafe("SELECT COUNT(*) FROM inbound_transactions i JOIN materials m ON i.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['inbound_transactions'] = ['label' => 'Riwayat Barang Masuk', 'count' => $inTotal, 'count_kemas' => $inKemas, 'count_gimmick' => $inGimmick];
+
+        // 3. Outbound
+        $outTotal = $countSafe("SELECT COUNT(*) FROM outbound_transactions");
+        $outKemas = $countSafe("SELECT COUNT(*) FROM outbound_transactions o JOIN materials m ON o.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $outGimmick = $countSafe("SELECT COUNT(*) FROM outbound_transactions o JOIN materials m ON o.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['outbound_transactions'] = ['label' => 'Riwayat Barang Keluar', 'count' => $outTotal, 'count_kemas' => $outKemas, 'count_gimmick' => $outGimmick];
+
+        // 4. Tasks
+        $taskTotal = $countSafe("SELECT COUNT(*) FROM tasks");
+        $taskKemas = $countSafe("SELECT COUNT(*) FROM tasks t JOIN materials m ON t.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $taskGimmick = $countSafe("SELECT COUNT(*) FROM tasks t JOIN materials m ON t.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['tasks'] = ['label' => 'Penugasan Task Operator', 'count' => $taskTotal, 'count_kemas' => $taskKemas, 'count_gimmick' => $taskGimmick];
+
+        // 5. Stock Mutations
+        $mutTotal = $countSafe("SELECT COUNT(*) FROM stock_mutations");
+        $mutKemas = $countSafe("SELECT COUNT(*) FROM stock_mutations sm JOIN materials m ON sm.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $mutGimmick = $countSafe("SELECT COUNT(*) FROM stock_mutations sm JOIN materials m ON sm.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['stock_mutations'] = ['label' => 'Buku Log Mutasi Stok', 'count' => $mutTotal, 'count_kemas' => $mutKemas, 'count_gimmick' => $mutGimmick];
+
+        // 6. Stock Opnames & Items
+        $opTotal = $countSafe("SELECT COUNT(*) FROM stock_opnames");
+        $opKemas = $countSafe("SELECT COUNT(DISTINCT o.id) FROM stock_opnames o JOIN stock_opname_items oi ON o.id = oi.opname_id JOIN materials m ON oi.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $opGimmick = $countSafe("SELECT COUNT(DISTINCT o.id) FROM stock_opnames o JOIN stock_opname_items oi ON o.id = oi.opname_id JOIN materials m ON oi.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['stock_opnames'] = ['label' => 'Sesi Stock Opname & Dynamic', 'count' => $opTotal, 'count_kemas' => $opKemas, 'count_gimmick' => $opGimmick];
+
+        $opItemTotal = $countSafe("SELECT COUNT(*) FROM stock_opname_items");
+        $opItemKemas = $countSafe("SELECT COUNT(*) FROM stock_opname_items oi JOIN materials m ON oi.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $opItemGimmick = $countSafe("SELECT COUNT(*) FROM stock_opname_items oi JOIN materials m ON oi.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['stock_opname_items'] = ['label' => 'Item Opname & Dynamic', 'count' => $opItemTotal, 'count_kemas' => $opItemKemas, 'count_gimmick' => $opItemGimmick];
+
+        // 7. Consumable Requests
+        $reqTotal = $countSafe("SELECT COUNT(*) FROM consumable_requests");
+        $reqKemas = $countSafe("SELECT COUNT(DISTINCT cr.id) FROM consumable_requests cr JOIN consumable_request_items cri ON cr.id = cri.request_id JOIN materials m ON cri.material_id = m.id WHERE m.item_type = 'PACKAGING' OR m.item_type IS NULL OR m.item_type = ''");
+        $reqGimmick = $countSafe("SELECT COUNT(DISTINCT cr.id) FROM consumable_requests cr JOIN consumable_request_items cri ON cr.id = cri.request_id JOIN materials m ON cri.material_id = m.id WHERE m.item_type = 'GIMMICK'");
+        $stats['consumable_requests'] = ['label' => 'Permintaan Consumable Material', 'count' => $reqTotal, 'count_kemas' => $reqKemas, 'count_gimmick' => $reqGimmick];
+
+        // 8. Global Tables
+        $stats['handovers'] = ['label' => 'Serah Terima Shift (Handover)', 'count' => $countSafe("SELECT COUNT(*) FROM handovers"), 'count_kemas' => 0, 'count_gimmick' => 0];
+        $stats['users'] = ['label' => 'Manajemen Pengguna', 'count' => $countSafe("SELECT COUNT(*) FROM users"), 'count_kemas' => 0, 'count_gimmick' => 0];
 
         echo json_encode([
             'success' => true,
@@ -161,7 +190,7 @@ if ($action === 'stats') {
     exit;
 }
 
-// 2. CLEAN INDIVIDUAL TABLE OR GROUP
+// 2. CLEAN INDIVIDUAL TABLE OR GROUP (WITH SUPPORT FOR SPECIFIC TYPES)
 if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $tableKey = trim($input['table'] ?? '');
@@ -185,10 +214,16 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         setForeignKeyChecks($pdo, false, $isSqlite);
         $clearedInfo = '';
 
+        // SQL WHERE clauses for material types
+        $sqlKemasIds = "SELECT id FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''";
+        $sqlGimmickIds = "SELECT id FROM materials WHERE item_type = 'GIMMICK'";
+
         switch ($tableKey) {
+            // --- MASTER STOK ---
             case 'materials':
+            case 'materials_kemas':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''")->fetchColumn();
-                $pkgIds = $pdo->query("SELECT id FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''")->fetchAll(PDO::FETCH_COLUMN);
+                $pkgIds = $pdo->query($sqlKemasIds)->fetchAll(PDO::FETCH_COLUMN);
                 if (!empty($pkgIds)) {
                     $placeholders = implode(',', array_fill(0, count($pkgIds), '?'));
                     $pdo->prepare("DELETE FROM material_batches WHERE material_id IN ($placeholders)")->execute($pkgIds);
@@ -198,8 +233,9 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
 
             case 'gimmick':
+            case 'materials_gimmick':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM materials WHERE item_type = 'GIMMICK'")->fetchColumn();
-                $gimmickIds = $pdo->query("SELECT id FROM materials WHERE item_type = 'GIMMICK'")->fetchAll(PDO::FETCH_COLUMN);
+                $gimmickIds = $pdo->query($sqlGimmickIds)->fetchAll(PDO::FETCH_COLUMN);
                 if (!empty($gimmickIds)) {
                     $placeholders = implode(',', array_fill(0, count($gimmickIds), '?'));
                     $pdo->prepare("DELETE FROM material_batches WHERE material_id IN ($placeholders)")->execute($gimmickIds);
@@ -208,22 +244,78 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clearedInfo = "Master Stok Gimmick ({$count} item & batch)";
                 break;
 
+            // --- INBOUND ---
+            case 'inbound_kemas':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM inbound_transactions WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM inbound_transactions WHERE material_id IN ($sqlKemasIds)");
+                $clearedInfo = "Riwayat Barang Masuk Kemas ({$count} transaksi)";
+                break;
+
+            case 'inbound_gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM inbound_transactions WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM inbound_transactions WHERE material_id IN ($sqlGimmickIds)");
+                $clearedInfo = "Riwayat Barang Masuk Gimmick ({$count} transaksi)";
+                break;
+
             case 'inbound':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM inbound_transactions")->fetchColumn();
                 clearTable($pdo, 'inbound_transactions', $isSqlite);
-                $clearedInfo = "Riwayat Barang Masuk ({$count} transaksi)";
+                $clearedInfo = "Riwayat Seluruh Barang Masuk ({$count} transaksi)";
+                break;
+
+            // --- OUTBOUND ---
+            case 'outbound_kemas':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM outbound_transactions WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM outbound_transactions WHERE material_id IN ($sqlKemasIds)");
+                $clearedInfo = "Riwayat Barang Keluar Kemas ({$count} transaksi)";
+                break;
+
+            case 'outbound_gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM outbound_transactions WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM outbound_transactions WHERE material_id IN ($sqlGimmickIds)");
+                $clearedInfo = "Riwayat Barang Keluar Gimmick ({$count} transaksi)";
                 break;
 
             case 'outbound':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM outbound_transactions")->fetchColumn();
                 clearTable($pdo, 'outbound_transactions', $isSqlite);
-                $clearedInfo = "Riwayat Barang Keluar Manual ({$count} transaksi)";
+                $clearedInfo = "Riwayat Seluruh Barang Keluar Manual ({$count} transaksi)";
+                break;
+
+            // --- TASKS ---
+            case 'tasks_kemas':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM tasks WHERE material_id IN ($sqlKemasIds)");
+                $clearedInfo = "Penugasan Task Kemas ({$count} task)";
+                break;
+
+            case 'tasks_gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM tasks WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM tasks WHERE material_id IN ($sqlGimmickIds)");
+                $clearedInfo = "Penugasan Task Gimmick ({$count} task)";
                 break;
 
             case 'tasks':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
                 clearTable($pdo, 'tasks', $isSqlite);
-                $clearedInfo = "Penugasan Task Operator ({$count} task)";
+                $clearedInfo = "Penugasan Seluruh Task Operator ({$count} task)";
+                break;
+
+            // --- OPNAME ---
+            case 'opname_kemas':
+                $countItems = (int)$pdo->query("SELECT COUNT(*) FROM stock_opname_items WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM stock_opname_item_stages WHERE item_id IN (SELECT id FROM stock_opname_items WHERE material_id IN ($sqlKemasIds))");
+                $pdo->exec("DELETE FROM stock_opname_items WHERE material_id IN ($sqlKemasIds)");
+                $pdo->exec("DELETE FROM stock_opnames WHERE id NOT IN (SELECT DISTINCT opname_id FROM stock_opname_items)");
+                $clearedInfo = "Data Stock Opname Kemas ({$countItems} item)";
+                break;
+
+            case 'opname_gimmick':
+                $countItems = (int)$pdo->query("SELECT COUNT(*) FROM stock_opname_items WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM stock_opname_item_stages WHERE item_id IN (SELECT id FROM stock_opname_items WHERE material_id IN ($sqlGimmickIds))");
+                $pdo->exec("DELETE FROM stock_opname_items WHERE material_id IN ($sqlGimmickIds)");
+                $pdo->exec("DELETE FROM stock_opnames WHERE id NOT IN (SELECT DISTINCT opname_id FROM stock_opname_items)");
+                $clearedInfo = "Data Stock Opname Gimmick ({$countItems} item)";
                 break;
 
             case 'opname':
@@ -236,23 +328,52 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 $clearedInfo = "Seluruh Sesi Stock Opname & Dynamic Counting ({$countSes} Sesi)";
                 break;
 
+            // --- MUTATIONS ---
+            case 'mutations_kemas':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM stock_mutations WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM stock_mutations WHERE material_id IN ($sqlKemasIds)");
+                $clearedInfo = "Buku Log Mutasi Kemas ({$count} entri)";
+                break;
+
+            case 'mutations_gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM stock_mutations WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM stock_mutations WHERE material_id IN ($sqlGimmickIds)");
+                $clearedInfo = "Buku Log Mutasi Gimmick ({$count} entri)";
+                break;
+
             case 'mutations':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM stock_mutations")->fetchColumn();
                 clearTable($pdo, 'stock_mutations', $isSqlite);
-                $clearedInfo = "Buku Log Mutasi Stok ({$count} entri)";
+                $clearedInfo = "Seluruh Buku Log Mutasi Stok ({$count} entri)";
                 break;
 
+            // --- HANDOVERS ---
             case 'handovers':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM handovers")->fetchColumn();
                 clearTable($pdo, 'handovers', $isSqlite);
                 $clearedInfo = "Riwayat Serah Terima Pekerjaan Shift ({$count} data)";
                 break;
 
+            // --- CONSUMABLE REQUESTS ---
+            case 'consumable_kemas':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM consumable_request_items WHERE material_id IN ($sqlKemasIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM consumable_request_items WHERE material_id IN ($sqlKemasIds)");
+                $pdo->exec("DELETE FROM consumable_requests WHERE id NOT IN (SELECT DISTINCT request_id FROM consumable_request_items)");
+                $clearedInfo = "Permintaan Consumable Kemas ({$count} item)";
+                break;
+
+            case 'consumable_gimmick':
+                $count = (int)$pdo->query("SELECT COUNT(*) FROM consumable_request_items WHERE material_id IN ($sqlGimmickIds)")->fetchColumn();
+                $pdo->exec("DELETE FROM consumable_request_items WHERE material_id IN ($sqlGimmickIds)");
+                $pdo->exec("DELETE FROM consumable_requests WHERE id NOT IN (SELECT DISTINCT request_id FROM consumable_request_items)");
+                $clearedInfo = "Permintaan Consumable Gimmick ({$count} item)";
+                break;
+
             case 'consumable_requests':
                 $count = (int)$pdo->query("SELECT COUNT(*) FROM consumable_requests")->fetchColumn();
                 clearTable($pdo, 'consumable_request_items', $isSqlite);
                 clearTable($pdo, 'consumable_requests', $isSqlite);
-                $clearedInfo = "Permintaan Consumable Material ({$count} pengajuan)";
+                $clearedInfo = "Seluruh Permintaan Consumable Material ({$count} pengajuan)";
                 break;
 
             default:
@@ -269,13 +390,109 @@ if ($action === 'clean_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode([
             'success' => true,
             'backup'  => $backup,
-            'message' => "Tabel berhasil dikosongkan: {$clearedInfo} telah dibersihkan secara permanen."
+            'message' => "Data berhasil dibersihkan: {$clearedInfo} telah dihapus permanen."
                 . ($backup ? " Cadangan otomatis tersimpan sebagai {$backup['file']}." : ' Peringatan: cadangan otomatis gagal dibuat.')
         ]);
     } catch (Throwable $e) {
         setForeignKeyChecks($pdo, true, $isSqlite);
         http_response_code(500);
         apiFail($e, 'Gagal mengosongkan tabel.');
+    }
+    exit;
+}
+
+// 2b. CLEAN BULK DATA PER TYPE (KEMAS ATAU GIMMICK)
+if ($action === 'clean_type_bulk' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $targetType = strtoupper(trim($input['type'] ?? '')); // 'PACKAGING' or 'GIMMICK'
+    $mode = trim($input['mode'] ?? 'transactions_only'); // 'transactions_only' or 'full'
+    $resetStockZero = !empty($input['reset_stock_zero']);
+    $password = trim($input['password'] ?? '');
+
+    if (!in_array($targetType, ['PACKAGING', 'GIMMICK'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Tipe inventory harus PACKAGING (Kemas) atau GIMMICK.']);
+        exit;
+    }
+
+    if (empty($password)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Password konfirmasi Teknisi wajib diisi.']);
+        exit;
+    }
+
+    if (!verifySuperAdminPassword($pdo, $password)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Verifikasi Gagal: Password Teknisi tidak sesuai! Tindakan dibatalkan.']);
+        exit;
+    }
+
+    $typeName = ($targetType === 'PACKAGING') ? 'Kemas (Packaging)' : 'Gimmick';
+    $backup = createSafetyBackup($pdo, 'bulk-' . strtolower($targetType) . '-' . $mode);
+
+    try {
+        setForeignKeyChecks($pdo, false, $isSqlite);
+
+        $sqlTypeIds = ($targetType === 'PACKAGING')
+            ? "SELECT id FROM materials WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''"
+            : "SELECT id FROM materials WHERE item_type = 'GIMMICK'";
+
+        // 1. Delete Inbound for this type
+        $pdo->exec("DELETE FROM inbound_transactions WHERE material_id IN ($sqlTypeIds)");
+
+        // 2. Delete Outbound for this type
+        $pdo->exec("DELETE FROM outbound_transactions WHERE material_id IN ($sqlTypeIds)");
+
+        // 3. Delete Tasks for this type
+        $pdo->exec("DELETE FROM tasks WHERE material_id IN ($sqlTypeIds)");
+
+        // 4. Delete Stock Mutations for this type
+        $pdo->exec("DELETE FROM stock_mutations WHERE material_id IN ($sqlTypeIds)");
+
+        // 5. Delete Opnames & Stages for this type
+        $pdo->exec("DELETE FROM stock_opname_item_stages WHERE item_id IN (SELECT id FROM stock_opname_items WHERE material_id IN ($sqlTypeIds))");
+        $pdo->exec("DELETE FROM stock_opname_items WHERE material_id IN ($sqlTypeIds)");
+        $pdo->exec("DELETE FROM stock_opnames WHERE id NOT IN (SELECT DISTINCT opname_id FROM stock_opname_items)");
+
+        // 6. Delete Consumable requests for this type
+        $pdo->exec("DELETE FROM consumable_request_items WHERE material_id IN ($sqlTypeIds)");
+        $pdo->exec("DELETE FROM consumable_requests WHERE id NOT IN (SELECT DISTINCT request_id FROM consumable_request_items)");
+
+        // 7. Delete VAS transactions if any
+        try {
+            $pdo->exec("DELETE FROM vas_transactions WHERE material_id IN ($sqlTypeIds)");
+        } catch (Throwable $ignored) {}
+
+        if ($mode === 'full') {
+            // Full Reset: Also delete material batches and master materials
+            $pdo->exec("DELETE FROM material_batches WHERE material_id IN ($sqlTypeIds)");
+            $pdo->exec("DELETE FROM materials WHERE id IN ($sqlTypeIds)");
+            $infoMsg = "Reset Total Tipe {$typeName} BERHASIL! Seluruh Master SKU, batch, dan riwayat transaksi tipe {$typeName} telah dibersihkan secara permanen.";
+        } else {
+            // Transactions Only
+            if ($resetStockZero) {
+                if ($targetType === 'PACKAGING') {
+                    $pdo->exec("UPDATE materials SET current_stock = 0 WHERE item_type = 'PACKAGING' OR item_type IS NULL OR item_type = ''");
+                } else {
+                    $pdo->exec("UPDATE materials SET current_stock = 0 WHERE item_type = 'GIMMICK'");
+                }
+            }
+            $infoMsg = "Pembersihan Transaksi Tipe {$typeName} BERHASIL! Riwayat Inbound, Outbound, Task, Mutasi, dan Opname khusus {$typeName} telah dikosongkan. Master SKU tetap tersimpan aman" . ($resetStockZero ? " (Stok aktual direset ke 0)." : ".");
+        }
+
+        setForeignKeyChecks($pdo, true, $isSqlite);
+
+        Auth::audit('DATA_CLEAN_TYPE_BULK', $targetType, "Mode: {$mode}" . ($backup ? " | Cadangan: {$backup['file']}" : ' | CADANGAN GAGAL DIBUAT'));
+
+        echo json_encode([
+            'success' => true,
+            'backup'  => $backup,
+            'message' => $infoMsg . ($backup ? " Cadangan otomatis tersimpan sebagai {$backup['file']}." : ' Peringatan: cadangan otomatis gagal dibuat.')
+        ]);
+    } catch (Throwable $e) {
+        setForeignKeyChecks($pdo, true, $isSqlite);
+        http_response_code(500);
+        apiFail($e, "Gagal memproses pembersihan massal tipe {$typeName}.");
     }
     exit;
 }

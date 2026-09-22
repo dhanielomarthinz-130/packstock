@@ -301,7 +301,7 @@ require_once __DIR__ . '/../includes/header.php';
 
           <?php if (Auth::isSuperAdmin()): ?>
           <button onclick="switchAdminTab('maintenance')" id="nav-maintenance" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-all" title="Maintenance & Pembersihan Database">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-900 hover:bg-rose-50 transition-all" title="Maintenance & Pembersihan Database">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">database</span>
               <span class="sidebar-text truncate">Bersihkan Database</span>
@@ -4694,8 +4694,14 @@ require_once __DIR__ . '/../includes/header.php';
                   <h3 class="text-sm sm:text-base font-black tracking-tight text-white">Pembersihan & Maintenance Database</h3>
                   <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">Teknisi Only</span>
                 </div>
+                <p class="text-xs text-slate-400 mt-0.5">Kelola & bersihkan data tabel per tipe (Kemas / Gimmick) secara terisolasi</p>
               </div>
             </div>
+
+            <a href="maintenance.php" class="h-[38px] px-4 bg-white hover:bg-slate-100 text-[#262363] rounded-xl text-xs font-black transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto">
+              <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+              <span>Buka Halaman Penuh Maintenance</span>
+            </a>
           </div>
         </div>
 
@@ -6693,6 +6699,8 @@ require_once __DIR__ . '/../includes/header.php';
     <form id="formConfirmDbClean" onsubmit="submitCleanDatabase(event)" class="space-y-3.5 text-xs">
       <input type="hidden" id="cleanActionType" value="clean_table">
       <input type="hidden" id="cleanTargetTable" value="">
+      <input type="hidden" id="cleanTargetType" value="">
+      <input type="hidden" id="cleanTargetMode" value="">
 
       <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5 text-rose-950">
         <p class="font-bold text-xs" id="cleanModalTargetTitle">Tabel yang akan dikosongkan:</p>

@@ -9645,6 +9645,8 @@ function openBulkCleanModal(actionType) {
 
   document.getElementById('cleanActionType').value = actionType;
   document.getElementById('cleanTargetTable').value = '';
+  if (document.getElementById('cleanTargetType')) document.getElementById('cleanTargetType').value = '';
+  if (document.getElementById('cleanTargetMode')) document.getElementById('cleanTargetMode').value = '';
   document.getElementById('cleanSuperAdminPassword').value = '';
 
   if (actionType === 'clean_all_transactions') {
@@ -9664,10 +9666,40 @@ function openBulkCleanModal(actionType) {
   }, 100);
 }
 
+function openBulkCleanTypeModal(targetType, mode) {
+  const modal = document.getElementById('modalConfirmDbClean');
+  if (!modal) return;
+
+  const typeName = (targetType === 'PACKAGING') ? 'Kemas (Packaging)' : 'Gimmick';
+  document.getElementById('cleanActionType').value = 'clean_type_bulk';
+  document.getElementById('cleanTargetTable').value = '';
+  if (document.getElementById('cleanTargetType')) document.getElementById('cleanTargetType').value = targetType;
+  if (document.getElementById('cleanTargetMode')) document.getElementById('cleanTargetMode').value = mode;
+  document.getElementById('cleanSuperAdminPassword').value = '';
+
+  if (mode === 'transactions_only') {
+    document.getElementById('cleanModalTargetTitle').innerText = `Tindakan: Kosongkan Transaksi Khusus Tipe ${typeName}`;
+    document.getElementById('cleanModalTargetDesc').innerText = `Semua Inbound, Outbound, Task, Opname, Mutasi, dan Request khusus tipe ${typeName} akan dihapus permanen. Master SKU tetap aman.`;
+    document.getElementById('btnSubmitCleanDbText').innerText = `Ya, Bersihkan Transaksi ${typeName}`;
+  } else {
+    document.getElementById('cleanModalTargetTitle').innerText = `PERINGATAN: Reset Total Data Tipe ${typeName} (Master + Riwayat)`;
+    document.getElementById('cleanModalTargetDesc').innerText = `Seluruh master SKU, batch, beserta seluruh riwayat transaksi tipe ${typeName} akan DIHAPUS TOTAL secara permanen! Tipe lainnya tetap 100% aman.`;
+    document.getElementById('btnSubmitCleanDbText').innerText = `Ya, Reset Total Tipe ${typeName}`;
+  }
+
+  App.openModal('modalConfirmDbClean');
+  setTimeout(() => {
+    const pwdInput = document.getElementById('cleanSuperAdminPassword');
+    if (pwdInput) pwdInput.focus();
+  }, 100);
+}
+
 async function submitCleanDatabase(e) {
   e.preventDefault();
   const actionType = document.getElementById('cleanActionType').value;
   const tableKey = document.getElementById('cleanTargetTable').value;
+  const targetType = document.getElementById('cleanTargetType')?.value || '';
+  const targetMode = document.getElementById('cleanTargetMode')?.value || 'transactions_only';
   const password = document.getElementById('cleanSuperAdminPassword').value.trim();
   const resetStockZero = document.getElementById('maintResetStockZero')?.checked ? 1 : 0;
   const btn = document.getElementById('btnSubmitCleanDb');
@@ -9690,6 +9722,10 @@ async function submitCleanDatabase(e) {
 
     if (actionType === 'clean_table') {
       payload.table = tableKey;
+    } else if (actionType === 'clean_type_bulk') {
+      payload.type = targetType;
+      payload.mode = targetMode;
+      payload.reset_stock_zero = resetStockZero;
     } else if (actionType === 'clean_all_transactions') {
       payload.reset_stock_zero = resetStockZero;
     }
