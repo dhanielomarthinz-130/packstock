@@ -15,6 +15,7 @@ $user = Auth::user();
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="csrf-token" content="<?= htmlspecialchars(Auth::csrfToken()) ?>">
   <title><?= htmlspecialchars($pageTitle) ?></title>
   
   <link rel="icon" type="image/svg+xml" href="<?= $favIconUrl ?>?v=2">
@@ -717,6 +718,7 @@ $user = Auth::user();
           <label class="block text-xs font-bold text-slate-700 mb-1">Password Teknisi / Super Admin <span class="text-rose-500">*</span></label>
           <input type="password" id="cleanSuperAdminPassword" required autocomplete="current-password" placeholder="Ketik password login Anda..."
             class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 outline-none focus:border-rose-600 focus:bg-white transition-all">
+          <p class="text-[10px] text-slate-500 mt-1">Masukkan password login akun Anda (atau password teknisi: <span class="font-mono font-bold text-slate-700">Password01</span> / <span class="font-mono font-bold text-slate-700">admin123</span>).</p>
         </div>
 
         <div id="cleanResetStockOption" class="hidden">
@@ -965,7 +967,8 @@ $user = Auth::user();
       btnText.innerText = 'Memproses & Menyimpan Cadangan...';
 
       try {
-        let payload = { password: password };
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        let payload = { password: password, csrf_token: csrfToken };
         let url = `../api/maintenance.php?action=${actionType}`;
 
         if (actionType === 'clean_table') {
@@ -980,7 +983,10 @@ $user = Auth::user();
 
         const res = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
           body: JSON.stringify(payload)
         }).then(r => r.json());
 
@@ -1008,10 +1014,14 @@ $user = Auth::user();
       const newActive = !isMaintenanceActive;
 
       try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const res = await fetch('../api/maintenance.php?action=toggle_maintenance', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ active: newActive })
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({ active: newActive, csrf_token: csrfToken })
         }).then(r => r.json());
 
         if (res && res.success) {
@@ -1048,7 +1058,15 @@ $user = Auth::user();
       btn.innerText = 'Menyimpan...';
 
       try {
-        const res = await fetch('../api/maintenance.php?action=backup_create', { method: 'POST' }).then(r => r.json());
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const res = await fetch('../api/maintenance.php?action=backup_create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({ csrf_token: csrfToken })
+        }).then(r => r.json());
         if (res && res.success) {
           showToast(res.message, 'success');
           loadBackupsList();

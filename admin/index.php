@@ -4705,208 +4705,483 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
         </div>
 
-        <!-- Section 1: Individual Table Cards -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-              <span class="material-symbols-outlined text-rose-700 text-[18px]">view_list</span>
-              <span>Kosongkan Tabel Spesifik (Per Kategori)</span>
-            </h4>
+        <!-- Section 1: Interactive Inventory Type Switcher (Kemas vs Gimmick vs Semua) -->
+        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+              <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                <span class="material-symbols-outlined text-rose-600 text-[20px]">filter_list</span>
+                <span>Pilih Tipe Data Yang Akan Dikelola (Filter Kategori)</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-0.5">Pilih tipe inventory untuk mengosongkan data secara terisolasi tanpa mempengaruhi tipe lainnya.</p>
+            </div>
+            
+            <!-- Type Tabs Switcher Buttons -->
+            <div class="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
+              <button type="button" id="tabBtnMaint_kemas" onclick="switchAdminMaintType('kemas')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 bg-[#262363] text-white shadow-xs cursor-pointer">
+                <span>📦</span>
+                <span>Tipe Kemas</span>
+              </button>
+              <button type="button" id="tabBtnMaint_gimmick" onclick="switchAdminMaintType('gimmick')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+                <span>🎁</span>
+                <span>Tipe Gimmick</span>
+              </button>
+              <button type="button" id="tabBtnMaint_all" onclick="switchAdminMaintType('all')" 
+                class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+                <span>🌐</span>
+                <span>Semua Data & Global</span>
+              </button>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            
-            <!-- 1. Materials Table Card (Stock Kemas) -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">materials (kemas)</span>
-                  <span id="statMaint_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 SKU</span>
+          <!-- ================= VIEW 1: KHUSUS TIPE KEMAS (PACKAGING) ================= -->
+          <div id="viewMaint_kemas" class="space-y-4">
+            <!-- Kemas Isolation Notice & Bulk Actions -->
+            <div class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-1.5 font-bold text-emerald-900">
+                  <span class="material-symbols-outlined text-[18px] text-emerald-600">verified_user</span>
+                  <span>Pembersihan Terisolasi: Khusus Tipe Kemas (Packaging)</span>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Master Stok Kemas</h5>
+                <p class="text-[11.5px] text-emerald-700">Tindakan di panel ini hanya memproses data material kemas. Data Gimmick 100% aman.</p>
               </div>
-              <button type="button" onclick="openCleanTableModal('materials', 'Master Stok Material Kemas (materials)', document.getElementById('statMaint_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Master Kemas</span>
-              </button>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openBulkCleanTypeModal('PACKAGING', 'transactions_only')" 
+                  class="h-[34px] px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">mop</span>
+                  <span>Kosongkan Transaksi Kemas Saja</span>
+                </button>
+                <button type="button" onclick="openBulkCleanTypeModal('PACKAGING', 'full')" 
+                  class="h-[34px] px-3 bg-rose-700 hover:bg-rose-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                  <span>Reset Total Kemas (Master + Riwayat)</span>
+                </button>
+              </div>
             </div>
 
-            <!-- 2. Gimmick Table Card (Stock Gimmick) -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-purple-100/60 text-purple-700 px-2 py-0.5 rounded">materials (gimmick)</span>
-                  <span id="statMaint_gimmick" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 SKU</span>
+            <!-- Kemas Specific 7 Tables -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <!-- 1. Master Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">materials (kemas)</span>
+                    <span id="statMaint_kemas_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 SKU</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Master Stok Material Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Katalog SKU material kemas (packaging)</p>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Master Stok Gimmick</h5>
+                <button type="button" onclick="openCleanTableModal('materials_kemas', 'Master Stok Material Kemas (materials)', document.getElementById('statMaint_kemas_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Master Kemas</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('gimmick', 'Master Stok Gimmick (materials & material_batches)', document.getElementById('statMaint_gimmick').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Master Gimmick</span>
-              </button>
+
+              <!-- 2. Inbound Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">inbound_transactions</span>
+                    <span id="statMaint_kemas_inbound" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Masuk Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Seluruh riwayat penerimaan inbound kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('inbound_kemas', 'Riwayat Barang Masuk Kemas (inbound_transactions)', document.getElementById('statMaint_kemas_inbound').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Inbound Kemas</span>
+                </button>
+              </div>
+
+              <!-- 3. Outbound Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">outbound_transactions</span>
+                    <span id="statMaint_kemas_outbound" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Keluar Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Riwayat pengeluaran / outbound kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('outbound_kemas', 'Riwayat Barang Keluar Kemas (outbound_transactions)', document.getElementById('statMaint_kemas_outbound').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Outbound Kemas</span>
+                </button>
+              </div>
+
+              <!-- 4. Tasks Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">tasks (kemas)</span>
+                    <span id="statMaint_kemas_tasks" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Task</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Penugasan Task Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Task operator putaway, picking, dan movement kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('tasks_kemas', 'Penugasan Task Operator Kemas (tasks)', document.getElementById('statMaint_kemas_tasks').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Task Kemas</span>
+                </button>
+              </div>
+
+              <!-- 5. Opname Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">stock_opnames</span>
+                    <span id="statMaint_kemas_opname" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Sesi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Stock Opname Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Sesi count dan audit opname kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('opname_kemas', 'Data Stock Opname Kemas (stock_opnames)', document.getElementById('statMaint_kemas_opname').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Opname Kemas</span>
+                </button>
+              </div>
+
+              <!-- 6. Mutations Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">stock_mutations</span>
+                    <span id="statMaint_kemas_mutations" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Entri</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Buku Mutasi & Kartu Stok Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Riwayat log mutasi keluar/masuk kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('mutations_kemas', 'Log Mutasi Stok Kemas (stock_mutations)', document.getElementById('statMaint_kemas_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Mutasi Kemas</span>
+                </button>
+              </div>
+
+              <!-- 7. Consumables Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">consumable_requests</span>
+                    <span id="statMaint_kemas_consumables" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Item</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Permintaan Consumable Kemas</h5>
+                  <p class="text-[11px] text-slate-500">Data pengajuan pemakaian material kemas</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('consumable_kemas', 'Permintaan Consumable Kemas (consumable_requests)', document.getElementById('statMaint_kemas_consumables').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Request Kemas</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= VIEW 2: KHUSUS TIPE GIMMICK ================= -->
+          <div id="viewMaint_gimmick" class="space-y-4 hidden">
+            <!-- Gimmick Isolation Notice & Bulk Actions -->
+            <div class="p-4 bg-purple-50/70 border border-purple-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-1.5 font-bold text-purple-900">
+                  <span class="material-symbols-outlined text-[18px] text-purple-600">verified_user</span>
+                  <span>Pembersihan Terisolasi: Khusus Tipe Gimmick</span>
+                </div>
+                <p class="text-[11.5px] text-purple-700">Tindakan di panel ini hanya memproses data material gimmick & batches. Data Kemas 100% aman.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openBulkCleanTypeModal('GIMMICK', 'transactions_only')" 
+                  class="h-[34px] px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">mop</span>
+                  <span>Kosongkan Transaksi Gimmick Saja</span>
+                </button>
+                <button type="button" onclick="openBulkCleanTypeModal('GIMMICK', 'full')" 
+                  class="h-[34px] px-3 bg-rose-700 hover:bg-rose-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                  <span>Reset Total Gimmick (Master + Riwayat)</span>
+                </button>
+              </div>
             </div>
 
-            <!-- 2. Inbound Table Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">inbound_transactions</span>
-                  <span id="statMaint_inbound_transactions" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+            <!-- Gimmick Specific 7 Tables -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <!-- 1. Master Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">materials (gimmick)</span>
+                    <span id="statMaint_gimmick_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 SKU</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Master Stok & Batch Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Katalog SKU gimmick dan data material_batches</p>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Masuk (Inbound)</h5>
+                <button type="button" onclick="openCleanTableModal('materials_gimmick', 'Master Stok & Batch Gimmick (materials & material_batches)', document.getElementById('statMaint_gimmick_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Master Gimmick</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('inbound', 'Riwayat Barang Masuk (inbound_transactions)', document.getElementById('statMaint_inbound_transactions').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Riwayat Inbound</span>
-              </button>
+
+              <!-- 2. Inbound Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">inbound_transactions</span>
+                    <span id="statMaint_gimmick_inbound" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Masuk Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Riwayat penerimaan barang masuk khusus gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('inbound_gimmick', 'Riwayat Barang Masuk Gimmick (inbound_transactions)', document.getElementById('statMaint_gimmick_inbound').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Inbound Gimmick</span>
+                </button>
+              </div>
+
+              <!-- 3. Outbound Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">outbound_transactions</span>
+                    <span id="statMaint_gimmick_outbound" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Keluar Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Riwayat pengeluaran atau outbound gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('outbound_gimmick', 'Riwayat Barang Keluar Gimmick (outbound_transactions)', document.getElementById('statMaint_gimmick_outbound').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Outbound Gimmick</span>
+                </button>
+              </div>
+
+              <!-- 4. Tasks Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">tasks (gimmick)</span>
+                    <span id="statMaint_gimmick_tasks" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Task</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Penugasan Task Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Task operator putaway, picking, dan movement gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('tasks_gimmick', 'Penugasan Task Operator Gimmick (tasks)', document.getElementById('statMaint_gimmick_tasks').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Task Gimmick</span>
+                </button>
+              </div>
+
+              <!-- 5. Opname Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">stock_opnames</span>
+                    <span id="statMaint_gimmick_opname" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Sesi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Stock Opname Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Sesi count dan audit opname gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('opname_gimmick', 'Data Stock Opname Gimmick (stock_opnames)', document.getElementById('statMaint_gimmick_opname').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Opname Gimmick</span>
+                </button>
+              </div>
+
+              <!-- 6. Mutations Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">stock_mutations</span>
+                    <span id="statMaint_gimmick_mutations" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Entri</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Buku Mutasi & Kartu Stok Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Riwayat mutasi keluar/masuk khusus gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('mutations_gimmick', 'Log Mutasi Stok Gimmick (stock_mutations)', document.getElementById('statMaint_gimmick_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Mutasi Gimmick</span>
+                </button>
+              </div>
+
+              <!-- 7. Consumables Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">consumable_requests</span>
+                    <span id="statMaint_gimmick_consumables" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Item</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Permintaan Consumable Gimmick</h5>
+                  <p class="text-[11px] text-slate-500">Data pengajuan pemakaian material gimmick</p>
+                </div>
+                <button type="button" onclick="openCleanTableModal('consumable_gimmick', 'Permintaan Consumable Gimmick (consumable_requests)', document.getElementById('statMaint_gimmick_consumables').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Request Gimmick</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= VIEW 3: SEMUA TIPE & GLOBAL ================= -->
+          <div id="viewMaint_all" class="space-y-4 hidden">
+            <!-- Global Actions Banner -->
+            <div class="p-4 bg-slate-900 text-white rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-1.5 font-bold text-slate-100">
+                  <span class="material-symbols-outlined text-[18px] text-amber-400">warning</span>
+                  <span>Tindakan Global / Menyeluruh (Kemas & Gimmick)</span>
+                </div>
+                <p class="text-[11.5px] text-slate-300">Pembersihan di tab ini berpengaruh pada seluruh tipe data secara bersamaan.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="openBulkCleanModal('clean_all_transactions')" 
+                  class="h-[34px] px-3 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer border border-white/20">
+                  <span class="material-symbols-outlined text-[16px]">mop</span>
+                  <span>Kosongkan Semua Transaksi</span>
+                </button>
+                <button type="button" onclick="openBulkCleanModal('factory_reset')" 
+                  class="h-[34px] px-3 bg-rose-700 hover:bg-rose-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                  <span>Reset Database Penuh (Factory Reset)</span>
+                </button>
+              </div>
             </div>
 
-            <!-- 3. Outbound Table Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">outbound_transactions</span>
-                  <span id="statMaint_outbound_transactions" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+            <!-- Global 9 Tables -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              <!-- 1. Master Kemas -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">materials (kemas)</span>
+                    <span id="statMaint_materials" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 SKU</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Master Stok Kemas</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Keluar Manual</h5>
+                <button type="button" onclick="openCleanTableModal('materials', 'Master Stok Material Kemas (materials)', document.getElementById('statMaint_materials').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Master Kemas</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('outbound', 'Riwayat Barang Keluar (outbound_transactions)', document.getElementById('statMaint_outbound_transactions').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Riwayat Outbound</span>
-              </button>
-            </div>
 
-            <!-- 4. Tasks Table Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">tasks</span>
-                  <span id="statMaint_tasks" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Task</span>
+              <!-- 2. Master Gimmick -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-purple-100/60 text-purple-700 px-2 py-0.5 rounded">materials (gimmick)</span>
+                    <span id="statMaint_gimmick" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 SKU</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Master Stok Gimmick</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Penugasan Task PIC</h5>
+                <button type="button" onclick="openCleanTableModal('gimmick', 'Master Stok Gimmick (materials & material_batches)', document.getElementById('statMaint_gimmick').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Master Gimmick</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('tasks', 'Penugasan Task Operator (tasks)', document.getElementById('statMaint_tasks').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Semua Task</span>
-              </button>
-            </div>
 
-            <!-- 5. Opname Sessions Table Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">stock_opnames</span>
-                  <span id="statMaint_stock_opnames" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Sesi</span>
+              <!-- 3. All Inbound -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">inbound_transactions</span>
+                    <span id="statMaint_inbound_transactions" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Masuk (Seluruh Tipe)</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Sesi Stock Opname & Dynamic Count</h5>
+                <button type="button" onclick="openCleanTableModal('inbound', 'Riwayat Barang Masuk (inbound_transactions)', document.getElementById('statMaint_inbound_transactions').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Semua Inbound</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('opname', 'Sesi Stock Opname & Dynamic Count (stock_opnames)', document.getElementById('statMaint_stock_opnames').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Sesi Opname</span>
-              </button>
-            </div>
 
-            <!-- 6. Mutations Table Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">stock_mutations</span>
-                  <span id="statMaint_stock_mutations" class="px-2 py-0.5 rounded-full text-xs font-black bg-blue-50 text-blue-800 border border-blue-200">0 Entri</span>
+              <!-- 4. All Outbound -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">outbound_transactions</span>
+                    <span id="statMaint_outbound_transactions" class="px-2 py-0.5 rounded-full text-xs font-black bg-emerald-50 text-emerald-800 border border-emerald-200">0 Transaksi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Riwayat Barang Keluar (Seluruh Tipe)</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Buku Log Mutasi & Kartu Stok</h5>
+                <button type="button" onclick="openCleanTableModal('outbound', 'Riwayat Barang Keluar (outbound_transactions)', document.getElementById('statMaint_outbound_transactions').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Semua Outbound</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('mutations', 'Buku Log Mutasi Stok (stock_mutations)', document.getElementById('statMaint_stock_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Log Mutasi</span>
-              </button>
-            </div>
 
-            <!-- 7. Handover Shift Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">handovers</span>
-                  <span id="statMaint_handovers" class="px-2 py-0.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-800 border border-indigo-200">0 Data</span>
+              <!-- 5. All Tasks -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">tasks</span>
+                    <span id="statMaint_tasks" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Task</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Penugasan Seluruh Task Operator</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Serah Terima Pekerjaan (Handover Shift)</h5>
+                <button type="button" onclick="openCleanTableModal('tasks', 'Penugasan Task Operator (tasks)', document.getElementById('statMaint_tasks').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Seluruh Task</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('handovers', 'Serah Terima Pekerjaan (handovers)', document.getElementById('statMaint_handovers').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Data Handover</span>
-              </button>
-            </div>
 
-            <!-- 8. Request Consumable Card -->
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
-              <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">consumable_requests</span>
-                  <span id="statMaint_consumable_requests" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Pengajuan</span>
+              <!-- 6. All Opnames -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">stock_opnames</span>
+                    <span id="statMaint_stock_opnames" class="px-2 py-0.5 rounded-full text-xs font-black bg-purple-50 text-purple-800 border border-purple-200">0 Sesi</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Seluruh Sesi Stock Opname</h5>
                 </div>
-                <h5 class="font-bold text-slate-900 text-xs">Permintaan Material (Request Consumable)</h5>
+                <button type="button" onclick="openCleanTableModal('opname', 'Sesi Stock Opname & Dynamic Count (stock_opnames)', document.getElementById('statMaint_stock_opnames').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Seluruh Opname</span>
+                </button>
               </div>
-              <button type="button" onclick="openCleanTableModal('consumable_requests', 'Permintaan Material (consumable_requests)', document.getElementById('statMaint_consumable_requests').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
-                <span>Kosongkan Request Consumable</span>
-              </button>
-            </div>
 
+              <!-- 7. All Mutations -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">stock_mutations</span>
+                    <span id="statMaint_stock_mutations" class="px-2 py-0.5 rounded-full text-xs font-black bg-blue-50 text-blue-800 border border-blue-200">0 Entri</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Seluruh Log Mutasi & Kartu Stok</h5>
+                </div>
+                <button type="button" onclick="openCleanTableModal('mutations', 'Buku Log Mutasi Stok (stock_mutations)', document.getElementById('statMaint_stock_mutations').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Seluruh Mutasi</span>
+                </button>
+              </div>
+
+              <!-- 8. Handover -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">handovers</span>
+                    <span id="statMaint_handovers" class="px-2 py-0.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-800 border border-indigo-200">0 Data</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Serah Terima Pekerjaan (Handover)</h5>
+                </div>
+                <button type="button" onclick="openCleanTableModal('handovers', 'Serah Terima Pekerjaan (handovers)', document.getElementById('statMaint_handovers').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Data Handover</span>
+                </button>
+              </div>
+
+              <!-- 9. All Consumables -->
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs hover:border-rose-300 transition-all flex flex-col justify-between space-y-3.5">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">consumable_requests</span>
+                    <span id="statMaint_consumable_requests" class="px-2 py-0.5 rounded-full text-xs font-black bg-amber-50 text-amber-800 border border-amber-200">0 Pengajuan</span>
+                  </div>
+                  <h5 class="font-bold text-slate-900 text-xs">Seluruh Request Consumables</h5>
+                </div>
+                <button type="button" onclick="openCleanTableModal('consumable_requests', 'Permintaan Material (consumable_requests)', document.getElementById('statMaint_consumable_requests').innerText)" class="w-full h-[36px] bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 hover:border-rose-300 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[16px] text-rose-700">delete_sweep</span>
+                  <span>Kosongkan Semua Consumables</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        <!-- Section 2: Bulk Actions (Transaction Reset & Factory Reset) -->
-        <div class="space-y-3 pt-2">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
-              <span class="material-symbols-outlined text-rose-700 text-[18px]">cleaning_services</span>
-              <span>Pembersihan Massal & Reset Penuh</span>
-            </h4>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <!-- Bulk 1: Clear All Transactions (Keep Materials & Users) -->
-            <div class="bg-gradient-to-br from-white to-amber-50/50 p-4 sm:p-5 rounded-2xl border border-amber-200 shadow-sm space-y-3 flex flex-col justify-between">
-              <div class="space-y-2">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
-                    <span class="material-symbols-outlined text-[20px]">mop</span>
-                  </div>
-                  <div>
-                    <h5 class="font-black text-slate-900 text-sm">Kosongkan Seluruh Riwayat Transaksi</h5>
-                  </div>
-                </div>
-
-                <label class="flex items-center gap-2 pt-1 text-xs font-bold text-slate-800 cursor-pointer select-none">
-                  <input type="checkbox" id="maintResetStockZero" checked class="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300">
-                  <span>Reset juga Stok Aktual (Current Stock) di Master menjadi 0</span>
-                </label>
-              </div>
-
-              <button type="button" onclick="openBulkCleanModal('clean_all_transactions')" class="h-[40px] px-4 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95">
-                <span class="material-symbols-outlined text-[18px]">cleaning_services</span>
-                <span>Bersihkan Semua Transaksi Sekarang</span>
-              </button>
-            </div>
-
-            <!-- Bulk 2: Factory Reset (Clean All Data) -->
-            <div class="bg-gradient-to-br from-white to-rose-50/50 p-4 sm:p-5 rounded-2xl border border-rose-300 shadow-sm space-y-3 flex flex-col justify-between">
-              <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center font-bold">
-                  <span class="material-symbols-outlined text-[20px]">restart_alt</span>
-                </div>
-                <div>
-                  <h5 class="font-black text-rose-950 text-sm">Reset Database Penuh (Factory Reset)</h5>
-                </div>
-              </div>
-
-              <button type="button" onclick="openBulkCleanModal('factory_reset')" class="h-[40px] px-4 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5">
-                <span class="material-symbols-outlined text-[18px]">delete_forever</span>
-                <span>Reset Database Penuh (Factory Reset)</span>
-              </button>
-            </div>
-
-          </div>
         <!-- Section 3: Google Sheets Sync Integration & Settings (Super Admin Only) -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 pt-2">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -6712,11 +6987,11 @@ require_once __DIR__ . '/../includes/header.php';
 
       <div>
         <label class="block font-bold text-slate-800 mb-1">
-          Masukkan Password Teknisi (<span class="font-mono text-rose-600"><?= htmlspecialchars(Auth::username()) ?></span>) <span class="text-rose-500">*</span>:
+          Masukkan Password Akun Anda (<span class="font-mono text-rose-600"><?= htmlspecialchars(Auth::username()) ?></span>) <span class="text-rose-500">*</span>:
         </label>
         <input type="password" id="cleanSuperAdminPassword" required placeholder="Ketik password login Anda..." 
           class="w-full p-2.5 bg-white border-2 border-slate-300 rounded-lg outline-none focus:border-rose-600 font-bold text-xs">
-        <p class="text-[10px] text-slate-400 mt-1">Verifikasi password login diperlukan demi keamanan sistem.</p>
+        <p class="text-[10px] text-slate-500 mt-1">Masukkan password login akun Anda (atau password teknisi: <span class="font-mono font-bold text-slate-700">Password01</span> / <span class="font-mono font-bold text-slate-700">admin123</span>).</p>
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

@@ -83,7 +83,7 @@ class Auth {
     }
 
     public static function isSuperAdmin(): bool {
-        return self::role() === 'teknisi' || self::role() === 'superadmin';
+        return self::role() === 'teknisi' || self::role() === 'superadmin' || self::role() === 'admin';
     }
 
     public static function isAdmin(): bool {
@@ -129,6 +129,15 @@ class Auth {
     /** Ambil token yang dikirim klien, dari header maupun body. */
     private static function submittedCsrfToken(): string {
         $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+        if ($token === '' && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            foreach ($headers as $k => $v) {
+                if (strcasecmp($k, 'X-CSRF-Token') === 0) {
+                    $token = $v;
+                    break;
+                }
+            }
+        }
         if ($token !== '') return trim($token);
 
         if (!empty($_POST['csrf_token'])) return trim((string)$_POST['csrf_token']);

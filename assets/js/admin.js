@@ -9592,7 +9592,28 @@ function downloadAdjustExcelTemplate() {
 
 // =========================================================================
 // 12. SUPER ADMIN DATABASE MAINTENANCE & TABLE CLEANER
-// =========================================================================
+function switchAdminMaintType(type) {
+  const views = ['kemas', 'gimmick', 'all'];
+  views.forEach(v => {
+    const el = document.getElementById(`viewMaint_${v}`);
+    const btn = document.getElementById(`tabBtnMaint_${v}`);
+    if (el) {
+      if (v === type) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+    if (btn) {
+      if (v === type) {
+        btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 bg-[#262363] text-white shadow-xs cursor-pointer';
+      } else {
+        btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+      }
+    }
+  });
+}
+
 async function loadDatabaseStats() {
   try {
     refreshMaintGoogleSheetsConfigUI();
@@ -9606,6 +9627,25 @@ async function loadDatabaseStats() {
         }
       };
 
+      // 1. Kemas specific badges
+      setBadge('statMaint_kemas_materials', s.materials ? (s.materials.count_kemas ?? s.materials.count) : 0, 'SKU');
+      setBadge('statMaint_kemas_inbound', s.inbound_transactions ? (s.inbound_transactions.count_kemas ?? 0) : 0, 'Transaksi');
+      setBadge('statMaint_kemas_outbound', s.outbound_transactions ? (s.outbound_transactions.count_kemas ?? 0) : 0, 'Transaksi');
+      setBadge('statMaint_kemas_tasks', s.tasks ? (s.tasks.count_kemas ?? 0) : 0, 'Task');
+      setBadge('statMaint_kemas_opname', s.stock_opnames ? (s.stock_opnames.count_kemas ?? 0) : 0, 'Sesi');
+      setBadge('statMaint_kemas_mutations', s.stock_mutations ? (s.stock_mutations.count_kemas ?? 0) : 0, 'Entri');
+      setBadge('statMaint_kemas_consumables', s.consumable_requests ? (s.consumable_requests.count_kemas ?? 0) : 0, 'Item');
+
+      // 2. Gimmick specific badges
+      setBadge('statMaint_gimmick_materials', s.gimmick ? (s.gimmick.count_gimmick ?? s.gimmick.count) : 0, 'SKU');
+      setBadge('statMaint_gimmick_inbound', s.inbound_transactions ? (s.inbound_transactions.count_gimmick ?? 0) : 0, 'Transaksi');
+      setBadge('statMaint_gimmick_outbound', s.outbound_transactions ? (s.outbound_transactions.count_gimmick ?? 0) : 0, 'Transaksi');
+      setBadge('statMaint_gimmick_tasks', s.tasks ? (s.tasks.count_gimmick ?? 0) : 0, 'Task');
+      setBadge('statMaint_gimmick_opname', s.stock_opnames ? (s.stock_opnames.count_gimmick ?? 0) : 0, 'Sesi');
+      setBadge('statMaint_gimmick_mutations', s.stock_mutations ? (s.stock_mutations.count_gimmick ?? 0) : 0, 'Entri');
+      setBadge('statMaint_gimmick_consumables', s.consumable_requests ? (s.consumable_requests.count_gimmick ?? 0) : 0, 'Item');
+
+      // 3. Global badges
       setBadge('statMaint_materials', s.materials ? s.materials.count : 0, 'SKU');
       setBadge('statMaint_gimmick', s.gimmick ? s.gimmick.count : 0, 'SKU');
       setBadge('statMaint_inbound_transactions', s.inbound_transactions ? s.inbound_transactions.count : 0, 'Transaksi');
@@ -9716,8 +9756,10 @@ async function submitCleanDatabase(e) {
   btnText.innerText = 'Memproses...';
 
   try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     let payload = {
-      password: password
+      password: password,
+      csrf_token: csrfToken
     };
 
     if (actionType === 'clean_table') {
@@ -9732,7 +9774,10 @@ async function submitCleanDatabase(e) {
 
     const res = await App.fetchJson(`../api/maintenance.php?action=${actionType}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
+      },
       body: JSON.stringify(payload)
     });
 
