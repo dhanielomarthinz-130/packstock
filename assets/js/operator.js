@@ -1582,7 +1582,7 @@ function renderCompletedHistory() {
         <div class="flex items-center gap-1.5 pt-1 overflow-x-auto">
           ${photos.map((p, pIdx) => `
             <div class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-900 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-2xs" onclick="openPhotoViewer('${escapeHtml(p)}', '${escapeHtml(t.task_no)}', '${escapeHtml(t.completed_at || t.created_at)}', 'Operator', 'TASK PICKING')">
-              <img src="../${escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
+              <img src="${p.startsWith('data:') || p.startsWith('http') ? escapeHtml(p) : '../' + escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
             </div>
           `).join('')}
           <span class="text-[9px] text-slate-400 font-semibold">${photos.length} Foto</span>
@@ -3556,7 +3556,7 @@ function openPhotoViewer(photoPath, docNo, date, creator, docType = 'HANDOVER') 
   const wmBottomLeft = document.getElementById('wmBottomLeft');
   const wmBottomRight = document.getElementById('wmBottomRight');
 
-  if (viewerImage) viewerImage.src = `../${photoPath}`;
+  if (viewerImage) viewerImage.src = (photoPath.startsWith('data:') || photoPath.startsWith('http')) ? photoPath : `../${photoPath}`;
   if (viewerDesc) viewerDesc.innerText = `Dokumentasi Foto ${docType} #${docNo} (${creator || 'Operator'})`;
 
   // Apply Watermark content dynamically

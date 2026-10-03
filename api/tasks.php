@@ -993,13 +993,40 @@ if (!function_exists('detectImageDataExt')) {
     }
 }
 
+// Helper to save task photo data with directory fallbacks and resilient data URL fallback
+if (!function_exists('saveTaskPhotoData')) {
+    function saveTaskPhotoData(string $data, string $ext, int $idx): ?string {
+        $baseName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $ext;
+
+        // 1. Coba simpan ke folder uploads/tasks/
+        $dirTasks = __DIR__ . '/../uploads/tasks/';
+        if (!is_dir($dirTasks)) {
+            @mkdir($dirTasks, 0777, true);
+        }
+        @chmod($dirTasks, 0777);
+        if (@file_put_contents($dirTasks . $baseName, $data)) {
+            return 'uploads/tasks/' . $baseName;
+        }
+
+        // 2. Fallback: uploads/ langsung jika subfolder tasks terkunci izinnya
+        $dirUploads = __DIR__ . '/../uploads/';
+        if (!is_dir($dirUploads)) {
+            @mkdir($dirUploads, 0777, true);
+        }
+        @chmod($dirUploads, 0777);
+        if (@file_put_contents($dirUploads . $baseName, $data)) {
+            return 'uploads/' . $baseName;
+        }
+
+        // 3. Fallback mutlak: Simpan langsung sebagai data URL WebP di database
+        // Karena ukuran WebP sangat enteng (<30KB) dan kolom database adalah TEXT,
+        // penyimpanan ini menjamin submit operator TIDAK PERNAH GAGAL meski izin tulis disk hosting bermasalah.
+        return 'data:image/' . $ext . ';base64,' . base64_encode($data);
+    }
+}
+
 // Helper to process uploaded photos for tasks
 function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = null): ?string {
-    $uploadDir = __DIR__ . '/../uploads/tasks/';
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0755, true);
-    }
-
     $photoPaths = [];
 
     // 0. Format potongan: pc[n][] = potongan base64 polos
@@ -1018,11 +1045,9 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
                 $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
                 continue;
             }
-            $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $ext;
-            if (@file_put_contents($uploadDir . $newFileName, $data)) {
-                $photoPaths[] = 'uploads/tasks/' . $newFileName;
-            } else {
-                $uploadError = 'Gagal menyimpan foto ke folder uploads/tasks di server (periksa izin tulis folder).';
+            $saved = saveTaskPhotoData($data, $ext, (int)$idx);
+            if ($saved !== null) {
+                $photoPaths[] = $saved;
             }
         }
         if (!empty($photoPaths)) {
@@ -1039,7 +1064,7 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
 
         foreach ($base64List as $idx => $b64) {
             if (!is_string($b64)) continue;
-            if (strpos($b64, 'uploads/tasks/') === 0) {
+            if (strpos($b64, 'uploads/') === 0 || strpos($b64, 'data:image/') === 0) {
                 $photoPaths[] = $b64;
                 continue;
             }
@@ -1055,12 +1080,9 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
             if ($data !== false && strlen($data) > 0 && strlen($data) <= PACKSTOCK_MAX_PHOTO_BYTES) {
                 $ext = detectImageDataExt($data);
                 if ($ext !== null) {
-                    $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $ext;
-                    $destPath = $uploadDir . $newFileName;
-                    if (@file_put_contents($destPath, $data)) {
-                        $photoPaths[] = 'uploads/tasks/' . $newFileName;
-                    } else {
-                        $uploadError = 'Gagal menyimpan foto ke folder uploads/tasks di server (periksa izin tulis folder).';
+                    $saved = saveTaskPhotoData($data, $ext, (int)$idx);
+                    if ($saved !== null) {
+                        $photoPaths[] = $saved;
                     }
                 } else {
                     $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
@@ -1102,15 +1124,15 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
             $fileSize = (int)($files['size'][$i] ?? 0);
             $ext = validateUploadedPhoto($fileTmpPath, $fileName, $fileSize);
             if ($ext !== null) {
-                $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
-                $destPath = $uploadDir . $newFileName;
-                if (move_uploaded_file($fileTmpPath, $destPath)) {
-                    $photoPaths[] = 'uploads/tasks/' . $newFileName;
-                } else {
-                    $uploadError = 'Gagal menyimpan foto ke direktori uploads/tasks di server (periksa izin folder).';
+                $data = @file_get_contents($fileTmpPath);
+                if ($data !== false) {
+                    $saved = saveTaskPhotoData($data, $ext, (int)$i);
+                    if ($saved !== null) {
+                        $photoPaths[] = $saved;
+                    }
                 }
             } else {
-                $uploadError = 'Format foto tidak didukung atau file rusak. Pastikan format JPG, PNG, atau WebP.';
+                $uploadError = 'Format foto tidak didukung atau file rusak. Pastikan format WebP, JPG, atau PNG.';
             }
         }
     }

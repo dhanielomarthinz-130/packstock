@@ -263,14 +263,16 @@ async function openMutationReferenceDetail(refNo, mutationId = null) {
             <span>Foto Lampiran & Dokumentasi (${photos.length} Foto)</span>
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            ${photos.map((p, idx) => `
-              <a href="../${App.escapeHtml(p)}" target="_blank" class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs">
-                <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-24 w-full object-cover">
+            ${photos.map((p, idx) => {
+              const src = (p.startsWith('data:') || p.startsWith('http')) ? p : '../' + App.escapeHtml(p);
+              return `
+              <a href="${src}" target="_blank" class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs">
+                <img src="${src}" alt="Lampiran" class="h-24 w-full object-cover">
                 <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <span class="material-symbols-outlined text-white text-[20px]">zoom_in</span>
                 </div>
               </a>
-            `).join('')}
+            `;}).join('')}
           </div>
         </div>
       `;
