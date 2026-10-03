@@ -1427,22 +1427,30 @@ async function handleFinalTaskSubmit(e) {
   const btn = document.getElementById('btnFinalSubmit');
   const btnSubmitText = document.getElementById('btnFinalSubmitText');
   btn.disabled = true;
-  if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
+  if (btnSubmitText) btnSubmitText.innerText = 'Menyiapkan foto...';
 
-  const formData = new FormData();
-  formData.append('task_id', task_id);
-  formData.append('actual_qty', actual_qty);
-  formData.append('completion_notes', completion_notes);
-
+  // Kompres dan konversi ke Base64 agar tidak melalui upload_tmp_dir hosting (mencegah PHP error 6)
   const readyPhotos = await App.compressImages(taskCompleteSelectedFiles);
+  const base64Photos = [];
   for (let i = 0; i < readyPhotos.length; i++) {
-    formData.append('photos[]', readyPhotos[i]);
+    const b64 = await App.fileToBase64(readyPhotos[i]);
+    if (b64) base64Photos.push(b64);
   }
+
+  if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
 
   try {
     const response = await fetch('../api/tasks.php?action=submit_complete', {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        task_id: task_id,
+        actual_qty: actual_qty,
+        completion_notes: completion_notes,
+        photos_base64: base64Photos
+      })
     });
     const res = await response.json();
 
@@ -2518,8 +2526,10 @@ async function handleInboundDraftSubmit() {
     notes: d.notes || '-'
   }))));
 
-  for (let i = 0; i < opInboundSelectedFiles.length; i++) {
-    formData.append('photos[]', opInboundSelectedFiles[i]);
+  const readyInboundPhotos = await App.compressImages(opInboundSelectedFiles);
+  for (let i = 0; i < readyInboundPhotos.length; i++) {
+    const b64 = await App.fileToBase64(readyInboundPhotos[i]);
+    if (b64) formData.append('photos_base64[]', b64);
   }
 
   try {
@@ -3270,8 +3280,10 @@ async function submitHandover(e) {
   formData.append('to_shift', toShift);
   formData.append('notes', notes);
 
-  for (let i = 0; i < handoverSelectedFiles.length; i++) {
-    formData.append('photos[]', handoverSelectedFiles[i]);
+  const readyHandoverPhotos = await App.compressImages(handoverSelectedFiles);
+  for (let i = 0; i < readyHandoverPhotos.length; i++) {
+    const b64 = await App.fileToBase64(readyHandoverPhotos[i]);
+    if (b64) formData.append('photos_base64[]', b64);
   }
 
   try {

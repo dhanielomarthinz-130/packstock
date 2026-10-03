@@ -76,9 +76,43 @@ if ($action === 'submit') {
         }
     }
 
-    // Handle File Uploads (Multiple)
+    // Handle File Uploads (Multiple via Base64 or $_FILES)
     $photoPaths = [];
-    if (isset($_FILES['photos'])) {
+
+    // 1. Cek unggahan Base64 (Mencegah PHP error 6 UPLOAD_ERR_NO_TMP_DIR di hosting)
+    $rawB64 = $_POST['photos_base64'] ?? [];
+    if (!empty($rawB64)) {
+        if (!is_array($rawB64)) $rawB64 = [$rawB64];
+        $uploadFileDir = __DIR__ . '/../uploads/handovers/';
+        if (!is_dir($uploadFileDir)) {
+            @mkdir($uploadFileDir, 0755, true);
+        }
+        foreach ($rawB64 as $idx => $b64) {
+            if (!is_string($b64)) continue;
+            if (preg_match('#^data:image/(\w+);base64,#i', $b64, $matches)) {
+                $rawExt = strtolower($matches[1]);
+                if ($rawExt === 'jpeg') $rawExt = 'jpg';
+                $data = base64_decode(substr($b64, strpos($b64, ',') + 1));
+                if ($data !== false && strlen($data) > 0 && strlen($data) <= PACKSTOCK_MAX_PHOTO_BYTES) {
+                    $probe = @getimagesizefromstring($data);
+                    $validTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+                    if ($probe !== false && isset($validTypes[$probe[2]])) {
+                        $ext = $validTypes[$probe[2]];
+                        $newFileName = 'handover_' . time() . '_' . substr(md5(uniqid() . $idx), 0, 8) . '.' . $ext;
+                        $destPath = $uploadFileDir . $newFileName;
+                        if (@file_put_contents($destPath, $data)) {
+                            $photoPaths[] = 'uploads/handovers/' . $newFileName;
+                        }
+                    }
+                }
+            } elseif (strpos($b64, 'uploads/handovers/') === 0) {
+                $photoPaths[] = $b64;
+            }
+        }
+    }
+
+    // 2. Fallback: multipart $_FILES['photos']
+    if (empty($photoPaths) && isset($_FILES['photos'])) {
         $files = $_FILES['photos'];
         $fileCount = is_array($files['name']) ? count($files['name']) : 0;
         
@@ -86,12 +120,11 @@ if ($action === 'submit') {
             if ($files['error'][$i] === UPLOAD_ERR_OK) {
                 $fileTmpPath = $files['tmp_name'][$i];
                 $fileName = $files['name'][$i];
-                // Ekstensi ditentukan dari isi berkas, bukan dari nama kiriman klien.
                 $fileExtension = validateUploadedPhoto($fileTmpPath, $fileName, (int)($files['size'][$i] ?? 0));
                 if ($fileExtension !== null) {
                     $uploadFileDir = __DIR__ . '/../uploads/handovers/';
                     if (!is_dir($uploadFileDir)) {
-                        mkdir($uploadFileDir, 0755, true);
+                        @mkdir($uploadFileDir, 0755, true);
                     }
                     $newFileName = 'handover_' . time() . '_' . md5(uniqid() . $i) . '.' . $fileExtension;
                     $dest_path = $uploadFileDir . $newFileName;

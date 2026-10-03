@@ -1035,6 +1035,17 @@ const App = {
     if (!files || files.length === 0) return [];
     const fileList = Array.from(files);
     return Promise.all(fileList.map((f) => this.compressImage(f, maxWidth, maxHeight, quality)));
+  },
+
+  fileToBase64(file) {
+    if (!file) return Promise.resolve(null);
+    if (typeof file === 'string') return Promise.resolve(file);
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 };
 
