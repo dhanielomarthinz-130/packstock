@@ -979,8 +979,12 @@ const App = {
    * sebelum diunggah ke server. Ini mencegah kegagalan upload akibat ukuran foto
    * kamera smartphone yang sangat besar (3-15MB) yang sering melebihi batasan server hosting.
    */
-  compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.7) {
+  compressImage(file, maxWidth = 1024, maxHeight = 1024, quality = 0.65) {
     if (!file || !(file instanceof Blob)) {
+      return Promise.resolve(file);
+    }
+    // Jika file sudah dikompresi dan memiliki _base64, langsung kembalikan
+    if (file._base64) {
       return Promise.resolve(file);
     }
     // Izinkan semua gambar atau file tanpa tipe jika kemungkinan foto kamera
@@ -1011,28 +1015,38 @@ const App = {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff'; // latar putih jika transparan
+          ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
+          // Utamakan WebP yang sangat ringan (enteng), fallback ke JPEG bila tidak didukung
           let dataUrl = '';
+          let mime = 'image/webp';
           try {
-            dataUrl = canvas.toDataURL('image/jpeg', quality);
+            dataUrl = canvas.toDataURL('image/webp', quality);
+            if (!dataUrl || !dataUrl.startsWith('data:image/webp')) {
+              mime = 'image/jpeg';
+              dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
           } catch (err) {
-            dataUrl = '';
+            mime = 'image/jpeg';
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
           }
 
+          const ext = mime === 'image/webp' ? 'webp' : 'jpg';
           canvas.toBlob((blob) => {
-            const originalName = file.name || 'foto.jpg';
+            const originalName = file.name || 'foto';
             const baseName = originalName.replace(/\.[^/.]+$/, '');
             const finalBlob = blob || file;
-            const newFile = new File([finalBlob], `${baseName}.jpg`, {
-              type: 'image/jpeg',
+            const newFile = new File([finalBlob], `${baseName}.${ext}`, {
+              type: mime,
               lastModified: Date.now()
             });
             if (dataUrl) {
               newFile._base64 = dataUrl;
             }
             resolve(newFile);
-          }, 'image/jpeg', quality);
+          }, mime, quality);
         };
         img.onerror = () => resolve(file);
         img.src = e.target.result;
@@ -1042,7 +1056,7 @@ const App = {
     });
   },
 
-  async compressImages(files, maxWidth = 1200, maxHeight = 1200, quality = 0.7) {
+  async compressImages(files, maxWidth = 1024, maxHeight = 1024, quality = 0.65) {
     if (!files || files.length === 0) return [];
     const fileList = Array.from(files);
     return Promise.all(fileList.map((f) => this.compressImage(f, maxWidth, maxHeight, quality)));
@@ -1061,22 +1075,23 @@ const App = {
   },
 
   /**
-   * Kompres foto menjadi data URL JPEG yang DIJAMIN di bawah maxChars.
-   * Resolusi & kualitas diturunkan bertahap sampai cukup kecil, supaya body
-   * request tidak pernah melewati batas post_max_size hosting (yang membuat
-   * PHP membuang seluruh body tanpa pesan error).
-   * Mengembalikan null bila gambar tidak bisa dibaca browser (mis. HEIC).
+   * Kompres foto menjadi data URL WebP (sangat enteng / ringan < ~30KB)
+   * Resolusi & kualitas dioptimalkan agar lolos batas server hosting tanpa memberatkan koneksi.
+   * Mengembalikan null bila gambar tidak bisa dibaca browser.
    */
-  compressToBase64(file, maxChars = 600000) {
+  compressToBase64(file, maxChars = 300000) {
     if (!file) return Promise.resolve(null);
     if (typeof file === 'string') return Promise.resolve(file);
+    if (file._base64 && file._base64.length <= maxChars) {
+      return Promise.resolve(file._base64);
+    }
 
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
         const steps = [
-          [1280, 0.7], [1024, 0.6], [900, 0.5], [800, 0.45], [640, 0.4], [480, 0.35]
+          [1024, 0.65], [800, 0.6], [640, 0.55], [480, 0.5]
         ];
         let result = null;
         for (const [maxDim, quality] of steps) {
@@ -1089,14 +1104,18 @@ const App = {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#ffffff'; // latar putih agar PNG transparan tidak jadi hitam
+          ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
           try {
-            result = canvas.toDataURL('image/jpeg', quality);
+            // Gunakan format WebP yang super ringan (enteng)
+            result = canvas.toDataURL('image/webp', quality);
+            if (!result || !result.startsWith('data:image/webp')) {
+              result = canvas.toDataURL('image/jpeg', quality);
+            }
           } catch (e) {
-            result = null;
+            result = canvas.toDataURL('image/jpeg', quality);
           }
           if (result && result.length <= maxChars) break;
         }

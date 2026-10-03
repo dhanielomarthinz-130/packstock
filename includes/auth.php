@@ -599,12 +599,25 @@ if (!function_exists('validateUploadedPhoto')) {
         ];
 
         $info = @getimagesize($tmpPath);
-        if ($info === false || !isset($allowed[$info[2]])) {
-            return null; // bukan gambar sungguhan
+        if ($info !== false && isset($allowed[$info[2]])) {
+            return $allowed[$info[2]];
         }
 
-        // Ekstensi diambil dari isi berkas, bukan dari nama yang dikirim klien.
-        return $allowed[$info[2]];
+        // Deteksi langsung melalui byte signature (magic bytes) jika getimagesize gagal pada format WebP
+        $head = @file_get_contents($tmpPath, false, null, 0, 16);
+        if ($head !== false && strlen($head) >= 12) {
+            if (substr($head, 0, 4) === 'RIFF' && substr($head, 8, 4) === 'WEBP') {
+                return 'webp';
+            }
+            if (substr($head, 0, 3) === "\xFF\xD8\xFF") {
+                return 'jpg';
+            }
+            if (substr($head, 0, 4) === "\x89PNG") {
+                return 'png';
+            }
+        }
+
+        return null; // bukan gambar sungguhan
     }
 }
 

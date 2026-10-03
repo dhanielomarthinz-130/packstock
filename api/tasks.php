@@ -969,6 +969,30 @@ if ($action === 'start' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
+// Helper to detect image extension from binary data (with WebP magic bytes fallback)
+if (!function_exists('detectImageDataExt')) {
+    function detectImageDataExt(string $data): ?string {
+        $validTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+        $probe = @getimagesizefromstring($data);
+        if ($probe !== false && isset($validTypes[$probe[2]])) {
+            return $validTypes[$probe[2]];
+        }
+        // Direct magic signature detection (independent of GD / PHP build)
+        if (strlen($data) >= 12) {
+            if (substr($data, 0, 4) === 'RIFF' && substr($data, 8, 4) === 'WEBP') {
+                return 'webp';
+            }
+            if (substr($data, 0, 3) === "\xFF\xD8\xFF") {
+                return 'jpg';
+            }
+            if (substr($data, 0, 4) === "\x89PNG") {
+                return 'png';
+            }
+        }
+        return null;
+    }
+}
+
 // Helper to process uploaded photos for tasks
 function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = null): ?string {
     $uploadDir = __DIR__ . '/../uploads/tasks/';
@@ -977,11 +1001,8 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
     }
 
     $photoPaths = [];
-    $validTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
 
-    // 0. Format potongan: pc[n][] = potongan base64 polos (tanpa awalan "data:image/...").
-    //    Filter keamanan hosting gratis membuang body yang memuat string data:image base64
-    //    yang panjang; dengan dipotong kecil & tanpa awalan, body lolos utuh.
+    // 0. Format potongan: pc[n][] = potongan base64 polos
     $chunkSets = $input['pc'] ?? ($_POST['pc'] ?? []);
     if (is_array($chunkSets) && !empty($chunkSets)) {
         foreach ($chunkSets as $idx => $parts) {
@@ -992,12 +1013,12 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
                 $uploadError = 'Data foto rusak atau terlalu besar saat diterima server.';
                 continue;
             }
-            $probe = @getimagesizefromstring($data);
-            if ($probe === false || !isset($validTypes[$probe[2]])) {
+            $ext = detectImageDataExt($data);
+            if ($ext === null) {
                 $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
                 continue;
             }
-            $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $validTypes[$probe[2]];
+            $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $ext;
             if (@file_put_contents($uploadDir . $newFileName, $data)) {
                 $photoPaths[] = 'uploads/tasks/' . $newFileName;
             } else {
@@ -1018,28 +1039,32 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
 
         foreach ($base64List as $idx => $b64) {
             if (!is_string($b64)) continue;
-            if (preg_match('#^data:image/(\w+);base64,#i', $b64, $matches)) {
-                $rawExt = strtolower($matches[1]);
-                if ($rawExt === 'jpeg') $rawExt = 'jpg';
-                $data = base64_decode(substr($b64, strpos($b64, ',') + 1));
-                if ($data !== false && strlen($data) > 0 && strlen($data) <= PACKSTOCK_MAX_PHOTO_BYTES) {
-                    $probe = @getimagesizefromstring($data);
-                    $validTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
-                    if ($probe !== false && isset($validTypes[$probe[2]])) {
-                        $ext = $validTypes[$probe[2]];
-                        $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $idx), 0, 8) . '.' . $ext;
-                        $destPath = $uploadDir . $newFileName;
-                        if (@file_put_contents($destPath, $data)) {
-                            $photoPaths[] = 'uploads/tasks/' . $newFileName;
-                        } else {
-                            $uploadError = 'Gagal menyimpan foto ke folder uploads/tasks di server (periksa izin tulis folder).';
-                        }
-                    } else {
-                        $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
-                    }
-                }
-            } elseif (strpos($b64, 'uploads/tasks/') === 0) {
+            if (strpos($b64, 'uploads/tasks/') === 0) {
                 $photoPaths[] = $b64;
+                continue;
+            }
+
+            // Hapus prefix data URL jika ada (data:image/...;base64,)
+            $pure = $b64;
+            if (strpos($b64, ',') !== false) {
+                $pure = substr($b64, strpos($b64, ',') + 1);
+            }
+            $pure = strtr($pure, ' ', '+');
+            $data = base64_decode($pure, true);
+
+            if ($data !== false && strlen($data) > 0 && strlen($data) <= PACKSTOCK_MAX_PHOTO_BYTES) {
+                $ext = detectImageDataExt($data);
+                if ($ext !== null) {
+                    $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $ext;
+                    $destPath = $uploadDir . $newFileName;
+                    if (@file_put_contents($destPath, $data)) {
+                        $photoPaths[] = 'uploads/tasks/' . $newFileName;
+                    } else {
+                        $uploadError = 'Gagal menyimpan foto ke folder uploads/tasks di server (periksa izin tulis folder).';
+                    }
+                } else {
+                    $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
+                }
             }
         }
 

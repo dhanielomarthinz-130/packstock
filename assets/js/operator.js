@@ -1455,25 +1455,24 @@ async function handleFinalTaskSubmit(e) {
       completion_notes: completion_notes
     });
 
-    // Foto dikirim sebagai potongan base64 polos (tanpa awalan "data:image/...;base64,")
-    // berukuran kecil. Filter keamanan hosting membuang body yang memuat string
-    // data:image panjang, sehingga seluruh isian (termasuk nama penerima) ikut hilang.
-    const body = new URLSearchParams();
-    body.append('task_id', String(task_id));
-    body.append('actual_qty', String(actual_qty));
-    body.append('completion_notes', completion_notes);
+    // Foto dikirim sebagai WebP Base64 (sangat enteng, ~20-30KB) via FormData
+    // agar langsung masuk ke $_POST tanpa menyentuh upload_tmp_dir hosting.
+    const formData = new FormData();
+    formData.append('task_id', String(task_id));
+    formData.append('actual_qty', String(actual_qty));
+    formData.append('completion_notes', completion_notes);
     const CHUNK = 3000;
     base64Photos.forEach((dataUrl, idx) => {
+      formData.append('photos_base64[]', dataUrl);
       const pure = dataUrl.substring(dataUrl.indexOf(',') + 1);
       for (let p = 0; p < pure.length; p += CHUNK) {
-        body.append(`pc[${idx}][]`, pure.substring(p, p + CHUNK));
+        formData.append(`pc[${idx}][]`, pure.substring(p, p + CHUNK));
       }
     });
 
     const response = await fetch(`../api/tasks.php?${query.toString()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString()
+      body: formData
     });
     const res = await response.json();
 
