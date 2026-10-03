@@ -5079,7 +5079,7 @@ function openInboundDetailModal(itemOrIdx) {
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           ${photos.map((p, pIdx) => `
             <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(i.inbound_no)}', '${App.escapeHtml(i.created_at)}', '${App.escapeHtml(i.receiver_name || 'Admin')}', 'INBOUND')">
-              <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-24 w-full object-cover">
+              <img src="${App.photoUrl(p)}" alt="Lampiran" class="h-24 w-full object-cover">
               <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <span class="material-symbols-outlined text-white text-[20px]">zoom_in</span>
               </div>
@@ -6005,7 +6005,7 @@ function openOutboundDetailModal(idx) {
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           ${photos.map((p, pIdx) => `
             <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-2xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(o.outbound_no)}', '${App.escapeHtml(o.created_at)}', '${App.escapeHtml(o.issued_by || 'Admin')}', '${isTask ? 'TASK PICKING' : 'OUTBOUND'}')">
-              <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-24 w-full object-cover">
+              <img src="${App.photoUrl(p)}" alt="Lampiran" class="h-24 w-full object-cover">
               <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <span class="material-symbols-outlined text-white text-[20px]">zoom_in</span>
               </div>
@@ -10593,7 +10593,7 @@ function renderAdminHandoversTable(dataList) {
     if (photos.length > 0) {
       photoThumbHtml = `
         <div class="flex items-center justify-center gap-1">
-          <img src="../${App.escapeHtml(photos[0])}" class="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-2xs cursor-pointer hover:opacity-80" onclick="openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(item.handover_no)}', '${App.escapeHtml(item.created_at)}', '${App.escapeHtml(item.from_user_name)}')" title="Klik untuk perbesar foto">
+          <img src="${App.photoUrl(photos[0])}" class="w-8 h-8 rounded-lg object-cover border border-slate-200 shadow-2xs cursor-pointer hover:opacity-80" onclick="openAdminPhotoViewer('${App.escapeHtml(photos[0])}', '${App.escapeHtml(item.handover_no)}', '${App.escapeHtml(item.created_at)}', '${App.escapeHtml(item.from_user_name)}')" title="Klik untuk perbesar foto">
           ${photos.length > 1 ? `<span class="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-1 py-0.5 rounded">+${photos.length - 1}</span>` : ''}
         </div>
       `;
@@ -10696,7 +10696,7 @@ function openAdminHandoverDetail(id) {
     photos.forEach((p, idx) => {
       html += `
         <div class="rounded-2xl overflow-hidden border border-slate-200 h-28 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative group shadow-xs" onclick="openAdminPhotoViewer('${App.escapeHtml(p)}', '${App.escapeHtml(item.handover_no)}', '${App.escapeHtml(item.created_at)}', '${App.escapeHtml(item.from_user_name)}')">
-          <img src="../${App.escapeHtml(p)}" alt="Lampiran" class="h-28 w-full object-cover">
+          <img src="${App.photoUrl(p)}" alt="Lampiran" class="h-28 w-full object-cover">
           <div class="absolute bottom-1.5 right-1.5 bg-black/60 backdrop-blur-xs text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-md">ZOOM</div>
         </div>
       `;
@@ -10718,7 +10718,7 @@ function openAdminPhotoViewer(photoPath, docNo, date, creator, docType = 'HANDOV
   const wmBottomLeft = document.getElementById('admWmBottomLeft');
   const wmBottomRight = document.getElementById('admWmBottomRight');
 
-  if (viewerImage) viewerImage.src = `../${photoPath}`;
+  if (viewerImage) viewerImage.src = App.photoUrl(photoPath);
   if (viewerDesc) viewerDesc.innerText = `Dokumentasi Foto ${docType} #${docNo} (${creator || 'Petugas'})`;
 
   if (wmTopLeft) wmTopLeft.innerText = `IMS - ${docType.toUpperCase()}`;
@@ -10894,8 +10894,8 @@ function renderAdminConsumableTable(requests) {
           ${(r.photos_list && r.photos_list.length > 0) ? `
             <div class="flex items-center gap-1.5 flex-wrap mt-1">
               ${r.photos_list.map((ph, pIdx) => `
-                <a href="../${ph}" target="_blank" class="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform block shrink-0" title="Klik untuk lihat foto ${pIdx + 1}">
-                  <img src="../${ph}" alt="Foto ${pIdx + 1}" class="w-full h-full object-cover">
+                <a href="${App.photoUrl(ph)}" target="_blank" class="w-8 h-8 rounded-lg overflow-hidden border border-slate-200 shadow-2xs hover:scale-105 transition-transform block shrink-0" title="Klik untuk lihat foto ${pIdx + 1}">
+                  <img src="${App.photoUrl(ph)}" alt="Foto ${pIdx + 1}" class="w-full h-full object-cover">
                 </a>
               `).join('')}
               <span class="text-[9px] text-slate-400 font-mono">(${r.photos_list.length} foto)</span>
@@ -10986,8 +10986,8 @@ async function openAdminApproveConsumableModal(id) {
           </span>
           <div class="flex items-center gap-2 overflow-x-auto pb-1">
             ${req.photos_list.map((ph, idx) => `
-              <a href="../${ph}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-amber-500 block shrink-0">
-                <img src="../${ph}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+              <a href="${App.photoUrl(ph)}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs hover:border-amber-500 block shrink-0">
+                <img src="${App.photoUrl(ph)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
               </a>
             `).join('')}
           </div>
@@ -13231,8 +13231,8 @@ function renderLocationTransferHistory(tasks) {
           ${photos.length > 0 ? `
             <div class="flex items-center gap-1 mt-1.5 flex-wrap">
               ${photos.map(p => `
-                <a href="../${escapeHtml(p)}" target="_blank" rel="noopener" class="w-6 h-6 rounded border border-slate-200 overflow-hidden inline-block hover:opacity-80 transition-opacity" title="Lihat Bukti Foto">
-                  <img src="../${escapeHtml(p)}" class="w-full h-full object-cover">
+                <a href="${App.photoUrl(p)}" target="_blank" rel="noopener" class="w-6 h-6 rounded border border-slate-200 overflow-hidden inline-block hover:opacity-80 transition-opacity" title="Lihat Bukti Foto">
+                  <img src="${App.photoUrl(p)}" class="w-full h-full object-cover">
                 </a>
               `).join('')}
             </div>

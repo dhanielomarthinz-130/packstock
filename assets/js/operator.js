@@ -845,12 +845,14 @@ function renderOperatorTasksHistory() {
           <span>Foto Surat Jalan & Bukti Serah Terima (${g.photos.length})</span>
         </p>
         <div class="flex items-center gap-2 overflow-x-auto pb-1">
-          ${g.photos.map(p => `
-            <a href="../${escapeHtml(p)}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block hover:opacity-90 relative group">
-              <img src="../${escapeHtml(p)}" alt="Surat Jalan / Bukti" class="w-full h-full object-cover">
+          ${g.photos.map(p => {
+            const pUrl = App.photoUrl(p);
+            return `
+            <a href="${pUrl}" target="_blank" class="w-14 h-14 rounded-xl overflow-hidden border border-slate-200 shadow-2xs shrink-0 block hover:opacity-90 relative group">
+              <img src="${pUrl}" alt="Surat Jalan / Bukti" class="w-full h-full object-cover">
               <span class="absolute bottom-0 inset-x-0 bg-slate-900/60 text-white text-[8px] font-mono text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Zoom</span>
             </a>
-          `).join('')}
+          `;}).join('')}
         </div>
       </div>
     ` : '';
@@ -1039,7 +1041,7 @@ function renderShareModalPhotos() {
     return `
       <div onclick="toggleSharePhotoSelection('${escapeHtml(p)}')" class="relative cursor-pointer transition-all shrink-0 select-none group" title="${isSelected ? 'Klik untuk membuang/melewati foto ini' : 'Klik untuk memilih foto ini'}">
         <div class="w-16 h-16 rounded-2xl overflow-hidden border-2 transition-all ${isSelected ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500/20' : 'border-slate-300 opacity-40 grayscale'}">
-          <img src="../${escapeHtml(p)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
+          <img src="${App.photoUrl(p)}" alt="Foto ${idx + 1}" class="w-full h-full object-cover">
         </div>
         <!-- Status Indicator Badge -->
         <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow-xs text-white transition-all ${isSelected ? 'bg-emerald-600' : 'bg-slate-700'}">
@@ -1582,7 +1584,7 @@ function renderCompletedHistory() {
         <div class="flex items-center gap-1.5 pt-1 overflow-x-auto">
           ${photos.map((p, pIdx) => `
             <div class="w-12 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-900 flex items-center justify-center flex-shrink-0 cursor-pointer shadow-2xs" onclick="openPhotoViewer('${escapeHtml(p)}', '${escapeHtml(t.task_no)}', '${escapeHtml(t.completed_at || t.created_at)}', 'Operator', 'TASK PICKING')">
-              <img src="${p.startsWith('data:') || p.startsWith('http') ? escapeHtml(p) : '../' + escapeHtml(p)}" alt="Bukti" class="w-full h-full object-cover">
+              <img src="${App.photoUrl(p)}" alt="Bukti" class="w-full h-full object-cover">
             </div>
           `).join('')}
           <span class="text-[9px] text-slate-400 font-semibold">${photos.length} Foto</span>
@@ -3502,7 +3504,7 @@ function openHandoverDetail(id) {
     photos.forEach((p, idx) => {
       html += `
         <div class="rounded-xl overflow-hidden border border-slate-200 h-24 bg-slate-900 flex items-center justify-center cursor-pointer hover:opacity-90 relative" onclick="openPhotoViewer('${escapeHtml(p)}', '${escapeHtml(item.handover_no)}', '${escapeHtml(item.created_at)}', '${escapeHtml(item.from_user_name)}')">
-          <img src="../${escapeHtml(p)}" alt="Attachment" class="h-24 w-full object-cover">
+          <img src="${App.photoUrl(p)}" alt="Attachment" class="h-24 w-full object-cover">
           <div class="absolute bottom-1 right-1 bg-black/40 text-white/50 text-[7px] px-1 rounded font-mono scale-[0.9]">VIEW</div>
         </div>
       `;
@@ -4842,8 +4844,8 @@ async function loadOperatorConsumableRequests(isSilent = false) {
               </span>
               <div class="flex items-center gap-2 overflow-x-auto pb-1">
                 ${ho.handover_photos.map((ph, idx) => `
-                  <a href="../${ph}" target="_blank" class="block shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 border-emerald-300 shadow-xs hover:border-emerald-600 hover:scale-105 transition-all relative group" title="Klik untuk memperbesar Foto Handover ${idx + 1}">
-                    <img src="../${ph}" alt="Foto Handover ${idx + 1}" class="w-full h-full object-cover">
+                  <a href="${App.photoUrl(ph)}" target="_blank" class="block shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 border-emerald-300 shadow-xs hover:border-emerald-600 hover:scale-105 transition-all relative group" title="Klik untuk memperbesar Foto Handover ${idx + 1}">
+                    <img src="${App.photoUrl(ph)}" alt="Foto Handover ${idx + 1}" class="w-full h-full object-cover">
                     <span class="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity">
                       <span class="material-symbols-outlined text-[16px]">zoom_in</span>
                     </span>
@@ -5971,8 +5973,8 @@ function renderMyTransferHistory(tasks) {
             </span>
             <div class="flex items-center gap-1.5 flex-wrap">
               ${photos.map(p => `
-                <a href="../${App.escapeHtml(p)}" target="_blank" rel="noopener" class="block w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity bg-slate-100 shrink-0" title="Buka Foto Bukti Transfer">
-                  <img src="../${App.escapeHtml(p)}" alt="Bukti Transfer" class="w-full h-full object-cover">
+                <a href="${App.photoUrl(p)}" target="_blank" rel="noopener" class="block w-10 h-10 rounded-lg overflow-hidden border border-slate-200 hover:opacity-80 transition-opacity bg-slate-100 shrink-0" title="Buka Foto Bukti Transfer">
+                  <img src="${App.photoUrl(p)}" alt="Bukti Transfer" class="w-full h-full object-cover">
                 </a>
               `).join('')}
             </div>

@@ -1128,6 +1128,19 @@ const App = {
       };
       img.src = objectUrl;
     });
+  },
+
+  /**
+   * Helper cerdas untuk URL foto (mendukung file uploads/, data URL Base64 WebP, dan absolute URL)
+   */
+  photoUrl(path) {
+    if (!path || typeof path !== 'string') return '';
+    path = path.trim();
+    if (path.startsWith('data:') || path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+      return path;
+    }
+    const clean = path.replace(/^\.\.\//, '').replace(/^\/+/, '');
+    return `../${clean}`;
   }
 };
 
@@ -1135,6 +1148,7 @@ function escapeHtml(str) {
   return App.escapeHtml(str);
 }
 window.escapeHtml = escapeHtml;
+window.photoUrl = (p) => App.photoUrl(p);
 
 document.addEventListener('DOMContentLoaded', () => {
   App.initAllSearchableSelects();
