@@ -2345,9 +2345,15 @@ function renderTasksTable(tasks) {
         <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
         <td class="p-3 text-center whitespace-nowrap">
           ${t.status === 'PENDING' || t.status === 'IN_PROGRESS' ? `
-            <button onclick="cancelTask(${t.id})" class="text-xs text-rose-600 hover:text-white font-bold py-1 px-2.5 rounded-lg hover:bg-rose-600 border border-rose-200 transition-colors shadow-2xs">
-              Batalkan
-            </button>
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="openEditTaskModal(${t.id})" class="text-xs text-blue-700 hover:text-white font-bold py-1 px-2.5 rounded-lg bg-blue-50 hover:bg-blue-600 border border-blue-200 transition-colors shadow-2xs inline-flex items-center gap-1 cursor-pointer" title="Edit Penugasan Task & Target Qty">
+                <span class="material-symbols-outlined text-[14px]">edit</span>
+                <span>Edit</span>
+              </button>
+              <button onclick="cancelTask(${t.id})" class="text-xs text-rose-600 hover:text-white font-bold py-1 px-2.5 rounded-lg hover:bg-rose-600 border border-rose-200 transition-colors shadow-2xs cursor-pointer">
+                Batalkan
+              </button>
+            </div>
           ` : t.status === 'COMPLETED' ? `
             <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
               <span class="material-symbols-outlined text-[15px]">done_all</span> Selesai
@@ -6135,8 +6141,7 @@ async function openEditTaskModal(taskId) {
   const t = res.data;
   document.getElementById('editTaskId').value = t.id;
   document.getElementById('editTaskMaterialId').value = t.material_id;
-  document.getElementById('editTaskAssignedTo').value = t.assigned_to;
-  document.getElementById('editTaskDestination').value = t.destination;
+  document.getElementById('editTaskDestination').value = t.destination || '';
   document.getElementById('editTaskPriority').value = t.priority || 'NORMAL';
   document.getElementById('editTaskNotes').value = t.notes || '';
 
@@ -6147,19 +6152,51 @@ async function openEditTaskModal(taskId) {
   document.getElementById('editTaskStockAvailable').innerText = `${App.formatNumber(t.material_stock || 0)} ${t.material_unit || 'Pcs'}`;
   document.getElementById('editTaskUnitLabel').innerText = t.material_unit || 'Pcs';
 
+  const typeBadge = document.getElementById('editTaskItemTypeBadge');
+  if (typeBadge) {
+    if (t.item_type === 'GIMMICK') {
+      typeBadge.innerText = '🎁 GIMMICK';
+      typeBadge.className = 'px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-bold border border-purple-200';
+    } else {
+      typeBadge.innerText = '📦 KEMAS';
+      typeBadge.className = 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-200';
+    }
+  }
+
   const qtyInput = document.getElementById('editTaskTargetQty');
   qtyInput.value = t.target_qty;
 
-  document.getElementById('editTaskOperatorName').innerText = `${t.operator_name || '-'} (${t.operator_shift || 'Shift'})`;
+  // Pastikan daftar operator tersedia untuk dropdown
+  if (!allOperators || allOperators.length === 0) {
+    await loadOperators();
+  }
+
+  const opSelect = document.getElementById('editTaskOperatorSelect');
+  if (opSelect) {
+    opSelect.innerHTML = '<option value="">-- Pilih Operator PIC --</option>' +
+      allOperators.map(op => `
+        <option value="${op.id}" ${Number(op.id) === Number(t.assigned_to) ? 'selected' : ''}>
+          ${escapeHtml(op.name)} (${escapeHtml(op.shift || 'Shift Aktif')})
+        </option>
+      `).join('');
+    opSelect.value = t.assigned_to || '';
+  }
+
   document.getElementById('editTaskDestinationDisplay').innerText = t.destination || '-';
 
   const prioEl = document.getElementById('editTaskPriorityDisplay');
   if (prioEl) {
     prioEl.innerText = t.priority || 'NORMAL';
-    prioEl.className = t.priority === 'URGENT' ? 'font-black text-rose-600' : 'font-bold text-slate-700';
+    if (t.priority === 'CRITICAL') {
+      prioEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 border border-rose-200';
+    } else if (t.priority === 'URGENT') {
+      prioEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-700 border border-amber-200';
+    } else {
+      prioEl.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700 border border-slate-300';
+    }
   }
 
-  document.getElementById('editTaskNotesDisplay').innerText = t.notes || '-';
+  document.getElementById('editTaskNotesDisplay').innerText = t.notes || '(Tidak ada catatan)';
 
   App.openModal('modalEditTask');
   setTimeout(() => {
@@ -6173,13 +6210,19 @@ async function handleEditTaskSubmit(e) {
   const taskId = document.getElementById('editTaskId').value;
   const material_id = document.getElementById('editTaskMaterialId').value;
   const target_qty = document.getElementById('editTaskTargetQty').value;
-  const assigned_to = document.getElementById('editTaskAssignedTo').value;
+  const assigned_to = document.getElementById('editTaskOperatorSelect')?.value;
   const destination = document.getElementById('editTaskDestination').value;
   const priority = document.getElementById('editTaskPriority').value;
   const notes = document.getElementById('editTaskNotes').value;
 
   if (App.parseNumber(target_qty) <= 0) {
     App.toast('Target Qty pengeluaran harus lebih dari 0', 'warning');
+    return;
+  }
+
+  if (!assigned_to || Number(assigned_to) <= 0) {
+    App.toast('Silakan pilih Operator PIC yang ditugaskan!', 'warning');
+    document.getElementById('editTaskOperatorSelect')?.focus();
     return;
   }
 
@@ -6193,16 +6236,17 @@ async function handleEditTaskSubmit(e) {
   });
 
   submitBtn.disabled = false;
-  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Perubahan Qty</span>';
+  submitBtn.innerHTML = '<span class="material-symbols-outlined text-[16px]">save</span><span>Simpan Perubahan</span>';
 
   if (res.success) {
     App.toast(res.message, 'success', 'Berhasil Diperbarui');
     App.closeModal('modalEditTask');
     loadOutboundHistory();
-    loadTasks();
+    loadTasks(true);
     loadStats();
+    if (typeof loadDashboard === 'function') loadDashboard();
   } else {
-    App.toast(res.message || 'Gagal menyimpan perubahan Qty task', 'error');
+    App.toast(res.message || 'Gagal menyimpan perubahan task', 'error');
   }
 }
 

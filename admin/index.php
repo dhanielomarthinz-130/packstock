@@ -5997,78 +5997,111 @@ require_once __DIR__ . '/../includes/header.php';
   </div>
 </div>
 
-<!-- ================= MODAL: EDIT PENUGASAN TASK (HANYA EDIT QTY) ================= -->
+<!-- ================= MODAL: EDIT PENUGASAN TASK & TARGET QTY ================= -->
 <div id="modalEditTask" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
-  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200">
+  <div class="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-scale-up border border-slate-200">
     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold shadow-2xs">
-          <span class="material-symbols-outlined text-[20px]">edit_square</span>
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold shadow-2xs border border-indigo-100 flex-shrink-0">
+          <span class="material-symbols-outlined text-[22px]">assignment_ind</span>
         </div>
-        <div>
-          <h3 class="font-extrabold text-slate-900 text-sm">Edit Target Qty Pengeluaran Task</h3>
-          <p class="text-xs text-slate-500 font-mono" id="editTaskNoSubtitle">No. Task: -</p>
+        <div class="min-w-0">
+          <h3 class="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">Edit Penugasan Task</h3>
+          <p class="text-xs text-slate-500 font-mono truncate" id="editTaskNoSubtitle">No. Task: -</p>
         </div>
       </div>
-      <button type="button" onclick="App.closeModal('modalEditTask')" class="text-slate-400 hover:text-slate-600 p-1">
+      <button type="button" onclick="App.closeModal('modalEditTask')" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors flex-shrink-0">
         <span class="material-symbols-outlined text-[20px]">close</span>
       </button>
     </div>
 
-    <form id="formEditTask" onsubmit="handleEditTaskSubmit(event)" class="space-y-3 text-xs">
+    <form id="formEditTask" onsubmit="handleEditTaskSubmit(event)" class="space-y-3.5 text-xs">
       <input type="hidden" id="editTaskId" value="">
       <input type="hidden" id="editTaskMaterialId" value="">
-      <input type="hidden" id="editTaskAssignedTo" value="">
       <input type="hidden" id="editTaskDestination" value="">
       <input type="hidden" id="editTaskPriority" value="">
       <input type="hidden" id="editTaskNotes" value="">
 
       <!-- Product Preview Box (Read-only) -->
-      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stock Kemas (Produk):</span>
-        <p class="font-extrabold text-slate-900 text-xs" id="editTaskMaterialName">-</p>
-        <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-500 pt-0.5">
-          <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200 font-bold" id="editTaskMaterialCode">-</span>
-          <span>&bull; Rak: <b class="text-slate-700" id="editTaskRackLocation">-</b></span>
-          <span>&bull; Stok: <b class="text-emerald-700 font-mono" id="editTaskStockAvailable">-</b></span>
+      <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/90 space-y-1.5 shadow-2xs">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Detail Material / Produk:</span>
+          <span class="px-2 py-0.5 rounded-full bg-emerald-100/70 text-emerald-800 text-[10px] font-bold border border-emerald-200" id="editTaskItemTypeBadge">KEMAS</span>
+        </div>
+        <p class="font-black text-slate-900 text-xs sm:text-sm leading-snug" id="editTaskMaterialName">-</p>
+        <div class="flex items-center gap-2 flex-wrap text-[11px] text-slate-600 pt-0.5">
+          <span class="font-mono bg-white px-2 py-0.5 rounded-lg border border-slate-200 font-bold text-slate-700 shadow-2xs" id="editTaskMaterialCode">-</span>
+          <span class="inline-flex items-center gap-1 font-semibold text-slate-700">
+            <span class="material-symbols-outlined text-[14px] text-slate-400">shelves</span>
+            <span>Rak: <b class="font-bold text-slate-800" id="editTaskRackLocation">-</b></span>
+          </span>
+          <span class="inline-flex items-center gap-1 font-semibold text-emerald-700">
+            <span class="material-symbols-outlined text-[14px] text-emerald-500">inventory_2</span>
+            <span>Sisa Stok: <b class="font-mono font-bold" id="editTaskStockAvailable">-</b></span>
+          </span>
         </div>
       </div>
 
-      <!-- Target Qty Input (Satu-satunya yang dapat diedit) -->
-      <div>
-        <label class="block font-bold text-slate-800 mb-1 text-xs">
-          Target Qty Pengeluaran (<span id="editTaskUnitLabel">Pcs</span>) <span class="text-rose-500">*</span>
-        </label>
-        <input type="number" step="any" id="editTaskTargetQty" min="0.001" required 
-          class="w-full p-2.5 bg-emerald-50/60 border-2 border-emerald-500 rounded-xl outline-none font-black text-lg text-emerald-950 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-200">
-        <p class="text-[10px] text-slate-400 mt-1">Ubah jumlah target barang yang akan dikeluarkan / diambil operator.</p>
+      <!-- Input Group: Qty & Operator PIC -->
+      <div class="space-y-3">
+        <!-- Target Qty Input -->
+        <div>
+          <label class="block font-extrabold text-slate-800 mb-1 text-xs flex items-center justify-between">
+            <span>Target Qty Pengeluaran (<span id="editTaskUnitLabel" class="text-emerald-700 font-mono">Pcs</span>) <span class="text-rose-500">*</span></span>
+          </label>
+          <div class="relative">
+            <input type="number" step="any" id="editTaskTargetQty" min="0.001" required 
+              class="w-full p-2.5 bg-emerald-50/70 border-2 border-emerald-500 rounded-xl outline-none font-black text-lg text-emerald-950 font-mono focus:bg-white focus:ring-3 focus:ring-emerald-200 transition-all shadow-2xs">
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Ubah target jumlah barang yang harus disiapkan / diambil oleh operator.</p>
+        </div>
+
+        <!-- Assign / Ganti Operator PIC -->
+        <div>
+          <label class="block font-extrabold text-slate-800 mb-1 text-xs flex items-center justify-between">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-indigo-600">person</span>
+              <span>Tugaskan ke Operator (Ganti PIC) <span class="text-rose-500">*</span></span>
+            </span>
+          </label>
+          <div class="relative">
+            <select id="editTaskOperatorSelect" required 
+              class="w-full p-2.5 bg-slate-50 border-2 border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-3 focus:ring-indigo-100 transition-all text-xs outline-none">
+              <option value="">-- Pilih Operator PIC --</option>
+            </select>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Pilih operator yang bertanggung jawab memproses task picking ini.</p>
+        </div>
       </div>
 
-      <!-- Read-Only Task Details -->
-      <div class="grid grid-cols-2 gap-2 p-2.5 bg-slate-100/70 rounded-xl border border-slate-200/80 text-[11px]">
-        <div>
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">Operator PIC:</span>
-          <span class="font-bold text-slate-800 truncate block" id="editTaskOperatorName">-</span>
+      <!-- Clean Task Metadata Card (No Overlap) -->
+      <div class="p-3 bg-slate-100/70 rounded-2xl border border-slate-200/80 space-y-2 text-[11px]">
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Tujuan Antar:</span>
+            <div class="flex items-center gap-1 mt-0.5 min-w-0">
+              <span class="material-symbols-outlined text-[15px] text-slate-500 flex-shrink-0">local_shipping</span>
+              <span class="font-bold text-slate-800 truncate" id="editTaskDestinationDisplay">-</span>
+            </div>
+          </div>
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Prioritas:</span>
+            <div class="mt-0.5">
+              <span id="editTaskPriorityDisplay" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700">-</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">Tujuan Antar:</span>
-          <span class="font-bold text-slate-800 truncate block" id="editTaskDestinationDisplay">-</span>
-        </div>
-        <div>
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">Prioritas:</span>
-          <span class="font-bold" id="editTaskPriorityDisplay">-</span>
-        </div>
-        <div>
-          <span class="text-[10px] text-slate-400 font-bold block uppercase">Catatan:</span>
-          <span class="font-medium text-slate-600 truncate block" id="editTaskNotesDisplay">-</span>
+        <div class="pt-1.5 border-t border-slate-200/60 min-w-0">
+          <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Catatan Task:</span>
+          <p class="font-medium text-slate-700 mt-0.5 break-words bg-white/70 p-2 rounded-lg border border-slate-200/60 leading-relaxed text-[11px]" id="editTaskNotesDisplay">-</p>
         </div>
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-        <button type="button" onclick="App.closeModal('modalEditTask')" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
-        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+        <button type="button" onclick="App.closeModal('modalEditTask')" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition-colors">Batal</button>
+        <button type="submit" id="btnEditTaskSubmit" class="px-5 py-2.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-95 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
           <span class="material-symbols-outlined text-[16px]">save</span>
-          <span>Simpan Perubahan Qty</span>
+          <span>Simpan Perubahan</span>
         </button>
       </div>
     </form>

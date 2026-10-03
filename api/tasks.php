@@ -535,13 +535,13 @@ if ($action === 'get') {
 
     $stmt = $pdo->prepare("
         SELECT t.*, 
-               m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock,
+               m.item_type, m.code as material_code, m.name as material_name, m.unit as material_unit, m.rack_location, m.current_stock as material_stock,
                u_to.name as operator_name, u_to.username as operator_username, u_to.shift as operator_shift,
                u_by.name as creator_name
         FROM tasks t
         JOIN materials m ON t.material_id = m.id
-        JOIN users u_to ON t.assigned_to = u_to.id
-        JOIN users u_by ON t.assigned_by = u_by.id
+        LEFT JOIN users u_to ON t.assigned_to = u_to.id
+        LEFT JOIN users u_by ON t.assigned_by = u_by.id
         WHERE t.id = ?
     ");
     $stmt->execute([$taskId]);
@@ -556,7 +556,7 @@ if ($action === 'get') {
     exit;
 }
 
-// 3.2 UPDATE TASK (Admin only - Target Qty & Info)
+// 3.2 UPDATE TASK (Admin only - Target Qty, PIC & Info)
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
@@ -576,6 +576,12 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($assignedTo <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Operator PIC wajib dipilih!']);
+        exit;
+    }
+
     if ($qtyError = validateQtyRange($targetQty, 'Target Qty')) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $qtyError]);
@@ -583,6 +589,28 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     try {
+        $stmtCheck = $pdo->prepare("SELECT status FROM tasks WHERE id = ?");
+        $stmtCheck->execute([$taskId]);
+        $currTask = $stmtCheck->fetch();
+
+        if (!$currTask) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'message' => 'Task tidak ditemukan']);
+            exit;
+        }
+
+        if ($currTask['status'] === 'COMPLETED') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Task yang sudah selesai (COMPLETED) tidak dapat diubah lagi!']);
+            exit;
+        }
+
+        if ($currTask['status'] === 'CANCELLED') {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Task yang telah dibatalkan tidak dapat diubah!']);
+            exit;
+        }
+
         $stmtMat = $pdo->prepare("SELECT name, current_stock, unit FROM materials WHERE id = ?");
         $stmtMat->execute([$materialId]);
         $mat = $stmtMat->fetch();
@@ -614,7 +642,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         ");
         $stmtUpdate->execute([$materialId, $targetQty, $priority, $destination, $assignedTo, $notes, $taskId]);
 
-        echo json_encode(['success' => true, 'message' => 'Target Qty penugasan task berhasil diperbarui!']);
+        echo json_encode(['success' => true, 'message' => 'Penugasan task & target Qty berhasil diperbarui!']);
     } catch (Exception $e) {
         http_response_code(500);
         apiFail($e, 'Gagal memperbarui task.');
