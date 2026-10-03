@@ -50,6 +50,7 @@ jobs:
           exclude: |
             **/.git*
             **/.git*/**
+            **/uploads/**
             **/config/env.php
             **/config/*.sqlite*
             **/config/backups/**
