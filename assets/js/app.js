@@ -979,11 +979,15 @@ const App = {
    * sebelum diunggah ke server. Ini mencegah kegagalan upload akibat ukuran foto
    * kamera smartphone yang sangat besar (3-15MB) yang sering melebihi batasan server hosting.
    */
-  compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
+  compressImage(file, maxWidth = 1200, maxHeight = 1200, quality = 0.7) {
     if (!file || !(file instanceof Blob)) {
       return Promise.resolve(file);
     }
-    if (!file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+    // Izinkan semua gambar atau file tanpa tipe jika kemungkinan foto kamera
+    const fileName = (file.name || '').toLowerCase();
+    const isImageExt = /\.(jpe?g|png|webp|bmp|heic|heif)$/i.test(fileName);
+    const isImageMime = file.type && file.type.startsWith('image/');
+    if (!isImageMime && !isImageExt && file.type !== '' && file.type !== 'application/octet-stream') {
       return Promise.resolve(file);
     }
 
@@ -1009,17 +1013,24 @@ const App = {
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
+          let dataUrl = '';
+          try {
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          } catch (err) {
+            dataUrl = '';
+          }
+
           canvas.toBlob((blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
             const originalName = file.name || 'foto.jpg';
             const baseName = originalName.replace(/\.[^/.]+$/, '');
-            const newFile = new File([blob], `${baseName}.jpg`, {
+            const finalBlob = blob || file;
+            const newFile = new File([finalBlob], `${baseName}.jpg`, {
               type: 'image/jpeg',
               lastModified: Date.now()
             });
+            if (dataUrl) {
+              newFile._base64 = dataUrl;
+            }
             resolve(newFile);
           }, 'image/jpeg', quality);
         };
@@ -1031,7 +1042,7 @@ const App = {
     });
   },
 
-  async compressImages(files, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
+  async compressImages(files, maxWidth = 1200, maxHeight = 1200, quality = 0.7) {
     if (!files || files.length === 0) return [];
     const fileList = Array.from(files);
     return Promise.all(fileList.map((f) => this.compressImage(f, maxWidth, maxHeight, quality)));
@@ -1040,6 +1051,7 @@ const App = {
   fileToBase64(file) {
     if (!file) return Promise.resolve(null);
     if (typeof file === 'string') return Promise.resolve(file);
+    if (file._base64) return Promise.resolve(file._base64);
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);

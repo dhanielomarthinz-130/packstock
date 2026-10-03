@@ -1440,14 +1440,15 @@ async function handleFinalTaskSubmit(e) {
   if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
 
   try {
-    const response = await fetch('../api/tasks.php?action=submit_complete', {
+    const url = `../api/tasks.php?action=submit_complete&task_id=${encodeURIComponent(task_id)}&actual_qty=${encodeURIComponent(actual_qty)}`;
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        task_id: task_id,
-        actual_qty: actual_qty,
+        task_id: Number(task_id) || task_id,
+        actual_qty: Number(actual_qty) || actual_qty,
         completion_notes: completion_notes,
         photos_base64: base64Photos
       })

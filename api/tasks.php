@@ -1070,13 +1070,19 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $input = $_POST;
     }
 
-    $taskId          = (int)($input['task_id'] ?? 0);
-    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? 0));
-    $completionNotes = trim($input['completion_notes'] ?? '');
+    $taskId          = (int)($input['task_id'] ?? ($_POST['task_id'] ?? ($_GET['task_id'] ?? 0)));
+    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? ($_POST['actual_qty'] ?? ($_GET['actual_qty'] ?? 0))));
+    $completionNotes = trim($input['completion_notes'] ?? ($_POST['completion_notes'] ?? ($_GET['completion_notes'] ?? '')));
     $photoUploadErr  = null;
     $photoPathValue  = handleUploadedTaskPhotos($input, $photoUploadErr);
 
-    if ($taskId <= 0 || $actualQty <= 0) {
+    if ($taskId <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID Tugas tidak valid atau hilang. Silakan tutup modal dan coba kembali.']);
+        exit;
+    }
+
+    if ($actualQty <= 0) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Jumlah riil barang wajib diisi lebih dari 0!']);
         exit;
