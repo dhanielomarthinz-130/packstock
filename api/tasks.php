@@ -1065,14 +1065,30 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
 // 7. SUBMIT TASK / COMPLETE PICKING (Operator Finalize & Stock Deduction)
 if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
-    $input = !empty($rawInput) ? json_decode($rawInput, true) : [];
+    $input = !empty($rawInput) ? json_decode($rawInput, true) : null;
+    if (!is_array($input)) {
+        $input = [];
+    }
     if (empty($input) && !empty($_POST)) {
         $input = $_POST;
     }
 
-    $taskId          = (int)($input['task_id'] ?? ($_POST['task_id'] ?? ($_GET['task_id'] ?? 0)));
-    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? ($_POST['actual_qty'] ?? ($_GET['actual_qty'] ?? 0))));
-    $completionNotes = trim($input['completion_notes'] ?? ($_POST['completion_notes'] ?? ($_GET['completion_notes'] ?? '')));
+    // Body dibuang PHP bila melebihi post_max_size: Content-Length ada, tapi isinya kosong.
+    $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
+    if ($contentLength > 0 && empty($input) && empty($_FILES)) {
+        http_response_code(413);
+        $maxPost = ini_get('post_max_size') ?: '-';
+        $sizeKb = round($contentLength / 1024);
+        echo json_encode([
+            'success' => false,
+            'message' => "Data foto tidak diterima server (ukuran kiriman {$sizeKb} KB melebihi batas hosting {$maxPost}). Coba kurangi jumlah foto lalu kirim ulang."
+        ]);
+        exit;
+    }
+
+    $taskId          = (int)($input['task_id'] ?? ($_GET['task_id'] ?? 0));
+    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? ($_GET['actual_qty'] ?? 0)));
+    $completionNotes = trim((string)($input['completion_notes'] ?? ($_GET['completion_notes'] ?? '')));
     $photoUploadErr  = null;
     $photoPathValue  = handleUploadedTaskPhotos($input, $photoUploadErr);
 

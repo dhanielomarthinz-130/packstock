@@ -1058,6 +1058,57 @@ const App = {
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
     });
+  },
+
+  /**
+   * Kompres foto menjadi data URL JPEG yang DIJAMIN di bawah maxChars.
+   * Resolusi & kualitas diturunkan bertahap sampai cukup kecil, supaya body
+   * request tidak pernah melewati batas post_max_size hosting (yang membuat
+   * PHP membuang seluruh body tanpa pesan error).
+   * Mengembalikan null bila gambar tidak bisa dibaca browser (mis. HEIC).
+   */
+  compressToBase64(file, maxChars = 600000) {
+    if (!file) return Promise.resolve(null);
+    if (typeof file === 'string') return Promise.resolve(file);
+
+    return new Promise((resolve) => {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const steps = [
+          [1280, 0.7], [1024, 0.6], [900, 0.5], [800, 0.45], [640, 0.4], [480, 0.35]
+        ];
+        let result = null;
+        for (const [maxDim, quality] of steps) {
+          let { width, height } = img;
+          const scale = Math.min(1, maxDim / Math.max(width, height));
+          width = Math.max(1, Math.round(width * scale));
+          height = Math.max(1, Math.round(height * scale));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff'; // latar putih agar PNG transparan tidak jadi hitam
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          try {
+            result = canvas.toDataURL('image/jpeg', quality);
+          } catch (e) {
+            result = null;
+          }
+          if (result && result.length <= maxChars) break;
+        }
+        URL.revokeObjectURL(objectUrl);
+        resolve(result);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+      img.src = objectUrl;
+    });
   }
 };
 

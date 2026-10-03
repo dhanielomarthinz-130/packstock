@@ -1429,29 +1429,43 @@ async function handleFinalTaskSubmit(e) {
   btn.disabled = true;
   if (btnSubmitText) btnSubmitText.innerText = 'Menyiapkan foto...';
 
-  // Kompres dan konversi ke Base64 agar tidak melalui upload_tmp_dir hosting (mencegah PHP error 6)
-  const readyPhotos = await App.compressImages(taskCompleteSelectedFiles);
+  // Kompres setiap foto ke data URL berukuran terjamin kecil (< ~600 KB) agar body
+  // request tidak melewati post_max_size hosting (yang membuat PHP membuang body).
   const base64Photos = [];
-  for (let i = 0; i < readyPhotos.length; i++) {
-    const b64 = await App.fileToBase64(readyPhotos[i]);
+  for (let i = 0; i < taskCompleteSelectedFiles.length; i++) {
+    const b64 = await App.compressToBase64(taskCompleteSelectedFiles[i]);
     if (b64) base64Photos.push(b64);
+  }
+
+  if (base64Photos.length === 0 && !isMovement) {
+    btn.disabled = false;
+    if (btnSubmitText) btnSubmitText.innerText = 'Konfirmasi & Potong Stok';
+    App.toast('Foto tidak dapat diproses browser. Coba ambil ulang foto langsung dari kamera (format JPG/PNG).', 'error', 'Foto Gagal Diproses');
+    return;
   }
 
   if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
 
   try {
-    const url = `../api/tasks.php?action=submit_complete&task_id=${encodeURIComponent(task_id)}&actual_qty=${encodeURIComponent(actual_qty)}`;
-    const response = await fetch(url, {
+    // Field teks dikirim lewat URL sehingga tetap terbaca walau body ditolak server.
+    const query = new URLSearchParams({
+      action: 'submit_complete',
+      task_id: String(task_id),
+      actual_qty: String(actual_qty),
+      completion_notes: completion_notes
+    });
+
+    // Foto dikirim sebagai form-urlencoded: masuk ke $_POST tanpa memakai upload_tmp_dir.
+    const body = new URLSearchParams();
+    body.append('task_id', String(task_id));
+    body.append('actual_qty', String(actual_qty));
+    body.append('completion_notes', completion_notes);
+    base64Photos.forEach((b64) => body.append('photos_base64[]', b64));
+
+    const response = await fetch(`../api/tasks.php?${query.toString()}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        task_id: Number(task_id) || task_id,
-        actual_qty: Number(actual_qty) || actual_qty,
-        completion_notes: completion_notes,
-        photos_base64: base64Photos
-      })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: body.toString()
     });
     const res = await response.json();
 
