@@ -977,6 +977,37 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
     }
 
     $photoPaths = [];
+    $validTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+
+    // 0. Format potongan: pc[n][] = potongan base64 polos (tanpa awalan "data:image/...").
+    //    Filter keamanan hosting gratis membuang body yang memuat string data:image base64
+    //    yang panjang; dengan dipotong kecil & tanpa awalan, body lolos utuh.
+    $chunkSets = $input['pc'] ?? ($_POST['pc'] ?? []);
+    if (is_array($chunkSets) && !empty($chunkSets)) {
+        foreach ($chunkSets as $idx => $parts) {
+            $joined = is_array($parts) ? implode('', array_map('strval', $parts)) : (string)$parts;
+            $joined = strtr($joined, ' ', '+'); // jaga-jaga bila '+' terbaca sebagai spasi
+            $data = base64_decode($joined, true);
+            if ($data === false || $data === '' || strlen($data) > PACKSTOCK_MAX_PHOTO_BYTES) {
+                $uploadError = 'Data foto rusak atau terlalu besar saat diterima server.';
+                continue;
+            }
+            $probe = @getimagesizefromstring($data);
+            if ($probe === false || !isset($validTypes[$probe[2]])) {
+                $uploadError = 'Format data foto tidak valid atau bukan gambar sah.';
+                continue;
+            }
+            $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid('', true) . $idx), 0, 8) . '.' . $validTypes[$probe[2]];
+            if (@file_put_contents($uploadDir . $newFileName, $data)) {
+                $photoPaths[] = 'uploads/tasks/' . $newFileName;
+            } else {
+                $uploadError = 'Gagal menyimpan foto ke folder uploads/tasks di server (periksa izin tulis folder).';
+            }
+        }
+        if (!empty($photoPaths)) {
+            return json_encode($photoPaths);
+        }
+    }
 
     // 1. Cek unggahan Base64 (Solusi handal untuk menghindari PHP error 6 UPLOAD_ERR_NO_TMP_DIR di hosting)
     $base64List = $input['photos_base64'] ?? ($_POST['photos_base64'] ?? []);
@@ -1065,30 +1096,43 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
 // 7. SUBMIT TASK / COMPLETE PICKING (Operator Finalize & Stock Deduction)
 if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawInput = file_get_contents('php://input');
-    $input = !empty($rawInput) ? json_decode($rawInput, true) : null;
-    if (!is_array($input)) {
-        $input = [];
-    }
-    if (empty($input) && !empty($_POST)) {
+    $rawLen = is_string($rawInput) ? strlen($rawInput) : 0;
+    $input = [];
+    if (!empty($_POST)) {
         $input = $_POST;
     }
+    if ($rawLen > 0) {
+        $json = json_decode($rawInput, true);
+        if (is_array($json) && !empty($json)) {
+            $input = array_merge($input, $json);
+        } else {
+            $parsed = [];
+            parse_str($rawInput, $parsed);
+            if (is_array($parsed) && !empty($parsed)) {
+                $input = array_merge($input, $parsed);
+            }
+        }
+    }
 
-    // Body dibuang PHP bila melebihi post_max_size: Content-Length ada, tapi isinya kosong.
+    $taskId          = (int)($input['task_id'] ?? ($_POST['task_id'] ?? ($_GET['task_id'] ?? 0)));
+    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? ($_POST['actual_qty'] ?? ($_GET['actual_qty'] ?? 0))));
+    $completionNotes = trim((string)($input['completion_notes'] ?? ($_POST['completion_notes'] ?? ($_GET['completion_notes'] ?? ''))));
+
+    // Content-Length ada, tapi tidak ada data yang sampai ke PHP.
     $contentLength = (int)($_SERVER['CONTENT_LENGTH'] ?? 0);
-    if ($contentLength > 0 && empty($input) && empty($_FILES)) {
-        http_response_code(413);
-        $maxPost = ini_get('post_max_size') ?: '-';
+    if ($contentLength > 0 && empty($input) && empty($_POST) && empty($_FILES) && $taskId <= 0) {
+        http_response_code(400);
         $sizeKb = round($contentLength / 1024);
+        $diag = $rawLen > 0
+            ? "body {$rawLen} byte sampai tapi tidak bisa diurai"
+            : "body dikosongkan sebelum sampai ke PHP (kemungkinan filter keamanan hosting)";
         echo json_encode([
             'success' => false,
-            'message' => "Data foto tidak diterima server (ukuran kiriman {$sizeKb} KB melebihi batas hosting {$maxPost}). Coba kurangi jumlah foto lalu kirim ulang."
+            'message' => "Data foto tidak diterima server ({$sizeKb} KB; {$diag}). Mohon kirim screenshot pesan ini ke admin."
         ]);
         exit;
     }
 
-    $taskId          = (int)($input['task_id'] ?? ($_GET['task_id'] ?? 0));
-    $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? ($_GET['actual_qty'] ?? 0)));
-    $completionNotes = trim((string)($input['completion_notes'] ?? ($_GET['completion_notes'] ?? '')));
     $photoUploadErr  = null;
     $photoPathValue  = handleUploadedTaskPhotos($input, $photoUploadErr);
 

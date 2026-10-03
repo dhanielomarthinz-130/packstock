@@ -1455,16 +1455,24 @@ async function handleFinalTaskSubmit(e) {
       completion_notes: completion_notes
     });
 
-    // Foto dikirim sebagai form-urlencoded: masuk ke $_POST tanpa memakai upload_tmp_dir.
+    // Foto dikirim sebagai potongan base64 polos (tanpa awalan "data:image/...;base64,")
+    // berukuran kecil. Filter keamanan hosting membuang body yang memuat string
+    // data:image panjang, sehingga seluruh isian (termasuk nama penerima) ikut hilang.
     const body = new URLSearchParams();
     body.append('task_id', String(task_id));
     body.append('actual_qty', String(actual_qty));
     body.append('completion_notes', completion_notes);
-    base64Photos.forEach((b64) => body.append('photos_base64[]', b64));
+    const CHUNK = 3000;
+    base64Photos.forEach((dataUrl, idx) => {
+      const pure = dataUrl.substring(dataUrl.indexOf(',') + 1);
+      for (let p = 0; p < pure.length; p += CHUNK) {
+        body.append(`pc[${idx}][]`, pure.substring(p, p + CHUNK));
+      }
+    });
 
     const response = await fetch(`../api/tasks.php?${query.toString()}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: body.toString()
     });
     const res = await response.json();
