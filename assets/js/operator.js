@@ -1088,6 +1088,85 @@ function openShareOutboundModal(groupKey) {
   App.openModal('modalShareOutboundSummary');
 }
 
+/**
+ * Konversi path/DataURL foto ke Blob (PNG atau JPEG)
+ */
+async function photoPathToBlob(photoPath, mimeType = 'image/jpeg') {
+  if (!photoPath) return null;
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width || 800;
+          canvas.height = img.naturalHeight || img.height || 600;
+          const ctx = canvas.getContext('2d');
+          if (mimeType === 'image/jpeg') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, mimeType, 0.88);
+        } catch (e) {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = App.photoUrl(photoPath);
+    } catch (e) {
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Konversi path/DataURL foto ke objek File standar (JPEG) untuk Web Share API
+ */
+async function photoPathToFile(photoPath, index = 0) {
+  const blob = await photoPathToBlob(photoPath, 'image/jpeg');
+  if (!blob) return null;
+  return new File([blob], `bukti_output_${index + 1}.jpg`, { type: 'image/jpeg' });
+}
+
+/**
+ * Salin foto ke Clipboard sistem perangkat (agar bisa di-paste Ctrl+V di WhatsApp Web)
+ */
+async function copyPhotoToClipboard(photoPath, showToast = true) {
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) return false;
+    const blob = await photoPathToBlob(photoPath, 'image/png');
+    if (!blob) return false;
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]);
+    if (showToast) {
+      App.toast('Foto berhasil disalin ke clipboard! Tekan Ctrl+V di obrolan WhatsApp untuk paste.', 'success', 'Foto Disalin');
+    }
+    return true;
+  } catch (err) {
+    console.warn('Clipboard write image failed:', err);
+    return false;
+  }
+}
+
+async function copyCurrentSharePhoto() {
+  const btnLabel = document.getElementById('btnCopySharePhotoLabel');
+  if (!selectedSharePhotos || selectedSharePhotos.length === 0) {
+    App.toast('Tidak ada foto yang dipilih.', 'warning');
+    return;
+  }
+  if (btnLabel) btnLabel.innerText = 'Menyalin...';
+  const success = await copyPhotoToClipboard(selectedSharePhotos[0], true);
+  if (btnLabel) btnLabel.innerText = success ? 'Tersalin! ✓' : 'Gagal Salin';
+  setTimeout(() => {
+    if (btnLabel) btnLabel.innerText = 'Salin Foto';
+  }, 2000);
+}
+
 async function shareOrCopyDirectly(groupKey) {
   const group = window._currentGroupedHistory?.[groupKey];
   if (!group) return;
@@ -1100,18 +1179,8 @@ async function shareOrCopyDirectly(groupKey) {
   // Try Web Share API Level 2 (Share actual image files directly to WhatsApp with caption)
   if (navigator.share && selectedSharePhotos.length > 0) {
     try {
-      const files = [];
-      for (let i = 0; i < Math.min(selectedSharePhotos.length, 3); i++) {
-        const photoPath = selectedSharePhotos[i];
-        const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
-        const resp = await fetch(fetchUrl);
-        if (resp.ok) {
-          const blob = await resp.blob();
-          const ext = photoPath.split('.').pop() || 'jpg';
-          const file = new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
-          files.push(file);
-        }
-      }
+      const filePromises = selectedSharePhotos.slice(0, 3).map((p, idx) => photoPathToFile(p, idx));
+      const files = (await Promise.all(filePromises)).filter(Boolean);
 
       if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
         await navigator.share({
@@ -1176,58 +1245,71 @@ async function openWhatsAppShare() {
   if (!currentShareData) return;
   const textarea = document.getElementById('shareTextPreviewBox');
   const text = (textarea && textarea.value.trim()) ? textarea.value.trim() : generateShareText(currentShareData);
+  const btnSubmit = document.getElementById('btnSubmitWhatsAppShare');
+  const originalBtnHtml = btnSubmit ? btnSubmit.innerHTML : '';
   
   if (currentShareData && currentShareData.groupKey) {
     markAsShared(currentShareData.groupKey);
   }
 
-  // Auto copy text ke clipboard sebagai backup instan
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-    }
-  } catch (e) {}
-
-  // Auto close modal & kembali ke halaman riwayat
-  App.closeModal('modalShareOutboundSummary');
+  // Indikator proses pada tombol
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span>Menyiapkan Foto & Teks...</span>`;
+  }
 
   const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const encodedText = encodeURIComponent(text);
   const waUrl = isMobile ? `whatsapp://send?text=${encodedText}` : `https://api.whatsapp.com/send?text=${encodedText}`;
 
-  // If mobile browser supports Web Share API with images
+  // 1. Coba gunakan Web Share API Level 2 (Kirim foto & teks sekaligus di HP/perangkat yang mendukung)
   if (navigator.share && selectedSharePhotos && selectedSharePhotos.length > 0) {
     try {
-      const files = [];
-      const fetchPromises = selectedSharePhotos.slice(0, 3).map(async (photoPath, i) => {
-        try {
-          const fetchUrl = `../${photoPath.replace(/^\.\.\//, '').replace(/^\//, '')}`;
-          const resp = await fetch(fetchUrl);
-          if (resp.ok) {
-            const blob = await resp.blob();
-            const ext = photoPath.split('.').pop() || 'jpg';
-            return new File([blob], `output_kemas_${i + 1}.${ext}`, { type: blob.type || 'image/jpeg' });
-          }
-        } catch (err) {
-          return null;
-        }
-      });
-
-      const resolvedFiles = (await Promise.all(fetchPromises)).filter(Boolean);
+      const filePromises = selectedSharePhotos.slice(0, 3).map((p, idx) => photoPathToFile(p, idx));
+      const resolvedFiles = (await Promise.all(filePromises)).filter(Boolean);
 
       if (resolvedFiles.length > 0 && navigator.canShare && navigator.canShare({ files: resolvedFiles })) {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = originalBtnHtml;
+        }
         await navigator.share({
           title: `Update Output Kemas`,
           text: text,
           files: resolvedFiles
         });
+        App.closeModal('modalShareOutboundSummary');
         return;
       }
     } catch (e) {
-      // If user cancels or share fails, fallback seamlessly to WhatsApp direct link
-      if (e.name === 'AbortError') return;
+      if (e.name === 'AbortError') {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = originalBtnHtml;
+        }
+        return;
+      }
     }
   }
+
+  // 2. Fallback untuk Desktop / PC / WhatsApp Web:
+  // Salin teks dan foto ke clipboard sehingga saat WhatsApp Web terbuka tinggal Ctrl+V
+  try {
+    if (selectedSharePhotos && selectedSharePhotos.length > 0) {
+      await copyPhotoToClipboard(selectedSharePhotos[0], false);
+      App.toast('Foto otomatis disalin ke clipboard! Tekan Ctrl+V di chat WhatsApp.', 'info', 'Foto di Clipboard', 5000);
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    }
+  } catch (e) {}
+
+  if (btnSubmit) {
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = originalBtnHtml;
+  }
+
+  // Auto close modal & kembali ke halaman riwayat
+  App.closeModal('modalShareOutboundSummary');
 
   // Direct instant open WhatsApp without popup blocker delay
   if (isMobile) {

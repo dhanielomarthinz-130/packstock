@@ -2538,19 +2538,35 @@ require_once __DIR__ . '/../includes/header.php';
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Format Caption Pesan:</p>
           <span class="text-[10px] text-slate-400 font-medium">Bisa Diedit</span>
         </div>
-        <textarea rows="7" class="w-full p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 select-all leading-relaxed shadow-inner outline-none focus:border-emerald-500 font-medium resize-none" id="shareTextPreviewBox"></textarea>
+        <textarea rows="6" class="w-full p-3 bg-slate-900 text-emerald-300 font-mono text-xs rounded-2xl border border-slate-800 select-all leading-relaxed shadow-inner outline-none focus:border-emerald-500 font-medium resize-none" id="shareTextPreviewBox"></textarea>
+      </div>
+
+      <!-- Tips Berbagi Foto -->
+      <div class="p-2.5 rounded-2xl bg-blue-50/80 border border-blue-200/80 text-[11px] text-blue-950 flex items-start gap-2">
+        <span class="material-symbols-outlined text-blue-600 text-[16px] shrink-0 mt-0.5">info</span>
+        <div class="space-y-0.5 leading-snug">
+          <p class="font-bold text-blue-900">Tips Berbagi Bukti Foto:</p>
+          <p class="text-slate-600 text-[10px]">• <b>Di HP:</b> Foto & teks otomatis dikirim bersamaan ke WhatsApp.</p>
+          <p class="text-slate-600 text-[10px]">• <b>Di PC:</b> Foto otomatis disalin ke Clipboard (cukup tekan <b>Ctrl + V</b> di chat WhatsApp).</p>
+        </div>
       </div>
     </div>
 
     <!-- Actions -->
-    <div class="pt-2 grid grid-cols-2 gap-2">
-      <button type="button" onclick="copyShareTextToClipboard()" id="btnCopyShareText" class="py-3 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-        <span class="material-symbols-outlined text-[18px]">content_copy</span>
-        <span id="btnCopyShareTextLabel">Salin Teks</span>
-      </button>
-      <button type="button" onclick="openWhatsAppShare()" class="py-3 px-3 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-98 text-white font-black text-xs shadow-md shadow-[#262363]/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+    <div class="pt-2 space-y-2">
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="copyShareTextToClipboard()" id="btnCopyShareText" class="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[17px]">content_copy</span>
+          <span id="btnCopyShareTextLabel">Salin Teks</span>
+        </button>
+        <button type="button" onclick="copyCurrentSharePhoto()" id="btnCopySharePhoto" class="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[17px]">photo</span>
+          <span id="btnCopySharePhotoLabel">Salin Foto</span>
+        </button>
+      </div>
+      <button type="button" onclick="openWhatsAppShare()" id="btnSubmitWhatsAppShare" class="w-full py-3 px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] active:scale-98 text-white font-black text-xs shadow-md shadow-[#262363]/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
         <span class="material-symbols-outlined text-[18px]">send</span>
-        <span>Kirim WhatsApp</span>
+        <span>Kirim ke WhatsApp (Foto & Teks)</span>
       </button>
     </div>
   </div>
