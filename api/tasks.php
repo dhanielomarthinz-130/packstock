@@ -942,7 +942,7 @@ if ($action === 'start' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Helper to process uploaded photos for tasks
-function handleUploadedTaskPhotos(): ?string {
+function handleUploadedTaskPhotos(?string &$uploadError = null): ?string {
     if (!isset($_FILES['photos'])) {
         return null;
     }
@@ -954,24 +954,40 @@ function handleUploadedTaskPhotos(): ?string {
 
     $uploadDir = __DIR__ . '/../uploads/tasks/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        @mkdir($uploadDir, 0755, true);
     }
 
     $photoPaths = [];
-    $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
 
     for ($i = 0; $i < $fileCount; $i++) {
-        if ($files['error'][$i] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $files['tmp_name'][$i];
-            $fileName = $files['name'][$i];
-            $ext = validateUploadedPhoto($fileTmpPath, $fileName, (int)($files['size'][$i] ?? 0));
-            if ($ext !== null) {
-                $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
-                $destPath = $uploadDir . $newFileName;
-                if (move_uploaded_file($fileTmpPath, $destPath)) {
-                    $photoPaths[] = 'uploads/tasks/' . $newFileName;
-                }
+        $err = $files['error'][$i] ?? UPLOAD_ERR_NO_FILE;
+        if ($err === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+            $maxIni = ini_get('upload_max_filesize') ?: '2M';
+            $uploadError = "Ukuran foto terlalu besar melebihi batas server hosting ({$maxIni}).";
+            continue;
+        }
+        if ($err !== UPLOAD_ERR_OK) {
+            $uploadError = "Gagal mengunggah foto (Kode error sistem PHP: {$err}).";
+            continue;
+        }
+
+        $fileTmpPath = $files['tmp_name'][$i];
+        $fileName = $files['name'][$i];
+        $fileSize = (int)($files['size'][$i] ?? 0);
+        $ext = validateUploadedPhoto($fileTmpPath, $fileName, $fileSize);
+        if ($ext !== null) {
+            $newFileName = 'task_' . date('Ymd_His') . '_' . substr(md5(uniqid() . $i), 0, 8) . '.' . $ext;
+            $destPath = $uploadDir . $newFileName;
+            if (move_uploaded_file($fileTmpPath, $destPath)) {
+                $photoPaths[] = 'uploads/tasks/' . $newFileName;
+            } else {
+                $uploadError = 'Gagal menyimpan foto ke direktori uploads/tasks di server (periksa izin folder).';
             }
+        } else {
+            $uploadError = 'Format foto tidak didukung atau file rusak. Pastikan format JPG, PNG, atau WebP.';
         }
     }
 
@@ -989,7 +1005,8 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $taskId          = (int)($input['task_id'] ?? 0);
     $actualQty       = max(0, parseNumberDecimal($input['actual_qty'] ?? 0));
     $completionNotes = trim($input['completion_notes'] ?? '');
-    $photoPathValue  = handleUploadedTaskPhotos();
+    $photoUploadErr  = null;
+    $photoPathValue  = handleUploadedTaskPhotos($photoUploadErr);
 
     if ($taskId <= 0 || $actualQty <= 0) {
         http_response_code(400);
@@ -1000,6 +1017,12 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($qtyError = validateQtyRange($actualQty, 'Jumlah riil barang')) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $qtyError]);
+        exit;
+    }
+
+    if (!empty($photoUploadErr) && empty($photoPathValue)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => $photoUploadErr]);
         exit;
     }
 

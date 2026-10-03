@@ -1251,11 +1251,22 @@ async function startOperatorTask(taskId) {
 // Task Completion Multi-Photo State
 let taskCompleteSelectedFiles = [];
 
-function previewTaskCompletePhoto(e) {
+async function previewTaskCompletePhoto(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(files);
+
+  const badge = document.getElementById('taskPhotoCountBadge');
+  if (badge) badge.innerText = 'Mengompres...';
+
+  try {
+    const compressed = await App.compressImages(files);
+    taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(compressed);
+  } catch (err) {
+    taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(files);
+  }
+
   renderTaskCompletePreviews();
+  e.target.value = '';
 }
 
 function renderTaskCompletePreviews() {
@@ -1423,8 +1434,9 @@ async function handleFinalTaskSubmit(e) {
   formData.append('actual_qty', actual_qty);
   formData.append('completion_notes', completion_notes);
 
-  for (let i = 0; i < taskCompleteSelectedFiles.length; i++) {
-    formData.append('photos[]', taskCompleteSelectedFiles[i]);
+  const readyPhotos = await App.compressImages(taskCompleteSelectedFiles);
+  for (let i = 0; i < readyPhotos.length; i++) {
+    formData.append('photos[]', readyPhotos[i]);
   }
 
   try {
@@ -2413,11 +2425,19 @@ function renderInboundDraftList() {
 // Operator Inbound Multi-Photo State
 let opInboundSelectedFiles = [];
 
-function previewOpInboundPhoto(e) {
+async function previewOpInboundPhoto(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  opInboundSelectedFiles = opInboundSelectedFiles.concat(files);
+  const badge = document.getElementById('opInboundPhotoCountBadge');
+  if (badge) badge.innerText = 'Mengompres...';
+  try {
+    const compressed = await App.compressImages(files);
+    opInboundSelectedFiles = opInboundSelectedFiles.concat(compressed);
+  } catch (err) {
+    opInboundSelectedFiles = opInboundSelectedFiles.concat(files);
+  }
   renderOpInboundPhotoPreviews();
+  e.target.value = '';
 }
 
 function renderOpInboundPhotoPreviews() {
@@ -3152,12 +3172,22 @@ function toggleHandoverForm() {
   }
 }
 
-function previewHandoverPhoto(e) {
-  const files = e.target.files;
+async function previewHandoverPhoto(e) {
+  const files = Array.from(e.target.files || []);
   if (!files || files.length === 0) return;
 
-  for (let i = 0; i < files.length; i++) {
-    handoverSelectedFiles.push(files[i]);
+  const label = document.getElementById('handoverPhotoLabel');
+  if (label) label.innerText = 'Mengompres foto...';
+
+  try {
+    const compressed = await App.compressImages(files);
+    for (let i = 0; i < compressed.length; i++) {
+      handoverSelectedFiles.push(compressed[i]);
+    }
+  } catch (err) {
+    for (let i = 0; i < files.length; i++) {
+      handoverSelectedFiles.push(files[i]);
+    }
   }
 
   // Clear file input so the same file or subsequent selections work properly
@@ -5417,11 +5447,19 @@ function onOpTransferBatchChange(batchVal) {
 // Operator Location Transfer Multi-Photo State
 let opTransferSelectedFiles = [];
 
-function previewOpTransferPhoto(e) {
+async function previewOpTransferPhoto(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  opTransferSelectedFiles = opTransferSelectedFiles.concat(files);
+  const badge = document.getElementById('opTransferPhotoCountBadge');
+  if (badge) badge.innerText = 'Mengompres...';
+  try {
+    const compressed = await App.compressImages(files);
+    opTransferSelectedFiles = opTransferSelectedFiles.concat(compressed);
+  } catch (err) {
+    opTransferSelectedFiles = opTransferSelectedFiles.concat(files);
+  }
   renderOpTransferPhotoPreviews();
+  e.target.value = '';
 }
 
 function renderOpTransferPhotoPreviews() {

@@ -4550,11 +4550,19 @@ function renderMaterialOptionsHtml(selectedId = '', showStock = false) {
 let inboundSelectedFiles = [];
 let outboundSelectedFiles = [];
 
-function handleInboundPhotosSelect(e) {
+async function handleInboundPhotosSelect(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  inboundSelectedFiles = inboundSelectedFiles.concat(files);
+  const badge = document.getElementById('inboundPhotoCountBadge');
+  if (badge) badge.innerText = 'Mengompres...';
+  try {
+    const compressed = await App.compressImages(files);
+    inboundSelectedFiles = inboundSelectedFiles.concat(compressed);
+  } catch (err) {
+    inboundSelectedFiles = inboundSelectedFiles.concat(files);
+  }
   renderInboundPhotoPreviews();
+  e.target.value = '';
 }
 
 function renderInboundPhotoPreviews() {
@@ -4601,11 +4609,19 @@ function clearInboundPhotos() {
 }
 
 // Outbound Photo Handlers
-function handleOutboundPhotosSelect(e) {
+async function handleOutboundPhotosSelect(e) {
   const files = Array.from(e.target.files || []);
   if (files.length === 0) return;
-  outboundSelectedFiles = outboundSelectedFiles.concat(files);
+  const badge = document.getElementById('outboundPhotoCountBadge');
+  if (badge) badge.innerText = 'Mengompres...';
+  try {
+    const compressed = await App.compressImages(files);
+    outboundSelectedFiles = outboundSelectedFiles.concat(compressed);
+  } catch (err) {
+    outboundSelectedFiles = outboundSelectedFiles.concat(files);
+  }
   renderOutboundPhotoPreviews();
+  e.target.value = '';
 }
 
 function renderOutboundPhotoPreviews() {
