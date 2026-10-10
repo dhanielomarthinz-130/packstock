@@ -265,7 +265,13 @@ if ($action === 'matrix') {
                 }
             }
 
-            $item['final_physical_qty'] = $finalQty !== null ? $finalQty : ($item['final_qty'] !== null ? (float)$item['final_qty'] : null);
+            if ($finalQty !== null) {
+                $item['final_physical_qty'] = (float)$finalQty;
+            } elseif ($item['status'] !== 'PENDING' && $item['final_qty'] !== null) {
+                $item['final_physical_qty'] = (float)$item['final_qty'];
+            } else {
+                $item['final_physical_qty'] = null;
+            }
             $sysStock = (float)$item['system_stock'];
             $diff = $item['final_physical_qty'] !== null ? ($item['final_physical_qty'] - $sysStock) : null;
             $item['final_difference'] = $diff;
@@ -274,7 +280,7 @@ if ($action === 'matrix') {
             $item['scanned_rack'] = $scannedRack ?: $item['material_rack'];
 
             // Note: PLUS, MINUS, BALANCE, PENDING
-            if ($diff === null) {
+            if ($diff === null || $item['final_physical_qty'] === null) {
                 $item['diff_note'] = 'PENDING';
                 $item['diff_note_label'] = 'Pending';
             } elseif ($diff > 0) {
@@ -969,7 +975,13 @@ if ($action === 'get') {
             }
         }
 
-        $item['final_physical_qty'] = $finalQty !== null ? $finalQty : ($item['final_qty'] !== null ? (float)$item['final_qty'] : null);
+        if ($finalQty !== null) {
+            $item['final_physical_qty'] = (float)$finalQty;
+        } elseif ($item['status'] !== 'PENDING' && $item['final_qty'] !== null) {
+            $item['final_physical_qty'] = (float)$item['final_qty'];
+        } else {
+            $item['final_physical_qty'] = null;
+        }
         $sysStock = (float)$item['system_stock'];
         $item['final_difference'] = $item['final_physical_qty'] !== null ? ($item['final_physical_qty'] - $sysStock) : null;
         $item['active_source_stage'] = $activeSourceStage;
@@ -1095,7 +1107,7 @@ if ($action === 'create') {
         
         $stmtItem = $pdo->prepare("
             INSERT INTO stock_opname_items (opname_id, material_id, system_stock, final_qty, difference, status, created_at)
-            VALUES (?, ?, ?, NULL, 0, 'PENDING', CURRENT_TIMESTAMP)
+            VALUES (?, ?, ?, NULL, NULL, 'PENDING', CURRENT_TIMESTAMP)
         ");
         $stmtStage1 = $assigned_to_1 > 0 ? $pdo->prepare("
             INSERT INTO stock_opname_item_stages (opname_id, item_id, stage_number, assigned_to, count_qty, status, created_at)
@@ -1273,7 +1285,7 @@ if ($action === 'submit_dynamic_count') {
         $stmtItem->execute([$itemId]);
         $sysStock = (float)$stmtItem->fetchColumn();
 
-        $diff = ($finalQty !== null) ? ($finalQty - $sysStock) : 0;
+        $diff = ($finalQty !== null) ? ($finalQty - $sysStock) : null;
         $status = ($finalQty === null) ? 'PENDING' : ($diff == 0 ? 'MATCH' : 'DISCREPANCY');
 
         $stmtUpdateItem = $pdo->prepare("
@@ -1821,7 +1833,7 @@ if ($action === 'submit_recount' || $action === 'submit_count') {
         $stmtItem->execute([$itemId]);
         $sysStock = (float)$stmtItem->fetchColumn();
 
-        $diff = ($finalQty !== null) ? ($finalQty - $sysStock) : 0;
+        $diff = ($finalQty !== null) ? ($finalQty - $sysStock) : null;
         $status = ($finalQty === null) ? 'PENDING' : ($diff == 0 ? 'MATCH' : 'DISCREPANCY');
 
         $pdo->prepare("

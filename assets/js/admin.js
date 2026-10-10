@@ -7121,8 +7121,8 @@ function buildMatrixHeaderHtml(maxStage, isDynamic = false) {
 
 function buildMatrixRowHtml(item, idx, maxStage, isDynamic = false) {
   const sysStock = parseFloat(item.system_stock) || 0;
-  const finalQty = item.final_physical_qty !== null ? parseFloat(item.final_physical_qty) : null;
-  const diff = item.final_difference !== null ? parseFloat(item.final_difference) : null;
+  const finalQty = (item.final_physical_qty !== null && item.final_physical_qty !== undefined && item.final_physical_qty !== '') ? parseFloat(item.final_physical_qty) : null;
+  const diff = (finalQty !== null && item.final_difference !== null && item.final_difference !== undefined && item.final_difference !== '') ? parseFloat(item.final_difference) : null;
   const activeSource = item.active_source_stage;
   const stages = item.stages || {};
   const formattedDate = formatMatrixDate(item.counted_at || item.created_at);
@@ -7501,7 +7501,7 @@ async function openCreateDynamicCountModal() {
   updateDynamicSkuSelectedBadge();
 
   // Ensure materials and operators are loaded
-  await ensureMaterialsLoaded();
+  await ensureMaterialsLoaded(true);
 
   if (!allOperators || allOperators.length === 0) {
     const resOp = await App.fetchJson('../api/users.php?action=operators');
@@ -8928,7 +8928,7 @@ async function loadDirectAdjustMaterials() {
   }
 
   try {
-    await ensureMaterialsLoaded();
+    await ensureMaterialsLoaded(true);
   } catch (e) {
     console.error('Error fetching materials for direct adjust:', e);
   }
@@ -9566,7 +9566,8 @@ async function commitDirectAdjustTable() {
   const btn = document.getElementById('btnCommitDirectAdjust');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>';
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span><span id="btnCommitDirectAdjustText">Menerapkan...</span>';
   }
 
   const res = await App.fetchJson('../api/adjust_stock.php?action=commit', {
@@ -9579,11 +9580,13 @@ async function commitDirectAdjustTable() {
 
   if (btn) {
     btn.disabled = false;
-    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span>';
+    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">check_circle</span><span id="btnCommitDirectAdjustText">Terapkan Adjust</span>';
   }
 
   if (res.success) {
     App.toast(res.message, 'success', 'Penyesuaian Berhasil Diterapkan');
+    await ensureMaterialsLoaded(true);
     await loadMaterials();
     loadStats();
     loadMutations();

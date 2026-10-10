@@ -426,11 +426,11 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($items as $item) {
             $matIdInput = (int)($item['material_id'] ?? 0);
             $code = strtoupper(trim((string)($item['item_no'] ?? '')));
-            $qtyAdjust = (int)($item['qty_adjust'] ?? 0);
+            $qtyAdjust = (float)($item['qty_adjust'] ?? 0);
             $rawNotes = trim((string)($item['notes'] ?? ''));
             $notes = !empty($rawNotes) ? $rawNotes : (!empty($batchNotes) ? $batchNotes : 'Penyesuaian Stok');
 
-            if ($qtyAdjust === 0) continue;
+            if (abs($qtyAdjust) < 0.00001) continue;
 
             $mat = null;
             if ($matIdInput > 0) {
@@ -445,7 +445,7 @@ if ($action === 'commit' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$mat) continue;
 
             $matId = (int)$mat['id'];
-            $stockBefore = (int)$mat['current_stock'];
+            $stockBefore = (float)$mat['current_stock'];
             $stockAfter = $stockBefore + $qtyAdjust;
 
             $stmtUpdateMat->execute([$stockAfter, $matId]);

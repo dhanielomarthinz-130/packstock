@@ -2450,7 +2450,7 @@ require_once __DIR__ . '/../includes/header.php';
               <!-- Commit Adjustment Button -->
               <button type="button" id="btnCommitDirectAdjust" onclick="commitDirectAdjustTable()" class="h-[38px] px-4 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold opacity-50 cursor-not-allowed" disabled title="Terapkan Selisih Penyesuaian ke Master Stok">
                 <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                <span>Terapkan Adjust</span>
+                <span id="btnCommitDirectAdjustText">Terapkan Adjust</span>
               </button>
 
               <!-- Reset Button -->
