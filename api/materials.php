@@ -683,19 +683,37 @@ if ($action === 'list') {
             $bNums = [];
             $bLocs = [];
             $minExp = null;
+            $batchStockTotal = 0;
             foreach ($batchBreakdown[$mid] as $bItem) {
                 if (!empty($bItem['batch_no'])) $bNums[] = $bItem['batch_no'];
-                if (!empty($bItem['location']) && $bItem['location'] !== 'Pusat') $bLocs[] = $bItem['location'];
+                if (!empty($bItem['location']) && $bItem['location'] !== 'Pusat' && $bItem['location'] !== '-') $bLocs[] = $bItem['location'];
                 if (!empty($bItem['exp_date'])) {
                     if ($minExp === null || $bItem['exp_date'] < $minExp) {
                         $minExp = $bItem['exp_date'];
                     }
                 }
+                $batchStockTotal += (float)($bItem['ending_stock'] ?? $bItem['qty'] ?? 0);
             }
             $mat['batch_numbers'] = implode(', ', array_unique($bNums));
             $mat['batch_locations'] = implode(', ', array_unique($bLocs));
             if (!empty($minExp)) {
                 $mat['earliest_exp_date'] = $minExp;
+            }
+
+            // SINKRONISASI STOK GIMMICK & BATCH:
+            // Jika material adalah GIMMICK atau stok master <= 0 sementara batch fisik riil > 0,
+            // gunakan total stok batch fisik dan lokasi rak batch agar seragam di semua halaman!
+            if ($mat['item_type'] === 'GIMMICK' || ($mat['current_stock'] <= 0 && $batchStockTotal > 0)) {
+                $mat['current_stock'] = $batchStockTotal;
+                if (!empty($mat['batch_locations'])) {
+                    $mat['rack_location'] = $mat['batch_locations'];
+                }
+
+                // Auto-heal data di tabel materials jika desync atau minus di database
+                try {
+                    $upMat = $pdo->prepare("UPDATE materials SET current_stock = ?, rack_location = COALESCE(NULLIF(?, ''), rack_location) WHERE id = ?");
+                    $upMat->execute([$batchStockTotal, $mat['batch_locations'] ?: null, $mid]);
+                } catch (Throwable $ignoreDb) {}
             }
         } else {
             $mat['batches_json'] = '[]';

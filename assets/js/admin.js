@@ -7590,6 +7590,7 @@ function filterDynamicSkuChecklist() {
   tbody.innerHTML = filtered.map((m, idx) => {
     const isChecked = selectedDynamicSkuIds.has(m.id);
     const rowBg = isChecked ? 'bg-indigo-50/70' : 'hover:bg-slate-50';
+    const displayLocation = (m.item_type === 'GIMMICK' && m.batch_locations) ? m.batch_locations : (m.rack_location || '-');
     return `
       <tr class="border-b border-slate-100 text-xs transition-colors cursor-pointer select-none ${rowBg}" onclick="toggleDynamicSkuRowClick(event, ${m.id})">
         <td class="p-2.5 text-center">
@@ -7604,7 +7605,7 @@ function filterDynamicSkuChecklist() {
         <td class="p-2.5 whitespace-nowrap">
           <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium text-[10px] border border-slate-200">${escapeHtml(m.category || '-')}</span>
         </td>
-        <td class="p-2.5 text-center text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(m.rack_location || '-')}</td>
+        <td class="p-2.5 text-center text-slate-600 font-semibold whitespace-nowrap">${escapeHtml(displayLocation)}</td>
         <td class="p-2.5 text-center font-mono font-bold text-slate-800 whitespace-nowrap bg-slate-50/80">${App.formatNumber(m.current_stock)}</td>
         <td class="p-2.5 text-center font-mono text-slate-600 text-[11px] whitespace-nowrap">${escapeHtml(m.unit || 'Pcs')}</td>
       </tr>

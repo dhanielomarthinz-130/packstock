@@ -1044,7 +1044,7 @@ if ($action === 'create') {
 
     // Resolve Target Materials
     $itemTypeScope = trim($input['item_type'] ?? '');
-    $materialsQuery = "SELECT id, code, name, category, rack_location, current_stock FROM materials WHERE 1=1";
+    $materialsQuery = "SELECT id, code, name, category, rack_location, current_stock, item_type FROM materials WHERE 1=1";
     $mParams = [];
 
     if ($itemTypeScope === 'GIMMICK' || $scope === 'gimmick') {
@@ -1115,7 +1115,25 @@ if ($action === 'create') {
         ") : null;
 
         foreach ($targetMaterials as $m) {
-            $stmtItem->execute([$opnameId, $m['id'], $m['current_stock']]);
+            $sysStock = (float)$m['current_stock'];
+
+            // Jika item adalah GIMMICK atau memiliki batch fisik aktif, ambil dari total saldo batch
+            $stmtBatchSum = $pdo->prepare("
+                SELECT COALESCE(SUM(qty), 0) as total_batch_stock
+                FROM material_batches 
+                WHERE material_id = ? AND UPPER(location) NOT LIKE '%VAS%'
+            ");
+            $stmtBatchSum->execute([$m['id']]);
+            $bStock = $stmtBatchSum->fetchColumn();
+
+            if ($bStock !== false && $bStock !== null) {
+                $bStockFloat = (float)$bStock;
+                if ($m['item_type'] === 'GIMMICK' || ($sysStock <= 0 && $bStockFloat > 0)) {
+                    $sysStock = $bStockFloat;
+                }
+            }
+
+            $stmtItem->execute([$opnameId, $m['id'], $sysStock]);
             $itemId = (int)$pdo->lastInsertId();
 
             if ($stmtStage1) {
@@ -1180,7 +1198,7 @@ if ($action === 'operator_dynamic_tasks') {
                m.name as material_name,
                m.category as material_category,
                m.unit as material_unit,
-               m.rack_location as rack_location
+               COALESCE((SELECT mb.location FROM material_batches mb WHERE mb.material_id = m.id AND mb.qty > 0 AND UPPER(mb.location) NOT LIKE '%VAS%' LIMIT 1), m.rack_location) as rack_location
         FROM stock_opname_item_stages st
         JOIN stock_opname_items soi ON st.item_id = soi.id
         JOIN stock_opnames so ON st.opname_id = so.id

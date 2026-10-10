@@ -1135,6 +1135,18 @@ class Database {
                 }
 
                 if (!empty($mutations)) {
+                    $stmtIsGimmick = $pdo->prepare("SELECT item_type FROM materials WHERE id = ?");
+                    $stmtIsGimmick->execute([$matId]);
+                    $matType = $stmtIsGimmick->fetchColumn();
+                    if ($matType === 'GIMMICK') {
+                        $stmtBatchSum = $pdo->prepare("SELECT SUM(qty) FROM material_batches WHERE material_id = ?");
+                        $stmtBatchSum->execute([$matId]);
+                        $bSum = $stmtBatchSum->fetchColumn();
+                        if ($bSum !== false && $bSum !== null) {
+                            $runningStock = (float)$bSum;
+                        }
+                    }
+
                     $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
                     $stmtUpMat->execute([$runningStock, $matId]);
                 }
