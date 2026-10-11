@@ -14966,10 +14966,27 @@ function renderGimmickTable(items, startIdx = 0) {
 
     if (b) {
       // Row with specific batch
-      const batchInitialStock = parseFloat(b.initial_stock ?? b.qty ?? 0);
-      const batchInbound = parseFloat(b.total_inbound ?? 0);
-      const batchOutbound = parseFloat(b.total_outbound ?? 0);
+      const isSingleBatch = (!m.batch_count || m.batch_count <= 1);
       const batchEndingStock = parseFloat(b.ending_stock ?? b.qty ?? 0);
+
+      let batchInbound = parseFloat(b.total_inbound ?? 0);
+      if (batchInbound <= 0 && isSingleBatch && parseFloat(m.total_inbound || 0) > 0) {
+        batchInbound = parseFloat(m.total_inbound);
+      }
+
+      let batchOutbound = parseFloat(b.total_outbound ?? 0);
+      if (batchOutbound <= 0 && isSingleBatch && parseFloat(m.total_outbound || 0) > 0) {
+        batchOutbound = parseFloat(m.total_outbound);
+      }
+
+      let batchInitialStock = (b.initial_stock !== undefined && b.initial_stock !== null && (parseFloat(b.total_inbound || 0) > 0 || parseFloat(b.total_outbound || 0) > 0))
+        ? parseFloat(b.initial_stock)
+        : Math.max(0, batchEndingStock - batchInbound + batchOutbound);
+
+      if (batchInitialStock <= 0 && isSingleBatch && parseFloat(m.initial_upload_stock || 0) > 0 && (batchEndingStock > 0 || (batchInbound === 0 && batchOutbound === 0))) {
+        batchInitialStock = parseFloat(m.initial_upload_stock);
+      }
+
       const batchVasQty = parseFloat(b.vas_qty ?? 0);
       const minStock = parseFloat(m.min_stock || 0);
 
@@ -15219,10 +15236,12 @@ function renderGimmickBatchesTable(batches, unit = 'Pcs') {
       expBadgeClass = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
     }
 
-    const bInitial = parseFloat(b.initial_stock ?? b.qty ?? 0);
+    const bEnding = parseFloat(b.ending_stock ?? b.qty ?? 0);
     const bIn = parseFloat(b.total_inbound ?? 0);
     const bOut = parseFloat(b.total_outbound ?? 0);
-    const bEnding = parseFloat(b.ending_stock ?? b.qty ?? 0);
+    let bInitial = (b.initial_stock !== undefined && b.initial_stock !== null && (bIn > 0 || bOut > 0))
+      ? parseFloat(b.initial_stock)
+      : Math.max(0, bEnding - bIn + bOut);
     const bVas = parseFloat(b.vas_qty ?? 0);
 
     return `

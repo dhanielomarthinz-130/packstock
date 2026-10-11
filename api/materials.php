@@ -714,7 +714,6 @@ if ($action === 'list') {
                             $bb['ending_stock'] = 0;
                         }
                         unset($bb);
-                        $mat['batches_json'] = json_encode($batchBreakdown[$mid]);
                     }
                 }
             } else {
@@ -730,6 +729,21 @@ if ($action === 'list') {
                 if (!empty($mat['batch_locations'])) {
                     $mat['rack_location'] = $mat['batch_locations'];
                 }
+            }
+
+            // Pastikan fallback inbound/outbound diterapkan ke batches_json jika material single-batch
+            if ($mat['batch_count'] <= 1 && isset($batchBreakdown[$mid])) {
+                foreach ($batchBreakdown[$mid] as &$bb) {
+                    if (($bb['total_inbound'] ?? 0) <= 0 && $mat['total_inbound'] > 0) {
+                        $bb['total_inbound'] = (float)$mat['total_inbound'];
+                    }
+                    if (($bb['total_outbound'] ?? 0) <= 0 && $mat['total_outbound'] > 0) {
+                        $bb['total_outbound'] = (float)$mat['total_outbound'];
+                    }
+                    $bb['initial_stock'] = max(0, (float)($bb['ending_stock'] ?? $bb['qty'] ?? 0) - (float)$bb['total_inbound'] + (float)$bb['total_outbound']);
+                }
+                unset($bb);
+                $mat['batches_json'] = json_encode($batchBreakdown[$mid]);
             }
         } else {
             $mat['batches_json'] = '[]';

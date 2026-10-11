@@ -320,14 +320,16 @@ if (!function_exists('getBatchMovementBreakdown')) {
             $matWhere = $targetMaterialId && $targetMaterialId > 0 ? "WHERE material_id = " . (int)$targetMaterialId : "";
             $matWhereAnd = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
 
-            // Auto-sync desynced batches if material current_stock is lower than batch sum (or zero)
+            // Auto-sync desynced batches if material current_stock is lower than batch sum (or zero and batch sum > 0)
+            $matWhereMb = $targetMaterialId && $targetMaterialId > 0 ? "WHERE mb.material_id = " . (int)$targetMaterialId : "";
+            $matWhereAndMb = $targetMaterialId && $targetMaterialId > 0 ? "AND mb.material_id = " . (int)$targetMaterialId : "";
             $syncSql = "
                 SELECT m.id, m.current_stock, COALESCE(SUM(mb.qty), 0) as batch_sum
                 FROM materials m
                 JOIN material_batches mb ON m.id = mb.material_id
-                {$matWhere}
+                {$matWhereMb}
                 GROUP BY m.id, m.current_stock
-                HAVING batch_sum > m.current_stock OR m.current_stock <= 0
+                HAVING (batch_sum > m.current_stock) OR (m.current_stock <= 0 AND batch_sum > 0)
             ";
             $stmtDesync = $pdo->query($syncSql);
             if ($stmtDesync) {
@@ -340,6 +342,8 @@ if (!function_exists('getBatchMovementBreakdown')) {
 
             // Inbounds map
             $inbMap = [];
+            $matTotalInb = [];
+            $matEmptyBatchInb = [];
             $stmtInb = $pdo->query("
                 SELECT material_id, 
                        COALESCE(batch_no, '') as batch_no, 
@@ -353,13 +357,20 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 while ($r = $stmtInb->fetch(PDO::FETCH_ASSOC)) {
                     $bNo = strtoupper(trim($r['batch_no']));
                     $loc = strtoupper(trim($r['location']));
-                    $key = $r['material_id'] . '|' . $bNo . '|' . $loc;
+                    $midR = (int)$r['material_id'];
+                    $key = $midR . '|' . $bNo . '|' . $loc;
                     $inbMap[$key] = (float)$r['total_qty'];
+                    $matTotalInb[$midR] = ($matTotalInb[$midR] ?? 0) + (float)$r['total_qty'];
+                    if (empty($bNo)) {
+                        $matEmptyBatchInb[$midR] = ($matEmptyBatchInb[$midR] ?? 0) + (float)$r['total_qty'];
+                    }
                 }
             }
 
             // Outbounds map (outbound_transactions + completed picking tasks)
             $outMap = [];
+            $matTotalOut = [];
+            $matEmptyBatchOut = [];
             $tasksWhere = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
             $stmtOut = $pdo->query("
                 SELECT material_id, 
@@ -388,8 +399,13 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 while ($r = $stmtOut->fetch(PDO::FETCH_ASSOC)) {
                     $bNo = strtoupper(trim($r['batch_no']));
                     $loc = strtoupper(trim($r['location']));
-                    $key = $r['material_id'] . '|' . $bNo . '|' . $loc;
+                    $midR = (int)$r['material_id'];
+                    $key = $midR . '|' . $bNo . '|' . $loc;
                     $outMap[$key] = (float)$r['total_qty'];
+                    $matTotalOut[$midR] = ($matTotalOut[$midR] ?? 0) + (float)$r['total_qty'];
+                    if (empty($bNo)) {
+                        $matEmptyBatchOut[$midR] = ($matEmptyBatchOut[$midR] ?? 0) + (float)$r['total_qty'];
+                    }
                 }
             }
 
@@ -456,13 +472,24 @@ if (!function_exists('getBatchMovementBreakdown')) {
 
             // Fetch batches (excluding pure VAS rows, sorted)
             $batchSql = "
-                SELECT id, material_id, batch_no, exp_date, location, qty, notes, created_at, updated_at
-                FROM material_batches
-                WHERE UPPER(location) NOT LIKE '%VAS%' {$matWhereAnd}
-                ORDER BY material_id ASC, (CASE WHEN location IS NULL OR location = '' OR location = 'Pusat' OR location = '-' THEN 1 ELSE 0 END), location ASC, (CASE WHEN exp_date IS NULL OR exp_date = '' THEN 1 ELSE 0 END), exp_date ASC, id ASC
+                SELECT mb.id, mb.material_id, mb.batch_no, mb.exp_date, mb.location, mb.qty, mb.notes, mb.created_at, mb.updated_at,
+                       COALESCE(m.initial_upload_stock, 0) as mat_initial_stock,
+                       COALESCE(m.total_inbound, 0) as mat_total_inbound,
+                       COALESCE(m.total_outbound, 0) as mat_total_outbound
+                FROM material_batches mb
+                LEFT JOIN materials m ON mb.material_id = m.id
+                WHERE UPPER(mb.location) NOT LIKE '%VAS%' {$matWhereAndMb}
+                ORDER BY mb.material_id ASC, (CASE WHEN mb.location IS NULL OR mb.location = '' OR mb.location = 'Pusat' OR mb.location = '-' THEN 1 ELSE 0 END), mb.location ASC, (CASE WHEN mb.exp_date IS NULL OR mb.exp_date = '' THEN 1 ELSE 0 END), mb.exp_date ASC, mb.id ASC
             ";
             $stmtBatches = $pdo->query($batchSql);
             $batches = $stmtBatches ? $stmtBatches->fetchAll(PDO::FETCH_ASSOC) : [];
+
+            // Pre-count batches per material
+            $matBatchCounts = [];
+            foreach ($batches as $bRow) {
+                $mIdRow = (int)$bRow['material_id'];
+                $matBatchCounts[$mIdRow] = ($matBatchCounts[$mIdRow] ?? 0) + 1;
+            }
 
             $resultMap = [];
             foreach ($batches as $b) {
@@ -471,6 +498,7 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 $loc = strtoupper(trim($b['location'] ?? ''));
                 $key = "{$mid}|{$bNo}|{$loc}";
                 $keyNoLoc = "{$mid}|{$bNo}|";
+                $isSingleBatch = ($matBatchCounts[$mid] ?? 0) <= 1;
 
                 $inbound = ($inbMap[$key] ?? 0) + ($inbMap[$keyNoLoc] ?? 0) + ($vasInToWhMap[$key] ?? 0);
                 if ($inbound == 0 && !empty($bNo)) {
@@ -479,6 +507,15 @@ if (!function_exists('getBatchMovementBreakdown')) {
                         if (str_starts_with($ik, $prefixInb)) {
                             $inbound += $iq;
                         }
+                    }
+                }
+                if ($inbound == 0) {
+                    if ($isSingleBatch && !empty($matTotalInb[$mid])) {
+                        $inbound = (float)$matTotalInb[$mid];
+                    } elseif (!empty($matEmptyBatchInb[$mid])) {
+                        $inbound = (float)$matEmptyBatchInb[$mid];
+                    } elseif ($isSingleBatch && (float)($b['mat_total_inbound'] ?? 0) > 0) {
+                        $inbound = (float)$b['mat_total_inbound'];
                     }
                 }
 
@@ -500,12 +537,20 @@ if (!function_exists('getBatchMovementBreakdown')) {
                         }
                     }
                 }
+                if ($outbound == 0) {
+                    if ($isSingleBatch && !empty($matTotalOut[$mid])) {
+                        $outbound = (float)$matTotalOut[$mid];
+                    } elseif (!empty($matEmptyBatchOut[$mid])) {
+                        $outbound = (float)$matEmptyBatchOut[$mid];
+                    } elseif ($isSingleBatch && (float)($b['mat_total_outbound'] ?? 0) > 0) {
+                        $outbound = (float)$b['mat_total_outbound'];
+                    }
+                }
 
                 $endingStock = max(0, (float)$b['qty']);
-                if ($endingStock == 0) {
-                    $initialStock = max(0, $inbound - $outbound > 0 ? $inbound - $outbound : 0);
-                } else {
-                    $initialStock = max(0, $endingStock - $inbound + $outbound);
+                $initialStock = max(0, $endingStock - $inbound + $outbound);
+                if ($isSingleBatch && $initialStock <= 0 && (float)($b['mat_initial_stock'] ?? 0) > 0 && ($endingStock > 0 || ($inbound == 0 && $outbound == 0))) {
+                    $initialStock = (float)$b['mat_initial_stock'];
                 }
                 $vasQty = max(0, (float)($vasStockMap["{$mid}|{$bNo}"] ?? 0));
 
