@@ -1143,7 +1143,12 @@ class Database {
                         $stmtBatchSum->execute([$matId]);
                         $bSum = $stmtBatchSum->fetchColumn();
                         if ($bSum !== false && $bSum !== null) {
-                            $runningStock = (float)$bSum;
+                            $bSumFloat = (float)$bSum;
+                            if ($runningStock <= 0) {
+                                $pdo->prepare("UPDATE material_batches SET qty = 0 WHERE material_id = ?")->execute([$matId]);
+                            } elseif ($bSumFloat < $runningStock && $bSumFloat > 0) {
+                                $runningStock = $bSumFloat;
+                            }
                         }
                     }
 

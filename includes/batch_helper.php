@@ -272,11 +272,71 @@ if (!function_exists('recordBatchTransfer')) {
     }
 }
 
+if (!function_exists('syncMaterialBatchesToStock')) {
+    function syncMaterialBatchesToStock(PDO $pdo, int $materialId, float $targetStock): void {
+        if ($materialId <= 0) return;
+        $targetStock = max(0, $targetStock);
+        $now = date('Y-m-d H:i:s');
+
+        $stmt = $pdo->prepare("SELECT COALESCE(SUM(qty), 0) as total_qty FROM material_batches WHERE material_id = ?");
+        $stmt->execute([$materialId]);
+        $currentBatchTotal = (float)$stmt->fetchColumn();
+
+        if ($targetStock <= 0) {
+            if ($currentBatchTotal > 0) {
+                $up = $pdo->prepare("UPDATE material_batches SET qty = 0, updated_at = ? WHERE material_id = ?");
+                $up->execute([$now, $materialId]);
+                recalcMaterialBatchStock($pdo, $materialId);
+            }
+            return;
+        }
+
+        if ($currentBatchTotal > $targetStock) {
+            $excess = $currentBatchTotal - $targetStock;
+            $stmtBatches = $pdo->prepare("
+                SELECT id, qty FROM material_batches 
+                WHERE material_id = ? AND qty > 0 
+                ORDER BY (CASE WHEN exp_date IS NULL OR exp_date = '' THEN '9999-12-31' ELSE exp_date END) ASC, id ASC
+            ");
+            $stmtBatches->execute([$materialId]);
+            $remainingDeduct = $excess;
+            while ($b = $stmtBatches->fetch(PDO::FETCH_ASSOC)) {
+                if ($remainingDeduct <= 0) break;
+                $bQty = (float)$b['qty'];
+                $deduct = min($bQty, $remainingDeduct);
+                $newQty = max(0, $bQty - $deduct);
+                $up = $pdo->prepare("UPDATE material_batches SET qty = ?, updated_at = ? WHERE id = ?");
+                $up->execute([$newQty, $now, $b['id']]);
+                $remainingDeduct -= $deduct;
+            }
+            recalcMaterialBatchStock($pdo, $materialId);
+        }
+    }
+}
+
 if (!function_exists('getBatchMovementBreakdown')) {
     function getBatchMovementBreakdown(PDO $pdo, ?int $targetMaterialId = null): array {
         try {
             $matWhere = $targetMaterialId && $targetMaterialId > 0 ? "WHERE material_id = " . (int)$targetMaterialId : "";
             $matWhereAnd = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
+
+            // Auto-sync desynced batches if material current_stock is lower than batch sum (or zero)
+            $syncSql = "
+                SELECT m.id, m.current_stock, COALESCE(SUM(mb.qty), 0) as batch_sum
+                FROM materials m
+                JOIN material_batches mb ON m.id = mb.material_id
+                {$matWhere}
+                GROUP BY m.id, m.current_stock
+                HAVING batch_sum > m.current_stock OR m.current_stock <= 0
+            ";
+            $stmtDesync = $pdo->query($syncSql);
+            if ($stmtDesync) {
+                while ($dRow = $stmtDesync->fetch(PDO::FETCH_ASSOC)) {
+                    $dMid = (int)$dRow['id'];
+                    $dStock = (float)$dRow['current_stock'];
+                    syncMaterialBatchesToStock($pdo, $dMid, $dStock);
+                }
+            }
 
             // Inbounds map
             $inbMap = [];
@@ -298,15 +358,30 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 }
             }
 
-            // Outbounds map
+            // Outbounds map (outbound_transactions + completed picking tasks)
             $outMap = [];
+            $tasksWhere = $targetMaterialId && $targetMaterialId > 0 ? "AND material_id = " . (int)$targetMaterialId : "";
             $stmtOut = $pdo->query("
                 SELECT material_id, 
                        COALESCE(batch_no, '') as batch_no, 
                        COALESCE(location, '') as location, 
                        SUM(qty) as total_qty
-                FROM outbound_transactions
-                {$matWhere}
+                FROM (
+                    SELECT material_id, 
+                           COALESCE(batch_no, '') as batch_no, 
+                           COALESCE(location, '') as location, 
+                           qty 
+                    FROM outbound_transactions
+                    {$matWhere}
+                    UNION ALL
+                    SELECT material_id, 
+                           COALESCE(batch_no, '') as batch_no, 
+                           COALESCE(from_location, '') as location, 
+                           actual_qty as qty 
+                    FROM tasks 
+                    WHERE status = 'COMPLETED' AND (task_type = 'PICKING' OR task_type IS NULL OR task_type = '')
+                    {$tasksWhere}
+                ) combined_out
                 GROUP BY material_id, COALESCE(batch_no, ''), COALESCE(location, '')
             ");
             if ($stmtOut) {
@@ -398,7 +473,24 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 $keyNoLoc = "{$mid}|{$bNo}|";
 
                 $inbound = ($inbMap[$key] ?? 0) + ($inbMap[$keyNoLoc] ?? 0) + ($vasInToWhMap[$key] ?? 0);
+                if ($inbound == 0 && !empty($bNo)) {
+                    $prefixInb = "{$mid}|{$bNo}|";
+                    foreach ($inbMap as $ik => $iq) {
+                        if (str_starts_with($ik, $prefixInb)) {
+                            $inbound += $iq;
+                        }
+                    }
+                }
+
                 $outbound = ($outMap[$key] ?? 0) + ($outMap[$keyNoLoc] ?? 0) + ($vasOutFromWhMap[$key] ?? 0);
+                if ($outbound == 0 && !empty($bNo)) {
+                    $prefixOut = "{$mid}|{$bNo}|";
+                    foreach ($outMap as $ok => $oq) {
+                        if (str_starts_with($ok, $prefixOut)) {
+                            $outbound += $oq;
+                        }
+                    }
+                }
 
                 if ($outbound == 0) {
                     $vasKeyBatchOnly = "{$mid}|{$bNo}";
@@ -410,7 +502,11 @@ if (!function_exists('getBatchMovementBreakdown')) {
                 }
 
                 $endingStock = max(0, (float)$b['qty']);
-                $initialStock = max(0, $endingStock - $inbound + $outbound);
+                if ($endingStock == 0) {
+                    $initialStock = max(0, $inbound - $outbound > 0 ? $inbound - $outbound : 0);
+                } else {
+                    $initialStock = max(0, $endingStock - $inbound + $outbound);
+                }
                 $vasQty = max(0, (float)($vasStockMap["{$mid}|{$bNo}"] ?? 0));
 
                 $resultMap[$mid][] = [

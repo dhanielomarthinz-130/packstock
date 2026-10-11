@@ -1376,6 +1376,12 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmtUpdateMat = $pdo->prepare("UPDATE materials SET current_stock = ? WHERE id = ?");
         $stmtUpdateMat->execute([$stockAfter, $materialId]);
 
+        // Decrement from material_batches (FEFO or specific batch)
+        recordBatchOutbound($pdo, $materialId, (int)($task['batch_id'] ?? 0), $task['batch_no'] ?? null, $task['from_location'] ?? null, $actualQty);
+        if ($stockAfter <= 0 && function_exists('syncMaterialBatchesToStock')) {
+            syncMaterialBatchesToStock($pdo, $materialId, 0);
+        }
+
         // Write Stock Mutation
         $stmtMut = $pdo->prepare("
             INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)

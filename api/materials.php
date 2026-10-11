@@ -701,19 +701,35 @@ if ($action === 'list') {
             }
 
             // SINKRONISASI STOK GIMMICK & BATCH:
-            // Jika material adalah GIMMICK atau stok master <= 0 sementara batch fisik riil > 0,
-            // gunakan total stok batch fisik dan lokasi rak batch agar seragam di semua halaman!
-            if ($mat['item_type'] === 'GIMMICK' || ($mat['current_stock'] <= 0 && $batchStockTotal > 0)) {
-                $mat['current_stock'] = $batchStockTotal;
+            // Pastikan batch fisik sinkron dengan stok aktual ledger (jika stok ledger sudah 0, batch fisik dinolkan):
+            if ($mat['current_stock'] <= 0) {
+                if ($batchStockTotal > 0) {
+                    if (function_exists('syncMaterialBatchesToStock')) {
+                        syncMaterialBatchesToStock($pdo, $mid, 0);
+                    }
+                    $batchStockTotal = 0;
+                    if (isset($batchBreakdown[$mid])) {
+                        foreach ($batchBreakdown[$mid] as &$bb) {
+                            $bb['qty'] = 0;
+                            $bb['ending_stock'] = 0;
+                        }
+                        unset($bb);
+                        $mat['batches_json'] = json_encode($batchBreakdown[$mid]);
+                    }
+                }
+            } else {
+                if ($batchStockTotal > $mat['current_stock']) {
+                    if (function_exists('syncMaterialBatchesToStock')) {
+                        syncMaterialBatchesToStock($pdo, $mid, (float)$mat['current_stock']);
+                    }
+                    $batchStockTotal = (float)$mat['current_stock'];
+                } elseif ($batchStockTotal > 0 && $mat['item_type'] === 'GIMMICK') {
+                    $mat['current_stock'] = $batchStockTotal;
+                }
+
                 if (!empty($mat['batch_locations'])) {
                     $mat['rack_location'] = $mat['batch_locations'];
                 }
-
-                // Auto-heal data di tabel materials jika desync atau minus di database
-                try {
-                    $upMat = $pdo->prepare("UPDATE materials SET current_stock = ?, rack_location = COALESCE(NULLIF(?, ''), rack_location) WHERE id = ?");
-                    $upMat->execute([$batchStockTotal, $mat['batch_locations'] ?: null, $mid]);
-                } catch (Throwable $ignoreDb) {}
             }
         } else {
             $mat['batches_json'] = '[]';
