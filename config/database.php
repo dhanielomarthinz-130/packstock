@@ -111,7 +111,7 @@ class Database {
 
         if ($wantsJson) {
             if (!headers_sent()) {
-                http_response_code(503);
+                http_response_code(200);
                 header('Content-Type: application/json; charset=utf-8');
             }
             echo json_encode([
