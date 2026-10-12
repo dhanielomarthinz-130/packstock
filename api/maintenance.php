@@ -565,6 +565,25 @@ if ($action === 'clean_all_transactions' && $_SERVER['REQUEST_METHOD'] === 'POST
 
         if ($resetStockZero) {
             $pdo->exec("UPDATE materials SET current_stock = 0;");
+        } else {
+            // Rekam saldo awal mutasi (INITIAL_IMPORT) agar kartu stok & riwayat material sinkron dari stok berjalan
+            try {
+                $now = date('Y-m-d H:i:s');
+                $stmtInsertMut = $pdo->prepare("
+                    INSERT INTO stock_mutations (
+                        material_id, type, qty_change, stock_before, stock_after, 
+                        reference_no, notes, user_id, created_at
+                    ) VALUES (
+                        ?, 'INITIAL_IMPORT', ?, 0, ?, 
+                        'SALDO-AWAL-CUTOFF', 'Saldo Awal Cut-Off Stok Berjalan', NULL, ?
+                    )
+                ");
+                $matRows = $pdo->query("SELECT id, current_stock FROM materials")->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($matRows as $mr) {
+                    $stock = (float)($mr['current_stock'] ?? 0);
+                    $stmtInsertMut->execute([$mr['id'], $stock, $stock, $now]);
+                }
+            } catch (Throwable $ignored) {}
         }
 
         setForeignKeyChecks($pdo, true, $isSqlite);
