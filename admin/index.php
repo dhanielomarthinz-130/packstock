@@ -4638,6 +4638,10 @@ require_once __DIR__ . '/../includes/header.php';
               <button type="button" onclick="toggleAllPermissions(false)" class="px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors">
                 Nonaktifkan Semua (OFF)
               </button>
+              <button type="button" onclick="savePermissions()" class="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>Simpan Hak Akses</span>
+              </button>
             </div>
           </div>
 

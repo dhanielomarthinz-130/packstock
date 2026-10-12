@@ -34,10 +34,10 @@ async function ensureMaterialsLoaded(forceRefresh = false) {
 }
 
 // Initialize Admin App
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initSidebarState();
   initSidebarSections();
-  applyMyPermissions();
+  await applyMyPermissions();
   initPremiumPickers();
   handleUrlHashNavigation(false);
 
@@ -297,6 +297,23 @@ function historyGoBack() {
 
 // Tab Navigation with URL Hash support
 function switchAdminTab(tabName, updateUrl = true) {
+  // Enforce access control if permissions are loaded and user is not super admin
+  if (window.userPermissions && window.isSuperAdmin !== true) {
+    let checkKey = tabName;
+    if (tabName === 'history') checkKey = 'inventory';
+    if (window.userPermissions[checkKey] === false) {
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast('Akses menu ini dinonaktifkan untuk akun Anda.', 'warning', 'Akses Dibatasi');
+      }
+      const priorityTabs = ['dashboard', 'consumable_requests', 'inventory', 'gimmick', 'inbound', 'outbound', 'vas', 'stock_transfer', 'location_transfer', 'dynamic_count', 'opname', 'adjust', 'counting_progress', 'rack_map', 'reorder_alerts', 'handover', 'mutations_kemas', 'mutations_gimmick', 'mutations', 'users', 'permissions'];
+      const fallbackTab = priorityTabs.find(k => window.userPermissions[k] === true) || 'dashboard';
+      if (fallbackTab !== tabName) {
+        switchAdminTab(fallbackTab, true);
+        return;
+      }
+    }
+  }
+
   currentAdminTab = tabName;
 
   // Update browser URL (e.g. /admin/index.php#inbound)
@@ -6721,6 +6738,9 @@ async function applyMyPermissions() {
   const res = await App.fetchJson('../api/permissions.php?action=get_my_permissions');
   if (res.success && res.permissions) {
     const p = res.permissions;
+    window.userPermissions = p;
+    window.isSuperAdmin = !!res.is_super_admin;
+
     // Map menu keys to sidebar nav IDs
     const menuNavMap = {
       dashboard: 'nav-dashboard',
@@ -6760,15 +6780,24 @@ async function applyMyPermissions() {
           return;
         }
         let permKey = key;
-        if (key === 'counting_detail') permKey = 'opname';
-        if (key === 'dynamic_counting_detail') permKey = 'dynamic_count';
-        if (p[permKey] === false || ((permKey === 'permissions' || permKey === 'maintenance') && !res.is_super_admin)) {
+        const isAllowed = res.is_super_admin || (p[permKey] === true || (p[permKey] !== false && permKey !== 'permissions' && permKey !== 'maintenance'));
+        if (!isAllowed || (permKey === 'maintenance' && !res.is_super_admin) || (permKey === 'permissions' && !res.is_super_admin && p.permissions !== true)) {
           el.classList.add('hidden');
         } else {
           el.classList.remove('hidden');
         }
       }
     });
+
+    // Akses Lapangan (mobile container)
+    const fieldContainer = document.getElementById('sidebarFieldAccessContainer');
+    if (fieldContainer) {
+      if (!res.is_super_admin && p.field_access === false) {
+        fieldContainer.classList.add('hidden');
+      } else {
+        fieldContainer.classList.remove('hidden');
+      }
+    }
 
     // Hide empty sections automatically
     document.querySelectorAll('.sidebar-section').forEach(section => {
@@ -6780,6 +6809,18 @@ async function applyMyPermissions() {
         section.classList.remove('hidden');
       }
     });
+
+    // Check if current tab is restricted for this user, auto redirect to first allowed
+    if (!res.is_super_admin && typeof currentAdminTab !== 'undefined' && currentAdminTab) {
+      let checkTab = currentAdminTab;
+      if (p[checkTab] === false) {
+        const priorityTabs = ['dashboard', 'consumable_requests', 'inventory', 'gimmick', 'inbound', 'outbound', 'vas', 'stock_transfer', 'location_transfer', 'dynamic_count', 'opname', 'adjust', 'counting_progress', 'rack_map', 'reorder_alerts', 'handover', 'mutations_kemas', 'mutations_gimmick', 'mutations', 'users', 'permissions'];
+        const firstAllowed = priorityTabs.find(k => p[k] === true) || 'dashboard';
+        if (firstAllowed && firstAllowed !== currentAdminTab) {
+          switchAdminTab(firstAllowed, true);
+        }
+      }
+    }
   }
 }
 
@@ -6795,11 +6836,15 @@ async function loadPermissionsModule() {
     // Populate user selector dropdown
     const userSel = document.getElementById('permUserSelector');
     if (userSel) {
+      const prevVal = userSel.value;
       userSel.innerHTML = permUserData.map(u => `
         <option value="${u.id}">
           👤 ${escapeHtml(u.name)} (@${escapeHtml(u.username)}) - Role: ${u.role}${u.is_super_admin ? ' [SUPER ADMIN]' : ''}${u.has_custom_override ? ' ⭐' : ''}
         </option>
       `).join('');
+      if (prevVal && permUserData.some(u => String(u.id) === String(prevVal))) {
+        userSel.value = prevVal;
+      }
     }
 
     loadPermissionMatrix();
