@@ -324,9 +324,9 @@ const App = {
         }
       });
 
-      if (response.status === 401) {
+      if (response.status === 401 || response.status === 429) {
         const isLoginPage = window.location.pathname.endsWith('/login') || window.location.pathname.endsWith('/login.php') || window.location.pathname.endsWith('/packstock/') || window.location.pathname.endsWith('/packstock');
-        if (!isLoginPage) {
+        if (!isLoginPage && response.status === 401) {
           App.toast('Sesi login telah berakhir. Mengalihkan ke login...', 'warning');
           const isSubdir = window.location.pathname.includes('/admin') || window.location.pathname.includes('/operator');
           const loginTarget = isSubdir ? '../login' : 'login';
@@ -336,7 +336,7 @@ const App = {
           const json = await response.json();
           return json;
         } catch (e) {
-          return { success: false, message: 'Unauthorized / Sesi Berakhir' };
+          return { success: false, message: response.status === 429 ? 'Terlalu banyak percobaan gagal. Silakan tunggu beberapa menit.' : 'Unauthorized / Sesi Berakhir' };
         }
       }
 

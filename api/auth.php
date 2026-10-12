@@ -19,11 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
 
     $res = Auth::login($username, $password, $shift);
 
-    // Login gagal harus terbaca sebagai gagal oleh klien, proxy, dan log — bukan HTTP 200.
-    if (empty($res['success'])) {
-        http_response_code(!empty($res['locked']) ? 429 : 401);
-    }
-
+    // Kembalikan JSON langsung agar reverse proxy (InfinityFree) tidak memotong pesan kegagalan / throttling
     echo json_encode($res);
     exit;
 }
