@@ -3587,7 +3587,7 @@ async function loadUsers() {
   if (tbody) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="p-8 text-center text-slate-400">
+        <td colspan="7" class="p-8 text-center text-slate-400">
           <span class="material-symbols-outlined text-[28px] animate-spin text-emerald-600">progress_activity</span>
           <p class="text-xs font-semibold text-slate-600 mt-2">Memuat daftar pengguna...</p>
         </td>
@@ -3597,11 +3597,13 @@ async function loadUsers() {
 
   const search = document.getElementById('userSearchInput')?.value || '';
   const role = document.getElementById('userRoleFilter')?.value || 'all';
+  const status = document.getElementById('userStatusFilter')?.value || 'all';
 
   const query = new URLSearchParams({
     action: 'list',
     search,
-    role
+    role,
+    status
   });
 
   const res = await App.fetchJson(`../api/users.php?${query.toString()}`);
@@ -3612,7 +3614,7 @@ async function loadUsers() {
     if (tbody) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="6" class="p-8 text-center text-rose-500 text-xs font-medium">
+          <td colspan="7" class="p-8 text-center text-rose-500 text-xs font-medium">
             <p>Gagal memuat daftar pengguna.</p>
           </td>
         </tr>
@@ -3628,7 +3630,7 @@ function renderUsersTable(users) {
   if (users.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="p-8 text-center text-slate-400">
+        <td colspan="7" class="p-8 text-center text-slate-400">
           <span class="material-symbols-outlined text-[32px] text-slate-300 mb-1">group</span>
           <p class="text-xs font-medium">Tidak ada pengguna yang sesuai.</p>
         </td>
@@ -3639,6 +3641,8 @@ function renderUsersTable(users) {
 
   tbody.innerHTML = users.map(u => {
     const isSuperAdmin = u.username.toLowerCase() === 'daniel';
+    const isActive = (u.is_active === undefined || u.is_active === null) ? true : (parseInt(u.is_active) === 1);
+
     let roleBadge = '';
     if (u.role === 'superadmin' || isSuperAdmin) {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-100 text-purple-900 border border-purple-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">verified_user</span>Super Admin</span>';
@@ -3681,22 +3685,37 @@ function renderUsersTable(users) {
       }
     }
 
+    // Status Badge
+    const statusBadge = isActive
+      ? '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>Aktif</span>'
+      : '<span class="px-2.5 py-1 rounded-full text-[10.5px] font-black bg-rose-100 text-rose-800 border border-rose-300 inline-flex items-center gap-1.5 shadow-2xs"><span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>Nonaktif</span>';
+
     return `
-      <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+      <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors ${!isActive ? 'bg-slate-50/70 text-slate-500' : ''}">
         <td class="p-3 font-mono font-bold text-slate-900 text-xs">
           ${escapeHtml(u.username)}
           ${isSuperAdmin ? '<span class="ml-1 px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 font-bold text-[9px] border border-purple-300">MASTER</span>' : ''}
         </td>
-        <td class="p-3 font-semibold text-slate-800 text-xs">${escapeHtml(u.name)}</td>
+        <td class="p-3 font-semibold ${isActive ? 'text-slate-800' : 'text-slate-500 line-through'} text-xs">${escapeHtml(u.name)}</td>
         <td class="p-3">${roleBadge}</td>
         <td class="p-3">${divisionDisplay}</td>
-        <td class="p-3 text-xs text-slate-400">${App.formatDate(u.created_at)}</td>
+        <td class="p-3 text-center whitespace-nowrap">${statusBadge}</td>
+        <td class="p-3 text-xs text-slate-400 whitespace-nowrap">${App.formatDate(u.created_at)}</td>
         <td class="p-3 text-right space-x-1 whitespace-nowrap">
-          <button onclick="openEditUserModal(${u.id})" title="Edit User" class="p-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-200 transition-colors cursor-pointer">
+          <button onclick="openEditUserModal(${u.id})" title="Edit Data Pengguna" class="p-1 px-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs border border-slate-200 transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">edit</span>
           </button>
           ${!isSuperAdmin ? `
-            <button onclick="deleteUser(${u.id}, '${escapeHtml(u.name)}')" title="Hapus User" class="p-1 px-1.5 rounded bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 text-xs border border-rose-200 transition-colors cursor-pointer">
+            ${isActive ? `
+              <button onclick="toggleUserStatus(${u.id}, '${escapeHtml(u.name)}', 0)" title="Nonaktifkan Akun Pengguna" class="p-1 px-1.5 rounded bg-amber-50 hover:bg-amber-600 hover:text-white text-amber-800 text-xs border border-amber-300 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">person_off</span>
+              </button>
+            ` : `
+              <button onclick="toggleUserStatus(${u.id}, '${escapeHtml(u.name)}', 1)" title="Aktifkan Kembali Akun Pengguna" class="p-1 px-1.5 rounded bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-800 text-xs border border-emerald-300 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">person_check</span>
+              </button>
+            `}
+            <button onclick="deleteUser(${u.id}, '${escapeHtml(u.name)}')" title="Hapus User Permanen" class="p-1 px-1.5 rounded bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 text-xs border border-rose-200 transition-colors cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">delete</span>
             </button>
           ` : ''}
@@ -3710,6 +3729,10 @@ function openAddUserModal() {
   document.getElementById('modalUserTitle').innerText = 'Tambah Pengguna Baru';
   document.getElementById('userIdInput').value = '';
   document.getElementById('formUser').reset();
+
+  // Status default is active
+  const statusSel = document.getElementById('userIsActiveSelect');
+  if (statusSel) statusSel.value = '1';
 
   // Password is required for new user
   document.getElementById('userPasswordInput').required = true;
@@ -3728,6 +3751,11 @@ async function openEditUserModal(id) {
     document.getElementById('userUsernameInput').value = u.username;
     document.getElementById('userNameInput').value = u.name;
     document.getElementById('userRoleSelect').value = u.role;
+
+    const statusSel = document.getElementById('userIsActiveSelect');
+    if (statusSel) {
+      statusSel.value = String(u.is_active !== undefined ? u.is_active : 1);
+    }
 
     const shiftSel = document.getElementById('userShiftInput');
     if (shiftSel) {
@@ -3760,13 +3788,14 @@ async function handleUserFormSubmit(e) {
   const role = document.getElementById('userRoleSelect').value;
   const shift = document.getElementById('userShiftInput').value.trim();
   const password = document.getElementById('userPasswordInput').value.trim();
+  const isActive = parseInt(document.getElementById('userIsActiveSelect')?.value || '1');
 
   const isEdit = id && parseInt(id) > 0;
   const endpoint = isEdit ? '../api/users.php?action=update' : '../api/users.php?action=create';
 
   const res = await App.fetchJson(endpoint, {
     method: 'POST',
-    body: JSON.stringify({ id, username, name, role, shift, password })
+    body: JSON.stringify({ id, username, name, role, shift, password, is_active: isActive })
   });
 
   if (res.success) {
@@ -3779,14 +3808,40 @@ async function handleUserFormSubmit(e) {
   }
 }
 
+async function toggleUserStatus(id, name, targetStatus) {
+  const isDeactivating = parseInt(targetStatus) === 0;
+  const confirmMsg = isDeactivating
+    ? `Apakah Anda yakin ingin MENONAKTIFKAN akun pengguna "${name}"?\n\n- Pengguna TIDAK DAPAT LOGIN ke sistem.\n- Akun ini tidak akan muncul di daftar penugasan operator.\n- Akun dapat diaktifkan kembali sewaktu-waktu oleh Admin.`
+    : `Apakah Anda yakin ingin MENGAKTIFKAN KEMBALI akun pengguna "${name}"?\n\nPengguna akan dapat kembali login dan menerima penugasan tugas operator.`;
+
+  if (!confirm(confirmMsg)) return;
+
+  const res = await App.fetchJson('../api/users.php?action=toggle_status', {
+    method: 'POST',
+    body: JSON.stringify({ id, is_active: targetStatus })
+  });
+
+  if (res.success) {
+    App.toast(res.message, 'success', isDeactivating ? 'Akun Dinonaktifkan' : 'Akun Diaktifkan');
+    loadUsers();
+    loadOperators();
+  } else {
+    App.toast(res.message || 'Gagal mengubah status akun', 'error');
+  }
+}
+
 async function deleteUser(id, name) {
+  if (!confirm(`Apakah Anda yakin ingin MENGHAPUS akun pengguna "${name}"?\n\nPERINGATAN: Tindakan ini permanen. Jika Anda hanya ingin mencabut akses login sementara, gunakan tombol "Nonaktifkan Akun".`)) {
+    return;
+  }
+
   const res = await App.fetchJson('../api/users.php?action=delete', {
     method: 'POST',
     body: JSON.stringify({ id })
   });
 
   if (res.success) {
-    App.toast(res.message, 'success');
+    App.toast(res.message, 'success', 'User Dihapus');
     loadUsers();
     loadOperators();
   } else {

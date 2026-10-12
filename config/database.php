@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 11;
+    private const CURRENT_SCHEMA_VERSION = 12;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -297,6 +297,7 @@ class Database {
                 `name` VARCHAR(100) NOT NULL,
                 `role` VARCHAR(50) NOT NULL DEFAULT 'operator',
                 `shift` VARCHAR(50) DEFAULT 'Shift A (Pagi)',
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         ");
@@ -647,7 +648,8 @@ class Database {
             "ALTER TABLE `tasks` ADD COLUMN `batch_id` INT NULL",
             "ALTER TABLE `tasks` ADD COLUMN `batch_no` VARCHAR(100) NULL",
             "ALTER TABLE `tasks` ADD COLUMN `exp_date` DATE NULL",
-            "ALTER TABLE `tasks` ADD COLUMN `reference_no` VARCHAR(100) NULL"
+            "ALTER TABLE `tasks` ADD COLUMN `reference_no` VARCHAR(100) NULL",
+            "ALTER TABLE `users` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1"
         ];
 
         foreach ($migrations as $mSql) {
@@ -732,6 +734,7 @@ class Database {
                 name TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'operator',
                 shift TEXT DEFAULT 'Shift A (Pagi)',
+                is_active INTEGER NOT NULL DEFAULT 1,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS materials (
@@ -979,7 +982,8 @@ class Database {
             "ALTER TABLE tasks ADD COLUMN batch_id INTEGER NULL",
             "ALTER TABLE tasks ADD COLUMN batch_no TEXT NULL",
             "ALTER TABLE tasks ADD COLUMN exp_date TEXT NULL",
-            "ALTER TABLE tasks ADD COLUMN reference_no TEXT NULL"
+            "ALTER TABLE tasks ADD COLUMN reference_no TEXT NULL",
+            "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
         ];
 
         foreach ($sqliteMigrations as $sql) {

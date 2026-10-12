@@ -409,6 +409,13 @@ class Auth {
             return ['success' => false, 'message' => $pesanGagal];
         }
 
+        // Blokir akun yang dinonaktifkan oleh Administrator
+        if (isset($user['is_active']) && (int)$user['is_active'] === 0) {
+            self::recordLoginAttempt($pdo, $trimmedUser, false);
+            self::audit('LOGIN_BLOCKED', $trimmedUser, 'Percobaan login ke akun nonaktif', ['id' => $user['id'], 'username' => $trimmedUser]);
+            return ['success' => false, 'message' => 'Akun Anda sedang dinonaktifkan oleh Administrator. Silakan hubungi admin gudang.'];
+        }
+
         // Password harus cocok persis. Varian huruf besar/kecil TIDAK diterima:
         // fallback strtolower()/ucfirst() memperbesar ruang tebakan penyerang tanpa alasan sah.
         $isMatch = password_verify($trimmedPass, $user['password']);

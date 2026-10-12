@@ -4545,7 +4545,7 @@ require_once __DIR__ . '/../includes/header.php';
                 class="w-full h-[38px] pl-9 pr-3 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-900 outline-none focus:border-emerald-600 focus:bg-white">
             </div>
 
-            <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium text-slate-700 outline-none">
+            <select id="userRoleFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600">
               <option value="all">Semua Role</option>
               <?php if (Auth::isSuperAdmin()): ?>
               <option value="teknisi">Teknisi</option>
@@ -4553,6 +4553,12 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="admin">Admin</option>
               <option value="operator_inventory">Operator Inventory</option>
               <option value="operator_fulfillment">Operator Fulfillment</option>
+            </select>
+
+            <select id="userStatusFilter" onchange="loadUsers()" class="h-[38px] px-2.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 outline-none focus:border-emerald-600" title="Filter Status Akun">
+              <option value="all">Semua Status</option>
+              <option value="1">Aktif</option>
+              <option value="0">Nonaktif</option>
             </select>
           </div>
 
@@ -4573,6 +4579,7 @@ require_once __DIR__ . '/../includes/header.php';
                   <th class="p-3 border-r border-white/10">Nama Lengkap</th>
                   <th class="p-3 border-r border-white/10">Role Pengguna</th>
                   <th class="p-3 border-r border-white/10">Divisi / Shift Kerja</th>
+                  <th class="p-3 border-r border-white/10 text-center whitespace-nowrap">Status Akun</th>
                   <th class="p-3 border-r border-white/10">Tanggal Dibuat</th>
                   <th class="p-3 text-right">Aksi</th>
                 </tr>
@@ -5978,6 +5985,14 @@ require_once __DIR__ . '/../includes/header.php';
           <option value="Teknisi & Maintenance">Teknisi & Maintenance</option>
           <option value="Purchasing & PPIC">Purchasing & PPIC</option>
           <option value="Head Office / Manajemen">Head Office / Manajemen</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block font-semibold text-slate-700 mb-1">Status Akun</label>
+        <select id="userIsActiveSelect" class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium text-xs">
+          <option value="1">Aktif (Dapat Login & Menerima Tugas)</option>
+          <option value="0">Nonaktif (Akses Login Diblokir)</option>
         </select>
       </div>
 

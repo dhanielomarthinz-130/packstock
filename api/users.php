@@ -7,9 +7,9 @@ Auth::requireLogin();
 $pdo = Database::getConnection();
 $action = $_GET['action'] ?? 'operators';
 
-// 1. GET OPERATORS LIST (For task dropdown)
+// 1. GET OPERATORS LIST (For task dropdown - only active operators)
 if ($action === 'operators') {
-    $stmt = $pdo->query("SELECT id, username, name, role, shift FROM users WHERE role IN ('operator', 'operator_inventory', 'operator_fulfillment') OR role LIKE 'operator%' ORDER BY name ASC");
+    $stmt = $pdo->query("SELECT id, username, name, role, shift FROM users WHERE (is_active = 1 OR is_active IS NULL) AND (role IN ('operator', 'operator_inventory', 'operator_fulfillment') OR role LIKE 'operator%') ORDER BY name ASC");
     $operators = $stmt->fetchAll();
     echo json_encode(['success' => true, 'data' => $operators]);
     exit;
@@ -20,8 +20,9 @@ if ($action === 'list') {
     Auth::requireAdmin();
     $search = trim($_GET['search'] ?? '');
     $roleFilter = trim($_GET['role'] ?? 'all');
+    $statusFilter = trim($_GET['status'] ?? 'all');
 
-    $query = "SELECT id, username, name, role, shift, created_at FROM users WHERE 1=1";
+    $query = "SELECT id, username, name, role, shift, COALESCE(is_active, 1) as is_active, created_at FROM users WHERE 1=1";
     $params = [];
 
     // Sembunyikan akun Super Admin secara penuh dari Administrator biasa
@@ -38,6 +39,12 @@ if ($action === 'list') {
     if (!empty($roleFilter) && $roleFilter !== 'all') {
         $query .= " AND role = ?";
         $params[] = $roleFilter;
+    }
+
+    if ($statusFilter === '1' || $statusFilter === 'active') {
+        $query .= " AND (is_active = 1 OR is_active IS NULL)";
+    } elseif ($statusFilter === '0' || $statusFilter === 'inactive') {
+        $query .= " AND is_active = 0";
     }
 
     $query .= " ORDER BY (role = 'superadmin') DESC, (role = 'admin') DESC, name ASC";
@@ -82,7 +89,7 @@ if ($action === 'list') {
 if ($action === 'get') {
     Auth::requireAdmin();
     $id = (int)($_GET['id'] ?? 0);
-    $stmt = $pdo->prepare("SELECT id, username, name, role, shift FROM users WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, username, name, role, shift, COALESCE(is_active, 1) as is_active FROM users WHERE id = ?");
     $stmt->execute([$id]);
     $u = $stmt->fetch();
 
@@ -148,13 +155,15 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+    $isActive = isset($input['is_active']) ? ((int)$input['is_active'] ? 1 : 0) : 1;
 
     try {
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, name, role, shift) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$username, $hashedPassword, $name, $role, $shift]);
+        $stmt = $pdo->prepare("INSERT INTO users (username, password, name, role, shift, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([$username, $hashedPassword, $name, $role, $shift, $isActive]);
         $newId = (int)$pdo->lastInsertId();
 
-        Auth::audit('USER_CREATE', $username, "Nama {$name}, role {$role}, shift {$shift}");
+        $statusStr = $isActive === 1 ? 'Aktif' : 'Nonaktif';
+        Auth::audit('USER_CREATE', $username, "Nama {$name}, role {$role}, shift {$shift}, status {$statusStr}");
 
         echo json_encode([
             'success' => true,
@@ -235,24 +244,112 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    $hasActiveField = array_key_exists('is_active', $input);
+    $isActive = $hasActiveField ? ((int)$input['is_active'] ? 1 : 0) : (int)($targetUser['is_active'] ?? 1);
+
+    if ($isActive === 0 && in_array($targetUser['role'], ['superadmin', 'teknisi'], true)) {
+        if (!Auth::isSuperAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang dapat menonaktifkan Super Admin!']);
+            exit;
+        }
+        $stmtSisa = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role IN ('superadmin', 'teknisi') AND (is_active = 1 OR is_active IS NULL) AND id != ?");
+        $stmtSisa->execute([$id]);
+        if ((int)$stmtSisa->fetchColumn() === 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Super Admin aktif terakhir tidak dapat dinonaktifkan!']);
+            exit;
+        }
+    }
+
     try {
         if (!empty($password)) {
             $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, password = ?, name = ?, role = ?, shift = ? WHERE id = ?");
-            $stmt->execute([$username, $hashedPassword, $name, $role, $shift, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, password = ?, name = ?, role = ?, shift = ?, is_active = ? WHERE id = ?");
+            $stmt->execute([$username, $hashedPassword, $name, $role, $shift, $isActive, $id]);
         } else {
-            $stmt = $pdo->prepare("UPDATE users SET username = ?, name = ?, role = ?, shift = ? WHERE id = ?");
-            $stmt->execute([$username, $name, $role, $shift, $id]);
+            $stmt = $pdo->prepare("UPDATE users SET username = ?, name = ?, role = ?, shift = ?, is_active = ? WHERE id = ?");
+            $stmt->execute([$username, $name, $role, $shift, $isActive, $id]);
         }
 
         $roleLama = $targetUser['role'] ?? '-';
-        $detail = "Role {$roleLama} → {$role}, shift {$shift}" . (!empty($password) ? ', password diganti' : '');
+        $statusStr = $isActive === 1 ? 'Aktif' : 'Nonaktif';
+        $detail = "Role {$roleLama} → {$role}, shift {$shift}, status {$statusStr}" . (!empty($password) ? ', password diganti' : '');
         Auth::audit('USER_UPDATE', $username, $detail);
 
         echo json_encode(['success' => true, 'message' => "Data user {$name} berhasil diperbarui!"]);
     } catch (Exception $e) {
         http_response_code(500);
         apiFail($e, 'Gagal memperbarui user.');
+    }
+    exit;
+}
+
+// 5.1 TOGGLE USER ACTIVE / INACTIVE STATUS (Admin only)
+if ($action === 'toggle_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    Auth::requireAdmin();
+    $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $id = (int)($input['id'] ?? 0);
+    $statusInput = isset($input['is_active']) ? (int)$input['is_active'] : null;
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'ID user tidak valid']);
+        exit;
+    }
+
+    if ($id === Auth::id()) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Anda tidak dapat menonaktifkan akun Anda sendiri yang sedang login!']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("SELECT id, username, name, role, COALESCE(is_active, 1) as is_active FROM users WHERE id = ?");
+    $stmt->execute([$id]);
+    $targetUser = $stmt->fetch();
+
+    if (!$targetUser) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Pengguna tidak ditemukan']);
+        exit;
+    }
+
+    $targetCurrentActive = (int)$targetUser['is_active'];
+    $newStatus = ($statusInput !== null) ? ($statusInput ? 1 : 0) : ($targetCurrentActive === 1 ? 0 : 1);
+
+    if (in_array($targetUser['role'], ['superadmin', 'teknisi'], true)) {
+        if (!Auth::isSuperAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang dapat mengubah status akun Super Admin!']);
+            exit;
+        }
+
+        if ($newStatus === 0) {
+            $stmtSisa = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role IN ('superadmin', 'teknisi') AND (is_active = 1 OR is_active IS NULL) AND id != ?");
+            $stmtSisa->execute([$id]);
+            if ((int)$stmtSisa->fetchColumn() === 0) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Super Admin aktif terakhir tidak dapat dinonaktifkan! Sistem memerlukan setidaknya satu Super Admin aktif.']);
+                exit;
+            }
+        }
+    }
+
+    try {
+        $stmtUpdate = $pdo->prepare("UPDATE users SET is_active = ? WHERE id = ?");
+        $stmtUpdate->execute([$newStatus, $id]);
+
+        $statusText = $newStatus === 1 ? 'diaktifkan kembali' : 'dinonaktifkan';
+        Auth::audit('USER_STATUS_CHANGE', $targetUser['username'], "Status diubah menjadi " . ($newStatus === 1 ? 'AKTIF' : 'NONAKTIF'));
+
+        echo json_encode([
+            'success' => true,
+            'message' => "Akun {$targetUser['name']} ({$targetUser['username']}) berhasil {$statusText}!",
+            'is_active' => $newStatus
+        ]);
+    } catch (Exception $e) {
+        http_response_code(500);
+        apiFail($e, 'Gagal memperbarui status user.');
     }
     exit;
 }
