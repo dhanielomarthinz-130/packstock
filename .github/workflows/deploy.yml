@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # Cegat berkas yang di-require tapi lupa di-commit. Tanpa langkah ini,
       # sebuah dependensi yang hilang baru ketahuan setelah produksi mati.
@@ -41,12 +43,15 @@ jobs:
         run: php scripts/unit_test.php
 
       - name: 📂 Sync files via FTP
+        id: ftp_deploy
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        continue-on-error: true
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: packstock.rf.gd/htdocs/
+          timeout: 180000
           exclude: |
             **/.git*
             **/.git*/**
@@ -65,5 +70,35 @@ jobs:
             **/Text.txt
             # Sumber build Tailwind. Yang dipakai aplikasi hanya hasilnya
             # (assets/css/tailwind.css), yang tetap ikut ter-deploy.
+            **/tailwind.config.js
+            **/assets/css/tailwind.input.css
+
+      - name: ⏳ Jeda sejenak sebelum mencoba ulang bila koneksi FTP terputus
+        if: steps.ftp_deploy.outcome == 'failure'
+        run: sleep 8
+
+      - name: 🔁 Coba ulang Sync via FTP jika terjadi gangguan jaringan sementara
+        if: steps.ftp_deploy.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: packstock.rf.gd/htdocs/
+          timeout: 180000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/uploads/**
+            **/config/env.php
+            **/config/*.sqlite*
+            **/config/backups/**
+            **/scratch/**
+            **/node_modules/**
+            **/README.md
+            **/*.xlsx
+            **/*.xls
+            **/*.csv
+            **/Text.txt
             **/tailwind.config.js
             **/assets/css/tailwind.input.css
