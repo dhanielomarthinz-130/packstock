@@ -4668,9 +4668,9 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
       </div>
 
-      <!-- ================= 9. TAB: MAINTENANCE & PEMBERSIHAN DATABASE (SUPER ADMIN ONLY) ================= -->
-      <?php if (Auth::isSuperAdmin()): ?>
+      <!-- ================= 9. TAB: MAINTENANCE & PEMBERSIHAN DATABASE ================= -->
       <div id="tab-maintenance" class="hidden space-y-5">
+      <?php if (Auth::isSuperAdmin()): ?>
         <!-- Section: Maintenance Mode Switcher -->
         <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -5264,9 +5264,27 @@ require_once __DIR__ . '/../includes/header.php';
             </div>
           </div>
         </div>
-
-      </div>
+      <?php else: ?>
+        <!-- Restricted Access Notice for Non-SuperAdmins -->
+        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-xl mx-auto my-12 space-y-4">
+          <div class="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto shadow-xs">
+            <span class="material-symbols-outlined text-[32px]">lock</span>
+          </div>
+          <div class="space-y-1.5">
+            <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">Akses Menu Khusus Super Admin / Teknisi</h3>
+            <p class="text-xs sm:text-sm text-slate-500 leading-relaxed">
+              Menu <strong>Maintenance & Pembersihan Database</strong> serta konfigurasi sistem hanya dapat diakses oleh akun dengan wewenang <strong>Super Admin (Teknisi)</strong>.
+            </p>
+          </div>
+          <div class="pt-2 flex justify-center gap-3">
+            <button type="button" onclick="switchAdminTab('dashboard')" class="px-5 py-2.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl text-xs font-bold transition-all shadow-xs inline-flex items-center gap-2 cursor-pointer active:scale-95">
+              <span class="material-symbols-outlined text-[18px]">space_dashboard</span>
+              <span>Kembali ke Dashboard</span>
+            </button>
+          </div>
+        </div>
       <?php endif; ?>
+      </div>
 
     </div>
   </main>

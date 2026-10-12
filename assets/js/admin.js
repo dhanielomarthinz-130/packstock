@@ -37,7 +37,11 @@ async function ensureMaterialsLoaded(forceRefresh = false) {
 document.addEventListener('DOMContentLoaded', async () => {
   initSidebarState();
   initSidebarSections();
-  await applyMyPermissions();
+  try {
+    await applyMyPermissions();
+  } catch (err) {
+    console.warn('Gagal memuat izin pengguna secara lengkap:', err);
+  }
   initPremiumPickers();
   handleUrlHashNavigation(false);
 
@@ -271,8 +275,12 @@ function handleUrlHashNavigation(updateUrl = false) {
     return;
   }
 
-  const [tabName, queryString] = fullHash.split('?');
-  const validTabs = ['dashboard', 'counting_progress', 'rack_map', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history'];
+  let [tabName, queryString] = fullHash.split('?');
+  const validTabs = ['dashboard', 'counting_progress', 'rack_map', 'inventory', 'gimmick', 'reorder_alerts', 'vas', 'location_transfer', 'stock_transfer', 'dynamic_count', 'dynamic_counting_detail', 'opname', 'adjust', 'counting_detail', 'inbound', 'outbound', 'consumable_requests', 'tasks', 'handover', 'mutations', 'mutations_kemas', 'mutations_gimmick', 'users', 'permissions', 'maintenance', 'history', 'system', 'settings', 'pengaturan', 'pemeliharaan'];
+
+  if (tabName === 'system' || tabName === 'settings' || tabName === 'pengaturan' || tabName === 'pemeliharaan') {
+    tabName = window.isSuperAdmin ? 'maintenance' : 'dashboard';
+  }
 
   if (tabName === 'history' && queryString) {
     const params = new URLSearchParams(queryString);
@@ -297,6 +305,11 @@ function historyGoBack() {
 
 // Tab Navigation with URL Hash support
 function switchAdminTab(tabName, updateUrl = true) {
+  // Support aliases for tab names
+  if (tabName === 'system' || tabName === 'settings' || tabName === 'pengaturan' || tabName === 'pemeliharaan') {
+    tabName = window.isSuperAdmin ? 'maintenance' : 'dashboard';
+  }
+
   // Enforce access control if permissions are loaded and user is not super admin
   if (window.userPermissions && window.isSuperAdmin !== true) {
     let checkKey = tabName;
@@ -341,7 +354,21 @@ function switchAdminTab(tabName, updateUrl = true) {
   const activeTab = document.getElementById('tab-' + actualTabId);
   const activeNavId = tabName === 'history' ? (historySourceTab || 'inventory') : tabName;
   const activeNav = document.getElementById('nav-' + activeNavId);
-  if (activeTab) activeTab.classList.remove('hidden');
+
+  if (!activeTab) {
+    console.warn(`Tab "tab-${actualTabId}" tidak ditemukan di DOM. Mengalihkan ke tab dashboard.`);
+    const fallbackTab = document.getElementById('tab-dashboard');
+    if (fallbackTab) fallbackTab.classList.remove('hidden');
+    const fallbackNav = document.getElementById('nav-dashboard');
+    if (fallbackNav) {
+      fallbackNav.classList.remove('text-slate-200', 'hover:text-white', 'hover:bg-white/10', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
+      fallbackNav.classList.add('bg-blue-600', 'text-white', 'shadow-xs', 'font-bold');
+    }
+    currentAdminTab = 'dashboard';
+    return;
+  }
+
+  activeTab.classList.remove('hidden');
   if (activeNav) {
     activeNav.classList.remove('text-slate-200', 'hover:text-white', 'hover:bg-white/10', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-100/80', 'font-semibold');
     activeNav.classList.add('bg-blue-600', 'text-white', 'shadow-xs', 'font-bold');

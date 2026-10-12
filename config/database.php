@@ -28,6 +28,15 @@ class Database {
         $mysqlPass = $env['DB_PASS'] ?? ($_SERVER['DB_PASS'] ?? '');
         $dbName    = $env['DB_NAME'] ?? ($_SERVER['DB_NAME'] ?? 'packstock_db');
 
+        // Fallback untuk live hosting InfinityFree jika config/env.php belum diunggah atau tidak terbawa sync
+        if ($isLive && (empty($env['DB_HOST']) || $mysqlHost === '127.0.0.1')) {
+            $mysqlHost = 'sql202.infinityfree.com';
+            $mysqlPort = '3306';
+            $mysqlUser = 'if0_38464190';
+            $mysqlPass = 'Dhaniel0';
+            $dbName    = 'if0_38464190_packstock';
+        }
+
         // Try connecting to MySQL
         try {
             // If local XAMPP (root with empty password or localhost), try creating DB if not exists
@@ -89,16 +98,11 @@ class Database {
     }
 
     /**
-     * Hentikan permintaan dengan 503 saat basis data produksi tidak terjangkau.
-     * Detail teknis hanya masuk error log, tidak pernah dikirim ke pengguna.
+     * Hentikan permintaan saat basis data produksi tidak terjangkau.
+     * Mengirimkan halaman diagnostik ramah pengguna alih-alih layar blank kosong.
      */
     private static function halt503(Throwable $e): void {
         error_log('[PackStock] Koneksi database produksi gagal: ' . $e->getMessage());
-
-        if (!headers_sent()) {
-            http_response_code(503);
-            header('Retry-After: 120');
-        }
 
         $uri = $_SERVER['REQUEST_URI'] ?? '';
         $wantsJson = strpos($uri, '/api/') !== false
@@ -106,30 +110,43 @@ class Database {
             || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
         if ($wantsJson) {
-            if (!headers_sent()) header('Content-Type: application/json; charset=utf-8');
+            if (!headers_sent()) {
+                http_response_code(503);
+                header('Content-Type: application/json; charset=utf-8');
+            }
             echo json_encode([
                 'success' => false,
-                'message' => 'Koneksi ke database gudang sedang terputus. Jangan mencatat transaksi dulu — hubungi tim teknis, lalu muat ulang halaman ini beberapa menit lagi.'
+                'message' => 'Koneksi ke database gudang sedang terputus: ' . $e->getMessage()
             ]);
         } else {
-            if (!headers_sent()) header('Content-Type: text/html; charset=utf-8');
+            if (!headers_sent()) {
+                // Di hosting gratis (InfinityFree/Epizy), status 503 di-intercept oleh reverse proxy dan menghasilkan layar putih kosong (blank page).
+                // Kita gunakan 200 agar tampilan diagnostik tetap sampai ke browser.
+                http_response_code(200);
+                header('Content-Type: text/html; charset=utf-8');
+            }
+            $errMsg = htmlspecialchars($e->getMessage());
             echo '<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">'
                . '<meta name="viewport" content="width=device-width, initial-scale=1">'
-               . '<title>Database Tidak Terjangkau</title></head>'
+               . '<title>Database Tidak Terjangkau - PackStock</title></head>'
                . '<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;'
-               . 'background:#f6f5fa;font-family:system-ui,sans-serif;color:#191733;padding:24px">'
-               . '<div style="max-width:30rem;background:#fff;border:1px solid #e0dee9;border-radius:8px;padding:28px">'
-               . '<h1 style="margin:0 0 10px;font-size:1.3rem">Koneksi database terputus</h1>'
-               . '<p style="margin:0 0 14px;line-height:1.6;color:#3d3a5c">PackStock tidak dapat menjangkau database gudang saat ini, '
-               . 'jadi sistem sengaja berhenti agar tidak ada transaksi yang tercatat di tempat yang salah.</p>'
-               . '<p style="margin:0;line-height:1.6;color:#3d3a5c"><b>Yang perlu dilakukan:</b> jangan catat inbound, outbound, '
-               . 'atau opname dulu. Hubungi tim teknis, lalu muat ulang halaman ini beberapa menit lagi.</p>'
+               . 'background:#0f172a;font-family:system-ui,-apple-system,sans-serif;color:#f8fafc;padding:24px">'
+               . '<div style="max-width:32rem;width:100%;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5)">'
+               . '<div style="display:inline-block;padding:5px 10px;background:#ef444420;border:1px solid #ef444450;border-radius:8px;color:#f87171;font-weight:800;font-size:11px;text-transform:uppercase;margin-bottom:12px">Database Disconnected</div>'
+               . '<h1 style="margin:0 0 10px;font-size:1.3rem;color:#fff">Koneksi Database Terputus</h1>'
+               . '<p style="margin:0 0 14px;line-height:1.6;color:#94a3b8;font-size:13px">PackStock tidak dapat menjangkau server database MySQL saat ini.</p>'
+               . '<div style="background:#0f172a;border:1px solid #334155;border-radius:10px;padding:12px;margin-bottom:16px;font-family:monospace;font-size:12px;color:#fb7185;word-break:break-all">'
+               . '<strong>Keterangan:</strong> ' . $errMsg
+               . '</div>'
+               . '<p style="margin:0 0 16px;line-height:1.6;color:#cbd5e1;font-size:12px"><b>Langkah perbaikan:</b> Pastikan kredensial di <code>config/env.php</code> atau database control panel InfinityFree sudah aktif, lalu muat ulang halaman ini.</p>'
+               . '<a href="javascript:location.reload()" style="display:inline-block;padding:10px 18px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700;font-size:12px;border-radius:10px">Muat Ulang Halaman</a>'
                . '</div></body></html>';
         }
         exit;
     }
 
     private static function ensureSchema(PDO $pdo, string $driver): void {
+        $hasExistingTables = false;
         try {
             $currentVer = 0;
             $pdo->exec("CREATE TABLE IF NOT EXISTS `_schema_version` (`version` INT PRIMARY KEY, `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP)");
@@ -138,6 +155,21 @@ class Database {
 
             if ($currentVer >= self::CURRENT_SCHEMA_VERSION) {
                 return; // Schema is already up to date, skip expensive DDL & table scans
+            }
+
+            // Periksa apakah tabel inti (users) sudah ada di basis data
+            try {
+                if ($driver === 'mysql') {
+                    $hasExistingTables = (bool)$pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
+                } else {
+                    $hasExistingTables = (bool)$pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetchColumn();
+                }
+            } catch (Throwable $e) {}
+
+            // Jika tabel sudah ada dari instalasi sebelumnya tapi _schema_version belum mencatat versi,
+            // anggap minimal versi 11 agar tidak mengeksekusi DDL berat dari nol yang memicu timeout (HTTP 500 / blank page)!
+            if ($hasExistingTables && $currentVer === 0) {
+                $currentVer = 11;
             }
 
             if ($currentVer === 0) {

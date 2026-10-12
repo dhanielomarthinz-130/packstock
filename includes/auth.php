@@ -1,12 +1,56 @@
 <?php
 // includes/auth.php - Session Management & Role-Based Access Control
 
+if (isset($_GET['debug']) && $_GET['debug'] === '1') {
+    @ini_set('display_errors', '1');
+    @ini_set('display_startup_errors', '1');
+    @error_reporting(E_ALL);
+}
+
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: text/html; charset=utf-8');
+        }
+        $msg = htmlspecialchars($error['message'] ?? 'Fatal Error', ENT_QUOTES, 'UTF-8');
+        $file = htmlspecialchars($error['file'] ?? '', ENT_QUOTES, 'UTF-8');
+        $line = (int)($error['line'] ?? 0);
+        echo "<!DOCTYPE html>
+<html lang='id'>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1'>
+  <title>System Error - PackStock WMS</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; display: flex; justify-content: center; align-items: center; min-height: 80vh; margin: 0; }
+    .card { background: #1e293b; border: 1px solid #ef4444; border-radius: 1rem; padding: 2rem; max-width: 650px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); }
+    h2 { color: #f87171; margin-top: 0; font-size: 1.25rem; }
+    p { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; }
+    pre { background: #0f172a; padding: 1rem; border-radius: 0.5rem; color: #fca5a5; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    .btn { display: inline-block; background: #3b82f6; color: #fff; padding: 0.6rem 1.2rem; border-radius: 0.5rem; text-decoration: none; font-weight: 600; font-size: 0.875rem; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <div class='card'>
+    <h2>⚠️ Terjadi Kendala Eksekusi Sistem</h2>
+    <p>Sistem mendeteksi galat fatal pada runtime PHP:</p>
+    <pre>{$msg}\n\nFile: {$file}\nBaris: {$line}</pre>
+    <a href='index.php' class='btn'>Kembali ke Dashboard</a>
+  </div>
+</body>
+</html>";
+    }
+});
+
 if (session_status() === PHP_SESSION_NONE) {
     // Pengerasan cookie sesi. HttpOnly menutup pencurian sesi lewat XSS,
     // SameSite=Lax menutup CSRF lintas situs, dan Secure hanya dipasang saat HTTPS
     // aktif agar pengembangan lokal di http://localhost tetap bisa login.
     $isHttps = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+        || (($_SERVER['HTTP_CF_VISITOR'] ?? '') !== '' && strpos($_SERVER['HTTP_CF_VISITOR'], '"https"') !== false)
         || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443;
 
     if (!headers_sent()) {
@@ -299,6 +343,16 @@ class Auth {
         }
     }
 
+    public static function redirect(string $url): void {
+        if (!headers_sent()) {
+            header("Location: {$url}");
+        }
+        $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+        $jsonUrl = json_encode($url);
+        echo "<!DOCTYPE html><html><head><meta charset='utf-8'><meta http-equiv='refresh' content='0;url={$safeUrl}'><script>window.location.replace({$jsonUrl});</script></head><body>Mengalihkan ke <a href='{$safeUrl}'>{$safeUrl}</a>...</body></html>";
+        exit;
+    }
+
     public static function requireLogin(): void {
         // Redirect to maintenance page if active and user is not superadmin
         if (self::isMaintenanceMode() && !self::isSuperAdmin()) {
@@ -308,8 +362,7 @@ class Auth {
                 exit;
             }
             $base = self::getBaseUrl();
-            header("Location: {$base}/maintenance");
-            exit;
+            self::redirect("{$base}/maintenance");
         }
 
         if (!self::check()) {
@@ -319,8 +372,7 @@ class Auth {
                 exit;
             }
             $base = self::getBaseUrl();
-            header("Location: {$base}/login");
-            exit;
+            self::redirect("{$base}/login");
         }
 
         // Inactivity timeout: 1 hour (3600 seconds)
@@ -333,8 +385,7 @@ class Auth {
                 exit;
             }
             $base = self::getBaseUrl();
-            header("Location: {$base}/login?timeout=1");
-            exit;
+            self::redirect("{$base}/login?timeout=1");
         }
 
         // Verifikasi CSRF untuk seluruh permintaan yang mengubah data.
@@ -361,8 +412,7 @@ class Auth {
                 exit;
             }
             $base = self::getBaseUrl();
-            header("Location: {$base}/operator/");
-            exit;
+            self::redirect("{$base}/operator/");
         }
     }
 
@@ -375,8 +425,7 @@ class Auth {
                 exit;
             }
             $base = self::getBaseUrl();
-            header("Location: {$base}/admin/");
-            exit;
+            self::redirect("{$base}/admin/");
         }
     }
 
@@ -510,7 +559,11 @@ class Auth {
     }
 
     public static function getBaseUrl(): string {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? "https" : "http";
+        $isHttps = (!empty($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off')
+            || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
+            || (($_SERVER['HTTP_CF_VISITOR'] ?? '') !== '' && strpos($_SERVER['HTTP_CF_VISITOR'], '"https"') !== false)
+            || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443;
+        $protocol = $isHttps ? "https" : "http";
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         
         // Find relative path to project root
