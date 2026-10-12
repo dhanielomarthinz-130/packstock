@@ -1572,6 +1572,328 @@ if ($type === 'reorder_alerts' || $type === 'reorder' || $type === 'critical_sto
     }
 
     XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+    exit;
+}
+
+// =========================================================================
+// 15. EXPORT CONSUMABLE REQUESTS (REKAP PERMINTAAN CONSUMABLE) (.xlsx)
+// =========================================================================
+if ($type === 'consumable_requests' || $type === 'consumable' || $type === 'consumables') {
+    $search   = trim($_GET['search'] ?? '');
+    $status   = trim($_GET['status'] ?? '');
+    $fromDate = trim($_GET['from_date'] ?? $_GET['start_date'] ?? '');
+    $toDate   = trim($_GET['to_date'] ?? $_GET['end_date'] ?? '');
+    $date     = trim($_GET['date'] ?? '');
+
+    $filename = "Rekap_Permintaan_Consumable_" . date('Ymd_His') . ".xlsx";
+    $title = "LAPORAN REKAPITULASI PERMINTAAN CONSUMABLE (CONSUMABLE REQUESTS)";
+
+    $headers = [
+        'No',
+        'Tanggal Request',
+        'No. Request',
+        'Prioritas',
+        'Pemohon (PIC)',
+        'Shift Pemohon',
+        'Tujuan Line / Departemen',
+        'Kode Item / SKU',
+        'Nama Material Consumable',
+        'Lokasi Rak',
+        'Qty Diminta',
+        'Satuan',
+        'Status ACC',
+        'Status Progres',
+        'Disetujui Oleh (Approver)',
+        'Waktu ACC',
+        'Petugas Penyerah (Gudang)',
+        'Waktu Penyerahan',
+        'Catatan Pemohon',
+        'Catatan Admin'
+    ];
+
+    $colWidths = [6, 18, 16, 12, 20, 14, 20, 16, 32, 14, 12, 10, 14, 22, 18, 18, 20, 18, 26, 26];
+    $rows = [];
+
+    $query = "
+        SELECT r.*,
+               u.name as requester_name,
+               u.username as requester_username,
+               u.role as requester_role,
+               u.shift as requester_shift,
+               adm.name as approver_name,
+               adm.username as approver_username
+        FROM consumable_requests r
+        JOIN users u ON r.user_id = u.id
+        LEFT JOIN users adm ON r.approved_by = adm.id
+        WHERE 1=1
+    ";
+    $params = [];
+
+    if (!empty($status) && $status !== 'ALL') {
+        $query .= " AND r.status = ?";
+        $params[] = $status;
+    }
+
+    if (!empty($fromDate) && !empty($toDate)) {
+        $query .= " AND r.created_at >= ? AND r.created_at <= ?";
+        $params[] = $fromDate . ' 00:00:00';
+        $params[] = $toDate . ' 23:59:59';
+    } elseif (!empty($fromDate)) {
+        $query .= " AND r.created_at >= ?";
+        $params[] = $fromDate . ' 00:00:00';
+    } elseif (!empty($toDate)) {
+        $query .= " AND r.created_at <= ?";
+        $params[] = $toDate . ' 23:59:59';
+    } elseif (!empty($date)) {
+        $query .= " AND r.created_at LIKE ?";
+        $params[] = "{$date}%";
+    }
+
+    if (!empty($search)) {
+        $query .= " AND (r.request_no LIKE ? OR r.destination LIKE ? OR r.notes LIKE ? OR u.name LIKE ? OR u.username LIKE ?)";
+        $term = "%{$search}%";
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
+        $params[] = $term;
+    }
+
+    $query .= " ORDER BY r.created_at DESC";
+
+    $stmt = $pdo->prepare($query);
+    $stmt->execute($params);
+    $requests = $stmt->fetchAll();
+
+    if (!empty($requests)) {
+        $requestIds = array_column($requests, 'id');
+        $inPlaceholders = implode(',', array_fill(0, count($requestIds), '?'));
+
+        $stmtItems = $pdo->prepare("
+            SELECT ri.*,
+                   m.code as material_code,
+                   m.name as material_name,
+                   m.unit as material_unit,
+                   m.rack_location,
+                   m.current_stock
+            FROM consumable_request_items ri
+            JOIN materials m ON ri.material_id = m.id
+            WHERE ri.request_id IN ($inPlaceholders)
+            ORDER BY ri.id ASC
+        ");
+        $stmtItems->execute($requestIds);
+        $allItems = $stmtItems->fetchAll();
+
+        $itemsByRequest = [];
+        foreach ($allItems as $item) {
+            $itemsByRequest[$item['request_id']][] = $item;
+        }
+
+        // Fetch related tasks for picking & handover
+        $tasksByRequest = [];
+        $requestNos = array_column($requests, 'request_no');
+        $taskIds = array_filter(array_column($requests, 'task_id'));
+
+        if (!empty($requestNos)) {
+            $likeClauses = [];
+            $taskParams = [];
+            foreach ($requestNos as $rNo) {
+                $likeClauses[] = "t.notes LIKE ?";
+                $taskParams[] = "%#" . $rNo . "%";
+            }
+            if (!empty($taskIds)) {
+                $inTaskPlaceholders = implode(',', array_fill(0, count($taskIds), '?'));
+                $taskSql = "
+                    SELECT t.*, u.name as operator_name, u.username as operator_username, u.shift as operator_shift
+                    FROM tasks t
+                    LEFT JOIN users u ON t.assigned_to = u.id
+                    WHERE t.id IN ($inTaskPlaceholders) OR (" . implode(' OR ', $likeClauses) . ")
+                    ORDER BY t.id ASC
+                ";
+                $taskParams = array_merge(array_values($taskIds), $taskParams);
+            } else {
+                $taskSql = "
+                    SELECT t.*, u.name as operator_name, u.username as operator_username, u.shift as operator_shift
+                    FROM tasks t
+                    LEFT JOIN users u ON t.assigned_to = u.id
+                    WHERE " . implode(' OR ', $likeClauses) . "
+                    ORDER BY t.id ASC
+                ";
+            }
+            $stmtT = $pdo->prepare($taskSql);
+            $stmtT->execute($taskParams);
+            $allTasks = $stmtT->fetchAll();
+
+            foreach ($allTasks as $tsk) {
+                foreach ($requests as $r) {
+                    if ((!empty($r['task_id']) && $r['task_id'] == $tsk['id']) || (!empty($tsk['notes']) && strpos($tsk['notes'], '#' . $r['request_no']) !== false)) {
+                        $tasksByRequest[$r['id']][] = $tsk;
+                    }
+                }
+            }
+        }
+
+        // Fetch related direct outbound transactions
+        $outboundsByRequest = [];
+        if (!empty($requestNos)) {
+            $likeClausesOut = [];
+            $outParams = [];
+            foreach ($requestNos as $rNo) {
+                $likeClausesOut[] = "o.reason LIKE ?";
+                $likeClausesOut[] = "o.notes LIKE ?";
+                $outParams[] = "%#" . $rNo . "%";
+                $outParams[] = "%#" . $rNo . "%";
+            }
+            $outboundIds = array_filter(array_column($requests, 'outbound_id'));
+            if (!empty($outboundIds)) {
+                $inOutPlaceholders = implode(',', array_fill(0, count($outboundIds), '?'));
+                $outSql = "
+                    SELECT o.*
+                    FROM outbound_transactions o
+                    WHERE o.id IN ($inOutPlaceholders) OR (" . implode(' OR ', $likeClausesOut) . ")
+                    ORDER BY o.id ASC
+                ";
+                $outParams = array_merge(array_values($outboundIds), $outParams);
+            } else {
+                $outSql = "
+                    SELECT o.*
+                    FROM outbound_transactions o
+                    WHERE " . implode(' OR ', $likeClausesOut) . "
+                    ORDER BY o.id ASC
+                ";
+            }
+            $stmtO = $pdo->prepare($outSql);
+            $stmtO->execute($outParams);
+            $allOuts = $stmtO->fetchAll();
+
+            foreach ($allOuts as $out) {
+                foreach ($requests as $r) {
+                    if ((!empty($r['outbound_id']) && $r['outbound_id'] == $out['id']) || (!empty($out['reason']) && strpos($out['reason'], '#' . $r['request_no']) !== false) || (!empty($out['notes']) && strpos($out['notes'], '#' . $r['request_no']) !== false)) {
+                        $outboundsByRequest[$r['id']][] = $out;
+                    }
+                }
+            }
+        }
+
+        $no = 1;
+        foreach ($requests as $req) {
+            $relatedTasks = $tasksByRequest[$req['id']] ?? [];
+            $relatedOutbounds = $outboundsByRequest[$req['id']] ?? [];
+
+            $penyerahName = null;
+            $handoverTime = null;
+            $isTaskCompleted = false;
+            $isOutboundDirect = !empty($relatedOutbounds);
+
+            if (!empty($relatedTasks)) {
+                $totalTasks = count($relatedTasks);
+                $completedTasks = 0;
+                foreach ($relatedTasks as $t) {
+                    if ($t['status'] === 'COMPLETED') {
+                        $completedTasks++;
+                        if (!$penyerahName && !empty($t['operator_name'])) {
+                            $penyerahName = $t['operator_name'] . (!empty($t['operator_shift']) ? ' (' . $t['operator_shift'] . ')' : '');
+                        }
+                        if (!empty($t['completed_at'])) {
+                            $handoverTime = $t['completed_at'];
+                        }
+                    } elseif (!$penyerahName && !empty($t['operator_name'])) {
+                        $penyerahName = $t['operator_name'] . (!empty($t['operator_shift']) ? ' (' . $t['operator_shift'] . ')' : '');
+                    }
+                }
+                if ($totalTasks > 0 && $completedTasks === $totalTasks) {
+                    $isTaskCompleted = true;
+                }
+            }
+
+            if (!empty($relatedOutbounds)) {
+                foreach ($relatedOutbounds as $o) {
+                    if (!$penyerahName && !empty($o['issued_by'])) {
+                        $penyerahName = $o['issued_by'];
+                    }
+                    if (!$handoverTime && !empty($o['completed_at'])) {
+                        $handoverTime = $o['completed_at'];
+                    } elseif (!$handoverTime && !empty($o['created_at'])) {
+                        $handoverTime = $o['created_at'];
+                    }
+                }
+            }
+
+            if (!$penyerahName && !empty($req['approver_name'])) {
+                $penyerahName = $req['approver_name'] . ' (Admin Gudang)';
+            }
+
+            // Determine stage text
+            $stageText = 'Menunggu ACC';
+            if ($req['status'] === 'PENDING') {
+                $stageText = 'Menunggu ACC';
+            } elseif ($req['status'] === 'REJECTED') {
+                $stageText = 'Ditolak';
+            } elseif ($req['status'] === 'CANCELLED') {
+                $stageText = 'Dibatalkan';
+            } elseif ($req['status'] === 'APPROVED' || $req['status'] === 'COMPLETED') {
+                if ($isTaskCompleted || $isOutboundDirect || $req['status'] === 'COMPLETED') {
+                    $stageText = 'Selesai Diserahkan (Handover)';
+                } else {
+                    $stageText = 'Disetujui (Proses Picking)';
+                }
+            }
+
+            $reqItems = $itemsByRequest[$req['id']] ?? [];
+            if (empty($reqItems)) {
+                $rows[] = [
+                    $no++,
+                    formatExportDate($req['created_at']),
+                    $req['request_no'],
+                    $req['priority'] ?: 'NORMAL',
+                    $req['requester_name'] ?: ($req['requester_username'] ?: 'Operator'),
+                    $req['requester_shift'] ?: '-',
+                    $req['destination'] ?: '-',
+                    '-',
+                    '-',
+                    '-',
+                    0,
+                    '-',
+                    $req['status'],
+                    $stageText,
+                    $req['approver_name'] ?: ($req['approver_username'] ?: '-'),
+                    formatExportDate($req['approved_at']),
+                    $penyerahName ?: '-',
+                    formatExportDate($handoverTime),
+                    $req['notes'] ?: '-',
+                    $req['admin_notes'] ?: '-'
+                ];
+            } else {
+                foreach ($reqItems as $it) {
+                    $rows[] = [
+                        $no++,
+                        formatExportDate($req['created_at']),
+                        $req['request_no'],
+                        $req['priority'] ?: 'NORMAL',
+                        $req['requester_name'] ?: ($req['requester_username'] ?: 'Operator'),
+                        $req['requester_shift'] ?: '-',
+                        $req['destination'] ?: '-',
+                        $it['material_code'] ?: '-',
+                        $it['material_name'] ?: '-',
+                        $it['rack_location'] ?: '-',
+                        (float)$it['qty'],
+                        $it['material_unit'] ?: 'Pcs',
+                        $req['status'],
+                        $stageText,
+                        $req['approver_name'] ?: ($req['approver_username'] ?: '-'),
+                        formatExportDate($req['approved_at']),
+                        $penyerahName ?: '-',
+                        formatExportDate($handoverTime),
+                        $req['notes'] ?: '-',
+                        $req['admin_notes'] ?: '-'
+                    ];
+                }
+            }
+        }
+    }
+
+    XlsxWriter::download($filename, $title, $headers, $rows, $colWidths);
+    exit;
 }
 
 http_response_code(400);

@@ -76,11 +76,20 @@ function handleConsumablePhotosUpload($files, $rawInputBase64 = null) {
     return !empty($photoPaths) ? json_encode($photoPaths) : null;
 }
 
+if ($action === 'export') {
+    Auth::requireAdmin();
+    $qs = $_SERVER['QUERY_STRING'] ?? '';
+    header("Location: ../admin/export.php?type=consumable_requests&" . $qs);
+    exit;
+}
+
 // 1. LIST CONSUMABLE REQUESTS
 if ($action === 'list') {
     $status      = trim($_GET['status'] ?? '');
     $destination = trim($_GET['destination'] ?? '');
     $date        = trim($_GET['date'] ?? '');
+    $fromDate    = trim($_GET['from_date'] ?? $_GET['start_date'] ?? '');
+    $toDate      = trim($_GET['to_date'] ?? $_GET['end_date'] ?? '');
     $search      = trim($_GET['search'] ?? '');
     $limit       = max(1, min(200, (int)($_GET['limit'] ?? 100)));
 
@@ -115,7 +124,17 @@ if ($action === 'list') {
         $params[] = "%{$destination}%";
     }
 
-    if (!empty($date)) {
+    if (!empty($fromDate) && !empty($toDate)) {
+        $query .= " AND r.created_at >= ? AND r.created_at <= ?";
+        $params[] = $fromDate . ' 00:00:00';
+        $params[] = $toDate . ' 23:59:59';
+    } elseif (!empty($fromDate)) {
+        $query .= " AND r.created_at >= ?";
+        $params[] = $fromDate . ' 00:00:00';
+    } elseif (!empty($toDate)) {
+        $query .= " AND r.created_at <= ?";
+        $params[] = $toDate . ' 23:59:59';
+    } elseif (!empty($date)) {
         $query .= " AND r.created_at LIKE ?";
         $params[] = "{$date}%";
     }

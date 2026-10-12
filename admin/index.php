@@ -3185,11 +3185,15 @@ require_once __DIR__ . '/../includes/header.php';
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" onclick="exportConsumableRequestsExcel()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Download / Export Rekap Permintaan Consumable ke File Excel (.xlsx)">
+              <span class="material-symbols-outlined text-[18px] text-emerald-400">table_chart</span>
+              <span>Download Excel</span>
+            </button>
             <button type="button" onclick="printConsumableRequestsReport()" class="h-[38px] px-3.5 bg-[#262363] hover:bg-[#1c1a4a] text-white rounded-xl shadow-xs transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold cursor-pointer" title="Cetak Rekap Laporan Permintaan Consumable">
-              <span class="material-symbols-outlined text-[18px] text-amber-700">print</span>
+              <span class="material-symbols-outlined text-[18px] text-amber-500">print</span>
               <span>Cetak Rekap</span>
             </button>
-            </div>
+          </div>
         </div>
 
         <!-- DataTable Container -->

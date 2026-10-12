@@ -10752,15 +10752,20 @@ async function loadAdminConsumableRequests() {
   }
 
   const search = document.getElementById('adminConsumableSearchInput')?.value.trim() || '';
+  const fromDate = document.getElementById('adminConsumableFromDateFilter')?.value.trim() || '';
+  const toDate = document.getElementById('adminConsumableToDateFilter')?.value.trim() || '';
   const date = document.getElementById('adminConsumableDateFilter')?.value.trim() || '';
   const status = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
 
   const query = new URLSearchParams({
     action: 'list',
     search,
-    date,
     status
   });
+
+  if (fromDate) query.append('from_date', fromDate);
+  if (toDate) query.append('to_date', toDate);
+  if (date) query.append('date', date);
 
   const res = await App.fetchJson(`../api/consumable_requests.php?${query.toString()}`);
   if (res.success && res.data) {
@@ -11273,6 +11278,27 @@ function printSingleConsumableRequest(id) {
   App.openModal('modalPrintConsumableRequest');
 }
 
+function exportConsumableRequestsExcel() {
+  const search = document.getElementById('adminConsumableSearchInput')?.value.trim() || '';
+  const fromDate = document.getElementById('adminConsumableFromDateFilter')?.value.trim() || '';
+  const toDate = document.getElementById('adminConsumableToDateFilter')?.value.trim() || '';
+  const date = document.getElementById('adminConsumableDateFilter')?.value.trim() || '';
+  const status = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
+
+  const params = new URLSearchParams({
+    type: 'consumable_requests',
+    status,
+    search
+  });
+
+  if (fromDate) params.append('from_date', fromDate);
+  if (toDate) params.append('to_date', toDate);
+  if (date) params.append('date', date);
+
+  App.toast('Menyiapkan file Excel resmi rekap permintaan consumable...', 'info', 'Mengunduh Excel');
+  window.location.href = `export.php?${params.toString()}`;
+}
+
 function printConsumableRequestsReport() {
   const requests = allAdminConsumableRequests || [];
   if (requests.length === 0) {
@@ -11284,7 +11310,9 @@ function printConsumableRequestsReport() {
   const titleEl = document.getElementById('printConsumableTitle');
   const subEl = document.getElementById('printConsumableSubtitle');
 
-  const dateFilter = document.getElementById('adminConsumableDateFilter')?.value || '';
+  const fromDate = document.getElementById('adminConsumableFromDateFilter')?.value.trim() || '';
+  const toDate = document.getElementById('adminConsumableToDateFilter')?.value.trim() || '';
+  const dateFilter = (fromDate && toDate) ? `${fromDate} s/d ${toDate}` : (fromDate || toDate || document.getElementById('adminConsumableDateFilter')?.value || '');
   const statusFilter = document.getElementById('adminConsumableStatusFilter')?.value || 'ALL';
 
   if (titleEl) titleEl.innerText = 'Laporan Rekapitulasi Permintaan Consumable';
