@@ -46,7 +46,8 @@ class Database {
             self::$pdo = new PDO("mysql:host={$mysqlHost};port={$mysqlPort};dbname={$dbName};charset=utf8mb4", $mysqlUser, $mysqlPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false
+                PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_TIMEOUT => 5
             ]);
 
             try {
@@ -56,7 +57,7 @@ class Database {
 
             self::ensureSchema(self::$pdo, 'mysql');
             return self::$pdo;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             // PENTING: fallback SQLite HANYA untuk pengembangan lokal.
             // Di produksi, beralih diam-diam ke SQLite berarti operator tetap bisa login
             // (dengan akun bawaan hasil migrasi) dan mencatat transaksi ke basis data
@@ -139,131 +140,153 @@ class Database {
                 return; // Schema is already up to date, skip expensive DDL & table scans
             }
 
-            if ($driver === 'mysql') {
-                self::initMySQLTables($pdo);
+            if ($currentVer === 0) {
+                // Setup basis data awal dari nol
+                if ($driver === 'mysql') {
+                    self::initMySQLTables($pdo);
+                } else {
+                    self::initSQLiteTables($pdo);
+                }
             } else {
-                self::initSQLiteTables($pdo);
+                // MIGRASI INKREMENTAL SAJA UNTUK DATABASE YANG SUDAH BERJALAN
+                // Mencegah script execution timeout (HTTP 500) di server hosting produksi (InfinityFree)
+                if ($currentVer < 12) {
+                    try {
+                        if ($driver === 'mysql') {
+                            $pdo->exec("ALTER TABLE `users` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1");
+                        } else {
+                            $pdo->exec("ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1");
+                        }
+                    } catch (Throwable $e) {}
+                }
+
+                if ($currentVer < 13) {
+                    try {
+                        if ($driver === 'mysql') {
+                            $pdo->exec("ALTER TABLE `consumable_requests` ADD COLUMN `is_edited` TINYINT(1) NOT NULL DEFAULT 0");
+                            $pdo->exec("ALTER TABLE `consumable_requests` ADD COLUMN `edited_by` INT NULL");
+                            $pdo->exec("ALTER TABLE `consumable_requests` ADD COLUMN `edited_at` DATETIME NULL");
+                        } else {
+                            $pdo->exec("ALTER TABLE consumable_requests ADD COLUMN is_edited INTEGER DEFAULT 0");
+                            $pdo->exec("ALTER TABLE consumable_requests ADD COLUMN edited_by INTEGER NULL");
+                            $pdo->exec("ALTER TABLE consumable_requests ADD COLUMN edited_at DATETIME NULL");
+                        }
+                    } catch (Throwable $e) {}
+                }
             }
 
-            // Clean any duplicate menu permissions
-            try {
-                if ($driver === 'mysql') {
-                    $pdo->exec("
-                        DELETE FROM menu_permissions 
-                        WHERE id NOT IN (
-                            SELECT max_id FROM (
-                                SELECT MAX(id) AS max_id 
+            // Migrasi lawas untuk versi < 11
+            if ($currentVer < 11) {
+                try {
+                    if ($driver === 'mysql') {
+                        $pdo->exec("
+                            DELETE FROM menu_permissions 
+                            WHERE id NOT IN (
+                                SELECT max_id FROM (
+                                    SELECT MAX(id) AS max_id 
+                                    FROM menu_permissions 
+                                    GROUP BY role, COALESCE(user_id, 0), menu_key
+                                ) AS tmp_menu_perm
+                            )
+                        ");
+                    } else {
+                        $pdo->exec("
+                            DELETE FROM menu_permissions 
+                            WHERE id NOT IN (
+                                SELECT MAX(id) 
                                 FROM menu_permissions 
                                 GROUP BY role, COALESCE(user_id, 0), menu_key
-                            ) AS tmp_menu_perm
-                        )
-                    ");
-                } else {
-                    $pdo->exec("
-                        DELETE FROM menu_permissions 
-                        WHERE id NOT IN (
-                            SELECT MAX(id) 
-                            FROM menu_permissions 
-                            GROUP BY role, COALESCE(user_id, 0), menu_key
-                        )
-                    ");
-                }
-            } catch (Throwable $e) {
-                // Ignore cleanup error if table doesn't exist or already clean
-            }
-
-            // Migration to Schema 11: Auto-convert accidental Putaway entries recorded as RACK_MOVEMENT
-            try {
-                $stmtMvt = $pdo->query("
-                    SELECT t.*, m.name as mat_name, m.code as mat_code, m.unit as mat_unit 
-                    FROM tasks t 
-                    JOIN materials m ON t.material_id = m.id
-                    WHERE t.task_type = 'RACK_MOVEMENT' 
-                      AND (t.task_no IN ('MVT-202609-0001', 'MVT-202609-0002', 'MVT-202609-0003') OR t.destination = 'Kemas')
-                ");
-                if ($stmtMvt) {
-                    $mvtTasks = $stmtMvt->fetchAll(PDO::FETCH_ASSOC);
-                    foreach ($mvtTasks as $t) {
-                        $qty = max(0, (float)($t['actual_qty'] > 0 ? $t['actual_qty'] : $t['target_qty']));
-                        if ($qty <= 0) continue;
-                        $matId = (int)$t['material_id'];
-                        $refNo = trim($t['reference_no'] ?? '');
-                        if (empty($refNo)) {
-                            if (preg_match('/SJ[:\s]+([^\s\)\|\,]+)/i', $t['completion_notes'] ?? '', $m)) {
-                                $refNo = $m[1];
-                            }
-                        }
-                        $poNum = !empty($refNo) ? $refNo : '-';
-                        $supplier = 'SPX / Supplier';
-                        $location = !empty($t['from_location']) ? $t['from_location'] : 'Gudang Kecil';
-                        $photoPath = $t['photo_path'] ?? null;
-                        $receivedBy = $t['assigned_to'] ?? 1;
-                        $createdAt = $t['created_at'] ?? date('Y-m-d H:i:s');
-                        $startedAt = $t['started_at'] ?? $createdAt;
-                        $completedAt = $t['completed_at'] ?? $createdAt;
-                        $dur = (int)($t['duration_seconds'] ?? 60);
-
-                        // Generate unique inbound_no
-                        $prefix = 'INB-' . date('Ym', strtotime($createdAt)) . '-';
-                        $stmtLastIn = $pdo->prepare("SELECT inbound_no FROM inbound_transactions WHERE inbound_no LIKE ? ORDER BY LENGTH(inbound_no) DESC, inbound_no DESC LIMIT 1");
-                        $stmtLastIn->execute([$prefix . '%']);
-                        $lastInNo = $stmtLastIn->fetchColumn();
-                        $nextNum = 1;
-                        if ($lastInNo) {
-                            $parts = explode('-', $lastInNo);
-                            $lastSuffix = end($parts);
-                            if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
-                        }
-                        $stmtCheckIn = $pdo->prepare("SELECT 1 FROM inbound_transactions WHERE inbound_no = ? LIMIT 1");
-                        do {
-                            $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
-                            $stmtCheckIn->execute([$inboundNo]);
-                        } while ($stmtCheckIn->fetchColumn());
-
-                        // 1. Insert into inbound_transactions
-                        $stmtIn = $pdo->prepare("
-                            INSERT INTO inbound_transactions (
-                                inbound_no, po_number, supplier, material_id, qty, notes, 
-                                photo_path, received_by, started_at, completed_at, duration_seconds, 
-                                created_at, location, batch_no, exp_date
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            )
                         ");
-                        $inNotes = "Penerimaan Barang Masuk (Putaway)";
-                        if (!empty($t['notes'])) $inNotes .= " - {$t['notes']}";
-                        $stmtIn->execute([
-                            $inboundNo, $poNum, $supplier, $matId, $qty, $inNotes,
-                            $photoPath, $receivedBy, $startedAt, $completedAt, $dur,
-                            $createdAt, $location, $t['batch_no'] ?? null, $t['exp_date'] ?? null
-                        ]);
-
-                        // 2. Add Stock to Material master & restore location
-                        $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
-                        $stmtMat->execute([$matId]);
-                        $stockBefore = (float)$stmtMat->fetchColumn();
-                        $stockAfter = $stockBefore + $qty;
-
-                        $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ?, rack_location = ? WHERE id = ?");
-                        $stmtUpMat->execute([$stockAfter, $location, $matId]);
-
-                        // 3. Delete old TRANSFER_LOCATION mutation
-                        $stmtDelMut = $pdo->prepare("DELETE FROM stock_mutations WHERE reference_no = ? AND type = 'TRANSFER_LOCATION'");
-                        $stmtDelMut->execute([$t['task_no']]);
-
-                        // 4. Insert INBOUND stock mutation
-                        $stmtMut = $pdo->prepare("
-                            INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
-                            VALUES (?, 'INBOUND', ?, ?, ?, ?, ?, ?, ?)
-                        ");
-                        $mutNotes = "Penerimaan Barang Masuk (PO/SJ: {$poNum}) [Lokasi: {$location}]";
-                        $stmtMut->execute([$matId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $receivedBy, $createdAt]);
-
-                        // 5. Delete from tasks
-                        $stmtDelTask = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
-                        $stmtDelTask->execute([$t['id']]);
                     }
+                } catch (Throwable $e) {}
+
+                try {
+                    $stmtMvt = $pdo->query("
+                        SELECT t.*, m.name as mat_name, m.code as mat_code, m.unit as mat_unit 
+                        FROM tasks t 
+                        JOIN materials m ON t.material_id = m.id
+                        WHERE t.task_type = 'RACK_MOVEMENT' 
+                          AND (t.task_no IN ('MVT-202609-0001', 'MVT-202609-0002', 'MVT-202609-0003') OR t.destination = 'Kemas')
+                    ");
+                    if ($stmtMvt) {
+                        $mvtTasks = $stmtMvt->fetchAll(PDO::FETCH_ASSOC);
+                        foreach ($mvtTasks as $t) {
+                            $qty = max(0, (float)($t['actual_qty'] > 0 ? $t['actual_qty'] : $t['target_qty']));
+                            if ($qty <= 0) continue;
+                            $matId = (int)$t['material_id'];
+                            $refNo = trim($t['reference_no'] ?? '');
+                            if (empty($refNo)) {
+                                if (preg_match('/SJ[:\s]+([^\s\)\|\,]+)/i', $t['completion_notes'] ?? '', $m)) {
+                                    $refNo = $m[1];
+                                }
+                            }
+                            $poNum = !empty($refNo) ? $refNo : '-';
+                            $supplier = 'SPX / Supplier';
+                            $location = !empty($t['from_location']) ? $t['from_location'] : 'Gudang Kecil';
+                            $photoPath = $t['photo_path'] ?? null;
+                            $receivedBy = $t['assigned_to'] ?? 1;
+                            $createdAt = $t['created_at'] ?? date('Y-m-d H:i:s');
+                            $startedAt = $t['started_at'] ?? $createdAt;
+                            $completedAt = $t['completed_at'] ?? $createdAt;
+                            $dur = (int)($t['duration_seconds'] ?? 60);
+
+                            $prefix = 'INB-' . date('Ym', strtotime($createdAt)) . '-';
+                            $stmtLastIn = $pdo->prepare("SELECT inbound_no FROM inbound_transactions WHERE inbound_no LIKE ? ORDER BY LENGTH(inbound_no) DESC, inbound_no DESC LIMIT 1");
+                            $stmtLastIn->execute([$prefix . '%']);
+                            $lastInNo = $stmtLastIn->fetchColumn();
+                            $nextNum = 1;
+                            if ($lastInNo) {
+                                $parts = explode('-', $lastInNo);
+                                $lastSuffix = end($parts);
+                                if (is_numeric($lastSuffix)) $nextNum = (int)$lastSuffix + 1;
+                            }
+                            $stmtCheckIn = $pdo->prepare("SELECT 1 FROM inbound_transactions WHERE inbound_no = ? LIMIT 1");
+                            do {
+                                $inboundNo = $prefix . str_pad($nextNum++, 4, '0', STR_PAD_LEFT);
+                                $stmtCheckIn->execute([$inboundNo]);
+                            } while ($stmtCheckIn->fetchColumn());
+
+                            $stmtIn = $pdo->prepare("
+                                INSERT INTO inbound_transactions (
+                                    inbound_no, po_number, supplier, material_id, qty, notes, 
+                                    photo_path, received_by, started_at, completed_at, duration_seconds, 
+                                    created_at, location, batch_no, exp_date
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ");
+                            $inNotes = "Penerimaan Barang Masuk (Putaway)";
+                            if (!empty($t['notes'])) $inNotes .= " - {$t['notes']}";
+                            $stmtIn->execute([
+                                $inboundNo, $poNum, $supplier, $matId, $qty, $inNotes,
+                                $photoPath, $receivedBy, $startedAt, $completedAt, $dur,
+                                $createdAt, $location, $t['batch_no'] ?? null, $t['exp_date'] ?? null
+                            ]);
+
+                            $stmtMat = $pdo->prepare("SELECT current_stock FROM materials WHERE id = ?");
+                            $stmtMat->execute([$matId]);
+                            $stockBefore = (float)$stmtMat->fetchColumn();
+                            $stockAfter = $stockBefore + $qty;
+
+                            $stmtUpMat = $pdo->prepare("UPDATE materials SET current_stock = ?, rack_location = ? WHERE id = ?");
+                            $stmtUpMat->execute([$stockAfter, $location, $matId]);
+
+                            $stmtDelMut = $pdo->prepare("DELETE FROM stock_mutations WHERE reference_no = ? AND type = 'TRANSFER_LOCATION'");
+                            $stmtDelMut->execute([$t['task_no']]);
+
+                            $stmtMut = $pdo->prepare("
+                                INSERT INTO stock_mutations (material_id, type, qty_change, stock_before, stock_after, reference_no, notes, user_id, created_at)
+                                VALUES (?, 'INBOUND', ?, ?, ?, ?, ?, ?, ?)
+                            ");
+                            $mutNotes = "Penerimaan Barang Masuk (PO/SJ: {$poNum}) [Lokasi: {$location}]";
+                            $stmtMut->execute([$matId, $qty, $stockBefore, $stockAfter, $inboundNo, $mutNotes, $receivedBy, $createdAt]);
+
+                            $stmtDelTask = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+                            $stmtDelTask->execute([$t['id']]);
+                        }
+                    }
+                } catch (Throwable $e) {
+                    error_log('[PackStock] Auto-migration tasks to inbound error: ' . $e->getMessage());
                 }
-            } catch (Throwable $e) {
-                error_log('[PackStock] Auto-migration tasks to inbound error: ' . $e->getMessage());
             }
 
             $stmtVer = $pdo->prepare("INSERT OR REPLACE INTO `_schema_version` (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)");
@@ -278,11 +301,14 @@ class Database {
                 } catch (Throwable $ignored) {}
             }
         } catch (Throwable $e) {
-            // Fallback: run initial table setups if check failed
-            if ($driver === 'mysql') {
-                self::initMySQLTables($pdo);
-            } else {
-                self::initSQLiteTables($pdo);
+            error_log('[PackStock] Schema migration error: ' . $e->getMessage());
+            // Fallback: jalankan setup tabel HANYA jika tabel belum pernah ada sama sekali
+            if ($currentVer === 0) {
+                if ($driver === 'mysql') {
+                    self::initMySQLTables($pdo);
+                } else {
+                    self::initSQLiteTables($pdo);
+                }
             }
         }
     }
