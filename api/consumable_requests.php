@@ -577,6 +577,11 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 3. APPROVE CONSUMABLE REQUEST (Admin only - ACC)
 if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki izin untuk melihat data.']);
+        exit;
+    }
 
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $requestId    = (int)($input['request_id'] ?? 0);
@@ -833,6 +838,11 @@ if ($action === 'approve' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 4. REJECT CONSUMABLE REQUEST (Admin only)
 if ($action === 'reject' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki izin untuk melihat data.']);
+        exit;
+    }
 
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $requestId = (int)($input['request_id'] ?? 0);
@@ -932,11 +942,12 @@ if ($action === 'get') {
     exit;
 }
 
-// 6. UPDATE CONSUMABLE REQUEST & ITEMS (Super Admin Only)
+// 6. UPDATE CONSUMABLE REQUEST & ITEMS (Super Admin & Admin)
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!Auth::isSuperAdmin()) {
+    Auth::requireAdmin();
+    if (Auth::isViewer()) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Hanya Super Admin yang berhak mengedit data pengajuan consumable!']);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki izin untuk melihat data.']);
         exit;
     }
 
@@ -982,17 +993,30 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    // Role Administrator hanya boleh mengedit jika pengajuan belum pernah diedit sebelumnya
+    if (!Auth::isSuperAdmin()) {
+        if (!empty($existing['is_edited'])) {
+            http_response_code(403);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Pengajuan ini sudah pernah diedit sebelumnya. Role Administrator hanya dapat mengedit 1 kali!'
+            ]);
+            exit;
+        }
+    }
+
     try {
         $pdo->beginTransaction();
         $now = date('Y-m-d H:i:s');
+        $adminId = Auth::id();
 
-        // Update main request
+        // Update main request and flag as edited
         $stmtUp = $pdo->prepare("
             UPDATE consumable_requests
-            SET destination = ?, priority = ?, notes = ?, updated_at = ?
+            SET destination = ?, priority = ?, notes = ?, is_edited = 1, edited_by = ?, edited_at = ?, updated_at = ?
             WHERE id = ?
         ");
-        $stmtUp->execute([$destination, $priority, $notes, $now, $requestId]);
+        $stmtUp->execute([$destination, $priority, $notes, $adminId, $now, $now, $requestId]);
 
         // Delete old items and insert updated items
         $stmtDel = $pdo->prepare("DELETE FROM consumable_request_items WHERE request_id = ?");

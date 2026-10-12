@@ -4551,6 +4551,7 @@ require_once __DIR__ . '/../includes/header.php';
               <option value="teknisi">Teknisi</option>
               <?php endif; ?>
               <option value="admin">Admin</option>
+              <option value="viewer">Viewer (View Data Saja)</option>
               <option value="operator_inventory">Operator Inventory</option>
               <option value="operator_fulfillment">Operator Fulfillment</option>
             </select>
@@ -4615,6 +4616,7 @@ require_once __DIR__ . '/../includes/header.php';
             <select id="permRoleSelector" onchange="loadPermissionMatrix()" class="px-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs font-bold text-slate-800 outline-none focus:border-emerald-600">
               <option value="superadmin">Role: Super Administrator</option>
               <option value="admin">Role: Administrator</option>
+              <option value="viewer">Role: Viewer (View Data Saja)</option>
               <option value="operator">Role: PIC</option>
             </select>
 
@@ -5970,6 +5972,7 @@ require_once __DIR__ . '/../includes/header.php';
         <select id="userRoleSelect" required class="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-emerald-600 focus:bg-white font-medium">
           <option value="operator_inventory">Operator Inventory (Operator Gudang - Panel Mobile Lengkap)</option>
           <option value="operator_fulfillment">Operator Fulfillment (Khusus Form Request Consumable)</option>
+          <option value="viewer">Viewer (View Data Saja / Read-Only)</option>
           <option value="admin">Administrator (Panel Admin)</option>
           <?php if (Auth::isSuperAdmin()): ?>
           <option value="teknisi">Teknisi (Panel Admin)</option>
@@ -6662,6 +6665,8 @@ require_once __DIR__ . '/../includes/header.php';
     <form id="formEditConsumableRequest" onsubmit="handleAdminEditConsumableSubmit(event)" class="space-y-4 text-xs overflow-y-auto flex-1 pr-1">
       <input type="hidden" id="editConsumableReqId">
 
+      <div id="editConsumableAlert" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label class="block font-bold text-slate-700 mb-1">Tujuan Brand / Line <span class="text-rose-500">*</span></label>
@@ -6698,7 +6703,7 @@ require_once __DIR__ . '/../includes/header.php';
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <label class="block font-black text-slate-800 uppercase tracking-wider text-[11px]">Daftar Item Material Consumable</label>
-          <button type="button" onclick="addAdminEditConsumableItemRow()" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95">
+          <button type="button" id="btnAddEditConsumableItem" onclick="addAdminEditConsumableItemRow()" class="px-3 py-1.5 rounded-xl bg-[#262363] hover:bg-[#1c1a4a] text-white text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95">
             <span class="material-symbols-outlined text-[15px]">add</span>
             <span>Tambah Item</span>
           </button>

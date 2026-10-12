@@ -3667,6 +3667,8 @@ function renderUsersTable(users) {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-50 text-purple-800 border border-purple-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">engineering</span>Teknisi</span>';
     } else if (u.role === 'admin') {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-50 text-blue-800 border border-blue-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">admin_panel_settings</span>Admin</span>';
+    } else if (u.role === 'viewer') {
+      roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-slate-100 text-slate-800 border border-slate-300 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">visibility</span>Viewer</span>';
     } else if (u.role === 'operator_fulfillment') {
       roleBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1"><span class="material-symbols-outlined text-[13px]">shopping_cart_checkout</span>Operator Fulfillment</span>';
     } else if (u.role === 'operator_inventory' || u.role === 'operator') {
@@ -3685,6 +3687,8 @@ function renderUsersTable(users) {
       divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">Teknisi & Maintenance</span>';
     } else if (u.role === 'admin') {
       divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Administrator Gudang</span>';
+    } else if (u.role === 'viewer') {
+      divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">View Data Saja</span>';
     } else if (u.role === 'operator_fulfillment') {
       divisionDisplay = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">Fulfillment & Consumable</span>';
     } else {
@@ -10926,6 +10930,10 @@ function renderAdminConsumableTable(requests) {
       statusBadge = `<span class="px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-700 border border-slate-200">${escapeHtml(r.status)}</span>`;
     }
 
+    const isSuper = (window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi');
+    const isViewer = (window.currentUserRole === 'viewer');
+    const isAlreadyEdited = (r.is_edited == 1 || r.is_edited === true || r.is_edited === '1');
+    const canEdit = !isViewer && (isSuper || (window.currentUserRole === 'admin' && !isAlreadyEdited));
     const isUrgent = r.priority === 'URGENT';
     const simpleShift = (r.requester_shift || '').split('(')[0].trim() || (r.requester_shift || '-');
     const itemUnits = [...new Set((r.items || []).map(it => (it.material_unit || '').trim()).filter(Boolean))];
@@ -10940,9 +10948,10 @@ function renderAdminConsumableTable(requests) {
 
         <!-- 2. No. Request -->
         <td class="p-3.5 align-middle whitespace-nowrap">
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <span class="bg-amber-50 text-amber-950 font-black px-2.5 py-1 rounded-lg border border-amber-300 font-mono text-xs shadow-2xs">${escapeHtml(r.request_no)}</span>
             ${isUrgent ? '<span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 font-black text-[9px] border border-rose-300">URGENT</span>' : ''}
+            ${isAlreadyEdited ? '<span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 font-black text-[9px] border border-indigo-300" title="Data pengajuan telah diedit">DIEDIT</span>' : ''}
           </div>
         </td>
 
@@ -11015,7 +11024,7 @@ function renderAdminConsumableTable(requests) {
         <!-- 9. Aksi -->
         <td class="p-3.5 align-middle text-center whitespace-nowrap">
           <div class="flex items-center justify-center gap-1.5 flex-wrap">
-            ${r.status === 'PENDING' ? `
+            ${(!isViewer && r.status === 'PENDING') ? `
               <button onclick="openAdminApproveConsumableModal(${r.id})" class="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-1 text-xs cursor-pointer" title="ACC Permintaan">
                 <span class="material-symbols-outlined text-[15px]">check</span>
                 <span>ACC</span>
@@ -11032,11 +11041,15 @@ function renderAdminConsumableTable(requests) {
               <span>Cetak</span>
             </button>
 
-            <!-- Tombol Khusus Super Admin: Edit Items, Cancel, & Delete -->
-            ${(window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi') ? `
-              <button onclick="openAdminEditConsumableModal(${r.id})" class="p-1.5 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="Edit Permintaan & Daftar Item Material (Super Admin)">
+            <!-- Tombol Edit (Admin 1x pakai, Super Admin bebas) -->
+            ${canEdit ? `
+              <button onclick="openAdminEditConsumableModal(${r.id})" class="p-1.5 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="${isSuper ? 'Edit Permintaan & Daftar Item Material (Super Admin)' : 'Edit Permintaan (Admin - 1 Kali Kesempatan)'}">
                 <span class="material-symbols-outlined text-[15px]">edit</span>
               </button>
+            ` : ''}
+
+            <!-- Tombol Khusus Super Admin: Cancel & Delete -->
+            ${isSuper ? `
               ${r.status !== 'CANCELLED' ? `
                 <button onclick="adminCancelConsumableRequest(${r.id}, '${escapeHtml(r.request_no)}')" class="p-1.5 bg-orange-50 hover:bg-orange-600 hover:text-white text-orange-700 border border-orange-200 rounded-xl transition-colors inline-flex items-center justify-center cursor-pointer shadow-2xs" title="Batalkan Pengajuan Ini (Super Admin)">
                   <span class="material-symbols-outlined text-[15px]">cancel</span>
@@ -11604,11 +11617,53 @@ async function openAdminEditConsumableModal(id) {
   }
 
   const req = res.data;
+  const isSuper = (window.isSuperAdmin === true || window.currentUserRole === 'superadmin' || window.currentUserRole === 'teknisi');
+  const isViewer = (window.currentUserRole === 'viewer');
+  const isAlreadyEdited = (req.is_edited == 1 || req.is_edited === true || req.is_edited === '1');
+  const canModify = !isViewer && (isSuper || !isAlreadyEdited);
+
   document.getElementById('editConsumableReqId').value = req.id;
-  document.getElementById('editConsumableReqSubtitle').innerText = `No. Request: #${req.request_no} - Pemohon: ${req.requester_name || 'Operator'}`;
-  document.getElementById('editConsumableDestination').value = req.destination || 'HANASUI';
-  document.getElementById('editConsumablePriority').value = req.priority || 'NORMAL';
-  document.getElementById('editConsumableNotes').value = req.notes || '';
+  document.getElementById('editConsumableReqSubtitle').innerText = `No. Request: #${req.request_no} - Pemohon: ${req.requester_name || 'Operator'}${isAlreadyEdited ? ' (Sudah Pernah Diedit)' : ''}`;
+  
+  const destInput = document.getElementById('editConsumableDestination');
+  const prioInput = document.getElementById('editConsumablePriority');
+  const notesInput = document.getElementById('editConsumableNotes');
+  const btnSubmit = document.getElementById('btnSubmitEditConsumable');
+  const btnAddItem = document.getElementById('btnAddEditConsumableItem');
+  const alertBox = document.getElementById('editConsumableAlert');
+
+  if (destInput) {
+    destInput.value = req.destination || 'HANASUI';
+    destInput.disabled = !canModify;
+  }
+  if (prioInput) {
+    prioInput.value = req.priority || 'NORMAL';
+    prioInput.disabled = !canModify;
+  }
+  if (notesInput) {
+    notesInput.value = req.notes || '';
+    notesInput.disabled = !canModify;
+  }
+
+  if (btnSubmit) {
+    btnSubmit.style.display = canModify ? 'inline-flex' : 'none';
+  }
+  if (btnAddItem) {
+    btnAddItem.style.display = canModify ? 'inline-flex' : 'none';
+  }
+
+  if (alertBox) {
+    if (isViewer) {
+      alertBox.className = 'p-3 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 block';
+      alertBox.innerHTML = '<span class="material-symbols-outlined text-[15px] align-middle mr-1 text-slate-500">visibility</span> Akun Anda memiliki role <b>Viewer</b> (Hanya Lihat). Form ini dalam mode hanya-baca.';
+    } else if (!isSuper && isAlreadyEdited) {
+      alertBox.className = 'p-3 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 block';
+      alertBox.innerHTML = '<span class="material-symbols-outlined text-[15px] align-middle mr-1 text-amber-700">lock</span> Pengajuan ini <b>sudah pernah diedit</b> sebelumnya. Role Administrator hanya dapat mengedit 1 kali.';
+    } else {
+      alertBox.className = 'hidden';
+      alertBox.innerHTML = '';
+    }
+  }
 
   const tbody = document.getElementById('editConsumableItemsTableBody');
   if (tbody) {
@@ -11621,6 +11676,10 @@ async function openAdminEditConsumableModal(id) {
     } else {
       addAdminEditConsumableItemRow();
     }
+
+    if (!canModify) {
+      tbody.querySelectorAll('input, select, button').forEach(el => el.disabled = true);
+    }
   }
 
   App.openModal('modalEditConsumableRequest');
@@ -11628,6 +11687,10 @@ async function openAdminEditConsumableModal(id) {
 
 async function handleAdminEditConsumableSubmit(e) {
   e.preventDefault();
+  if (window.currentUserRole === 'viewer') {
+    App.toast('Role Viewer hanya memiliki hak akses untuk melihat data!', 'error');
+    return;
+  }
   const requestId = document.getElementById('editConsumableReqId').value;
   const destination = document.getElementById('editConsumableDestination').value;
   const priority = document.getElementById('editConsumablePriority').value;

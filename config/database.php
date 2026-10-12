@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Jakarta');
 
 class Database {
     private static ?PDO $pdo = null;
-    private const CURRENT_SCHEMA_VERSION = 12;
+    private const CURRENT_SCHEMA_VERSION = 13;
 
     private static function isLiveEnvironment(): bool {
         $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
@@ -546,6 +546,9 @@ class Database {
                 `approved_at` DATETIME NULL,
                 `task_id` INT NULL,
                 `outbound_id` INT NULL,
+                `is_edited` TINYINT(1) NOT NULL DEFAULT 0,
+                `edited_by` INT NULL,
+                `edited_at` DATETIME NULL,
                 `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
                 INDEX (`user_id`),
@@ -649,7 +652,10 @@ class Database {
             "ALTER TABLE `tasks` ADD COLUMN `batch_no` VARCHAR(100) NULL",
             "ALTER TABLE `tasks` ADD COLUMN `exp_date` DATE NULL",
             "ALTER TABLE `tasks` ADD COLUMN `reference_no` VARCHAR(100) NULL",
-            "ALTER TABLE `users` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1"
+            "ALTER TABLE `users` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1",
+            "ALTER TABLE `consumable_requests` ADD COLUMN `is_edited` TINYINT(1) NOT NULL DEFAULT 0",
+            "ALTER TABLE `consumable_requests` ADD COLUMN `edited_by` INT NULL",
+            "ALTER TABLE `consumable_requests` ADD COLUMN `edited_at` DATETIME NULL"
         ];
 
         foreach ($migrations as $mSql) {
@@ -912,6 +918,9 @@ class Database {
                 approved_at DATETIME NULL,
                 task_id INTEGER NULL,
                 outbound_id INTEGER NULL,
+                is_edited INTEGER DEFAULT 0,
+                edited_by INTEGER NULL,
+                edited_at DATETIME NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
@@ -983,7 +992,10 @@ class Database {
             "ALTER TABLE tasks ADD COLUMN batch_no TEXT NULL",
             "ALTER TABLE tasks ADD COLUMN exp_date TEXT NULL",
             "ALTER TABLE tasks ADD COLUMN reference_no TEXT NULL",
-            "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"
+            "ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1",
+            "ALTER TABLE consumable_requests ADD COLUMN is_edited INTEGER DEFAULT 0",
+            "ALTER TABLE consumable_requests ADD COLUMN edited_by INTEGER NULL",
+            "ALTER TABLE consumable_requests ADD COLUMN edited_at DATETIME NULL"
         ];
 
         foreach ($sqliteMigrations as $sql) {

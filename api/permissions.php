@@ -186,6 +186,13 @@ function getResolvedPermissionsForUser($pdo, $userId, $role) {
                 $resolved[$key] = true;
             } elseif ($role === 'admin') {
                 $resolved[$key] = ($key !== 'field_access');
+            } elseif ($role === 'viewer') {
+                $resolved[$key] = in_array($key, [
+                    'dashboard', 'counting_progress', 'rack_map', 'inventory', 'gimmick',
+                    'dynamic_count', 'dynamic_counting_detail', 'opname', 'counting_detail',
+                    'consumable_requests', 'reorder_alerts', 'handover', 'mutations_kemas',
+                    'mutations_gimmick', 'mutations'
+                ], true);
             } else {
                 $resolved[$key] = ($key === 'field_access');
             }
@@ -268,7 +275,7 @@ if ($action === 'get_all') {
     echo json_encode([
         'success' => true,
         'catalog' => $MENUS_CATALOG,
-        'roles' => ['superadmin', 'admin', 'operator'],
+        'roles' => ['superadmin', 'admin', 'viewer', 'operator'],
         'role_permissions' => $rolePerms,
         'users' => $resolvedUsers
     ]);
@@ -281,7 +288,7 @@ if ($action === 'save_role') {
     $role = trim($input['role'] ?? '');
     $permissions = $input['permissions'] ?? [];
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator'])) {
+    if (!in_array($role, ['superadmin', 'admin', 'viewer', 'operator'])) {
         echo json_encode(['success' => false, 'message' => 'Role tidak valid!']);
         exit;
     }

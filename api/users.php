@@ -111,6 +111,11 @@ if ($action === 'get') {
 // 4. CREATE NEW USER (Admin only)
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki hak untuk melihat data.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
     $username = trim($input['username'] ?? '');
@@ -138,7 +143,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi'])) {
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi', 'viewer'])) {
         $role = 'operator_inventory';
     }
     if ($role === 'operator') {
@@ -180,6 +185,11 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 5. UPDATE USER (Admin only)
 if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki hak untuk melihat data.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
     $id       = (int)($input['id'] ?? 0);
@@ -215,7 +225,7 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi'])) {
+    if (!in_array($role, ['superadmin', 'admin', 'operator', 'operator_inventory', 'operator_fulfillment', 'teknisi', 'viewer'])) {
         $role = 'operator_inventory';
     }
     if ($role === 'operator') {
@@ -288,6 +298,11 @@ if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 5.1 TOGGLE USER ACTIVE / INACTIVE STATUS (Admin only)
 if ($action === 'toggle_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki hak untuk melihat data.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $id = (int)($input['id'] ?? 0);
     $statusInput = isset($input['is_active']) ? (int)$input['is_active'] : null;
@@ -357,6 +372,11 @@ if ($action === 'toggle_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 // 6. DELETE USER (Admin only)
 if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     Auth::requireAdmin();
+    if (Auth::isViewer()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Akses ditolak! Akun Viewer hanya memiliki hak untuk melihat data.']);
+        exit;
+    }
     $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $id = (int)($input['id'] ?? 0);
 

@@ -91,8 +91,12 @@ class Auth {
         return $username === 'daniel';
     }
 
+    public static function isViewer(): bool {
+        return self::role() === 'viewer';
+    }
+
     public static function isAdmin(): bool {
-        return self::role() === 'teknisi' || self::role() === 'admin' || self::role() === 'superadmin';
+        return self::role() === 'teknisi' || self::role() === 'admin' || self::role() === 'superadmin' || self::role() === 'viewer';
     }
 
     public static function isOperator(): bool {
