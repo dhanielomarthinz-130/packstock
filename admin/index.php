@@ -35,8 +35,9 @@ require_once __DIR__ . '/../includes/header.php';
     <nav class="flex-1 px-3 py-3.5 space-y-3.5 overflow-y-auto">
       
       <!-- Section 1: Group Dashboard -->
-      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dashboard">
-        <button type="button" onclick="toggleSidebarSection('dashboard')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+      <!-- Section 1: Group Dashboard -->
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="dashboard">
+        <button type="button" onclick="handleSidebarSectionClick('dashboard', 'dashboard', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Dashboard / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">space_dashboard</span>
@@ -48,13 +49,13 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dashboard')" id="nav-dashboard" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-xs" title="Monitoring Stok Kemas">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all bg-blue-600 text-white shadow-xs" title="Monitoring Stok Kemas">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">space_dashboard</span>
             <span class="sidebar-text truncate">Monitoring Stok</span>
           </button>
 
           <button onclick="switchAdminTab('counting_progress')" id="nav-counting_progress" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Live Progress Counting Dynamic & Opname">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Live Progress Counting Dynamic & Opname">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">donut_large</span>
               <span class="sidebar-text truncate">Progress Counting</span>
@@ -63,7 +64,7 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <button onclick="switchAdminTab('rack_map')" id="nav-rack_map" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Analisis Okupansi & Denah Rack Storage">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Analisis Okupansi & Denah Rack Storage">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">grid_view</span>
               <span class="sidebar-text truncate">Occupancy</span>
@@ -74,8 +75,8 @@ require_once __DIR__ . '/../includes/header.php';
       </div>
 
       <!-- Section 2: Group Inventory -->
-      <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="inventory">
-        <button type="button" onclick="toggleSidebarSection('inventory')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+      <div class="sidebar-section p-1 rounded-2xl transition-all" data-section-id="inventory">
+        <button type="button" onclick="handleSidebarSectionClick('inventory', 'inventory', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Stock Kemas / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">shelves</span>
@@ -88,49 +89,49 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="sidebar-section-content space-y-1 mt-1">
           <!-- 1. Stock Kemas -->
           <button onclick="switchAdminTab('inventory')" id="nav-inventory" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas (Packaging & Consumable)">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Kemas (Packaging & Consumable)">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">shelves</span>
             <span class="sidebar-text truncate">Stock Kemas</span>
           </button>
 
           <!-- 1.1 Stock Gimmick -->
           <button onclick="switchAdminTab('gimmick')" id="nav-gimmick" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Gimmick & Merchandise">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Gimmick & Merchandise">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">card_giftcard</span>
             <span class="sidebar-text truncate">Stock Gimmick</span>
           </button>
 
           <!-- 2. Stock VAS -->
           <button onclick="switchAdminTab('vas')" id="nav-vas" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock VAS">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock VAS">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">precision_manufacturing</span>
             <span class="sidebar-text truncate">Stock VAS</span>
           </button>
 
           <!-- 3. Barang Masuk -->
           <button onclick="switchAdminTab('inbound')" id="nav-inbound" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Masuk">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Masuk">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">move_to_inbox</span>
             <span class="sidebar-text truncate">Barang Masuk</span>
           </button>
 
           <!-- 4. Barang Keluar -->
           <button onclick="switchAdminTab('outbound')" id="nav-outbound" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Keluar">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Barang Keluar">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">outbox</span>
             <span class="sidebar-text truncate">Barang Keluar</span>
           </button>
 
           <!-- 5. Transfer Antar Lokasi -->
           <button onclick="switchAdminTab('location_transfer')" id="nav-location_transfer" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Antar Lokasi (Movement Product Location To Location)">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Antar Lokasi (Movement Product Location To Location)">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">swap_horiz</span>
             <span class="sidebar-text truncate">Transfer Antar Lokasi</span>
           </button>
 
           <!-- 6. Stock Transfer (Gudang Besar <-> VAS) -->
           <button onclick="switchAdminTab('stock_transfer')" id="nav-stock_transfer" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Stock Gudang Besar ⇋ Zone VAS">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Transfer Stock Gudang Besar ⇋ Zone VAS">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">sync_alt</span>
             <span class="sidebar-text truncate">Stock Transfer</span>
           </button>
@@ -144,21 +145,21 @@ require_once __DIR__ . '/../includes/header.php';
 
           <!-- 6. Request Fulfillments -->
           <button onclick="switchAdminTab('consumable_requests')" id="nav-consumable_requests" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Fulfillments Operator & Approval ACC">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Request Fulfillments Operator & Approval ACC">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">shopping_cart_checkout</span>
             <span class="sidebar-text truncate">Request Fulfillments</span>
           </button>
 
           <!-- 7. Reorder Kemas -->
           <button onclick="switchAdminTab('reorder_alerts')" id="nav-reorder_alerts" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Reorder Kemas & Rekomendasi PO">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Reorder Kemas & Rekomendasi PO">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">notification_important</span>
             <span class="sidebar-text truncate">Reorder Kemas</span>
           </button>
 
           <!-- 8. Handover Shift -->
           <button onclick="switchAdminTab('handover')" id="nav-handover" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Laporan & Progres Handover Shift">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">published_with_changes</span>
             <span class="sidebar-text truncate">Handover Shift</span>
           </button>
@@ -166,14 +167,14 @@ require_once __DIR__ . '/../includes/header.php';
           <?php if (Auth::isAdmin()): ?>
           <!-- 9. History Mutasi Stok Kemas -->
           <button onclick="switchAdminTab('mutations_kemas')" id="nav-mutations_kemas" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Kemas (Packaging)">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Kemas (Packaging)">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">inventory_2</span>
             <span class="sidebar-text truncate">Mutasi Stok Kemas</span>
           </button>
 
           <!-- 10. History Mutasi Stok Gimmick -->
           <button onclick="switchAdminTab('mutations_gimmick')" id="nav-mutations_gimmick" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Gimmick (Merchandise / Hadiah)">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Buku Audit Mutasi Stok Gimmick (Merchandise / Hadiah)">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">redeem</span>
             <span class="sidebar-text truncate">Mutasi Stok Gimmick</span>
           </button>
@@ -183,7 +184,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Section 3: Group Dynamic Count -->
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="dynamic_count">
-        <button type="button" onclick="toggleSidebarSection('dynamic_count')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+        <button type="button" onclick="handleSidebarSectionClick('dynamic_count', 'dynamic_count', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Dynamic Count / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">checklist</span>
@@ -195,7 +196,7 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('dynamic_count')" id="nav-dynamic_count" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Dynamic Count">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Dynamic Count">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">checklist</span>
               <span class="sidebar-text truncate">Dynamic Count</span>
@@ -204,7 +205,7 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <button onclick="switchAdminTab('dynamic_counting_detail')" id="nav-dynamic_counting_detail" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Dynamic Count">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Dynamic Count">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">playlist_add_check</span>
               <span class="sidebar-text truncate">Detail Dynamic Count</span>
@@ -216,7 +217,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Section 4: Group Stock Opname -->
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="opname">
-        <button type="button" onclick="toggleSidebarSection('opname')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+        <button type="button" onclick="handleSidebarSectionClick('opname', 'opname', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Stock Opname / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">fact_check</span>
@@ -228,7 +229,7 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('opname')" id="nav-opname" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Opname">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Stock Opname">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">fact_check</span>
               <span class="sidebar-text truncate">Stock Opname</span>
@@ -237,7 +238,7 @@ require_once __DIR__ . '/../includes/header.php';
           </button>
 
           <button onclick="switchAdminTab('counting_detail')" id="nav-counting_detail" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Stock Opname">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Log Detail Hasil Stock Opname">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">table_rows</span>
               <span class="sidebar-text truncate">Detail Stock Opname</span>
@@ -249,7 +250,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Section 5: Group Adjustment -->
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="adjust">
-        <button type="button" onclick="toggleSidebarSection('adjust')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+        <button type="button" onclick="handleSidebarSectionClick('adjust', 'adjust', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Adjustment / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">tune</span>
@@ -261,7 +262,7 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('adjust')" id="nav-adjust" 
-            class="hidden sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Adjustment Stok Packaging (+ / -)">
+            class="sidebar-nav-btn group w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Adjustment Stok Packaging (+ / -)">
             <div class="flex items-center gap-3">
               <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">tune</span>
               <span class="sidebar-text truncate">Adjustment Opname</span>
@@ -273,7 +274,7 @@ require_once __DIR__ . '/../includes/header.php';
 
       <!-- Section 6: Administrasi & Otorisasi -->
       <div class="sidebar-section is-collapsed p-1 rounded-2xl transition-all" data-section-id="pengaturan">
-        <button type="button" onclick="toggleSidebarSection('pengaturan')" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Klik untuk minimize / maximize group">
+        <button type="button" onclick="handleSidebarSectionClick('pengaturan', window.isSuperAdmin ? 'maintenance' : 'users', event)" class="sidebar-section-header w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider hover:bg-slate-100/80 transition-colors cursor-pointer group" title="Buka Pengaturan / Minimize group">
           <div class="flex items-center gap-2">
             <span class="w-5 h-5 rounded-md flex items-center justify-center bg-slate-100 text-[#262363] border border-slate-200 shrink-0">
               <span class="material-symbols-outlined text-[13px]">settings</span>
@@ -285,7 +286,7 @@ require_once __DIR__ . '/../includes/header.php';
         </button>
         <div class="sidebar-section-content space-y-1 mt-1">
           <button onclick="switchAdminTab('users')" id="nav-users" 
-            class="hidden sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Manajemen User & Role">
+            class="sidebar-nav-btn group w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all" title="Manajemen User & Role">
             <span class="material-symbols-outlined text-[20px] flex-shrink-0 text-[#262363]">group</span>
             <span class="sidebar-text truncate">Manajemen User & Role</span>
           </button>

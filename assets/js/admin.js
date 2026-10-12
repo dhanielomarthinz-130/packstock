@@ -253,6 +253,18 @@ function toggleSidebarSection(sectionId, forceOpen = null) {
   }
 }
 
+function handleSidebarSectionClick(sectionId, defaultTab = null, event = null) {
+  if (event && event.target && event.target.closest('.sidebar-section-chevron')) {
+    if (event.stopPropagation) event.stopPropagation();
+    toggleSidebarSection(sectionId);
+    return;
+  }
+  toggleSidebarSection(sectionId, true);
+  if (defaultTab) {
+    switchAdminTab(defaultTab);
+  }
+}
+
 function initSidebarSections() {
   try {
     const collapsedMap = JSON.parse(localStorage.getItem('packstock_collapsed_sections') || '{}');
@@ -6852,6 +6864,13 @@ async function applyMyPermissions() {
         }
       }
     }
+  } else {
+    // Fallback: If permissions API fails, ensure standard buttons are unhidden
+    const standardButtons = ['nav-dashboard', 'nav-counting_progress', 'nav-rack_map', 'nav-inventory', 'nav-gimmick', 'nav-vas', 'nav-inbound', 'nav-outbound', 'nav-location_transfer', 'nav-stock_transfer', 'nav-consumable_requests', 'nav-dynamic_count', 'nav-dynamic_counting_detail', 'nav-opname', 'nav-counting_detail', 'nav-adjust', 'nav-users', 'nav-reorder_alerts', 'nav-handover', 'nav-mutations_kemas', 'nav-mutations_gimmick', 'nav-mutations'];
+    standardButtons.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('hidden');
+    });
   }
 }
 
