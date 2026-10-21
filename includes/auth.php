@@ -194,6 +194,7 @@ class Auth {
         if ($token !== '') return trim($token);
 
         if (!empty($_POST['csrf_token'])) return trim((string)$_POST['csrf_token']);
+        if (!empty($_GET['csrf_token'])) return trim((string)$_GET['csrf_token']);
 
         // Body JSON: baca tanpa merusak pembacaan ulang oleh endpoint (php://input dapat dibaca berkali-kali).
         $raw = file_get_contents('php://input');

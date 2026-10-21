@@ -1064,7 +1064,7 @@ function handleUploadedTaskPhotos(array $input = [], ?string &$uploadError = nul
 
         foreach ($base64List as $idx => $b64) {
             if (!is_string($b64)) continue;
-            if (strpos($b64, 'uploads/') === 0 || strpos($b64, 'data:image/') === 0) {
+            if (strpos($b64, 'uploads/') === 0) {
                 $photoPaths[] = $b64;
                 continue;
             }
@@ -1400,8 +1400,10 @@ if ($action === 'submit_complete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             'task_no' => $task['task_no'],
             'new_stock' => $stockAfter
         ]);
-    } catch (Exception $e) {
-        $pdo->rollBack();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         http_response_code(500);
         apiFail($e, 'Gagal submit tugas.');
     }

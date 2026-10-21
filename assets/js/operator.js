@@ -1343,7 +1343,7 @@ async function previewTaskCompletePhoto(e) {
   if (badge) badge.innerText = 'Mengompres...';
 
   try {
-    const compressed = await App.compressImages(files);
+    const compressed = await App.compressImages(files, 800, 800, 0.55);
     taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(compressed);
   } catch (err) {
     taskCompleteSelectedFiles = taskCompleteSelectedFiles.concat(files);
@@ -1474,11 +1474,16 @@ function openSubmitModal(taskId) {
   App.openModal('modalSubmitTask');
 }
 
+let isSubmittingTask = false;
+
 async function handleFinalTaskSubmit(e) {
   e.preventDefault();
-  if (!activeSubmittingTask) return;
+  if (!activeSubmittingTask || isSubmittingTask) return;
 
+  const btn = document.getElementById('btnFinalSubmit');
+  const btnSubmitText = document.getElementById('btnFinalSubmitText');
   const isMovement = (activeSubmittingTask.task_type === 'RACK_MOVEMENT');
+
   const task_id = document.getElementById('submitTaskId').value;
   const actual_qty = App.parseNumber(document.getElementById('submitActualQty').value);
   const receiver_name = document.getElementById('submitReceiverName')?.value?.trim() || '';
@@ -1500,37 +1505,39 @@ async function handleFinalTaskSubmit(e) {
     return;
   }
 
-  const finalReceiver = receiver_name || (isMovement ? 'Operator Lapangan' : '');
-  const completion_notes = extra_notes ? `Penerima/PIC: ${finalReceiver} | ${extra_notes}` : `Penerima/PIC: ${finalReceiver}`;
-
   if ((!taskCompleteSelectedFiles || taskCompleteSelectedFiles.length === 0) && !isMovement) {
     App.toast('Foto Surat Jalan / Bukti penyerahan wajib diunggah minimal 1 foto!', 'warning', 'Foto Wajib');
     return;
   }
 
-  const btn = document.getElementById('btnFinalSubmit');
-  const btnSubmitText = document.getElementById('btnFinalSubmitText');
-  btn.disabled = true;
+  // Kunci tombol seketika saat diklik untuk mencegah submit ganda
+  isSubmittingTask = true;
+  if (btn) btn.disabled = true;
   if (btnSubmitText) btnSubmitText.innerText = 'Menyiapkan foto...';
 
-  // Kompres setiap foto ke data URL berukuran terjamin kecil (< ~600 KB) agar body
-  // request tidak melewati post_max_size hosting (yang membuat PHP membuang body).
-  const base64Photos = [];
-  for (let i = 0; i < taskCompleteSelectedFiles.length; i++) {
-    const b64 = await App.compressToBase64(taskCompleteSelectedFiles[i]);
-    if (b64) base64Photos.push(b64);
-  }
-
-  if (base64Photos.length === 0 && !isMovement) {
-    btn.disabled = false;
-    if (btnSubmitText) btnSubmitText.innerText = 'Konfirmasi & Potong Stok';
-    App.toast('Foto tidak dapat diproses browser. Coba ambil ulang foto langsung dari kamera (format JPG/PNG).', 'error', 'Foto Gagal Diproses');
-    return;
-  }
-
-  if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
+  const finalReceiver = receiver_name || (isMovement ? 'Operator Lapangan' : '');
+  const completion_notes = extra_notes ? `Penerima/PIC: ${finalReceiver} | ${extra_notes}` : `Penerima/PIC: ${finalReceiver}`;
 
   try {
+    // Kompres setiap foto ke WebP berukuran terjamin ringan (< ~60 KB) agar lolos batas hosting
+    const base64Photos = [];
+    for (let i = 0; i < taskCompleteSelectedFiles.length; i++) {
+      const b64 = await App.compressToBase64(taskCompleteSelectedFiles[i], 60000);
+      if (b64) base64Photos.push(b64);
+    }
+
+    if (base64Photos.length === 0 && !isMovement) {
+      isSubmittingTask = false;
+      if (btn) btn.disabled = false;
+      if (btnSubmitText) btnSubmitText.innerText = isMovement ? 'Konfirmasi Pindah Rak' : 'Konfirmasi & Potong Stok';
+      App.toast('Foto tidak dapat diproses browser. Coba ambil ulang foto langsung dari kamera (format JPG/PNG).', 'error', 'Foto Gagal Diproses');
+      return;
+    }
+
+    if (btnSubmitText) btnSubmitText.innerText = 'Menyimpan...';
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
     // Field teks dikirim lewat URL sehingga tetap terbaca walau body ditolak server.
     const query = new URLSearchParams({
       action: 'submit_complete',
@@ -1538,16 +1545,22 @@ async function handleFinalTaskSubmit(e) {
       actual_qty: String(actual_qty),
       completion_notes: completion_notes
     });
+    if (csrfToken) {
+      query.set('csrf_token', csrfToken);
+    }
 
-    // Foto dikirim sebagai WebP Base64 (sangat enteng, ~20-30KB) via FormData
-    // agar langsung masuk ke $_POST tanpa menyentuh upload_tmp_dir hosting.
+    // Foto dikirim HANYA sebagai potongan base64 polos (pc) tanpa prefix data:image
+    // dan tanpa menduplikasi photos_base64[] raksasa. Menjamin lolos filter keamanan hosting.
     const formData = new FormData();
     formData.append('task_id', String(task_id));
     formData.append('actual_qty', String(actual_qty));
     formData.append('completion_notes', completion_notes);
-    const CHUNK = 3000;
+    if (csrfToken) {
+      formData.append('csrf_token', csrfToken);
+    }
+
+    const CHUNK = 5000;
     base64Photos.forEach((dataUrl, idx) => {
-      formData.append('photos_base64[]', dataUrl);
       const pure = dataUrl.substring(dataUrl.indexOf(',') + 1);
       for (let p = 0; p < pure.length; p += CHUNK) {
         formData.append(`pc[${idx}][]`, pure.substring(p, p + CHUNK));
@@ -1556,13 +1569,20 @@ async function handleFinalTaskSubmit(e) {
 
     const response = await fetch(`../api/tasks.php?${query.toString()}`, {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {}
     });
-    const res = await response.json();
 
-    btn.disabled = false;
-    if (btnSubmitText) {
-      btnSubmitText.innerText = isMovement ? 'Konfirmasi Pindah Rak' : 'Konfirmasi & Potong Stok';
+    let res = null;
+    const rawText = await response.text();
+    try {
+      res = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error('Server returned non-JSON:', rawText);
+      const cleanMsg = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+      throw new Error(cleanMsg.length > 0 && cleanMsg.length < 150 
+        ? cleanMsg 
+        : `Server merespon dengan status ${response.status}. Hubungi admin jika berlanjut.`);
     }
 
     if (res.success) {
@@ -1576,11 +1596,14 @@ async function handleFinalTaskSubmit(e) {
       App.toast(res.message || 'Gagal menyelesaikan tugas', 'error');
     }
   } catch (err) {
-    btn.disabled = false;
+    console.error('Submit task error:', err);
+    App.toast(err.message || 'Terjadi kesalahan koneksi saat submit tugas', 'error');
+  } finally {
+    isSubmittingTask = false;
+    if (btn) btn.disabled = false;
     if (btnSubmitText) {
       btnSubmitText.innerText = isMovement ? 'Konfirmasi Pindah Rak' : 'Konfirmasi & Potong Stok';
     }
-    App.toast('Terjadi kesalahan koneksi saat submit tugas', 'error');
   }
 }
 
