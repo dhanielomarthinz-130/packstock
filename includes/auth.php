@@ -127,12 +127,49 @@ class Auth {
     }
 
     public static function isSuperAdmin(): bool {
-        $role = self::role();
-        if ($role === 'teknisi' || $role === 'superadmin') {
+        if (!self::check()) {
+            return false;
+        }
+
+        $user = self::user();
+        $rawRole = (string)($user['role'] ?? '');
+        $roleNorm = str_replace([' ', '_', '-'], '', strtolower(trim($rawRole)));
+
+        // 1. Cek variasi penulisan role superadmin / teknisi / master
+        if (in_array($roleNorm, ['superadmin', 'teknisi', 'superadministrator', 'master'], true)) {
             return true;
         }
-        $username = strtolower((string)self::username());
-        return $username === 'daniel';
+
+        // 2. Cek username khusus: daniel, superadmin, admin
+        $username = strtolower(trim((string)($user['username'] ?? '')));
+        if (in_array($username, ['daniel', 'superadmin', 'admin'], true)) {
+            return true;
+        }
+
+        // 3. Cek langsung ke basis data (jika role baru saja diubah di DB namun sesi masih menyimpan role lama)
+        $userId = self::id();
+        if ($userId) {
+            try {
+                $pdo = Database::getConnection();
+                $stmt = $pdo->prepare("SELECT role, username FROM users WHERE id = ? LIMIT 1");
+                $stmt->execute([$userId]);
+                $dbUser = $stmt->fetch();
+                if ($dbUser) {
+                    $dbRoleNorm = str_replace([' ', '_', '-'], '', strtolower(trim((string)($dbUser['role'] ?? ''))));
+                    $dbUname = strtolower(trim((string)($dbUser['username'] ?? '')));
+
+                    if (in_array($dbRoleNorm, ['superadmin', 'teknisi', 'superadministrator', 'master'], true) ||
+                        in_array($dbUname, ['daniel', 'superadmin', 'admin'], true)) {
+                        // Sinkronkan kembali sesi aktif
+                        $_SESSION['user']['role'] = $dbUser['role'];
+                        $_SESSION['user']['username'] = $dbUser['username'];
+                        return true;
+                    }
+                }
+            } catch (Throwable $e) {}
+        }
+
+        return false;
     }
 
     public static function isViewer(): bool {

@@ -19,7 +19,9 @@
     const method = (init.method || (input && input.method) || 'GET').toUpperCase();
 
     // Proteksi Read-Only Sisi Klien untuk Non-Superadmin
-    if (!safeMethods.includes(method) && window.isReadOnlyMode === true && !window.isSuperAdmin) {
+    const userRole = (window.currentUserRole || '').toLowerCase().replace(/[\s_-]/g, '');
+    const isSuper = (window.isSuperAdmin === true || userRole === 'superadmin' || userRole === 'teknisi' || userRole === 'superadministrator');
+    if (!safeMethods.includes(method) && window.isReadOnlyMode === true && !isSuper) {
       let urlStr = '';
       try {
         urlStr = typeof input === 'string' ? input : (input && input.url) || '';
@@ -74,14 +76,20 @@
 // Cegah klik tombol transaksi/edit/hapus dan submit form untuk non-superadmin
 // =============================================================================
 (function installReadOnlyUiGuards() {
+  function isCurrentSuperAdmin() {
+    if (window.isSuperAdmin === true) return true;
+    const role = (window.currentUserRole || '').toLowerCase().replace(/[\s_-]/g, '');
+    return role === 'superadmin' || role === 'teknisi' || role === 'superadministrator';
+  }
+
   function applyGuards() {
-    if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+    if (!window.isReadOnlyMode || isCurrentSuperAdmin()) return;
 
     document.body.classList.add('is-read-only-mode');
 
     // Tangkap event submit form di capture phase
     document.addEventListener('submit', function (e) {
-      if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+      if (!window.isReadOnlyMode || isCurrentSuperAdmin()) return;
       const form = e.target;
       if (form && form.id === 'loginForm') return; // Izinkan login form
 
@@ -95,7 +103,7 @@
 
     // Tangkap event klik tombol write / mutasi di capture phase
     document.addEventListener('click', function (e) {
-      if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+      if (!window.isReadOnlyMode || isCurrentSuperAdmin()) return;
 
       const btn = e.target.closest('button, a, [role="button"], input[type="submit"]');
       if (!btn) return;

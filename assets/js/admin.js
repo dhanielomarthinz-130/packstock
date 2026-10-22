@@ -6781,8 +6781,13 @@ async function applyMyPermissions() {
   const res = await App.fetchJson('../api/permissions.php?action=get_my_permissions');
   if (res.success && res.permissions) {
     const p = res.permissions;
-    window.userPermissions = p;
     window.isSuperAdmin = !!res.is_super_admin;
+    window.isReadOnlyMode = !window.isSuperAdmin;
+    if (window.isSuperAdmin) {
+      document.body.classList.remove('is-read-only-mode');
+      const b = document.getElementById('globalReadOnlyBanner');
+      if (b) b.remove();
+    }
 
     // Map menu keys to sidebar nav IDs
     const menuNavMap = {
