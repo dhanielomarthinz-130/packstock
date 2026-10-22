@@ -234,6 +234,50 @@ class Auth {
         exit;
     }
 
+    /**
+     * Kebijakan Global Read-Only:
+     * Web ini hanya bisa dilihat saja (read-only), tidak bisa melakukan transaksi,
+     * penambahan, pengubahan, atau penghapusan data untuk semua user kecuali role superadmin.
+     */
+    public static function verifyReadOnlyPolicyOrFail(): void {
+        // Super Admin memiliki akses penuh untuk seluruh transaksi & perubahan data
+        if (self::isSuperAdmin()) {
+            return;
+        }
+
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $safeMethods = ['GET', 'HEAD', 'OPTIONS'];
+
+        $script = basename($_SERVER['SCRIPT_NAME'] ?? '');
+        $action = strtolower((string)($_GET['action'] ?? ($_POST['action'] ?? '')));
+
+        // Izinkan proses logout (baik via GET atau POST)
+        if ($script === 'logout.php' || $action === 'logout') {
+            return;
+        }
+
+        // Daftar aksi pengubah data yang mungkin dikirim via parameter query GET
+        $writeActions = [
+            'delete', 'delete_batch', 'clean_table', 'clean_type_bulk',
+            'clean_all_transactions', 'factory_reset', 'toggle_maintenance', 'cancel'
+        ];
+
+        $isWriteRequest = !in_array($method, $safeMethods, true) || in_array($action, $writeActions, true);
+
+        if ($isWriteRequest) {
+            http_response_code(403);
+            if (!headers_sent()) {
+                header('Content-Type: application/json; charset=utf-8');
+            }
+            echo json_encode([
+                'success'   => false,
+                'read_only' => true,
+                'message'   => 'Sistem dalam mode Lihat Saja (Read-Only). Transaksi, penambahan, pengubahan, atau penghapusan data hanya dapat dilakukan oleh Super Admin.'
+            ]);
+            exit;
+        }
+    }
+
     // =====================================================================
     // AUDIT TRAIL & LOGIN THROTTLING
     // =====================================================================
@@ -394,6 +438,10 @@ class Auth {
         // memanggil requireLogin/requireAdmin/requireSuperAdmin — tanpa perlu
         // menyentuh 154 pemanggilan fetch di sisi front-end satu per satu.
         self::verifyCsrfOrFail();
+
+        // Kebijakan Global: Sistem Read-Only (Hanya Lihat) untuk seluruh user kecuali Super Admin.
+        // Transaksi, penambahan, pengubahan, atau penghapusan data diblokir untuk non-superadmin.
+        self::verifyReadOnlyPolicyOrFail();
 
         // Update last activity timestamp on active requests (both regular navigation & AJAX)
         $_SESSION['last_activity'] = time();

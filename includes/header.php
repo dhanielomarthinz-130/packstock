@@ -91,6 +91,28 @@ $favIconUrl = (!empty($baseUrl) ? rtrim($baseUrl, '/') : '') . '/assets/img/favi
     di style.css. Memuatnya lebih awal membuat seluruh ikon terkunci di 20px.
   -->
   <link rel="stylesheet" href="<?= $baseUrl ?>/assets/css/tailwind.css?v=<?= @filemtime(__DIR__ . '/../assets/css/tailwind.css') ?: '1' ?>">
+
+  <!-- Global Application State Flags -->
+  <script>
+    window.isSuperAdmin = <?= json_encode(Auth::isSuperAdmin()) ?>;
+    window.currentUserRole = <?= json_encode(Auth::role()) ?>;
+    window.isReadOnlyMode = <?= json_encode(!Auth::isSuperAdmin()) ?>;
+  </script>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-600 selection:text-white font-sans text-sm">
   <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+<?php if (Auth::check() && !Auth::isSuperAdmin()): ?>
+  <!-- Global Read-Only Mode Banner -->
+  <div id="globalReadOnlyBanner" class="bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 text-white px-3 py-1.5 text-xs font-semibold flex items-center justify-between shadow-sm select-none sticky top-0 z-[9990]">
+    <div class="flex items-center gap-2 max-w-7xl mx-auto w-full px-1">
+      <span class="material-symbols-outlined text-[17px] text-amber-200 animate-pulse flex-shrink-0">visibility</span>
+      <span class="tracking-tight text-[11.5px] leading-tight flex-1">
+        <strong class="font-bold text-white">Mode Hanya Lihat (Read-Only):</strong> Semua menu dan data hanya dapat dilihat. Transaksi, penambahan, pengubahan, dan penghapusan data dinonaktifkan (khusus Super Admin).
+      </span>
+      <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/25 text-[10px] font-bold uppercase tracking-wider text-amber-100 border border-white/20">
+        <span class="material-symbols-outlined text-[12px]">lock</span> Read Only
+      </span>
+    </div>
+  </div>
+<?php endif; ?>

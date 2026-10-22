@@ -7514,6 +7514,7 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
   window.currentUserRole = <?= json_encode(Auth::role()) ?>;
   window.isSuperAdmin = <?= json_encode(Auth::isSuperAdmin()) ?>;
+  window.isReadOnlyMode = <?= json_encode(!Auth::isSuperAdmin()) ?>;
 </script>
 <script src="<?= $baseUrl ?>/assets/js/app.js?v=<?= time() ?>"></script>
 <script src="<?= $baseUrl ?>/assets/js/admin.js?v=<?= time() ?>"></script>

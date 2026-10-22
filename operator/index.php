@@ -27,6 +27,7 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <style>
+  #globalReadOnlyBanner { display: none !important; }
   /* Lock Viewport for Mobile Android/iOS - Bottom Bar Always Pinned Without Scroll */
   @media (max-width: 639px) {
     html, body {
@@ -136,6 +137,17 @@ require_once __DIR__ . '/../includes/header.php';
         </a>
       </div>
     </header>
+
+    <?php if (!Auth::isSuperAdmin()): ?>
+      <!-- In-App Mobile Read-Only Notice -->
+      <div class="px-3 py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-[11px] font-semibold flex items-center justify-between shadow-xs z-10 flex-shrink-0">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="material-symbols-outlined text-[15px] text-amber-200 animate-pulse flex-shrink-0">visibility</span>
+          <span class="truncate"><strong>Mode Hanya Lihat:</strong> Transaksi dinonaktifkan (Khusus Super Admin)</span>
+        </div>
+        <span class="px-1.5 py-0.2 bg-black/25 rounded text-[9px] font-bold uppercase tracking-wider text-amber-100 flex-shrink-0">Read Only</span>
+      </div>
+    <?php endif; ?>
 
     <!-- MAIN SCROLLABLE VIEWPORT -->
     <div id="operatorViewport" class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 pb-10 overscroll-contain">

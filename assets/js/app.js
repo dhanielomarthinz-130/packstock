@@ -18,6 +18,29 @@
     init = init || {};
     const method = (init.method || (input && input.method) || 'GET').toUpperCase();
 
+    // Proteksi Read-Only Sisi Klien untuk Non-Superadmin
+    if (!safeMethods.includes(method) && window.isReadOnlyMode === true && !window.isSuperAdmin) {
+      let urlStr = '';
+      try {
+        urlStr = typeof input === 'string' ? input : (input && input.url) || '';
+      } catch (e) {}
+
+      // Izinkan proses logout
+      if (!urlStr.includes('action=logout') && !urlStr.includes('logout.php')) {
+        if (typeof App !== 'undefined' && App.toast) {
+          App.toast('Sistem dalam Mode Hanya Lihat (Read-Only). Transaksi, penambahan, pengubahan, atau penghapusan data hanya diizinkan untuk Super Admin.', 'warning', 'Mode Hanya Lihat');
+        }
+        return Promise.resolve(new Response(JSON.stringify({
+          success: false,
+          read_only: true,
+          message: 'Sistem dalam mode Lihat Saja (Read-Only). Transaksi, penambahan, pengubahan, atau penghapusan data hanya dapat dilakukan oleh Super Admin.'
+        }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' }
+        }));
+      }
+    }
+
     if (safeMethods.includes(method)) {
       return originalFetch(input, init);
     }
@@ -44,6 +67,84 @@
 
     return originalFetch(input, { ...init, headers });
   };
+})();
+
+// =============================================================================
+// READ-ONLY MODE UI GUARDS:
+// Cegah klik tombol transaksi/edit/hapus dan submit form untuk non-superadmin
+// =============================================================================
+(function installReadOnlyUiGuards() {
+  function applyGuards() {
+    if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+
+    document.body.classList.add('is-read-only-mode');
+
+    // Tangkap event submit form di capture phase
+    document.addEventListener('submit', function (e) {
+      if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+      const form = e.target;
+      if (form && form.id === 'loginForm') return; // Izinkan login form
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (typeof App !== 'undefined' && App.toast) {
+        App.toast('Sistem dalam Mode Hanya Lihat (Read-Only). Transaksi & perubahan data hanya dapat dilakukan oleh Super Admin.', 'warning', 'Mode Hanya Lihat');
+      }
+      return false;
+    }, true);
+
+    // Tangkap event klik tombol write / mutasi di capture phase
+    document.addEventListener('click', function (e) {
+      if (!window.isReadOnlyMode || window.isSuperAdmin) return;
+
+      const btn = e.target.closest('button, a, [role="button"], input[type="submit"]');
+      if (!btn) return;
+
+      const text = ((btn.innerText || '') + ' ' + (btn.getAttribute('title') || '') + ' ' + (btn.getAttribute('aria-label') || '')).toLowerCase();
+      const onclickAttr = (btn.getAttribute('onclick') || '').toLowerCase();
+      const idAttr = (btn.id || '').toLowerCase();
+      const combined = text + ' ' + onclickAttr + ' ' + idAttr;
+
+      // Pengecualian aksi yang aman (melihat, navigasi, tutup modal, download, dsb)
+      const safeTokens = [
+        'switchtab', 'togglesidebar', 'closemodal', 'hidemodal',
+        'openmaterialhistory', 'opendetail', 'showdetail', 'view', 'lihat', 'detail',
+        'export', 'excel', 'cetak', 'print', 'unduh', 'download', 'filter', 'search',
+        'cari', 'page', 'next', 'prev', 'pagination', 'refresh', 'copy', 'salin',
+        'logout', 'batal', 'tutup', 'accordion', 'toggleuserdropdown', 'handlesidebarsectionclick'
+      ];
+      if (safeTokens.some(s => onclickAttr.includes(s) || idAttr.includes(s))) {
+        return;
+      }
+
+      // Kata kunci transaksi / perubahan data
+      const writeTokens = [
+        'tambah', 'simpan', 'save', 'submit', 'hapus', 'delete', 'update', 'edit',
+        'buat', 'create', 'approve', 'reject', 'acc', 'tolak', 'transfer',
+        'import', 'commit', 'reset', 'bersihkan', 'clean', 'reconcile',
+        'sync', 'mulai hitung', 'selesai', 'finish', 'recount', 'inboundform',
+        'outboundform', 'adjust_stock'
+      ];
+
+      const isWriteAction = writeTokens.some(w => combined.includes(w));
+      const isPurelySafe = safeTokens.some(s => text.includes(s) && !text.includes('hapus') && !text.includes('simpan'));
+
+      if (isWriteAction && !isPurelySafe) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (typeof App !== 'undefined' && App.toast) {
+          App.toast('Sistem dalam Mode Hanya Lihat (Read-Only). Fitur transaksi & perubahan data dinonaktifkan (Khusus Super Admin).', 'warning', 'Mode Hanya Lihat');
+        }
+        return false;
+      }
+    }, true);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyGuards);
+  } else {
+    applyGuards();
+  }
 })();
 
 const App = {

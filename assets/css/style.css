@@ -1495,6 +1495,21 @@ span.truncate {
   box-shadow: 0 20px 35px -8px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1) !important;
 }
 
+/* ==========================================================================
+   GLOBAL READ-ONLY MODE STYLING (FOR NON-SUPERADMIN USERS)
+   ========================================================================== */
+body.is-read-only-mode form button[type="submit"]:not(#loginForm button),
+body.is-read-only-mode form input[type="submit"]:not(#loginForm input),
+body.is-read-only-mode .btn-write-disabled {
+  opacity: 0.75 !important;
+  cursor: not-allowed !important;
+}
+
+body.is-read-only-mode .read-only-badge {
+  display: inline-flex !important;
+}
+
+
 
 
 
